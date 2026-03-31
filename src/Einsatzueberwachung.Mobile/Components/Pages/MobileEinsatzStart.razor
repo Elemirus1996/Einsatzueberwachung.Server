@@ -1,46 +1,54 @@
 @page "/einsatz"
 @rendermode InteractiveServer
 
-@inject Einsatzueberwachung.Mobile.Services.MobileSignalRClient LiveSync
+@inject Einsatzueberwachung.Mobile.Services.MobileApiClient ApiClient
+@inject NavigationManager Navigation
 
 <PageTitle>Einsatz anlegen</PageTitle>
 
 <section class="mobile-card">
     <h1>Einsatz anlegen</h1>
-    <p class="subline">Vereinfachte Mobile-Eingabe fuer neuen Einsatz</p>
+    <p class="subline">Vereinfachte Mobile-Eingabe fuer einen neuen Einsatz</p>
 
     <EditForm Model="_einsatz" OnValidSubmit="OnSubmitAsync">
         <DataAnnotationsValidator />
 
         <div class="mobile-field">
-            <label for="einsatzTyp">Einsatzart</label>
-            <InputSelect id="einsatzTyp" class="form-select" @bind-Value="_einsatz.IstEinsatz">
+            <label for="einsatztyp">Einsatzart</label>
+            <InputSelect id="einsatztyp" class="form-select" @bind-Value="_einsatz.IstEinsatz">
                 <option value="true">Einsatz</option>
                 <option value="false">Uebung</option>
             </InputSelect>
         </div>
 
         <div class="mobile-field">
-            <label for="alarmzeit">Alarmzeit</label>
-            <InputDate id="alarmzeit" class="form-control" @bind-Value="_einsatz.EinsatzDatum" />
+            <label for="einsatzort">Einsatzort</label>
+            <InputText id="einsatzort" class="form-control" @bind-Value="_einsatz.Einsatzort" />
         </div>
 
         <div class="mobile-field">
-            <label for="ort">Einsatzort</label>
-            <InputText id="ort" class="form-control" @bind-Value="_einsatz.Einsatzort" />
+            <label for="einsatzleiter">Einsatzleiter</label>
+            <InputText id="einsatzleiter" class="form-control" @bind-Value="_einsatz.Einsatzleiter" />
         </div>
 
         <div class="mobile-field">
-            <label for="leiter">Melder / Einsatzleiter</label>
-            <InputText id="leiter" class="form-control" @bind-Value="_einsatz.Einsatzleiter" />
+            <label for="fuehrungsassistent">Fuehrungsassistent</label>
+            <InputText id="fuehrungsassistent" class="form-control" @bind-Value="_einsatz.Fuehrungsassistent" />
         </div>
 
         <div class="mobile-field">
-            <label for="bemerkung">Bemerkungen</label>
+            <label for="alarmiert">Alarmiert (Text)</label>
+            <InputText id="alarmiert" class="form-control" @bind-Value="_einsatz.Alarmiert" />
+        </div>
+
+        <div class="mobile-field">
+            <label for="bemerkung">Bemerkung</label>
             <InputTextArea id="bemerkung" class="form-control" @bind-Value="_bemerkung" />
         </div>
 
-        <button class="btn btn-primary mobile-btn" type="submit">Einsatz starten</button>
+        <button class="btn btn-primary mobile-btn" type="submit" disabled="@_isSubmitting">
+            @(_isSubmitting ? "Wird gestartet..." : "Einsatz starten")
+        </button>
     </EditForm>
 
     @if (!string.IsNullOrWhiteSpace(_status))
@@ -50,14 +58,40 @@
 </section>
 
 @code {
-    private Einsatzueberwachung.Domain.Models.EinsatzData _einsatz = new();
+    private readonly Einsatzueberwachung.Domain.Models.EinsatzData _einsatz = new()
+    {
+        IstEinsatz = true,
+        EinsatzDatum = DateTime.Now,
+        Alarmiert = DateTime.Now.ToString("dd.MM.yyyy HH:mm")
+    };
+
     private string _bemerkung = string.Empty;
     private string _status = string.Empty;
+    private bool _isSubmitting;
 
     private async Task OnSubmitAsync()
     {
-        await LiveSync.StartEinsatzAsync(_einsatz, _bemerkung);
+        if (string.IsNullOrWhiteSpace(_einsatz.Einsatzort) || string.IsNullOrWhiteSpace(_einsatz.Einsatzleiter))
+        {
+            _status = "Einsatzort und Einsatzleiter sind erforderlich.";
+            return;
+        }
 
-        _status = "Einsatz wurde gespeichert.";
+        _isSubmitting = true;
+        _status = "Einsatz wird gestartet...";
+
+        var success = await ApiClient.StartEinsatzAsync(_einsatz, _bemerkung);
+
+        _isSubmitting = false;
+
+        if (!success)
+        {
+            _status = "Fehler beim Starten des Einsatzes.";
+            return;
+        }
+
+        _status = "Einsatz wurde gestartet.";
+        await Task.Delay(600);
+        Navigation.NavigateTo("/teams", forceLoad: true);
     }
 }

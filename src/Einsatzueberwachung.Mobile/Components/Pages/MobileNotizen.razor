@@ -1,7 +1,7 @@
 @page "/notizen"
 @rendermode InteractiveServer
 
-@inject Einsatzueberwachung.Mobile.Services.MobileSignalRClient LiveSync
+@inject Einsatzueberwachung.Mobile.Services.MobileApiClient ApiClient
 
 <PageTitle>Notizen</PageTitle>
 
@@ -56,18 +56,12 @@
 
 @code {
     private string _text = string.Empty;
-    private IReadOnlyList<Einsatzueberwachung.Domain.Models.GlobalNotesEntry> _notes = Array.Empty<Einsatzueberwachung.Domain.Models.GlobalNotesEntry>();
+    private readonly List<Einsatzueberwachung.Domain.Models.GlobalNotesEntry> _notes = new();
     private readonly Dictionary<string, string> _replyTexts = new();
 
     protected override async Task OnInitializedAsync()
     {
-        LiveSync.UpdateReceived += OnUpdateReceived;
         await RefreshNotesAsync();
-    }
-
-    public void Dispose()
-    {
-        LiveSync.UpdateReceived -= OnUpdateReceived;
     }
 
     private async Task AddNoteAsync()
@@ -77,27 +71,16 @@
             return;
         }
 
-        await LiveSync.AddNoteAsync(_text, "Notiz");
-
+        await ApiClient.AddNoteAsync(_text.Trim(), "Notiz");
         _text = string.Empty;
         await RefreshNotesAsync();
     }
 
-    private void OnUpdateReceived(string eventName, string payload)
-    {
-        if (eventName is "note.added" or "einsatz.changed")
-        {
-            _ = InvokeAsync(async () =>
-            {
-                await RefreshNotesAsync();
-                StateHasChanged();
-            });
-        }
-    }
-
     private async Task RefreshNotesAsync()
     {
-        _notes = await LiveSync.GetNotesAsync("notiz");
+        var notes = await ApiClient.GetNotesAsync("notiz");
+        _notes.Clear();
+        _notes.AddRange(notes);
         await InvokeAsync(StateHasChanged);
     }
 
@@ -109,7 +92,7 @@
             return;
         }
 
-        await LiveSync.AddReplyAsync(noteId, text.Trim());
+        await ApiClient.AddReplyAsync(noteId, text.Trim());
         _replyTexts[noteId] = string.Empty;
         await RefreshNotesAsync();
     }

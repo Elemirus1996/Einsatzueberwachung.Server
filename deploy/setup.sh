@@ -17,7 +17,7 @@ fi
 
 echo "[1/8] Pakete installieren"
 apt-get update
-apt-get install -y nginx ufw curl rsync dotnet-runtime-9.0
+apt-get install -y nginx ufw curl rsync unzip dotnet-runtime-9.0
 
 echo "[2/8] Systembenutzer sicherstellen"
 if ! id "$APP_USER" >/dev/null 2>&1; then
@@ -57,6 +57,12 @@ cp ./deploy/systemd/einsatzueberwachung-healthcheck.timer /etc/systemd/system/
 
 install -m 755 ./deploy/scripts/backup.sh "$APP_ROOT/scripts/backup.sh"
 install -m 755 ./deploy/scripts/health-check.sh "$APP_ROOT/scripts/health-check.sh"
+install -m 755 ./deploy/scripts/apply-update.sh "$APP_ROOT/scripts/apply-update.sh"
+
+cat >/etc/sudoers.d/einsatzueberwachung-update <<EOF
+${APP_USER} ALL=(root) NOPASSWD: /bin/systemctl restart einsatzueberwachung-server.service, /bin/systemctl restart einsatzueberwachung-mobile.service
+EOF
+chmod 440 /etc/sudoers.d/einsatzueberwachung-update
 
 systemctl daemon-reload
 systemctl enable einsatzueberwachung-server.service

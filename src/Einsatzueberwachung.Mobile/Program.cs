@@ -18,7 +18,7 @@ builder.Services.AddSingleton<IArchivService, ArchivService>();
 builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddSingleton<ToastService>();
 builder.Services.AddHttpClient<IWeatherService, DwdWeatherService>();
-builder.Services.AddScoped<MobileSignalRClient>();
+builder.Services.AddHttpClient<MobileApiClient>();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();

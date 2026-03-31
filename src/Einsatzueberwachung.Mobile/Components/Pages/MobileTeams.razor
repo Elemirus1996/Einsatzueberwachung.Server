@@ -1,7 +1,8 @@
 @page "/teams"
 @rendermode InteractiveServer
 
-@inject Einsatzueberwachung.Mobile.Services.MobileSignalRClient LiveSync
+@implements IDisposable
+@inject Einsatzueberwachung.Mobile.Services.MobileApiClient ApiClient
 
 <PageTitle>Teams</PageTitle>
 
@@ -40,34 +41,44 @@
 </section>
 
 @code {
-    private IReadOnlyList<Einsatzueberwachung.Domain.Models.Team> _teams = Array.Empty<Einsatzueberwachung.Domain.Models.Team>();
+    private readonly List<Einsatzueberwachung.Domain.Models.Team> _teams = new();
+    private PeriodicTimer? _timer;
+    private CancellationTokenSource? _cts;
 
     protected override async Task OnInitializedAsync()
     {
-        LiveSync.UpdateReceived += OnUpdateReceived;
         await RefreshTeamsAsync();
+
+        _cts = new CancellationTokenSource();
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        _ = RunRefreshLoopAsync(_cts.Token);
     }
 
-    public void Dispose()
+    private async Task RunRefreshLoopAsync(CancellationToken token)
     {
-        LiveSync.UpdateReceived -= OnUpdateReceived;
-    }
-
-    private void OnUpdateReceived(string eventName, string payload)
-    {
-        if (eventName is "team.added" or "team.removed" or "team.updated" or "einsatz.changed")
+        if (_timer is null)
         {
-            _ = InvokeAsync(async () =>
+            return;
+        }
+
+        try
+        {
+            while (await _timer.WaitForNextTickAsync(token))
             {
                 await RefreshTeamsAsync();
-                StateHasChanged();
-            });
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 
     private async Task RefreshTeamsAsync()
     {
-        _teams = await LiveSync.GetTeamsAsync();
+        var teams = await ApiClient.GetTeamsAsync();
+        _teams.Clear();
+        _teams.AddRange(teams);
     }
 
     private static string FormatElapsed(TimeSpan elapsed) =>
@@ -88,5 +99,12 @@
         }
 
         return "status-ok";
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _timer?.Dispose();
+        _cts?.Dispose();
     }
 }

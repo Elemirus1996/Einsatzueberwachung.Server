@@ -1,7 +1,7 @@
 @page "/funk"
 @rendermode InteractiveServer
 
-@inject Einsatzueberwachung.Mobile.Services.MobileSignalRClient LiveSync
+@inject Einsatzueberwachung.Mobile.Services.MobileApiClient ApiClient
 
 <PageTitle>Funk</PageTitle>
 
@@ -66,18 +66,12 @@
 @code {
     private string _filter = "alle";
     private string _text = string.Empty;
-    private IReadOnlyList<Einsatzueberwachung.Domain.Models.GlobalNotesEntry> _messages = Array.Empty<Einsatzueberwachung.Domain.Models.GlobalNotesEntry>();
+    private readonly List<Einsatzueberwachung.Domain.Models.GlobalNotesEntry> _messages = new();
     private readonly Dictionary<string, string> _replyTexts = new();
 
     protected override async Task OnInitializedAsync()
     {
-        LiveSync.UpdateReceived += OnUpdateReceived;
         await RefreshMessagesAsync();
-    }
-
-    public void Dispose()
-    {
-        LiveSync.UpdateReceived -= OnUpdateReceived;
     }
 
     private async Task AddMessageAsync()
@@ -87,7 +81,8 @@
             return;
         }
 
-        await LiveSync.AddNoteAsync(_text, "Funk");
+        var sourceType = _filter == "notiz" ? "Notiz" : "Funk";
+        await ApiClient.AddNoteAsync(_text.Trim(), sourceType);
 
         _text = string.Empty;
         await RefreshMessagesAsync();
@@ -98,21 +93,11 @@
         return RefreshMessagesAsync();
     }
 
-    private void OnUpdateReceived(string eventName, string payload)
-    {
-        if (eventName is "note.added" or "einsatz.changed")
-        {
-            _ = InvokeAsync(async () =>
-            {
-                await RefreshMessagesAsync();
-                StateHasChanged();
-            });
-        }
-    }
-
     private async Task RefreshMessagesAsync()
     {
-        _messages = await LiveSync.GetNotesAsync(_filter);
+        var messages = await ApiClient.GetNotesAsync(_filter);
+        _messages.Clear();
+        _messages.AddRange(messages);
         await InvokeAsync(StateHasChanged);
     }
 
@@ -124,7 +109,7 @@
             return;
         }
 
-        await LiveSync.AddReplyAsync(noteId, text.Trim());
+        await ApiClient.AddReplyAsync(noteId, text.Trim());
         _replyTexts[noteId] = string.Empty;
         await RefreshMessagesAsync();
     }

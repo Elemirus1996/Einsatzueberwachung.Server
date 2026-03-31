@@ -32,6 +32,7 @@ Zusatzfunktionen nach Setup:
 - Healthcheck alle 2 Minuten mit automatischem Neustart fehlerhafter Dienste
 - persistente Laufzeitdaten unter `/opt/einsatzueberwachung/data`
 - PDF-Berichte unter `/opt/einsatzueberwachung/data/berichte`
+- serverseitiger Updater via `deploy/scripts/apply-update.sh`
 
 ## 4. Dienste pruefen
 
@@ -94,3 +95,25 @@ sudo journalctl -t einsatz-health-check -f
 - Kestrel bleibt intern auf `127.0.0.1` (Ports 5000/5001)
 - Zugriff nur ueber VPN freigeben
 - Kein oeffentliches Port-Forwarding
+
+## 9. Updater aktivieren und pruefen
+
+Der Updater wird ueber die Startseite (`/`) oder API aufgerufen. Das Setup hinterlegt bereits:
+
+- `EINSATZUEBERWACHUNG_UPDATE_APPLY_CMD=/opt/einsatzueberwachung/scripts/apply-update.sh "{package}" "{version}"`
+- sudoers-Regel fuer den Dienstbenutzer `einsatz`, um die beiden systemd-Dienste neu zu starten
+
+Pruefen:
+
+```bash
+sudo cat /etc/sudoers.d/einsatzueberwachung-update
+sudo systemctl show einsatzueberwachung-server.service --property=Environment
+```
+
+Updater API manuell testen:
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/update/check
+curl http://127.0.0.1:5000/api/update/status
+curl -X POST http://127.0.0.1:5000/api/update/install
+```

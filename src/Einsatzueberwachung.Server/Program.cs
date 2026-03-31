@@ -26,6 +26,13 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Response Compression für bessere Performance
+
+// API Controllers für REST (Mobile & externe Clients)
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Response Compression für bessere Performance
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -50,6 +57,12 @@ builder.Services.AddResponseCaching();
 
 // HttpClient für externe API-Calls
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<GitHubUpdateService>(sp =>
+{
+    var factory = sp.GetRequiredService<IHttpClientFactory>();
+    var logger = sp.GetRequiredService<ILogger<GitHubUpdateService>>();
+    return new GitHubUpdateService(factory.CreateClient(nameof(GitHubUpdateService)), logger);
+});
 
 // SignalR für Echtzeit-Updates
 builder.Services.AddSignalR(options =>
@@ -62,18 +75,23 @@ builder.Services.AddSignalR(options =>
     options.StreamBufferCapacity = 10;
 });
 
-// CORS für VPN-Clients und Mobile App
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("VpnPolicy", policy =>
     {
-        policy.SetIsOriginAllowed(_ => true) // VPN-intern: alle Origins erlauben
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
     });
-});
 
+    options.AddPolicy("RestApi", policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 // Registriere Domain-Services als Singletons (für den laufenden Einsatz)
 builder.Services.AddSingleton<IMasterDataService, MasterDataService>();
 builder.Services.AddSingleton<IEinsatzService, EinsatzService>();
@@ -96,6 +114,7 @@ builder.Services.AddHealthChecks();
 // Relay Domain-Events an SignalR Clients
 builder.Services.AddHostedService<EinsatzHubRelayService>();
 builder.Services.AddHostedService<TeamTimerTickService>();
+builder.Services.AddHostedService<UpdateAutoCheckService>();
 
 var app = builder.Build();
 
@@ -132,6 +151,17 @@ app.MapStaticAssets();
 // Health Check Endpoint
 app.MapHealthChecks("/health");
 
+// API Controllers mappen
+app.MapControllers().RequireCors("RestApi");
+
+// Swagger UI (nur in Development)
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+// Health Check Endpoint
 app.MapHub<EinsatzHub>("/hubs/einsatz");
 
 app.MapGet("/downloads/einsatz-bericht.pdf", async (IEinsatzService einsatzService, IPdfExportService pdfExportService) =>

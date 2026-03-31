@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject IEinsatzService EinsatzService
 @inject IArchivService ArchivService
+@inject GitHubUpdateService UpdateService
 @implements IDisposable
 
 <PageTitle>Startseite — Einsatzüberwachung</PageTitle>
@@ -75,6 +76,40 @@
                     <div class="display-6 fw-bold text-info">@notes.Count</div>
                     <div class="text-muted small">Einträge gesamt</div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="fw-semibold">
+                <i class="bi bi-cloud-arrow-down me-2 text-primary"></i>Server-Updates
+            </div>
+            <span class="badge @( _updateStatus.UpdateAvailable ? "bg-warning text-dark" : "bg-success")">
+                @(_updateStatus.UpdateAvailable ? "Update verfuegbar" : "Aktuell")
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row g-2 small mb-3">
+                <div class="col-md-3"><span class="text-muted">Installiert:</span> @_updateStatus.CurrentVersion</div>
+                <div class="col-md-3"><span class="text-muted">Neueste:</span> @DisplayLatestVersion()</div>
+                <div class="col-md-3"><span class="text-muted">Letzter Check:</span> @DisplayDateTime(_updateStatus.LastCheckedAt)</div>
+                <div class="col-md-3"><span class="text-muted">Letzte Installation:</span> @DisplayDateTime(_updateStatus.LastInstalledAt)</div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_updateStatus.LastError))
+            {
+                <div class="alert alert-danger py-2 mb-3">@_updateStatus.LastError</div>
+            }
+
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <button class="btn btn-outline-primary btn-sm" @onclick="CheckForUpdates" disabled="@(_updateStatus.IsChecking || _updateStatus.IsInstalling)">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Jetzt pruefen
+                </button>
+                <button class="btn btn-primary btn-sm" @onclick="InstallUpdate" disabled="@(!_updateStatus.UpdateAvailable || _updateStatus.IsChecking || _updateStatus.IsInstalling)">
+                    <i class="bi bi-download me-1"></i>Update installieren
+                </button>
+                <span class="text-muted small">@_updateStatus.LastMessage</span>
             </div>
         </div>
     </div>
@@ -225,6 +260,8 @@
 </div>
 
 @code {
+    private UpdateRuntimeStatus _updateStatus = new();
+
     protected override void OnInitialized()
     {
         EinsatzService.EinsatzChanged += Refresh;
@@ -232,9 +269,35 @@
         EinsatzService.TeamRemoved += _ => Refresh();
         EinsatzService.TeamUpdated += _ => Refresh();
         EinsatzService.NoteAdded += _ => Refresh();
+
+        _updateStatus = UpdateService.GetStatusSnapshot();
     }
 
     private void Refresh() => InvokeAsync(StateHasChanged);
+
+    private async Task CheckForUpdates()
+    {
+        await UpdateService.CheckForUpdatesAsync();
+        _updateStatus = UpdateService.GetStatusSnapshot();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task InstallUpdate()
+    {
+        await UpdateService.InstallLatestAsync();
+        _updateStatus = UpdateService.GetStatusSnapshot();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private string DisplayLatestVersion()
+    {
+        return string.IsNullOrWhiteSpace(_updateStatus.LatestVersion) ? "-" : _updateStatus.LatestVersion;
+    }
+
+    private static string DisplayDateTime(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToString("dd.MM.yyyy HH:mm") : "-";
+    }
 
     public void Dispose()
     {
