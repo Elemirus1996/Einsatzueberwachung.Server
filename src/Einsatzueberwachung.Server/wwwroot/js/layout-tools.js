@@ -23,6 +23,18 @@ window.layoutTools.toggleFullscreen = async function () {
     await document.exitFullscreen();
 };
 
+window.layoutTools.getClientLocalNow = function () {
+    const now = new Date();
+    return {
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        day: now.getDate(),
+        hour: now.getHours(),
+        minute: now.getMinutes(),
+        second: now.getSeconds()
+    };
+};
+
 window.layoutTools.playWarningAlert = async function (soundType, frequency, volume, repeat, repeatSeconds) {
     const state = window.layoutTools.warningAudio;
 

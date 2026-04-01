@@ -6,6 +6,7 @@
 @inject IEinsatzService EinsatzService
 @inject IMasterDataService MasterDataService
 @inject ISettingsService SettingsService
+@inject IJSRuntime JS
 @inject NavigationManager Navigation
 
 <PageTitle>Einsatz anlegen</PageTitle>
@@ -162,9 +163,20 @@
 
     private List<PersonalEntry> _personal = new();
     private string _alarmStartTime = DateTime.Now.ToString("HH:mm");
+    private DateTime? _clientNow;
     private string _status = string.Empty;
     private bool _error;
     private bool _busy;
+
+    private sealed class ClientLocalNowDto
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public int Day { get; set; }
+        public int Hour { get; set; }
+        public int Minute { get; set; }
+        public int Second { get; set; }
+    }
 
     private IEnumerable<PersonalEntry> ActivePersonnel => _personal
         .Where(person => person.IsActive)
@@ -201,6 +213,39 @@
         _alarmStartTime = alarmBase.ToString("HH:mm");
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await RefreshClientNowAsync();
+
+        if (_clientNow.HasValue)
+        {
+            var now = _clientNow.Value;
+            _alarmStartTime = now.ToString("HH:mm");
+            _model.AlarmierungsZeit = now;
+            _model.Alarmiert = now.ToString("dd.MM.yyyy HH:mm");
+            _model.EinsatzDatum = now;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task RefreshClientNowAsync()
+    {
+        try
+        {
+            var dto = await JS.InvokeAsync<ClientLocalNowDto>("layoutTools.getClientLocalNow");
+            _clientNow = new DateTime(dto.Year, dto.Month, dto.Day, dto.Hour, dto.Minute, dto.Second, DateTimeKind.Unspecified);
+        }
+        catch
+        {
+            _clientNow = null;
+        }
+    }
+
     private void SetEinsatzleiter(string? id)
     {
         if (string.IsNullOrWhiteSpace(id)) return;
@@ -217,6 +262,8 @@
 
     private async Task StartAsync()
     {
+        await RefreshClientNowAsync();
+
         if (string.IsNullOrWhiteSpace(_model.Einsatzort))
         {
             _status = "Bitte Einsatzort ausfüllen.";
@@ -235,7 +282,7 @@
         _status = string.Empty;
         try
         {
-            _model.EinsatzDatum = DateTime.Now;
+            _model.EinsatzDatum = _clientNow ?? DateTime.Now;
             await EinsatzService.StartEinsatzAsync(_model);
             _status = "Einsatz wurde gestartet.";
             _error = false;
@@ -255,9 +302,10 @@
 
     private bool TryPrepareAlarmTime()
     {
+        var now = _clientNow ?? DateTime.Now;
+
         if (string.IsNullOrWhiteSpace(_alarmStartTime))
         {
-            var now = DateTime.Now;
             _model.AlarmierungsZeit = now;
             _model.Alarmiert = now.ToString("dd.MM.yyyy HH:mm");
             return true;
@@ -266,7 +314,6 @@
         if (DateTime.TryParseExact(_alarmStartTime.Trim(), AlarmTimeFormats, System.Globalization.CultureInfo.GetCultureInfo("de-DE"), System.Globalization.DateTimeStyles.None, out var parsed)
             || DateTime.TryParse(_alarmStartTime.Trim(), System.Globalization.CultureInfo.GetCultureInfo("de-DE"), System.Globalization.DateTimeStyles.None, out parsed))
         {
-            var now = DateTime.Now;
             parsed = new DateTime(now.Year, now.Month, now.Day, parsed.Hour, parsed.Minute, 0);
 
             if (parsed > now.AddMinutes(1))
