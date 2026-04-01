@@ -1,7 +1,16 @@
-﻿<div class="top-row navbar navbar-dark">
+﻿@inject ISettingsService SettingsService
+
+<div class="top-row navbar navbar-dark">
     <div class="container-fluid nav-brand-row">
         <a class="navbar-brand" href="/" title="Startseite">
-            <i class="bi bi-radar brand-icon"></i>
+            @if (!string.IsNullOrWhiteSpace(_staffelLogoUrl))
+            {
+                <img class="brand-logo" src="@_staffelLogoUrl" alt="Staffel-Logo" />
+            }
+            else
+            {
+                <i class="bi bi-radar brand-icon"></i>
+            }
             <span class="brand-text">Einsatzüberwachung</span>
         </a>
         <button class="btn-sidebar-toggle"
@@ -81,10 +90,23 @@
 </div>
 
 @code {
+    private string _staffelLogoUrl = string.Empty;
+
     [Parameter]
     public bool IsCollapsed { get; set; }
 
     [Parameter]
     public EventCallback OnToggleSidebar { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await SettingsService.GetStaffelSettingsAsync();
+        if (string.IsNullOrWhiteSpace(settings.StaffelLogoPfad))
+        {
+            return;
+        }
+
+        _staffelLogoUrl = $"/downloads/staffel-logo?v={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+    }
 }
 

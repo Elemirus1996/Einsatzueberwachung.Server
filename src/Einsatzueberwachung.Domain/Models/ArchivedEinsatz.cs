@@ -31,6 +31,10 @@ namespace Einsatzueberwachung.Domain.Models
         public DateTime EinsatzDatum { get; set; }
         public string EinsatzNummer { get; set; } = string.Empty;
         public string StaffelName { get; set; } = string.Empty;
+        public string StaffelAdresse { get; set; } = string.Empty;
+        public string StaffelTelefon { get; set; } = string.Empty;
+        public string StaffelEmail { get; set; } = string.Empty;
+        public string StaffelLogoPfad { get; set; } = string.Empty;
         public DateTime? AlarmierungsZeit { get; set; }
 
         // === Einsatz-Ende ===
@@ -83,6 +87,10 @@ namespace Einsatzueberwachung.Domain.Models
                 EinsatzDatum = data.EinsatzDatum,
                 EinsatzNummer = data.EinsatzNummer,
                 StaffelName = data.StaffelName,
+                StaffelAdresse = data.StaffelAdresse,
+                StaffelTelefon = data.StaffelTelefon,
+                StaffelEmail = data.StaffelEmail,
+                StaffelLogoPfad = data.StaffelLogoPfad,
                 AlarmierungsZeit = data.AlarmierungsZeit,
                 EinsatzEnde = DateTime.Now,
                 Ergebnis = ergebnis,

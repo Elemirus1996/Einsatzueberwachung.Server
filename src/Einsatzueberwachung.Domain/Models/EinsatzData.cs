@@ -21,6 +21,9 @@ namespace Einsatzueberwachung.Domain.Models
 
         public string EinsatzNummer { get; set; }
         public string StaffelName { get; set; }
+        public string StaffelAdresse { get; set; }
+        public string StaffelTelefon { get; set; }
+        public string StaffelEmail { get; set; }
         public string StaffelLogoPfad { get; set; }
         public DateTime? AlarmierungsZeit { get; set; }
 
@@ -48,6 +51,9 @@ namespace Einsatzueberwachung.Domain.Models
             EinsatzEnde = null;
             EinsatzNummer = string.Empty;
             StaffelName = string.Empty;
+            StaffelAdresse = string.Empty;
+            StaffelTelefon = string.Empty;
+            StaffelEmail = string.Empty;
             StaffelLogoPfad = string.Empty;
             AlarmierungsZeit = null;
             GlobalNotesEntries = new List<GlobalNotesEntry>();

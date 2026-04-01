@@ -17,8 +17,11 @@ namespace Einsatzueberwachung.Domain.Services
 {
     public class PdfExportService : IPdfExportService
     {
-        public PdfExportService()
+        private readonly ISettingsService? _settingsService;
+
+        public PdfExportService(ISettingsService? settingsService = null)
         {
+            _settingsService = settingsService;
             // QuestPDF Lizenz-Konfiguration (Community License für nicht-kommerzielle Nutzung)
             QuestPDF.Settings.License = LicenseType.Community;
         }
@@ -27,78 +30,15 @@ namespace Einsatzueberwachung.Domain.Services
         {
             try
             {
+                var staffelInfo = await ResolveStaffelInfoAsync(einsatzData);
                 var filename = $"Einsatzbericht_{einsatzData.EinsatzNummer}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
                 var einsatzPath = AppPathResolver.GetReportDirectory();
                 var filePath = Path.Combine(einsatzPath, filename);
+                var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo);
 
                 await Task.Run(() =>
                 {
-                    Document.Create(container =>
-                    {
-                        container.Page(page =>
-                        {
-                            page.Size(PageSizes.A4);
-                            page.Margin(2, Unit.Centimetre);
-                            page.PageColor(Colors.White);
-                            page.DefaultTextStyle(x => x.FontSize(11));
-
-                            page.Header()
-                                .Height(100)
-                                .Background(Colors.Blue.Lighten3)
-                                .Padding(20)
-                                .Column(column =>
-                                {
-                                    column.Item().Text("EINSATZBERICHT")
-                                        .FontSize(24)
-                                        .Bold()
-                                        .FontColor(Colors.Blue.Darken2);
-
-                                    if (!string.IsNullOrEmpty(einsatzData.StaffelName))
-                                    {
-                                        column.Item().Text(einsatzData.StaffelName)
-                                            .FontSize(14)
-                                            .FontColor(Colors.Grey.Darken1);
-                                    }
-                                    
-                                    column.Item().Text($"Rettungshundestaffel")
-                                        .FontSize(12)
-                                        .FontColor(Colors.Grey.Darken1);
-                                });
-
-                            page.Content()
-                                .Column(column =>
-                                {
-                                    // Grunddaten
-                                    column.Item().PaddingVertical(10).Element(container => ComposeGrunddaten(container, einsatzData));
-
-                                    // Teams
-                                    column.Item().PaddingVertical(10).Element(container => ComposeTeams(container, teams));
-
-                                    // Suchgebiete
-                                    if (einsatzData.SearchAreas.Any())
-                                    {
-                                        column.Item().PaddingVertical(10).Element(container => ComposeSuchgebiete(container, einsatzData.SearchAreas.ToList()));
-                                    }
-
-                                    // Notizen
-                                    column.Item().PageBreak();
-                                    column.Item().PaddingVertical(10).Element(container => ComposeNotizen(container, notes));
-                                });
-
-                            page.Footer()
-                                .AlignCenter()
-                                .Text(text =>
-                                {
-                                    text.Span("Erstellt am: ");
-                                    text.Span($"{DateTime.Now:dd.MM.yyyy HH:mm:ss}").Bold();
-                                    text.Span(" | Seite ");
-                                    text.CurrentPageNumber();
-                                    text.Span(" von ");
-                                    text.TotalPages();
-                                });
-                        });
-                    })
-                    .GeneratePdf(filePath);
+                    pdfDocument.GeneratePdf(filePath);
                 });
 
                 return new PdfExportResult
@@ -365,10 +305,11 @@ namespace Einsatzueberwachung.Domain.Services
         {
             try
             {
+                var staffelInfo = await ResolveStaffelInfoAsync(archivedEinsatz);
                 var filename = $"Einsatzbericht_{archivedEinsatz.EinsatzNummer}_{archivedEinsatz.EinsatzDatum:yyyyMMdd}.pdf";
                 var einsatzPath = AppPathResolver.GetReportDirectory();
                 var filePath = Path.Combine(einsatzPath, filename);
-                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz);
+                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo);
 
                 await Task.Run(() =>
                 {
@@ -396,7 +337,8 @@ namespace Einsatzueberwachung.Domain.Services
         /// </summary>
         public async Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz)
         {
-            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz);
+            var staffelInfo = await ResolveStaffelInfoAsync(archivedEinsatz);
+            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo);
             
             return await Task.Run(() =>
             {
@@ -411,80 +353,18 @@ namespace Einsatzueberwachung.Domain.Services
         /// </summary>
         public async Task<byte[]> ExportEinsatzToPdfBytesAsync(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes)
         {
+            var staffelInfo = await ResolveStaffelInfoAsync(einsatzData);
             return await Task.Run(() =>
             {
                 using var stream = new MemoryStream();
-                
-                Document.Create(container =>
-                {
-                    container.Page(page =>
-                    {
-                        page.Size(PageSizes.A4);
-                        page.Margin(2, Unit.Centimetre);
-                        page.PageColor(Colors.White);
-                        page.DefaultTextStyle(x => x.FontSize(11));
-
-                        page.Header()
-                            .Height(100)
-                            .Background(Colors.Blue.Lighten3)
-                            .Padding(20)
-                            .Column(column =>
-                            {
-                                column.Item().Text("EINSATZBERICHT")
-                                    .FontSize(24)
-                                    .Bold()
-                                    .FontColor(Colors.Blue.Darken2);
-
-                                if (!string.IsNullOrEmpty(einsatzData.StaffelName))
-                                {
-                                    column.Item().Text(einsatzData.StaffelName)
-                                        .FontSize(14)
-                                        .FontColor(Colors.Grey.Darken1);
-                                }
-                                
-                                column.Item().Text($"Rettungshundestaffel")
-                                    .FontSize(12)
-                                    .FontColor(Colors.Grey.Darken1);
-                            });
-
-                        page.Content()
-                            .Column(column =>
-                            {
-                                column.Item().PaddingVertical(10).Element(container => ComposeGrunddaten(container, einsatzData));
-                                column.Item().PaddingVertical(10).Element(container => ComposeTeams(container, teams));
-                                
-                                if (einsatzData.SearchAreas.Any())
-                                {
-                                    column.Item().PaddingVertical(10).Element(container => ComposeSuchgebiete(container, einsatzData.SearchAreas.ToList()));
-                                }
-
-                                column.Item().PageBreak();
-                                column.Item().PaddingVertical(10).Element(container => ComposeNotizen(container, notes));
-                            });
-
-                        page.Footer()
-                            .AlignCenter()
-                            .Text(text =>
-                            {
-                                text.Span("Erstellt am: ");
-                                text.Span($"{DateTime.Now:dd.MM.yyyy HH:mm:ss}").Bold();
-                                text.Span(" | Seite ");
-                                text.CurrentPageNumber();
-                                text.Span(" von ");
-                                text.TotalPages();
-                            });
-                    });
-                })
-                .GeneratePdf(stream);
+                var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo);
+                pdfDocument.GeneratePdf(stream);
                 
                 return stream.ToArray();
             });
         }
 
-        /// <summary>
-        /// Erstellt das PDF-Dokument für einen archivierten Einsatz
-        /// </summary>
-        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz)
+        private Document CreateEinsatzDocument(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes, StaffelInfo staffelInfo)
         {
             return Document.Create(container =>
             {
@@ -496,27 +376,67 @@ namespace Einsatzueberwachung.Domain.Services
                     page.DefaultTextStyle(x => x.FontSize(11));
 
                     page.Header()
-                        .Height(100)
-                        .Background(einsatz.IstEinsatz ? Colors.Red.Lighten3 : Colors.Blue.Lighten3)
+                        .Background(Colors.Blue.Lighten3)
                         .Padding(20)
+                        .Element(container => ComposeReportHeader(container, "EINSATZBERICHT", Colors.Blue.Darken2, staffelInfo));
+
+                    page.Content()
                         .Column(column =>
                         {
-                            column.Item().Text(einsatz.IstEinsatz ? "EINSATZBERICHT" : "ÜBUNGSBERICHT")
-                                .FontSize(24)
-                                .Bold()
-                                .FontColor(einsatz.IstEinsatz ? Colors.Red.Darken2 : Colors.Blue.Darken2);
+                            // Grunddaten
+                            column.Item().PaddingVertical(10).Element(container => ComposeGrunddaten(container, einsatzData));
 
-                            if (!string.IsNullOrEmpty(einsatz.StaffelName))
+                            // Teams
+                            column.Item().PaddingVertical(10).Element(container => ComposeTeams(container, teams));
+
+                            // Suchgebiete
+                            if (einsatzData.SearchAreas.Any())
                             {
-                                column.Item().Text(einsatz.StaffelName)
-                                    .FontSize(14)
-                                    .FontColor(Colors.Grey.Darken1);
+                                column.Item().PaddingVertical(10).Element(container => ComposeSuchgebiete(container, einsatzData.SearchAreas.ToList()));
                             }
-                            
-                            column.Item().Text("Rettungshundestaffel")
-                                .FontSize(12)
-                                .FontColor(Colors.Grey.Darken1);
+
+                            // Notizen
+                            column.Item().PageBreak();
+                            column.Item().PaddingVertical(10).Element(container => ComposeNotizen(container, notes));
                         });
+
+                    page.Footer()
+                        .AlignCenter()
+                        .Text(text =>
+                        {
+                            text.Span("Erstellt am: ");
+                            text.Span($"{DateTime.Now:dd.MM.yyyy HH:mm:ss}").Bold();
+                            text.Span(" | Seite ");
+                            text.CurrentPageNumber();
+                            text.Span(" von ");
+                            text.TotalPages();
+                        });
+                });
+            });
+        }
+
+        /// <summary>
+        /// Erstellt das PDF-Dokument für einen archivierten Einsatz
+        /// </summary>
+        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo)
+        {
+            return Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(11));
+
+                    page.Header()
+                        .Background(einsatz.IstEinsatz ? Colors.Red.Lighten3 : Colors.Blue.Lighten3)
+                        .Padding(20)
+                        .Element(container => ComposeReportHeader(
+                            container,
+                            einsatz.IstEinsatz ? "EINSATZBERICHT" : "UEBUNGSBERICHT",
+                            einsatz.IstEinsatz ? Colors.Red.Darken2 : Colors.Blue.Darken2,
+                            staffelInfo));
 
                     page.Content()
                         .Column(column =>
@@ -562,6 +482,180 @@ namespace Einsatzueberwachung.Domain.Services
                         });
                 });
             });
+        }
+
+        private void ComposeReportHeader(IContainer container, string title, string titleColor, StaffelInfo staffelInfo)
+        {
+            container.Row(row =>
+            {
+                row.RelativeItem().Column(column =>
+                {
+                    column.Spacing(2);
+
+                    column.Item().Text(title)
+                        .FontSize(24)
+                        .Bold()
+                        .FontColor(titleColor);
+
+                    if (!string.IsNullOrWhiteSpace(staffelInfo.Name))
+                    {
+                        column.Item().Text(staffelInfo.Name)
+                            .FontSize(14)
+                            .FontColor(Colors.Grey.Darken1);
+                    }
+
+                    column.Item().Text("Rettungshundestaffel")
+                        .FontSize(12)
+                        .FontColor(Colors.Grey.Darken1);
+
+                    if (!string.IsNullOrWhiteSpace(staffelInfo.Address))
+                    {
+                        column.Item().PaddingTop(3).Text($"Adresse: {staffelInfo.Address}")
+                            .FontSize(9)
+                            .FontColor(Colors.Grey.Darken2);
+                    }
+
+                    var kontakt = BuildKontaktLine(staffelInfo);
+                    if (!string.IsNullOrWhiteSpace(kontakt))
+                    {
+                        column.Item().Text(kontakt)
+                            .FontSize(9)
+                            .FontColor(Colors.Grey.Darken2);
+                    }
+                });
+
+                row.ConstantItem(122).AlignRight().Element(logoContainer =>
+                {
+                    var imageContainer = logoContainer
+                        .Height(80)
+                        .AlignTop()
+                        .AlignRight()
+                        .Border(1)
+                        .BorderColor(Colors.Grey.Lighten1)
+                        .Background(Colors.White)
+                        .Padding(6);
+
+                    if (TryLoadLogoBytes(staffelInfo.LogoPath, out var logoBytes))
+                    {
+                        imageContainer.Image(logoBytes).FitArea();
+                    }
+                });
+            });
+        }
+
+        private static string BuildKontaktLine(StaffelInfo info)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(info.Telefon))
+            {
+                parts.Add($"Tel: {info.Telefon}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(info.Email))
+            {
+                parts.Add($"E-Mail: {info.Email}");
+            }
+
+            return string.Join(" | ", parts);
+        }
+
+        private bool TryLoadLogoBytes(string? logoPath, out byte[] logoBytes)
+        {
+            logoBytes = Array.Empty<byte>();
+            if (string.IsNullOrWhiteSpace(logoPath))
+            {
+                return false;
+            }
+
+            try
+            {
+                var filePath = ResolveLogoPath(logoPath);
+                if (!File.Exists(filePath))
+                {
+                    return false;
+                }
+
+                var extension = Path.GetExtension(filePath);
+                if (string.Equals(extension, ".svg", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                logoBytes = File.ReadAllBytes(filePath);
+                return logoBytes.Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string ResolveLogoPath(string logoPath)
+        {
+            if (Path.IsPathRooted(logoPath))
+            {
+                return logoPath;
+            }
+
+            var cleanPath = logoPath.TrimStart('/', '\\');
+            return Path.Combine(AppPathResolver.GetDataDirectory(), cleanPath);
+        }
+
+        private async Task<StaffelInfo> ResolveStaffelInfoAsync(EinsatzData einsatzData)
+        {
+            var settings = await GetStaffelSettingsOrDefaultAsync();
+            return new StaffelInfo
+            {
+                Name = PickValue(einsatzData.StaffelName, settings.StaffelName),
+                Address = PickValue(einsatzData.StaffelAdresse, settings.StaffelAdresse),
+                Telefon = PickValue(einsatzData.StaffelTelefon, settings.StaffelTelefon),
+                Email = PickValue(einsatzData.StaffelEmail, settings.StaffelEmail),
+                LogoPath = PickValue(einsatzData.StaffelLogoPfad, settings.StaffelLogoPfad)
+            };
+        }
+
+        private async Task<StaffelInfo> ResolveStaffelInfoAsync(ArchivedEinsatz einsatz)
+        {
+            var settings = await GetStaffelSettingsOrDefaultAsync();
+            return new StaffelInfo
+            {
+                Name = PickValue(einsatz.StaffelName, settings.StaffelName),
+                Address = PickValue(einsatz.StaffelAdresse, settings.StaffelAdresse),
+                Telefon = PickValue(einsatz.StaffelTelefon, settings.StaffelTelefon),
+                Email = PickValue(einsatz.StaffelEmail, settings.StaffelEmail),
+                LogoPath = PickValue(einsatz.StaffelLogoPfad, settings.StaffelLogoPfad)
+            };
+        }
+
+        private async Task<StaffelSettings> GetStaffelSettingsOrDefaultAsync()
+        {
+            if (_settingsService is null)
+            {
+                return new StaffelSettings();
+            }
+
+            try
+            {
+                return await _settingsService.GetStaffelSettingsAsync();
+            }
+            catch
+            {
+                return new StaffelSettings();
+            }
+        }
+
+        private static string PickValue(string preferred, string fallback)
+        {
+            return string.IsNullOrWhiteSpace(preferred) ? fallback : preferred;
+        }
+
+        private sealed class StaffelInfo
+        {
+            public string Name { get; set; } = string.Empty;
+            public string Address { get; set; } = string.Empty;
+            public string Telefon { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public string LogoPath { get; set; } = string.Empty;
         }
 
         /// <summary>

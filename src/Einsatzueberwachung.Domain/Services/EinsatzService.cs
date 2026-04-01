@@ -13,6 +13,7 @@ namespace Einsatzueberwachung.Domain.Services
 {
     public class EinsatzService : IEinsatzService
     {
+        private readonly ISettingsService? _settingsService;
         private EinsatzData _currentEinsatz;
         private readonly List<Team> _teams;
         private readonly List<GlobalNotesEntry> _globalNotes;
@@ -29,8 +30,9 @@ namespace Einsatzueberwachung.Domain.Services
         public event Action<GlobalNotesEntry>? NoteAdded;
         public event Action<Team, bool>? TeamWarningTriggered;
 
-        public EinsatzService()
+        public EinsatzService(ISettingsService? settingsService = null)
         {
+            _settingsService = settingsService;
             _currentEinsatz = new EinsatzData();
             _teams = new List<Team>();
             _globalNotes = new List<GlobalNotesEntry>();
@@ -39,8 +41,10 @@ namespace Einsatzueberwachung.Domain.Services
             EnsureCurrentEinsatzTeamReference();
         }
 
-        public Task StartEinsatzAsync(EinsatzData einsatzData)
+        public async Task StartEinsatzAsync(EinsatzData einsatzData)
         {
+            await ApplyStaffelFallbackAsync(einsatzData);
+
             _currentEinsatz = einsatzData;
             _teams.Clear();
             _globalNotes.Clear();
@@ -58,7 +62,42 @@ namespace Einsatzueberwachung.Domain.Services
             EinsatzChanged?.Invoke();
             NoteAdded?.Invoke(startNote);
 
-            return Task.CompletedTask;
+            return;
+        }
+
+        private async Task ApplyStaffelFallbackAsync(EinsatzData einsatzData)
+        {
+            if (_settingsService is null)
+            {
+                return;
+            }
+
+            var settings = await _settingsService.GetStaffelSettingsAsync();
+
+            if (string.IsNullOrWhiteSpace(einsatzData.StaffelName))
+            {
+                einsatzData.StaffelName = settings.StaffelName;
+            }
+
+            if (string.IsNullOrWhiteSpace(einsatzData.StaffelAdresse))
+            {
+                einsatzData.StaffelAdresse = settings.StaffelAdresse;
+            }
+
+            if (string.IsNullOrWhiteSpace(einsatzData.StaffelTelefon))
+            {
+                einsatzData.StaffelTelefon = settings.StaffelTelefon;
+            }
+
+            if (string.IsNullOrWhiteSpace(einsatzData.StaffelEmail))
+            {
+                einsatzData.StaffelEmail = settings.StaffelEmail;
+            }
+
+            if (string.IsNullOrWhiteSpace(einsatzData.StaffelLogoPfad))
+            {
+                einsatzData.StaffelLogoPfad = settings.StaffelLogoPfad;
+            }
         }
 
         public Task EndEinsatzAsync()

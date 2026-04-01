@@ -12,6 +12,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Einsatzueberwachung.Server.Data;
 using Einsatzueberwachung.Server.Services.Radio;
+using Microsoft.AspNetCore.StaticFiles;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -224,6 +225,34 @@ app.MapGet("/downloads/staffel-settings.json", async (ISettingsService settingsS
     var settings = await settingsService.GetStaffelSettingsAsync();
     var bytes = JsonSerializer.SerializeToUtf8Bytes(settings, new JsonSerializerOptions { WriteIndented = true });
     return Results.File(bytes, "application/json", "staffel-settings.json");
+});
+
+app.MapGet("/downloads/staffel-logo", async (ISettingsService settingsService) =>
+{
+    var settings = await settingsService.GetStaffelSettingsAsync();
+    if (string.IsNullOrWhiteSpace(settings.StaffelLogoPfad))
+    {
+        return Results.NotFound();
+    }
+
+    var logoPath = settings.StaffelLogoPfad;
+    if (!Path.IsPathRooted(logoPath))
+    {
+        logoPath = Path.Combine(AppPathResolver.GetDataDirectory(), logoPath.TrimStart('/', '\\'));
+    }
+
+    if (!File.Exists(logoPath))
+    {
+        return Results.NotFound();
+    }
+
+    var contentTypeProvider = new FileExtensionContentTypeProvider();
+    if (!contentTypeProvider.TryGetContentType(logoPath, out var contentType))
+    {
+        contentType = "application/octet-stream";
+    }
+
+    return Results.File(await File.ReadAllBytesAsync(logoPath), contentType);
 });
 
 app.MapGet("/downloads/session-data.json", async (IMasterDataService masterDataService) =>

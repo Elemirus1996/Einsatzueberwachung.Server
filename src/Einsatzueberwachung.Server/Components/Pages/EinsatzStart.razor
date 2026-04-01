@@ -5,6 +5,7 @@
 
 @inject IEinsatzService EinsatzService
 @inject IMasterDataService MasterDataService
+@inject ISettingsService SettingsService
 @inject NavigationManager Navigation
 
 <PageTitle>Einsatz anlegen</PageTitle>
@@ -60,8 +61,8 @@
                         </div>
 
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-semibold">Melder</label>
-                            <InputText class="form-control" @bind-Value="_model.StaffelName" placeholder="wer hat alarmiert?" />
+                            <label class="form-label fw-semibold">Staffel-Name</label>
+                            <InputText class="form-control" @bind-Value="_model.StaffelName" placeholder="z.B. RHS Musterstadt" />
                         </div>
 
                         <div class="col-12 col-md-6">
@@ -164,7 +165,23 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _personal = await MasterDataService.GetPersonalListAsync();
+        var personalTask = MasterDataService.GetPersonalListAsync();
+        var settingsTask = SettingsService.GetStaffelSettingsAsync();
+
+        await Task.WhenAll(personalTask, settingsTask);
+
+        _personal = personalTask.Result;
+        var staffelSettings = settingsTask.Result;
+
+        if (!string.IsNullOrWhiteSpace(staffelSettings.StaffelName))
+        {
+            _model.StaffelName = staffelSettings.StaffelName;
+        }
+
+        _model.StaffelAdresse = staffelSettings.StaffelAdresse;
+        _model.StaffelTelefon = staffelSettings.StaffelTelefon;
+        _model.StaffelEmail = staffelSettings.StaffelEmail;
+        _model.StaffelLogoPfad = staffelSettings.StaffelLogoPfad;
     }
 
     private void SetEinsatzleiter(string? id)

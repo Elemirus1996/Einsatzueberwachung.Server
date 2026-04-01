@@ -56,5 +56,5 @@ Fuer die End-to-End-Abnahme (Desktop + Mobile ueber `/mobile`) siehe in `DEPLOYM
 
 - Bei jedem veroeffentlichten GitHub Release (`v*`) wird automatisch ein Linux-Asset gebaut und hochgeladen.
 - Workflow: `.github/workflows/release-linux-asset.yml`
-- Asset-Name: `linux-x64-server-<version>.zip` (z. B. `linux-x64-server-0.9.6.zip`)
+- Asset-Name: `linux-x64-server-<version>.zip` (z. B. `linux-x64-server-1.0.0.zip`)
 - Manuell nachtriggern ueber `workflow_dispatch` mit Tag-Eingabe ist moeglich.
