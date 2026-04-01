@@ -3,6 +3,7 @@
 
 @implements IDisposable
 @inject Einsatzueberwachung.Mobile.Services.MobileApiClient ApiClient
+@inject Einsatzueberwachung.Mobile.Services.MobileSignalRClient SignalRClient
 
 <PageTitle>Teams</PageTitle>
 
@@ -42,36 +43,12 @@
 
 @code {
     private readonly List<Einsatzueberwachung.Domain.Models.Team> _teams = new();
-    private PeriodicTimer? _timer;
-    private CancellationTokenSource? _cts;
 
     protected override async Task OnInitializedAsync()
     {
+        SignalRClient.UpdateReceived += OnUpdateReceived;
+        await SignalRClient.EnsureConnectedAsync();
         await RefreshTeamsAsync();
-
-        _cts = new CancellationTokenSource();
-        _timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
-        _ = RunRefreshLoopAsync(_cts.Token);
-    }
-
-    private async Task RunRefreshLoopAsync(CancellationToken token)
-    {
-        if (_timer is null)
-        {
-            return;
-        }
-
-        try
-        {
-            while (await _timer.WaitForNextTickAsync(token))
-            {
-                await RefreshTeamsAsync();
-                await InvokeAsync(StateHasChanged);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-        }
     }
 
     private async Task RefreshTeamsAsync()
@@ -101,10 +78,22 @@
         return "status-ok";
     }
 
+    private void OnUpdateReceived(string eventName, string payload)
+    {
+        _ = payload;
+        if (eventName.StartsWith("team.", StringComparison.OrdinalIgnoreCase)
+            || eventName.Equals("einsatz.changed", StringComparison.OrdinalIgnoreCase))
+        {
+            _ = InvokeAsync(async () =>
+            {
+                await RefreshTeamsAsync();
+                StateHasChanged();
+            });
+        }
+    }
+
     public void Dispose()
     {
-        _cts?.Cancel();
-        _timer?.Dispose();
-        _cts?.Dispose();
+        SignalRClient.UpdateReceived -= OnUpdateReceived;
     }
 }

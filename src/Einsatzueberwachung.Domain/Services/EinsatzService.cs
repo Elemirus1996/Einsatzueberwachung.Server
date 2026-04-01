@@ -501,6 +501,72 @@ namespace Einsatzueberwachung.Domain.Services
             EinsatzChanged?.Invoke();
         }
 
+        public EinsatzRuntimeSnapshot ExportRuntimeSnapshot()
+        {
+            return new EinsatzRuntimeSnapshot
+            {
+                CurrentEinsatz = _currentEinsatz,
+                Teams = _teams.ToList(),
+                GlobalNotes = _globalNotes.ToList(),
+                NoteHistory = _noteHistory.ToList()
+            };
+        }
+
+        public Task ImportRuntimeSnapshotAsync(EinsatzRuntimeSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            foreach (var team in _teams)
+            {
+                team.TimerStarted -= Team_TimerStarted;
+                team.TimerStopped -= Team_TimerStopped;
+                team.TimerReset -= Team_TimerReset;
+                team.WarningTriggered -= Team_WarningTriggered;
+            }
+
+            _teams.Clear();
+            _globalNotes.Clear();
+            _noteHistory.Clear();
+
+            _currentEinsatz = snapshot.CurrentEinsatz ?? new EinsatzData();
+
+            var importedTeams = snapshot.Teams ?? new List<Team>();
+            foreach (var team in importedTeams)
+            {
+                _teams.Add(team);
+                team.TimerStarted += Team_TimerStarted;
+                team.TimerStopped += Team_TimerStopped;
+                team.TimerReset += Team_TimerReset;
+                team.WarningTriggered += Team_WarningTriggered;
+            }
+
+            if (snapshot.GlobalNotes != null)
+            {
+                _globalNotes.AddRange(snapshot.GlobalNotes);
+            }
+
+            if (snapshot.NoteHistory != null)
+            {
+                _noteHistory.AddRange(snapshot.NoteHistory);
+            }
+
+            if (_currentEinsatz.GlobalNotesEntries == null)
+            {
+                _currentEinsatz.GlobalNotesEntries = new List<GlobalNotesEntry>();
+            }
+
+            _currentEinsatz.GlobalNotesEntries.Clear();
+            _currentEinsatz.GlobalNotesEntries.AddRange(_globalNotes);
+
+            EnsureCurrentEinsatzTeamReference();
+            EinsatzChanged?.Invoke();
+
+            return Task.CompletedTask;
+        }
+
         private void EnsureCurrentEinsatzTeamReference()
         {
             _currentEinsatz.Teams = _teams;

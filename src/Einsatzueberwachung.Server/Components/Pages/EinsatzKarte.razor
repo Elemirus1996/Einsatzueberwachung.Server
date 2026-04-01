@@ -13,6 +13,29 @@
     <div class="map-toolbar d-flex gap-2 mb-3 flex-wrap">
         <button class="btn btn-primary" @onclick="AddDemoAreaAsync"><i class="bi bi-plus-circle me-1"></i>Demo-Suchgebiet</button>
         <button class="btn btn-outline-secondary" @onclick="CenterOnElwAsync"><i class="bi bi-crosshair me-1"></i>Einsatzort zentrieren</button>
+        <button class="btn btn-outline-warning" @onclick="PrintMapAsync"><i class="bi bi-printer me-1"></i>Karte drucken</button>
+        <button class="btn btn-outline-info" @onclick="ShowMapHelpAsync"><i class="bi bi-question-circle me-1"></i>Hilfe</button>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+        <span class="small text-muted">Kartenansicht:</span>
+        <div class="btn-group" role="group" aria-label="Kartenansicht auswählen">
+            <button type="button"
+                    class="btn btn-outline-primary @(_currentMapLayer == "streets" ? "active" : string.Empty)"
+                    @onclick='() => ChangeMapLayerAsync("streets")'>
+                <i class="bi bi-map me-1"></i>Strassenkarte
+            </button>
+            <button type="button"
+                    class="btn btn-outline-primary @(_currentMapLayer == "satellite" ? "active" : string.Empty)"
+                    @onclick='() => ChangeMapLayerAsync("satellite")'>
+                <i class="bi bi-globe me-1"></i>Satellit
+            </button>
+            <button type="button"
+                    class="btn btn-outline-primary @(_currentMapLayer == "hybrid" ? "active" : string.Empty)"
+                    @onclick='() => ChangeMapLayerAsync("hybrid")'>
+                <i class="bi bi-layers me-1"></i>Hybrid
+            </button>
+        </div>
     </div>
 
     <div class="card mb-3">
@@ -142,6 +165,7 @@
     private bool _statusIsError;
     private bool _draftActive;
     private string _draftAreaId = string.Empty;
+    private string _currentMapLayer = "streets";
 
     protected override void OnInitialized()
     {
@@ -210,6 +234,24 @@
     {
         var (lat, lng) = GetElwCoordinates();
         await JS.InvokeVoidAsync("einsatzMap.setView", lat, lng, 13);
+    }
+
+    private async Task ChangeMapLayerAsync(string layerType)
+    {
+        _currentMapLayer = layerType;
+        await JS.InvokeVoidAsync("einsatzMap.setBaseLayer", layerType);
+    }
+
+    private async Task PrintMapAsync()
+    {
+        await JS.InvokeVoidAsync("window.print");
+    }
+
+    private async Task ShowMapHelpAsync()
+    {
+        await JS.InvokeVoidAsync(
+            "alert",
+            "Kartenansichten:\n- Strassenkarte\n- Satellit\n- Hybrid\n\nZeichnen:\n- Polygon zeichnen\n- Punkte verschieben\n- Uebernehmen\n\nTeam-Zuordnung und Status werden direkt in der Suchgebietsliste gepflegt.");
     }
 
     private async Task StartNewDraftAsync()

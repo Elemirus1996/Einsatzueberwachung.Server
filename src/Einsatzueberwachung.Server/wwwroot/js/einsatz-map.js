@@ -6,6 +6,9 @@ window.einsatzMap = (function () {
     let draftPolyline = null;
     let draftPoints = [];
     let drawMode = false;
+    let baseLayerControl = null;
+    let currentBaseLayer = null;
+    let baseLayers = {};
 
     function ensureMap(containerId, centerLat, centerLng, zoom) {
         if (map) {
@@ -17,10 +20,39 @@ window.einsatzMap = (function () {
             preferCanvas: true
         }).setView([centerLat, centerLng], zoom);
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19,
             attribution: "&copy; OpenStreetMap"
-        }).addTo(map);
+        });
+
+        const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+            maxZoom: 19,
+            attribution: "Tiles &copy; Esri"
+        });
+
+        const labelsLayer = L.tileLayer("https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+            maxZoom: 19,
+            attribution: "Labels &copy; Esri"
+        });
+
+        const hybridLayer = L.layerGroup([satelliteLayer, labelsLayer]);
+
+        streetLayer.addTo(map);
+        currentBaseLayer = streetLayer;
+        baseLayers = {
+            streets: streetLayer,
+            satellite: satelliteLayer,
+            hybrid: hybridLayer
+        };
+        baseLayerControl = L.control.layers(
+            {
+                "Strassenkarte": streetLayer,
+                "Satellit": satelliteLayer,
+                "Hybrid": hybridLayer
+            },
+            null,
+            { collapsed: false }
+        ).addTo(map);
 
         areasLayer = L.layerGroup().addTo(map);
         draftLayer = L.layerGroup().addTo(map);
@@ -186,10 +218,29 @@ window.einsatzMap = (function () {
         map.setView([centerLat, centerLng], zoom);
     }
 
+    function setBaseLayer(layerType) {
+        if (!map || !baseLayers || !baseLayers.streets) {
+            return;
+        }
+
+        const requested = baseLayers[layerType] || baseLayers.streets;
+        if (currentBaseLayer === requested) {
+            return;
+        }
+
+        if (currentBaseLayer) {
+            map.removeLayer(currentBaseLayer);
+        }
+
+        requested.addTo(map);
+        currentBaseLayer = requested;
+    }
+
     return {
         init,
         renderAreas,
         setView,
+        setBaseLayer,
         startDraft,
         clearDraft,
         undoDraftPoint,

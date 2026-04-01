@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using System.Text.Json;
 using System.IO.Compression;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
+using Einsatzueberwachung.Server.Data;
+using Einsatzueberwachung.Server.Services.Radio;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +61,10 @@ builder.Services.AddResponseCaching();
 // HttpClient für externe API-Calls
 builder.Services.AddHttpClient();
 
+var runtimeDbPath = Path.Combine(AppPathResolver.GetDataDirectory(), "runtime-state.db");
+builder.Services.AddDbContextFactory<RuntimeDbContext>(options =>
+    options.UseSqlite($"Data Source={runtimeDbPath}"));
+
 // SignalR für Echtzeit-Updates
 builder.Services.AddSignalR(options =>
 {
@@ -95,6 +102,7 @@ builder.Services.AddSingleton<IExcelExportService, ExcelExportService>();
 builder.Services.AddSingleton<IArchivService, ArchivService>();
 builder.Services.AddSingleton<ToastService>();
 builder.Services.AddSingleton<ThemeService>();
+builder.Services.AddScoped<IRadioService, RadioService>();
 
 builder.Services.AddSingleton<GitHubUpdateService>(sp =>
 {
@@ -117,6 +125,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddHostedService<EinsatzHubRelayService>();
 builder.Services.AddHostedService<TeamTimerTickService>();
 builder.Services.AddHostedService<UpdateAutoCheckService>();
+builder.Services.AddHostedService<RuntimeStatePersistenceService>();
 
 var app = builder.Build();
 

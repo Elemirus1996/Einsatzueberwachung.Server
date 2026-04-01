@@ -14,17 +14,21 @@
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
         <div>
             <h1 class="mb-1"><i class="bi bi-broadcast-pin me-2"></i>Einsatzmonitor</h1>
-            <p class="text-muted mb-0">Live-Status von Teams, Notizen und Funkspruechen</p>
+            <p class="text-muted mb-0">
+                @EinsatzService.CurrentEinsatz.EinsatzTyp: @EinsatzService.CurrentEinsatz.Einsatzort
+                <br />
+                Datum: @EinsatzService.CurrentEinsatz.EinsatzDatum.ToString("dd.MM.yyyy HH:mm")
+            </p>
         </div>
 
         <div class="monitor-quick-actions">
-            <a class="btn btn-info" href="/einsatz-karte">
+            <a class="btn btn-info btn-lg" href="/einsatz-karte">
                 <i class="bi bi-map me-1"></i>Karte
             </a>
-            <a class="btn btn-primary" href="/einsatz-bericht">
+            <a class="btn btn-primary btn-lg" href="/einsatz-bericht">
                 <i class="bi bi-file-earmark-text me-1"></i>Bericht
             </a>
-            <a class="btn btn-danger" href="/einsatz-bericht">
+            <a class="btn btn-danger btn-lg" href="/einsatz-bericht">
                 <i class="bi bi-stop-circle me-1"></i>Beenden
             </a>
         </div>
@@ -58,16 +62,117 @@
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-12 col-xl-4">
+        <div class="col-12">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>@(_editingTeamId is null ? "Team anlegen" : "Team bearbeiten")</span>
-                    @if (_editingTeamId is not null)
-                    {
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="CancelTeamEdit">Abbrechen</button>
-                    }
+                    <div class="d-flex align-items-center gap-2">
+                        <h4 class="mb-0">Teams (@EinsatzService.Teams.Count)</h4>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="/popout-teams"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           title="In neuem Fenster oeffnen (Multi-Monitor)">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-primary" @onclick="OpenNewTeamModal">
+                            <i class="bi bi-plus-circle me-1"></i>Team anlegen
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
+                    @if (EinsatzService.Teams.Count == 0)
+                    {
+                        <div class="alert alert-info mb-0">
+                            Noch keine Teams vorhanden. Klicken Sie auf "Team anlegen".
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="teams-monitor-list">
+                            @foreach (var team in EinsatzService.Teams.OrderBy(team => team.TeamName))
+                            {
+                                <div class="monitor-team-card @GetTeamCardClass(team)">
+                                    <div class="team-info" style="border-left: 5px solid @GetTeamColor(team); padding-left: 1rem;">
+                                        <div class="team-name-section">
+                                            <h5>@team.TeamName</h5>
+                                            @if (!string.IsNullOrWhiteSpace(team.DogName))
+                                            {
+                                                <span class="team-dog">Hund: @team.DogName</span>
+                                            }
+                                            @if (team.IsDroneTeam && !string.IsNullOrWhiteSpace(team.DroneType))
+                                            {
+                                                <span class="team-dog">Drohne: @team.DroneType</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(team.HundefuehrerName))
+                                            {
+                                                <span class="team-dog">@team.HundefuehrerName</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(team.HelferName))
+                                            {
+                                                <span class="team-dog">@team.HelferName (Helfer)</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(team.SearchAreaName))
+                                            {
+                                                <span class="team-area">Gebiet: @team.SearchAreaName</span>
+                                            }
+                                        </div>
+
+                                        <div class="team-timer">
+                                            @if (!team.IsDroneTeam && !team.IsSupportTeam)
+                                            {
+                                                <div class="timer-display @GetTimerDisplayClass(team)">@team.ElapsedTime.ToString(@"hh\:mm\:ss")</div>
+                                                @if (team.IsSecondWarning)
+                                                {
+                                                    <span class="warning-badge badge bg-danger">KRITISCH</span>
+                                                }
+                                                else if (team.IsFirstWarning)
+                                                {
+                                                    <span class="warning-badge badge bg-warning text-dark">Warnung</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <small class="text-muted">Kein Timer erforderlich</small>
+                                            }
+                                        </div>
+
+                                        <div class="team-controls flex-wrap">
+                                            @if (!team.IsDroneTeam && !team.IsSupportTeam)
+                                            {
+                                                @if (team.IsRunning)
+                                                {
+                                                    <button class="btn btn-warning" @onclick="() => StopTeamAsync(team.TeamId)">Stopp</button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-success" @onclick="() => StartTeamAsync(team.TeamId)">Start</button>
+                                                }
+                                                <button class="btn btn-secondary" @onclick="() => ResetTeamAsync(team.TeamId)">Reset</button>
+                                            }
+                                            <button class="btn btn-sm btn-primary" @onclick="() => EditTeam(team.TeamId)">Bearbeiten</button>
+                                            <button class="btn btn-sm btn-danger" @onclick="() => RemoveTeamAsync(team.TeamId)">Loeschen</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (_showTeamModal)
+    {
+        <div class="modal-overlay" @onclick="CloseTeamModal">
+            <div class="modal-modern" @onclick:stopPropagation="true">
+                <div class="modal-modern-header">
+                    <h3>@(_editingTeamId is null ? "Team anlegen" : "Team bearbeiten")</h3>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseTeamModal">Schliessen</button>
+                </div>
+                <div class="modal-modern-body">
                     @if (!string.IsNullOrWhiteSpace(_teamFormMessage))
                     {
                         <div class="alert @(_teamFormIsError ? "alert-danger" : "alert-success") py-2">@_teamFormMessage</div>
@@ -208,111 +313,47 @@
                             <label class="form-label">Notizen</label>
                             <textarea class="form-control" rows="3" @bind="_teamForm.Notes"></textarea>
                         </div>
-
-                        <div class="col-12 d-flex gap-2">
-                            <button class="btn btn-primary" @onclick="SaveTeamAsync">@(_editingTeamId is null ? "Team speichern" : "Aenderungen speichern")</button>
-                            <button class="btn btn-outline-secondary" @onclick="ResetTeamForm">Formular leeren</button>
-                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-xl-8">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Teams</span>
-                    <span class="badge bg-secondary">@EinsatzService.Teams.Count aktiv</span>
-                </div>
-                <div class="card-body">
-                    @if (EinsatzService.Teams.Count == 0)
-                    {
-                        <p class="text-muted mb-0">Keine Teams aktiv.</p>
-                    }
-                    else
-                    {
-                        <div class="table-responsive">
-                            <table class="table align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>Team</th>
-                                        <th>Besetzung</th>
-                                        <th>Gebiet</th>
-                                        <th>Laufzeit</th>
-                                        <th>Status</th>
-                                        <th>Aktionen</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var team in EinsatzService.Teams.OrderBy(team => team.TeamName))
-                                    {
-                                        <tr class="@(team.IsSecondWarning ? "table-danger" : team.IsFirstWarning ? "table-warning" : string.Empty)">
-                                            <td>
-                                                <div class="fw-semibold">@team.TeamName</div>
-                                                <div class="small text-muted">@GetTeamTypeLabel(team)</div>
-                                            </td>
-                                            <td>
-                                                <div>@GetPrimaryMemberLabel(team)</div>
-                                                @if (!string.IsNullOrWhiteSpace(GetSecondaryMemberLabel(team)))
-                                                {
-                                                    <div class="small text-muted">@GetSecondaryMemberLabel(team)</div>
-                                                }
-                                            </td>
-                                            <td>
-                                                @if (string.IsNullOrWhiteSpace(team.SearchAreaName))
-                                                {
-                                                    <span class="text-muted">Nicht zugeordnet</span>
-                                                }
-                                                else
-                                                {
-                                                    <span>@team.SearchAreaName</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                <span class="badge @GetTimerBadge(team)">@team.ElapsedTime.ToString(@"hh\:mm\:ss")</span>
-                                            </td>
-                                            <td>
-                                                @if (team.IsRunning)
-                                                {
-                                                    <span class="badge bg-success">Laeuft</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-secondary">Gestoppt</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                <div class="btn-group btn-group-sm flex-wrap">
-                                                    <button class="btn btn-outline-success" @onclick="() => StartTeamAsync(team.TeamId)">Start</button>
-                                                    <button class="btn btn-outline-warning" @onclick="() => StopTeamAsync(team.TeamId)">Stopp</button>
-                                                    <button class="btn btn-outline-danger" @onclick="() => ResetTeamAsync(team.TeamId)">Reset</button>
-                                                    <button class="btn btn-outline-primary" @onclick="() => EditTeam(team.TeamId)">Bearbeiten</button>
-                                                    <button class="btn btn-outline-dark" @onclick="() => RemoveTeamAsync(team.TeamId)">Loeschen</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
+                <div class="modal-modern-footer">
+                    <button class="btn btn-primary" @onclick="SaveTeamAsync">@(_editingTeamId is null ? "Team speichern" : "Aenderungen speichern")</button>
+                    <button class="btn btn-outline-secondary" @onclick="ResetTeamForm">Formular leeren</button>
                 </div>
             </div>
         </div>
-    </div>
+    }
 
     <div class="row g-3 mb-4">
         <div class="col-12 col-lg-5">
             <div class="card">
-                <div class="card-header"><i class="bi bi-chat-left-text me-1"></i>Notizen und Funk</div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <h4 class="mb-0"><i class="bi bi-chat-left-text me-1"></i>Notizen und Funk</h4>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="/popout-notes"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           title="In neuem Fenster oeffnen (Multi-Monitor)">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                    </div>
+                </div>
                 <div class="card-body">
                     <div class="input-group mb-3">
                         <input class="form-control" placeholder="Neue Notiz/Funk" @bind="_newNoteText" />
+                        <select class="form-select" style="max-width: 12rem;" @bind="_newNoteSourceId">
+                            <option value="">-- Team waehlen --</option>
+                            @foreach (var team in EinsatzService.Teams.OrderBy(team => team.TeamName))
+                            {
+                                <option value="@team.TeamId">@team.TeamName</option>
+                            }
+                            <option value="einsatzleitung">Einsatzleitung</option>
+                        </select>
                         <select class="form-select" style="max-width: 10rem;" @bind="_newNoteType">
                             <option value="Notiz">Notiz</option>
                             <option value="Funk">Funk</option>
                         </select>
-                        <button class="btn btn-primary" @onclick="AddGlobalNoteAsync" disabled="@string.IsNullOrWhiteSpace(_newNoteText)">Senden</button>
+                        <button class="btn btn-primary" @onclick="AddGlobalNoteAsync" disabled="@(string.IsNullOrWhiteSpace(_newNoteText) || string.IsNullOrWhiteSpace(_newNoteSourceId))">Senden</button>
                     </div>
 
                     @if (EinsatzService.GlobalNotes.Count == 0)
@@ -323,7 +364,7 @@
                     {
                         @foreach (var note in EinsatzService.GlobalNotes.OrderByDescending(n => n.Timestamp).Take(10))
                         {
-                            <div class="border rounded p-2 mb-2">
+                            <div class="note-card @GetNoteCssClass(note) @(note.Replies.Count > 0 ? "has-replies" : string.Empty)">
                                 <div class="d-flex justify-content-between">
                                     <strong>@(string.IsNullOrWhiteSpace(note.SourceTeamName) ? "System" : note.SourceTeamName)</strong>
                                     <span class="text-muted">@note.FormattedTimestamp</span>
@@ -361,6 +402,15 @@
                                 }
 
                                 <div class="d-flex gap-2 mb-2">
+                                    <select class="form-select form-select-sm" style="max-width: 12rem;"
+                                            value="@GetReplySourceId(note.Id)"
+                                            @onchange="e => SetReplySourceId(note.Id, e.Value?.ToString())">
+                                        <option value="einsatzleitung">Einsatzleitung</option>
+                                        @foreach (var team in EinsatzService.Teams.OrderBy(team => team.TeamName))
+                                        {
+                                            <option value="@team.TeamId">@team.TeamName</option>
+                                        }
+                                    </select>
                                     <input class="form-control form-control-sm"
                                            placeholder="Antwort"
                                            value="@GetReplyText(note.Id)"
@@ -413,14 +463,17 @@
 @code {
     private readonly TeamEditorModel _teamForm = new();
     private readonly Dictionary<string, string> _replyTexts = new();
+    private readonly Dictionary<string, string> _replySourceIds = new();
     private readonly Dictionary<string, bool> _historyVisible = new();
     private readonly Dictionary<string, List<GlobalNotesHistory>> _historyCache = new();
 
     private string _newNoteText = string.Empty;
     private string _newNoteType = "Notiz";
+    private string _newNoteSourceId = string.Empty;
     private string? _editingTeamId;
     private string _teamFormMessage = string.Empty;
     private bool _teamFormIsError;
+    private bool _showTeamModal;
 
     private List<PersonalEntry> _personalList = new();
     private List<DogEntry> _dogList = new();
@@ -508,6 +561,64 @@
         }
 
         return "bg-success";
+    }
+
+    private static string GetTeamCardClass(Team team)
+    {
+        var classes = new List<string>();
+
+        if (team.IsRunning)
+        {
+            classes.Add("team-running");
+        }
+
+        if (team.IsSecondWarning)
+        {
+            classes.Add("team-critical");
+        }
+        else if (team.IsFirstWarning)
+        {
+            classes.Add("team-warning");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private static string GetTimerDisplayClass(Team team)
+    {
+        if (team.IsSecondWarning)
+        {
+            return "timer-critical";
+        }
+
+        if (team.IsFirstWarning)
+        {
+            return "timer-warning";
+        }
+
+        return string.Empty;
+    }
+
+    private static string GetTeamColor(Team team)
+    {
+        if (team.IsDroneTeam)
+        {
+            return "#0dcaf0";
+        }
+
+        if (team.IsSupportTeam)
+        {
+            return "#6c757d";
+        }
+
+        return team.DogSpecialization switch
+        {
+            DogSpecialization.Flaechensuche => "#4CAF50",
+            DogSpecialization.Truemmersuche => "#FF9800",
+            DogSpecialization.Wasserortung => "#2196F3",
+            DogSpecialization.Mantrailing => "#9C27B0",
+            _ => "#1e88e5"
+        };
     }
 
     private static string GetTeamTypeLabel(Team team)
@@ -626,6 +737,7 @@
         _teamForm.FirstWarningMinutes = team.FirstWarningMinutes;
         _teamForm.SecondWarningMinutes = team.SecondWarningMinutes;
         _teamForm.Notes = team.Notes;
+        _showTeamModal = true;
         ClearTeamFormMessage();
     }
 
@@ -654,6 +766,7 @@
 
             SetTeamFormMessage("Team wurde gespeichert.", false);
             ResetTeamForm();
+            _showTeamModal = false;
             return;
         }
 
@@ -678,6 +791,7 @@
 
         SetTeamFormMessage("Team wurde aktualisiert.", false);
         ResetTeamForm();
+        _showTeamModal = false;
     }
 
     private async Task SyncTeamSearchAreaAsync(Team team, string previousAreaId)
@@ -855,13 +969,14 @@
         }
 
         var type = _newNoteType == "Funk" ? "Funk" : "Notiz";
+        var (sourceId, sourceName, createdBy) = ResolveSelectedSource(_newNoteSourceId);
         await EinsatzService.AddGlobalNoteWithSourceAsync(
             _newNoteText.Trim(),
-            "einsatzleitung",
-            "Einsatzleitung",
+            sourceId,
+            sourceName,
             type,
             GlobalNotesEntryType.Manual,
-            "Einsatzleitung");
+            createdBy);
 
         _newNoteText = string.Empty;
     }
@@ -874,12 +989,15 @@
             return;
         }
 
+        var sourceId = GetReplySourceId(noteId);
+        var (resolvedSourceId, sourceName, createdBy) = ResolveSelectedSource(sourceId);
+
         await EinsatzService.AddReplyToNoteAsync(
             noteId,
             text.Trim(),
-            "einsatzleitung",
-            "Einsatzleitung",
-            "Einsatzleitung");
+            resolvedSourceId,
+            sourceName,
+            createdBy);
 
         _replyTexts[noteId] = string.Empty;
     }
@@ -910,9 +1028,66 @@
         return _replyTexts.TryGetValue(noteId, out var text) ? text : string.Empty;
     }
 
+    private string GetReplySourceId(string noteId)
+    {
+        if (!_replySourceIds.TryGetValue(noteId, out var sourceId) || string.IsNullOrWhiteSpace(sourceId))
+        {
+            _replySourceIds[noteId] = "einsatzleitung";
+        }
+
+        return _replySourceIds[noteId];
+    }
+
     private void SetReplyText(string noteId, string? text)
     {
         _replyTexts[noteId] = text ?? string.Empty;
+    }
+
+    private void SetReplySourceId(string noteId, string? sourceId)
+    {
+        _replySourceIds[noteId] = string.IsNullOrWhiteSpace(sourceId) ? "einsatzleitung" : sourceId;
+    }
+
+    private (string SourceId, string SourceName, string CreatedBy) ResolveSelectedSource(string sourceId)
+    {
+        if (string.IsNullOrWhiteSpace(sourceId) || sourceId == "einsatzleitung")
+        {
+            return ("einsatzleitung", "Einsatzleitung", "Einsatzleitung");
+        }
+
+        var selectedTeam = EinsatzService.Teams.FirstOrDefault(team => team.TeamId == sourceId);
+        if (selectedTeam is null)
+        {
+            return ("einsatzleitung", "Einsatzleitung", "Einsatzleitung");
+        }
+
+        return (selectedTeam.TeamId, selectedTeam.TeamName, selectedTeam.TeamName);
+    }
+
+    private static string GetNoteCssClass(GlobalNotesEntry note)
+    {
+        return note.Type switch
+        {
+            GlobalNotesEntryType.TeamStart => "note-type-teamstart",
+            GlobalNotesEntryType.TeamStop => "note-type-teamstop",
+            GlobalNotesEntryType.TeamReset => "note-type-teamreset",
+            GlobalNotesEntryType.TeamWarning => "note-type-teamwarning",
+            GlobalNotesEntryType.EinsatzUpdate => "note-type-einsatzupdate",
+            _ => string.Empty
+        };
+    }
+
+    private void OpenNewTeamModal()
+    {
+        ResetTeamForm();
+        ClearTeamFormMessage();
+        _showTeamModal = true;
+    }
+
+    private void CloseTeamModal()
+    {
+        _showTeamModal = false;
+        CancelTeamEdit();
     }
 
     private void CancelTeamEdit()

@@ -50,7 +50,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h2 class="h4 mb-0">Personal</h2>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="ResetPersonalForm">Neu</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="OpenCreatePersonalModal">Neu</button>
                     </div>
 
                     <div class="row g-4">
@@ -142,7 +142,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h2 class="h4 mb-0">Hunde</h2>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="ResetDogForm">Neu</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="OpenCreateDogModal">Neu</button>
                     </div>
 
                     <div class="row g-4">
@@ -251,7 +251,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h2 class="h4 mb-0">Drohnen</h2>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="ResetDroneForm">Neu</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="OpenCreateDroneModal">Neu</button>
                     </div>
 
                     <div class="row g-4">
@@ -349,6 +349,146 @@
         </div>
     </div>
 
+    @if (_showCreatePersonalModal)
+    {
+        <div class="modal-overlay" @onclick="CloseCreatePersonalModal">
+            <div class="modal-modern" @onclick:stopPropagation="true">
+                <div class="modal-modern-header">
+                    <h3>Personal anlegen</h3>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseCreatePersonalModal">Schliessen</button>
+                </div>
+                <div class="modal-modern-body">
+                    <div class="mb-3">
+                        <label class="form-label">Vorname</label>
+                        <InputText class="form-control" @bind-Value="_personalDraft.Vorname" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nachname</label>
+                        <InputText class="form-control" @bind-Value="_personalDraft.Nachname" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notizen</label>
+                        <InputTextArea class="form-control" @bind-Value="_personalDraft.Notizen" />
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <InputCheckbox class="form-check-input" id="personalActiveModal" @bind-Value="_personalDraft.IsActive" />
+                        <label class="form-check-label" for="personalActiveModal">Aktiv</label>
+                    </div>
+                    <label class="form-label">Qualifikationen</label>
+                    <div class="border rounded p-3">
+                        @foreach (var skill in _personalSkillOptions)
+                        {
+                            var skillId = $"skill-modal-{skill}";
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="@skillId" checked="@_personalDraft.Skills.HasFlag(skill)" @onchange="args => TogglePersonalSkill(skill, args.Value is true)" />
+                                <label class="form-check-label" for="@skillId">@skill.GetDisplayName()</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-modern-footer">
+                    <button class="btn btn-primary" @onclick="SavePersonalAsync">Personal anlegen</button>
+                    <button class="btn btn-outline-secondary" @onclick="CloseCreatePersonalModal">Abbrechen</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (_showCreateDogModal)
+    {
+        <div class="modal-overlay" @onclick="CloseCreateDogModal">
+            <div class="modal-modern" @onclick:stopPropagation="true">
+                <div class="modal-modern-header">
+                    <h3>Hund anlegen</h3>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseCreateDogModal">Schliessen</button>
+                </div>
+                <div class="modal-modern-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <InputText class="form-control" @bind-Value="_dogDraft.Name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rasse</label>
+                        <InputText class="form-control" @bind-Value="_dogDraft.Rasse" />
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Alter</label>
+                            <InputNumber class="form-control" @bind-Value="_dogDraft.Alter" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Hundefuehrer</label>
+                            <InputSelect class="form-select" @bind-Value="_dogDraft.HundefuehrerId">
+                                <option value="">Nicht zugewiesen</option>
+                                @foreach (var person in _personal)
+                                {
+                                    <option value="@person.Id">@person.FullName</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                    <label class="form-label">Spezialisierungen</label>
+                    <div class="border rounded p-3 mb-3">
+                        @foreach (var specialization in _dogSpecializationOptions)
+                        {
+                            var specializationId = $"dog-spec-modal-{specialization}";
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="@specializationId" checked="@_dogDraft.Specializations.HasFlag(specialization)" @onchange="args => ToggleDogSpecialization(specialization, args.Value is true)" />
+                                <label class="form-check-label" for="@specializationId">@specialization.GetDisplayName()</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-modern-footer">
+                    <button class="btn btn-primary" @onclick="SaveDogAsync">Hund anlegen</button>
+                    <button class="btn btn-outline-secondary" @onclick="CloseCreateDogModal">Abbrechen</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (_showCreateDroneModal)
+    {
+        <div class="modal-overlay" @onclick="CloseCreateDroneModal">
+            <div class="modal-modern" @onclick:stopPropagation="true">
+                <div class="modal-modern-header">
+                    <h3>Drohne anlegen</h3>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseCreateDroneModal">Schliessen</button>
+                </div>
+                <div class="modal-modern-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <InputText class="form-control" @bind-Value="_droneDraft.Name" />
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Hersteller</label>
+                            <InputText class="form-control" @bind-Value="_droneDraft.Hersteller" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Modell</label>
+                            <InputText class="form-control" @bind-Value="_droneDraft.Modell" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pilot</label>
+                        <InputSelect class="form-select" @bind-Value="_droneDraft.DrohnenpilotId">
+                            <option value="">Nicht zugewiesen</option>
+                            @foreach (var person in _personal)
+                            {
+                                <option value="@person.Id">@person.FullName</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="modal-modern-footer">
+                    <button class="btn btn-primary" @onclick="SaveDroneAsync">Drohne anlegen</button>
+                    <button class="btn btn-outline-secondary" @onclick="CloseCreateDroneModal">Abbrechen</button>
+                </div>
+            </div>
+        </div>
+    }
+
     @if (!string.IsNullOrWhiteSpace(_status))
     {
         <div class="alert alert-secondary mt-3">@_status</div>
@@ -374,6 +514,9 @@
     private string? _editingPersonalId;
     private string? _editingDogId;
     private string? _editingDroneId;
+    private bool _showCreatePersonalModal;
+    private bool _showCreateDogModal;
+    private bool _showCreateDroneModal;
 
     protected override async Task OnInitializedAsync()
     {
@@ -451,6 +594,7 @@
         {
             await MasterDataService.AddPersonalAsync(ClonePersonal(_personalDraft));
             _status = "Personal angelegt.";
+            _showCreatePersonalModal = false;
         }
         else
         {
@@ -506,6 +650,7 @@
         {
             await MasterDataService.AddDogAsync(CloneDog(_dogDraft));
             _status = "Hund angelegt.";
+            _showCreateDogModal = false;
         }
         else
         {
@@ -561,6 +706,7 @@
         {
             await MasterDataService.AddDroneAsync(CloneDrone(_droneDraft));
             _status = "Drohne angelegt.";
+            _showCreateDroneModal = false;
         }
         else
         {
@@ -595,6 +741,42 @@
     {
         _editingDroneId = null;
         _droneDraft = new DroneEntry();
+    }
+
+    private void OpenCreatePersonalModal()
+    {
+        ResetPersonalForm();
+        _showCreatePersonalModal = true;
+    }
+
+    private void CloseCreatePersonalModal()
+    {
+        _showCreatePersonalModal = false;
+        ResetPersonalForm();
+    }
+
+    private void OpenCreateDogModal()
+    {
+        ResetDogForm();
+        _showCreateDogModal = true;
+    }
+
+    private void CloseCreateDogModal()
+    {
+        _showCreateDogModal = false;
+        ResetDogForm();
+    }
+
+    private void OpenCreateDroneModal()
+    {
+        ResetDroneForm();
+        _showCreateDroneModal = true;
+    }
+
+    private void CloseCreateDroneModal()
+    {
+        _showCreateDroneModal = false;
+        ResetDroneForm();
     }
 
     private string GetPersonalName(string personalId)

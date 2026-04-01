@@ -52,6 +52,9 @@ namespace Einsatzueberwachung.Domain.Interfaces
         Task UpdateSearchAreaAsync(SearchArea area);
         Task DeleteSearchAreaAsync(string areaId);
         Task AssignTeamToSearchAreaAsync(string areaId, string teamId);
+
+        EinsatzRuntimeSnapshot ExportRuntimeSnapshot();
+        Task ImportRuntimeSnapshotAsync(EinsatzRuntimeSnapshot snapshot);
         
         /// <summary>
         /// Setzt den aktuellen Einsatz zurueck (loescht Teams, Notizen, etc.)

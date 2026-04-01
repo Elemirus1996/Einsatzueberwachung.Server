@@ -1845,6 +1845,10 @@ a {
     transform: translateX(3px);
 }
 
+.note-card.has-replies {
+    box-shadow: inset 0 0 0 1px rgba(13, 110, 253, 0.25);
+}
+
 .note-card.note-type-teamstart,
 .note-card.note-type-teamstop,
 .note-card.note-type-teamreset {
@@ -2512,6 +2516,26 @@ textarea:focus {
 
 .settings-segmented .btn {
     min-height: 42px;
+}
+
+[data-bs-theme="dark"] .settings-page,
+[data-bs-theme="dark"] .settings-page .card,
+[data-bs-theme="dark"] .settings-page .card-body,
+[data-bs-theme="dark"] .settings-page .card-header,
+[data-bs-theme="dark"] .settings-page .form-label,
+[data-bs-theme="dark"] .settings-page dt,
+[data-bs-theme="dark"] .settings-page dd,
+[data-bs-theme="dark"] .settings-page p,
+[data-bs-theme="dark"] .settings-page li,
+[data-bs-theme="dark"] .settings-page span,
+[data-bs-theme="dark"] .settings-page a {
+    color: #f2f7ff;
+}
+
+[data-bs-theme="dark"] .settings-page .text-muted,
+[data-bs-theme="dark"] .settings-page .form-text,
+[data-bs-theme="dark"] .settings-page small {
+    color: #dce6f5 !important;
 }
 
 .monitor-stat-card {

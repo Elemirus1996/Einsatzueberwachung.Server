@@ -49,3 +49,5 @@ dotnet run --project src/Einsatzueberwachung.Mobile
 ## Deployment
 
 Siehe `DEPLOYMENT.md`.
+
+Fuer die End-to-End-Abnahme (Desktop + Mobile ueber `/mobile`) siehe in `DEPLOYMENT.md` den Abschnitt **10. Abnahme: Desktop + Mobile (`/mobile`)**.

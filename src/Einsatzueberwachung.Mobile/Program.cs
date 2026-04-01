@@ -1,7 +1,6 @@
 using Einsatzueberwachung.Mobile.Components;
 using Einsatzueberwachung.Mobile.Services;
-using Einsatzueberwachung.Domain.Interfaces;
-using Einsatzueberwachung.Domain.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,18 +9,18 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<IMasterDataService, MasterDataService>();
-builder.Services.AddSingleton<ISettingsService, SettingsService>();
-builder.Services.AddSingleton<IPdfExportService, PdfExportService>();
-builder.Services.AddSingleton<IExcelExportService, ExcelExportService>();
-builder.Services.AddSingleton<IArchivService, ArchivService>();
-builder.Services.AddSingleton<ThemeService>();
-builder.Services.AddSingleton<ToastService>();
-builder.Services.AddHttpClient<IWeatherService, DwdWeatherService>();
 builder.Services.AddHttpClient<MobileApiClient>();
+builder.Services.AddScoped<MobileSignalRClient>();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+app.UsePathBase("/mobile");
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

@@ -1,7 +1,9 @@
 @page "/funk"
 @rendermode InteractiveServer
+@implements IDisposable
 
 @inject Einsatzueberwachung.Mobile.Services.MobileApiClient ApiClient
+@inject Einsatzueberwachung.Mobile.Services.MobileSignalRClient SignalRClient
 
 <PageTitle>Funk</PageTitle>
 
@@ -19,6 +21,16 @@
     </div>
 
     <EditForm OnSubmit="AddMessageAsync">
+        <div class="mobile-field">
+            <label for="source">Quelle</label>
+            <InputSelect id="source" class="form-select" @bind-Value="_sourceId">
+                <option value="einsatzleitung">Einsatzleitung</option>
+                @foreach (var team in _teams)
+                {
+                    <option value="@team.TeamId">@team.TeamName</option>
+                }
+            </InputSelect>
+        </div>
         <div class="mobile-field">
             <label for="funkText">Neuer Eintrag</label>
             <InputTextArea id="funkText" class="form-control" @bind-Value="_text" />
@@ -51,6 +63,15 @@
                     }
 
                     <div class="input-group input-group-sm mt-2">
+                        <select class="form-select" style="max-width: 10rem;"
+                                value="@GetReplySourceId(item.Id)"
+                                @onchange="e => SetReplySourceId(item.Id, e.Value?.ToString())">
+                            <option value="einsatzleitung">Einsatzleitung</option>
+                            @foreach (var team in _teams)
+                            {
+                                <option value="@team.TeamId">@team.TeamName</option>
+                            }
+                        </select>
                         <input class="form-control"
                                placeholder="Antwort"
                                value="@GetReplyText(item.Id)"
@@ -66,11 +87,16 @@
 @code {
     private string _filter = "alle";
     private string _text = string.Empty;
+    private string _sourceId = "einsatzleitung";
     private readonly List<Einsatzueberwachung.Domain.Models.GlobalNotesEntry> _messages = new();
+    private readonly List<Einsatzueberwachung.Domain.Models.Team> _teams = new();
     private readonly Dictionary<string, string> _replyTexts = new();
+    private readonly Dictionary<string, string> _replySourceIds = new();
 
     protected override async Task OnInitializedAsync()
     {
+        SignalRClient.UpdateReceived += OnUpdateReceived;
+        await SignalRClient.EnsureConnectedAsync();
         await RefreshMessagesAsync();
     }
 
@@ -81,8 +107,15 @@
             return;
         }
 
-        var sourceType = _filter == "notiz" ? "Notiz" : "Funk";
-        await ApiClient.AddNoteAsync(_text.Trim(), sourceType);
+        var (sourceTeamId, sourceTeamName, createdBy) = ResolveSource(_sourceId);
+        if (_filter == "notiz")
+        {
+            await ApiClient.AddNoteAsync(_text.Trim(), "Notiz", sourceTeamId, sourceTeamName, createdBy);
+        }
+        else
+        {
+            await ApiClient.AddRadioMessageAsync(_text.Trim(), sourceTeamId, sourceTeamName, createdBy);
+        }
 
         _text = string.Empty;
         await RefreshMessagesAsync();
@@ -95,7 +128,28 @@
 
     private async Task RefreshMessagesAsync()
     {
-        var messages = await ApiClient.GetNotesAsync(_filter);
+        var teams = await ApiClient.GetTeamsAsync();
+        IReadOnlyList<Einsatzueberwachung.Domain.Models.GlobalNotesEntry> messages;
+
+        if (_filter == "funk")
+        {
+            messages = await ApiClient.GetRadioMessagesAsync();
+        }
+        else if (_filter == "notiz")
+        {
+            messages = await ApiClient.GetNotesAsync("notiz");
+        }
+        else
+        {
+            var radio = await ApiClient.GetRadioMessagesAsync();
+            var notes = await ApiClient.GetNotesAsync("notiz");
+            messages = radio.Concat(notes)
+                .OrderByDescending(x => x.Timestamp)
+                .ToList();
+        }
+
+        _teams.Clear();
+        _teams.AddRange(teams.OrderBy(t => t.TeamName));
         _messages.Clear();
         _messages.AddRange(messages);
         await InvokeAsync(StateHasChanged);
@@ -109,7 +163,19 @@
             return;
         }
 
-        await ApiClient.AddReplyAsync(noteId, text.Trim());
+        var sourceId = GetReplySourceId(noteId);
+        var (sourceTeamId, sourceTeamName, createdBy) = ResolveSource(sourceId);
+        var item = _messages.FirstOrDefault(x => x.Id == noteId);
+        var isNote = item is not null && !string.Equals(item.SourceType, "Funk", StringComparison.OrdinalIgnoreCase);
+
+        if (isNote)
+        {
+            await ApiClient.AddReplyAsync(noteId, text.Trim(), sourceTeamId, sourceTeamName, createdBy);
+        }
+        else
+        {
+            await ApiClient.AddRadioReplyAsync(noteId, text.Trim(), sourceTeamId, sourceTeamName, createdBy);
+        }
         _replyTexts[noteId] = string.Empty;
         await RefreshMessagesAsync();
     }
@@ -122,5 +188,57 @@
     private void SetReplyText(string noteId, string? text)
     {
         _replyTexts[noteId] = text ?? string.Empty;
+    }
+
+    private string GetReplySourceId(string noteId)
+    {
+        if (!_replySourceIds.TryGetValue(noteId, out var sourceId) || string.IsNullOrWhiteSpace(sourceId))
+        {
+            _replySourceIds[noteId] = "einsatzleitung";
+        }
+
+        return _replySourceIds[noteId];
+    }
+
+    private void SetReplySourceId(string noteId, string? sourceId)
+    {
+        _replySourceIds[noteId] = string.IsNullOrWhiteSpace(sourceId) ? "einsatzleitung" : sourceId;
+    }
+
+    private (string SourceTeamId, string SourceTeamName, string CreatedBy) ResolveSource(string sourceId)
+    {
+        if (string.IsNullOrWhiteSpace(sourceId) || sourceId == "einsatzleitung")
+        {
+            return ("einsatzleitung", "Einsatzleitung", "Einsatzleitung");
+        }
+
+        var team = _teams.FirstOrDefault(t => t.TeamId == sourceId);
+        if (team is null)
+        {
+            return ("einsatzleitung", "Einsatzleitung", "Einsatzleitung");
+        }
+
+        return (team.TeamId, team.TeamName, team.TeamName);
+    }
+
+    private void OnUpdateReceived(string eventName, string payload)
+    {
+        _ = payload;
+        if (eventName.StartsWith("note.", StringComparison.OrdinalIgnoreCase)
+            || eventName.StartsWith("radio.", StringComparison.OrdinalIgnoreCase)
+            || eventName.StartsWith("team.", StringComparison.OrdinalIgnoreCase)
+            || eventName.Equals("einsatz.changed", StringComparison.OrdinalIgnoreCase))
+        {
+            _ = InvokeAsync(async () =>
+            {
+                await RefreshMessagesAsync();
+                StateHasChanged();
+            });
+        }
+    }
+
+    public void Dispose()
+    {
+        SignalRClient.UpdateReceived -= OnUpdateReceived;
     }
 }

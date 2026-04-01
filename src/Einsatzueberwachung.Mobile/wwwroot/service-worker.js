@@ -1,5 +1,5 @@
 const CACHE_NAME = 'einsatz-mobile-v1';
-const URLS_TO_CACHE = ['/', '/einsatz', '/teams', '/notizen', '/funk', '/app.css', '/manifest.json'];
+const URLS_TO_CACHE = ['/mobile/', '/mobile/einsatz', '/mobile/teams', '/mobile/notizen', '/mobile/funk', '/mobile/app.css', '/mobile/manifest.json'];
 
 self.addEventListener('install', event => {
   event.waitUntil(

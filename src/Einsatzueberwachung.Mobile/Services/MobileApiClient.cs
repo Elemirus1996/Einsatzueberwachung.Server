@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Einsatzueberwachung.Domain.Models;
+using Microsoft.AspNetCore.Components;
 
 namespace Einsatzueberwachung.Mobile.Services;
 
@@ -9,14 +10,15 @@ public sealed class MobileApiClient
     private readonly HttpClient _httpClient;
     private readonly ILogger<MobileApiClient> _logger;
 
-    public MobileApiClient(HttpClient httpClient, IConfiguration configuration, ILogger<MobileApiClient> logger)
+    public MobileApiClient(HttpClient httpClient, IConfiguration configuration, NavigationManager navigationManager, ILogger<MobileApiClient> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
 
         var configuredBaseUrl = configuration["ServerApiBaseUrl"];
+        var runtimeBaseUrl = new Uri(navigationManager.BaseUri).GetLeftPart(UriPartial.Authority);
         var baseUrl = string.IsNullOrWhiteSpace(configuredBaseUrl)
-            ? "https://einsatz.vpn.local"
+            ? runtimeBaseUrl
             : configuredBaseUrl.TrimEnd('/');
 
         _httpClient.BaseAddress = new Uri(baseUrl);
@@ -77,31 +79,76 @@ public sealed class MobileApiClient
         }
     }
 
-    public async Task<bool> AddNoteAsync(string text, string sourceType)
+    public async Task<bool> AddNoteAsync(string text, string sourceType, string sourceTeamId, string sourceTeamName, string createdBy)
     {
         var payload = new
         {
             text,
             sourceType,
-            sourceTeamId = "mobile",
-            sourceTeamName = "Mobile",
-            createdBy = "Mobile"
+            sourceTeamId,
+            sourceTeamName,
+            createdBy
         };
 
         return await PostAndCheckAsync("/api/threads", payload);
     }
 
-    public async Task<bool> AddReplyAsync(string noteId, string text)
+    public async Task<bool> AddReplyAsync(string noteId, string text, string sourceTeamId, string sourceTeamName, string createdBy)
     {
         var payload = new
         {
             text,
-            sourceTeamId = "mobile",
-            sourceTeamName = "Mobile",
-            createdBy = "Mobile"
+            sourceTeamId,
+            sourceTeamName,
+            createdBy
         };
 
         return await PostAndCheckAsync($"/api/threads/{Uri.EscapeDataString(noteId)}/replies", payload);
+    }
+
+    public async Task<IReadOnlyList<GlobalNotesEntry>> GetRadioMessagesAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<RadioEnvelope>("/api/radio");
+            if (response?.Messages is null)
+            {
+                return Array.Empty<GlobalNotesEntry>();
+            }
+
+            return response.Messages.Select(MapRadio).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Fehler beim Laden der Funksprueche");
+            return Array.Empty<GlobalNotesEntry>();
+        }
+    }
+
+    public async Task<bool> AddRadioMessageAsync(string text, string sourceTeamId, string sourceTeamName, string createdBy)
+    {
+        var payload = new
+        {
+            text,
+            sourceTeamId,
+            sourceTeamName,
+            createdBy
+        };
+
+        return await PostAndCheckAsync("/api/radio", payload);
+    }
+
+    public async Task<bool> AddRadioReplyAsync(string messageId, string text, string sourceTeamId, string sourceTeamName, string createdBy)
+    {
+        var payload = new
+        {
+            text,
+            sourceTeamId,
+            sourceTeamName,
+            createdBy
+        };
+
+        return await PostAndCheckAsync($"/api/radio/{Uri.EscapeDataString(messageId)}/replies", payload);
     }
 
     private async Task<bool> PostAndCheckAsync<TPayload>(string path, TPayload payload)
@@ -161,6 +208,35 @@ public sealed class MobileApiClient
         };
     }
 
+    private static GlobalNotesEntry MapRadio(RadioMessageDto dto)
+    {
+        return new GlobalNotesEntry
+        {
+            Id = dto.Id,
+            Timestamp = dto.Timestamp,
+            Text = dto.Text,
+            SourceTeamId = dto.SourceTeamId,
+            SourceTeamName = dto.SourceTeamName,
+            SourceType = "Funk",
+            CreatedBy = dto.CreatedBy,
+            Replies = dto.Replies?.Select(MapRadioReply).ToList() ?? new List<GlobalNotesReply>()
+        };
+    }
+
+    private static GlobalNotesReply MapRadioReply(RadioReplyDto dto)
+    {
+        return new GlobalNotesReply
+        {
+            Id = dto.Id,
+            NoteId = dto.MessageId,
+            Timestamp = dto.Timestamp,
+            Text = dto.Text,
+            SourceTeamId = dto.SourceTeamId,
+            SourceTeamName = dto.SourceTeamName,
+            CreatedBy = dto.CreatedBy
+        };
+    }
+
     private static GlobalNotesReply MapReply(ReplyDto dto)
     {
         return new GlobalNotesReply
@@ -187,6 +263,7 @@ public sealed class MobileApiClient
 
     private sealed record TeamsEnvelope(List<TeamDto> Teams);
     private sealed record NotesEnvelope(List<NoteDto> Notes);
+    private sealed record RadioEnvelope(List<RadioMessageDto> Messages);
 
     private sealed record TeamDto(
         string TeamId,
@@ -221,6 +298,26 @@ public sealed class MobileApiClient
     private sealed record ReplyDto(
         string Id,
         string NoteId,
+        DateTime Timestamp,
+        string Text,
+        string SourceTeamId,
+        string SourceTeamName,
+        string CreatedBy,
+        string FormattedTimestamp);
+
+    private sealed record RadioMessageDto(
+        string Id,
+        DateTime Timestamp,
+        string Text,
+        string SourceTeamId,
+        string SourceTeamName,
+        string CreatedBy,
+        List<RadioReplyDto> Replies,
+        string FormattedTimestamp);
+
+    private sealed record RadioReplyDto(
+        string Id,
+        string MessageId,
         DateTime Timestamp,
         string Text,
         string SourceTeamId,

@@ -117,3 +117,93 @@ curl -X POST http://127.0.0.1:5000/api/update/check
 curl http://127.0.0.1:5000/api/update/status
 curl -X POST http://127.0.0.1:5000/api/update/install
 ```
+
+## 10. Abnahme: Desktop + Mobile (`/mobile`)
+
+Diese Checkliste verifiziert die Kernanforderungen:
+
+- Mobile unter `https://10.10.0.1/mobile` erreichbar
+- gleiche Datenbasis zwischen Hauptapp und Mobile
+- Echtzeit-Updates (SignalR)
+- Funksprueche als eigene API
+- Daten bleiben nach Neustart erhalten
+
+### 10.1 Vorbedingungen
+
+- Beide Dienste laufen:
+
+```bash
+sudo systemctl status einsatzueberwachung-server.service
+sudo systemctl status einsatzueberwachung-mobile.service
+```
+
+- Nginx aktiv:
+
+```bash
+sudo systemctl status nginx
+```
+
+### 10.2 Mobile Erreichbarkeit
+
+1. Browser auf Handy/Laptop (im VPN): `https://10.10.0.1/mobile`
+2. Direktaufrufe pruefen:
+	- `https://10.10.0.1/mobile/einsatz`
+	- `https://10.10.0.1/mobile/teams`
+	- `https://10.10.0.1/mobile/notizen`
+	- `https://10.10.0.1/mobile/funk`
+3. Browser-Refresh auf Unterseite darf keinen 404 erzeugen.
+
+### 10.3 Gemeinsame Datenbasis pruefen
+
+1. In Mobile unter `/mobile/einsatz` neuen Einsatz starten.
+2. In Desktop (`/einsatz-monitor`) kontrollieren:
+	- Einsatzdaten sind sichtbar
+	- Teams/Notizen/Funk beziehen sich auf denselben Einsatz
+3. In Desktop eine Notiz erzeugen und in Mobile unter `/mobile/notizen` kontrollieren.
+4. In Mobile eine Notiz erzeugen und in Desktop kontrollieren.
+
+### 10.4 Echtzeit pruefen (SignalR)
+
+1. Desktop und Mobile parallel offen halten.
+2. In Desktop Teamstatus aendern (Start/Stopp/Reset).
+3. Mobile `/mobile/teams` muss ohne manuelles Reload aktualisieren.
+4. In Desktop Notiz erstellen.
+5. Mobile `/mobile/notizen` muss live aktualisieren.
+6. In Mobile Notiz oder Funk erstellen.
+7. Desktop muss die neuen Eintraege live anzeigen.
+
+### 10.5 Funk-API separat pruefen
+
+1. Mobile `/mobile/funk`: neuen Funkspruch senden.
+2. API pruefen:
+
+```bash
+curl http://127.0.0.1:5000/api/radio
+```
+
+3. Antwort auf Funkspruch in Mobile senden.
+4. API erneut pruefen und Reply in `radio_messages`/`radio_replies` kontrollieren.
+
+### 10.6 Neustart- und Persistenztest
+
+1. Laufenden Einsatz, Teams, Notizen und Funk-Eintrag erzeugen.
+2. Dienste neu starten:
+
+```bash
+sudo systemctl restart einsatzueberwachung-server.service
+sudo systemctl restart einsatzueberwachung-mobile.service
+```
+
+3. Nach Neustart in Desktop und Mobile pruefen:
+	- Einsatz ist weiterhin vorhanden
+	- Teams mit Status sind vorhanden
+	- Notizen sind vorhanden
+	- Funksprueche sind vorhanden
+
+### 10.7 Fehlersuche bei Problemen
+
+```bash
+sudo journalctl -u einsatzueberwachung-server.service -n 200 --no-pager
+sudo journalctl -u einsatzueberwachung-mobile.service -n 200 --no-pager
+sudo tail -n 100 /var/log/nginx/error.log
+```

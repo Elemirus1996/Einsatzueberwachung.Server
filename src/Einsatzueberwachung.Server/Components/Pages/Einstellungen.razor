@@ -53,6 +53,21 @@
                         <label class="form-label">Logo-Pfad</label>
                         <InputText class="form-control" placeholder="Pfad zum Logo" @bind-Value="_staffelSettings.StaffelLogoPfad" />
                         <div class="form-text">Pfad zu einer Bilddatei für den PDF-Export</div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
+                            <InputFile OnChange="UploadStaffelLogoAsync" accept=".png,.jpg,.jpeg,.webp,.svg,image/*" />
+                            @if (!string.IsNullOrWhiteSpace(_staffelSettings.StaffelLogoPfad))
+                            {
+                                <button class="btn btn-sm btn-outline-danger" @onclick="ClearStaffelLogoAsync">
+                                    <i class="bi bi-trash me-1"></i>Logo entfernen
+                                </button>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(_logoStatus))
+                        {
+                            <div class="alert @(_logoStatusIsError ? "alert-danger" : "alert-success") py-2 mt-2 mb-0">@_logoStatus</div>
+                        }
                     </div>
 
                     <div class="mt-4">
@@ -84,12 +99,12 @@
                         <div class="settings-segmented">
                             <button type="button"
                                     class="btn @(_appSettings.IsDarkMode ? "btn-outline-light" : "btn-light")"
-                                    @onclick="() => SetDesignMode(false)">
+                                    @onclick="() => SetDesignModeAsync(false)">
                                 <i class="bi bi-brightness-high me-1"></i>Hell
                             </button>
                             <button type="button"
                                     class="btn @(_appSettings.IsDarkMode ? "btn-secondary" : "btn-outline-secondary")"
-                                    @onclick="() => SetDesignMode(true)">
+                                    @onclick="() => SetDesignModeAsync(true)">
                                 <i class="bi bi-moon-stars me-1"></i>Dunkel
                             </button>
                         </div>
@@ -191,7 +206,7 @@
                     <h2 class="h4 mb-0"><i class="bi bi-info-circle me-2"></i>System-Information</h2>
                 </div>
                 <div class="card-body">
-                    <div class="mb-2"><strong>Version:</strong> 4.3.5</div>
+                    <div class="mb-2"><strong>Version:</strong> 0.9.0</div>
                     <div class="mb-2"><strong>Framework:</strong> .NET 8 / Blazor Server</div>
                     <div class="mb-3"><strong>Plattform:</strong> Web-basiert</div>
 
@@ -289,6 +304,8 @@
     private string _sessionImportJson = string.Empty;
     private string _maintenanceStatus = string.Empty;
     private bool _maintenanceError;
+    private string _logoStatus = string.Empty;
+    private bool _logoStatusIsError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -305,11 +322,77 @@
         await SettingsService.SaveStaffelSettingsAsync(_staffelSettings);
         await SettingsService.SaveAppSettingsAsync(_appSettings);
         _status = "Einstellungen gespeichert.";
+        SetLogoStatus(string.Empty, false);
     }
 
-    private void SetDesignMode(bool darkMode)
+    private async Task UploadStaffelLogoAsync(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+        if (file is null)
+        {
+            SetLogoStatus("Keine Datei ausgewaehlt.", true);
+            return;
+        }
+
+        var extension = Path.GetExtension(file.Name)?.ToLowerInvariant() ?? string.Empty;
+        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".png", ".jpg", ".jpeg", ".webp", ".svg"
+        };
+
+        if (!allowed.Contains(extension))
+        {
+            SetLogoStatus("Ungueltiges Format. Erlaubt sind PNG, JPG, JPEG, WEBP oder SVG.", true);
+            return;
+        }
+
+        try
+        {
+            var logoDirectory = Path.Combine(AppPathResolver.GetDataDirectory(), "logos");
+            Directory.CreateDirectory(logoDirectory);
+
+            var targetPath = Path.Combine(logoDirectory, $"staffel-logo{extension}");
+            await using var source = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            await using var target = File.Create(targetPath);
+            await source.CopyToAsync(target);
+
+            _staffelSettings.StaffelLogoPfad = targetPath;
+            await SettingsService.SaveStaffelSettingsAsync(_staffelSettings);
+
+            SetLogoStatus("Logo wurde hochgeladen und gespeichert.", false);
+            _status = "Einstellungen gespeichert.";
+        }
+        catch (Exception ex)
+        {
+            SetLogoStatus($"Logo-Upload fehlgeschlagen: {ex.Message}", true);
+        }
+    }
+
+    private async Task ClearStaffelLogoAsync()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_staffelSettings.StaffelLogoPfad) && File.Exists(_staffelSettings.StaffelLogoPfad))
+            {
+                File.Delete(_staffelSettings.StaffelLogoPfad);
+            }
+
+            _staffelSettings.StaffelLogoPfad = string.Empty;
+            await SettingsService.SaveStaffelSettingsAsync(_staffelSettings);
+            SetLogoStatus("Logo wurde entfernt.", false);
+        }
+        catch (Exception ex)
+        {
+            SetLogoStatus($"Logo konnte nicht entfernt werden: {ex.Message}", true);
+        }
+    }
+
+    private async Task SetDesignModeAsync(bool darkMode)
     {
         _appSettings.IsDarkMode = darkMode;
+        _appSettings.Theme = darkMode ? "Dark" : "Light";
+        await SettingsService.SetIsDarkModeAsync(darkMode);
+        await JS.InvokeVoidAsync("themeSync.setTheme", darkMode);
     }
 
     private async Task ResetDataAsync()
@@ -572,5 +655,11 @@
     {
         _maintenanceStatus = message;
         _maintenanceError = isError;
+    }
+
+    private void SetLogoStatus(string message, bool isError)
+    {
+        _logoStatus = message;
+        _logoStatusIsError = isError;
     }
 }
