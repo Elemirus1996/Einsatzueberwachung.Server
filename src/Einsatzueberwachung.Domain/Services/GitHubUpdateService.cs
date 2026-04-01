@@ -505,7 +505,26 @@ namespace Einsatzueberwachung.Domain.Services
             try
             {
                 _logger.LogInformation("Downloade Installer: {Url}", url);
-                var data = await _httpClient.GetByteArrayAsync(url);
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/octet-stream"));
+
+                var githubToken = await ResolveGitHubTokenAsync();
+                if (!string.IsNullOrWhiteSpace(githubToken))
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
+                }
+
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Installer-Download fehlgeschlagen: {StatusCode} - {Body}", response.StatusCode, body);
+                    return null;
+                }
+
+                var data = await response.Content.ReadAsByteArrayAsync();
                 _logger.LogInformation("Installer erfolgreich heruntergeladen: {Size} bytes", data.Length);
                 return data;
             }
