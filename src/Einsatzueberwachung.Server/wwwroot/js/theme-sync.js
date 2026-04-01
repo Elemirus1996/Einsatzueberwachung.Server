@@ -1,5 +1,6 @@
 window.themeSync = (() => {
     const storageKey = "einsatz.theme";
+    const legacyStorageKey = "theme";
     let dotNetRef = null;
     let storageHandler = null;
 
@@ -12,17 +13,21 @@ window.themeSync = (() => {
         return value === "dark";
     }
 
+    function getStoredTheme() {
+        return localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey);
+    }
+
     function init(ref, initialIsDark) {
         dotNetRef = ref;
 
-        const stored = localStorage.getItem(storageKey);
+        const stored = getStoredTheme();
         const isDark = stored === null ? initialIsDark : parseStoredTheme(stored);
 
         applyTheme(isDark);
         localStorage.setItem(storageKey, isDark ? "dark" : "light");
 
         storageHandler = (event) => {
-            if (event.key !== storageKey || event.newValue === null) {
+            if ((event.key !== storageKey && event.key !== legacyStorageKey) || event.newValue === null) {
                 return;
             }
 

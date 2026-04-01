@@ -7,7 +7,7 @@
     <base href="/mobile/" />
     <script>
         (function () {
-            const value = localStorage.getItem("einsatz.theme") || "light";
+            const value = localStorage.getItem("einsatz.theme") || localStorage.getItem("theme") || "light";
             document.documentElement.setAttribute("data-bs-theme", value === "dark" ? "dark" : "light");
         })();
     </script>
