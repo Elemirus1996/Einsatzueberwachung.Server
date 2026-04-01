@@ -188,6 +188,12 @@
                         <InputText class="form-control" placeholder="https://..." @bind-Value="_appSettings.UpdateUrl" />
                     </div>
 
+                    <div class="mb-2">
+                        <label class="form-label">GitHub Token (optional)</label>
+                        <input type="password" class="form-control" placeholder="ghp_..." @bind="_appSettings.GitHubToken" />
+                        <div class="form-text">Nur noetig bei privaten Repositories. Umgebungsvariable hat Vorrang.</div>
+                    </div>
+
                     <div class="form-check mb-3">
                         <InputCheckbox class="form-check-input" id="autoUpdates" @bind-Value="_appSettings.AutoCheckUpdates" />
                         <label class="form-check-label" for="autoUpdates">Automatisch nach Updates suchen</label>

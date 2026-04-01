@@ -26,7 +26,6 @@ namespace Einsatzueberwachung.Domain.Services
         private readonly SemaphoreSlim _updateGate = new(1, 1);
         private readonly object _statusLock = new();
         private readonly ISettingsService _settingsService;
-        private readonly string? _githubToken;
         
         // GitHub API Konfiguration
         private const string GITHUB_OWNER = "Elemirus1996";
@@ -45,7 +44,6 @@ namespace Einsatzueberwachung.Domain.Services
             _httpClient = httpClient;
             _logger = logger;
             _settingsService = settingsService;
-            _githubToken = ResolveGitHubToken();
             RuntimeStatus = new UpdateRuntimeStatus
             {
                 CurrentVersion = CurrentVersion,
@@ -86,14 +84,15 @@ namespace Einsatzueberwachung.Domain.Services
             try
             {
                 var url = await ResolveReleaseApiUrlAsync();
+                var githubToken = await ResolveGitHubTokenAsync();
                 _logger.LogInformation("Prüfe GitHub auf Updates: {Url}", url);
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
 
-                if (!string.IsNullOrWhiteSpace(_githubToken))
+                if (!string.IsNullOrWhiteSpace(githubToken))
                 {
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _githubToken);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
                 }
 
                 var response = await _httpClient.SendAsync(request);
@@ -502,7 +501,7 @@ namespace Einsatzueberwachung.Domain.Services
             return ".bin";
         }
 
-        private static string? ResolveGitHubToken()
+        private async Task<string?> ResolveGitHubTokenAsync()
         {
             var token = Environment.GetEnvironmentVariable("EINSATZUEBERWACHUNG_GITHUB_TOKEN");
             if (!string.IsNullOrWhiteSpace(token))
@@ -511,7 +510,13 @@ namespace Einsatzueberwachung.Domain.Services
             }
 
             token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-            return string.IsNullOrWhiteSpace(token) ? null : token.Trim();
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                return token.Trim();
+            }
+
+            var appSettings = await _settingsService.GetAppSettingsAsync();
+            return string.IsNullOrWhiteSpace(appSettings.GitHubToken) ? null : appSettings.GitHubToken.Trim();
         }
 
         private async Task ExtractPackageAsync(string packagePath, string stagePath, CancellationToken cancellationToken)

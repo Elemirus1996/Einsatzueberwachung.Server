@@ -52,6 +52,7 @@ namespace Einsatzueberwachung.Domain.Models
         public int DefaultSecondWarningMinutes { get; set; }
         public string UpdateUrl { get; set; }
         public bool AutoCheckUpdates { get; set; }
+        public string GitHubToken { get; set; }
         
         // Sound-Einstellungen
         public bool SoundAlertsEnabled { get; set; }
@@ -74,6 +75,7 @@ namespace Einsatzueberwachung.Domain.Models
             DefaultSecondWarningMinutes = 60;
             UpdateUrl = string.Empty;
             AutoCheckUpdates = true;
+            GitHubToken = string.Empty;
             
             // Sound-Defaults
             SoundAlertsEnabled = true;
