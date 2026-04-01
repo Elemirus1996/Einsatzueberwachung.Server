@@ -1916,7 +1916,8 @@ a {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     z-index: 1050;
@@ -1943,8 +1944,9 @@ a {
     justify-content: space-between;
     align-items: center;
     padding: 2rem;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #1976D2 100%);
-    color: white;
+    background: var(--ui-card-header-bg);
+    border-bottom: 1px solid var(--ui-card-header-border);
+    color: var(--ui-card-header-text);
 }
 
 .modal-modern-header h3 {
@@ -1974,9 +1976,24 @@ a {
 }
 
 .modal-modern-body {
+    background: var(--ui-surface);
+    color: var(--ui-text);
     padding: 2rem;
     max-height: calc(90vh - 200px);
     overflow-y: auto;
+}
+
+.modal-modern .form-label {
+    color: var(--ui-text);
+}
+
+.modal-modern .form-check-label {
+    color: var(--ui-text);
+}
+
+.modal-modern .form-check-input {
+    background-color: var(--ui-form-bg);
+    border-color: var(--ui-form-border);
 }
 
 .form-group-modern {
@@ -2039,7 +2056,9 @@ a {
     display: flex;
     gap: 1rem;
     padding-top: 1.5rem;
-    border-top: 2px solid rgba(0, 0, 0, 0.05);
+    border-top: 1px solid var(--ui-card-header-border);
+    background: var(--ui-card-header-bg);
+    padding: 1rem 2rem 1.25rem;
 }
 
 .modal-modern-footer .btn {
@@ -2806,6 +2825,32 @@ textarea:focus {
 
 .modal-close-mission {
     width: min(920px, 95vw);
+}
+
+.modal-close-mission-header {
+    background: linear-gradient(135deg, #8d1e2b 0%, #bf2434 100%);
+    color: #fef6f7;
+    border-bottom-color: rgba(255, 255, 255, 0.18);
+}
+
+.modal-close-mission .border.rounded {
+    background: var(--ui-tile-bg);
+    border-color: var(--ui-tile-border) !important;
+}
+
+.modal-close-mission .text-muted {
+    color: var(--ui-muted) !important;
+}
+
+.modal-close-mission .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #fff;
+}
+
+.modal-close-mission .btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.6);
+    color: #fff;
 }
 
 .monitor-checklist-scroll {
