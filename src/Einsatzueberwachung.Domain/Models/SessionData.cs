@@ -57,7 +57,7 @@ namespace Einsatzueberwachung.Domain.Models
         // Sound-Einstellungen
         public bool SoundAlertsEnabled { get; set; }
         public int SoundVolume { get; set; } // 0-100
-        public string FirstWarningSound { get; set; } // "beep", "bell", "alarm", "double", "chime", "pulse", "siren"
+        public string FirstWarningSound { get; set; } // "beep", "bell", "alarm", "double", "chime", "pulse", "siren", "triple", "klaxon", "rising", "file_funk", "file_glocke", "file_kritisch"
         public string SecondWarningSound { get; set; }
         public int FirstWarningFrequency { get; set; } // Hz für Beep-Töne
         public int SecondWarningFrequency { get; set; }

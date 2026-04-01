@@ -2,7 +2,8 @@ window.layoutTools = window.layoutTools || {};
 
 window.layoutTools.warningAudio = window.layoutTools.warningAudio || {
     ctx: null,
-    repeatId: null
+    repeatId: null,
+    activePlayers: []
 };
 
 window.layoutTools.getSidebarCollapsed = function () {
@@ -37,24 +38,32 @@ window.layoutTools.getClientLocalNow = function () {
 
 window.layoutTools.playWarningAlert = async function (soundType, frequency, volume, repeat, repeatSeconds) {
     const state = window.layoutTools.warningAudio;
+    const type = (soundType || "beep").toLowerCase();
+    const soundFileUrl = getWarningFileUrl(type);
 
-    if (!state.ctx) {
-        const AudioContextType = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextType) {
-            return false;
+    if (!soundFileUrl) {
+        if (!state.ctx) {
+            const AudioContextType = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextType) {
+                return false;
+            }
+
+            state.ctx = new AudioContextType();
         }
 
-        state.ctx = new AudioContextType();
-    }
-
-    if (state.ctx.state === "suspended") {
-        await state.ctx.resume();
+        if (state.ctx.state === "suspended") {
+            await state.ctx.resume();
+        }
     }
 
     const playTone = () => {
         const safeFrequency = Math.max(120, Math.min(2200, Number(frequency) || 800));
         const normalizedVolume = Math.max(0, Math.min(1, (Number(volume) || 70) / 100));
-        const type = (soundType || "beep").toLowerCase();
+
+        if (soundFileUrl) {
+            playWarningFile(soundFileUrl, normalizedVolume);
+            return;
+        }
 
         if (type === "siren") {
             ringSweep(state.ctx, safeFrequency, normalizedVolume, 0.85);
@@ -68,6 +77,21 @@ window.layoutTools.playWarningAlert = async function (soundType, frequency, volu
 
         if (type === "chime") {
             ringPattern(state.ctx, safeFrequency, normalizedVolume, [0, 0.12, 0.28], 0.1, "sine", [0, 4, 7]);
+            return;
+        }
+
+        if (type === "triple") {
+            ringPattern(state.ctx, safeFrequency, normalizedVolume, [0, 0.15, 0.31], 0.1, "triangle");
+            return;
+        }
+
+        if (type === "klaxon") {
+            ringPattern(state.ctx, safeFrequency, normalizedVolume, [0, 0.14, 0.28, 0.42], 0.11, "square", [0, -3, 0, -3]);
+            return;
+        }
+
+        if (type === "rising") {
+            ringRising(state.ctx, safeFrequency, normalizedVolume, 0.85);
             return;
         }
 
@@ -106,7 +130,48 @@ window.layoutTools.stopWarningAlert = function () {
         window.clearInterval(state.repeatId);
         state.repeatId = null;
     }
+
+    if (Array.isArray(state.activePlayers) && state.activePlayers.length > 0) {
+        state.activePlayers.forEach(player => {
+            try {
+                player.pause();
+                player.currentTime = 0;
+            } catch {
+                // Ignore player stop errors.
+            }
+        });
+        state.activePlayers = [];
+    }
 };
+
+function getWarningFileUrl(type) {
+    switch (type) {
+        case "file_funk":
+            return "/audio/warnings/funk.wav";
+        case "file_glocke":
+            return "/audio/warnings/glocke.wav";
+        case "file_kritisch":
+            return "/audio/warnings/kritisch.wav";
+        default:
+            return null;
+    }
+}
+
+function playWarningFile(url, volume) {
+    const state = window.layoutTools.warningAudio;
+    const player = new Audio(url);
+    player.preload = "auto";
+    player.volume = Math.max(0, Math.min(1, Number(volume) || 0.7));
+
+    const removePlayer = () => {
+        state.activePlayers = state.activePlayers.filter(entry => entry !== player);
+    };
+
+    player.addEventListener("ended", removePlayer, { once: true });
+    player.addEventListener("error", removePlayer, { once: true });
+    state.activePlayers.push(player);
+    player.play().catch(removePlayer);
+}
 
 function ringPattern(ctx, baseFrequency, volume, offsets, duration, waveform, semitoneIntervals) {
     offsets.forEach((offset, index) => {
@@ -147,6 +212,26 @@ function ringSweep(ctx, baseFrequency, volume, totalDuration) {
 
     gain.gain.setValueAtTime(0.0001, startAt);
     gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), startAt + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startAt);
+    osc.stop(stopAt + 0.03);
+}
+
+function ringRising(ctx, baseFrequency, volume, totalDuration) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const startAt = ctx.currentTime;
+    const stopAt = startAt + totalDuration;
+
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(baseFrequency * 0.7, startAt);
+    osc.frequency.exponentialRampToValueAtTime(baseFrequency * 1.8, stopAt);
+
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), startAt + 0.03);
     gain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
 
     osc.connect(gain);
