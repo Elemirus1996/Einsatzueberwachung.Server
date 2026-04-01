@@ -58,6 +58,15 @@
 </section>
 
 @code {
+    private static readonly string[] AlarmDateFormats =
+    {
+        "dd.MM.yyyy HH:mm",
+        "dd.MM.yyyy HH:mm:ss",
+        "yyyy-MM-dd HH:mm",
+        "yyyy-MM-ddTHH:mm",
+        "yyyy-MM-ddTHH:mm:ss"
+    };
+
     private readonly Einsatzueberwachung.Domain.Models.EinsatzData _einsatz = new()
     {
         IstEinsatz = true,
@@ -77,6 +86,12 @@
             return;
         }
 
+        if (!TryPrepareAlarmTime())
+        {
+            _status = "Alarmzeit ungueltig. Bitte Format dd.MM.yyyy HH:mm verwenden.";
+            return;
+        }
+
         _isSubmitting = true;
         _status = "Einsatz wird gestartet...";
 
@@ -93,5 +108,26 @@
         _status = "Einsatz wurde gestartet.";
         await Task.Delay(600);
         Navigation.NavigateTo("teams", forceLoad: true);
+    }
+
+    private bool TryPrepareAlarmTime()
+    {
+        if (string.IsNullOrWhiteSpace(_einsatz.Alarmiert))
+        {
+            var now = DateTime.Now;
+            _einsatz.AlarmierungsZeit = now;
+            _einsatz.Alarmiert = now.ToString("dd.MM.yyyy HH:mm");
+            return true;
+        }
+
+        if (DateTime.TryParseExact(_einsatz.Alarmiert.Trim(), AlarmDateFormats, System.Globalization.CultureInfo.GetCultureInfo("de-DE"), System.Globalization.DateTimeStyles.AssumeLocal, out var parsed)
+            || DateTime.TryParse(_einsatz.Alarmiert.Trim(), System.Globalization.CultureInfo.GetCultureInfo("de-DE"), System.Globalization.DateTimeStyles.AssumeLocal, out parsed))
+        {
+            _einsatz.AlarmierungsZeit = parsed;
+            _einsatz.Alarmiert = parsed.ToString("dd.MM.yyyy HH:mm");
+            return true;
+        }
+
+        return false;
     }
 }

@@ -53,6 +53,36 @@ public class EinsatzServiceTests
         Assert.True(fired);
     }
 
+    [Fact]
+    public async Task StartEinsatz_ParsesAlarmiertIntoAlarmierungsZeit()
+    {
+        var svc = CreateService();
+        var data = new EinsatzData
+        {
+            Einsatzort = "ParseTest",
+            Alarmiert = "01.04.2026 13:45"
+        };
+
+        await svc.StartEinsatzAsync(data);
+
+        Assert.True(svc.CurrentEinsatz.AlarmierungsZeit.HasValue);
+        Assert.Equal(new DateTime(2026, 4, 1, 13, 45, 0), svc.CurrentEinsatz.AlarmierungsZeit!.Value);
+    }
+
+    [Fact]
+    public async Task StartEinsatz_UsesServerNowWhenAlarmMissing()
+    {
+        var svc = CreateService();
+        var before = DateTime.Now;
+
+        await svc.StartEinsatzAsync(new EinsatzData { Einsatzort = "NowFallback", Alarmiert = string.Empty });
+
+        var after = DateTime.Now;
+        Assert.True(svc.CurrentEinsatz.AlarmierungsZeit.HasValue);
+        Assert.InRange(svc.CurrentEinsatz.AlarmierungsZeit!.Value, before.AddSeconds(-1), after.AddSeconds(1));
+        Assert.False(string.IsNullOrWhiteSpace(svc.CurrentEinsatz.Alarmiert));
+    }
+
     // --- Team-Management ---
 
     [Fact]

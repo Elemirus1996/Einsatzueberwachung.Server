@@ -140,6 +140,15 @@
 </div>
 
 @code {
+    private static readonly string[] AlarmDateFormats =
+    {
+        "dd.MM.yyyy HH:mm",
+        "dd.MM.yyyy HH:mm:ss",
+        "yyyy-MM-dd HH:mm",
+        "yyyy-MM-ddTHH:mm",
+        "yyyy-MM-ddTHH:mm:ss"
+    };
+
     private EinsatzData _model = new()
     {
         EinsatzDatum = DateTime.Now,
@@ -207,6 +216,13 @@
             return;
         }
 
+        if (!TryPrepareAlarmTime())
+        {
+            _status = "Alarmzeit ungueltig. Bitte Format dd.MM.yyyy HH:mm verwenden.";
+            _error = true;
+            return;
+        }
+
         _busy = true;
         _status = string.Empty;
         try
@@ -227,5 +243,26 @@
         {
             _busy = false;
         }
+    }
+
+    private bool TryPrepareAlarmTime()
+    {
+        if (string.IsNullOrWhiteSpace(_model.Alarmiert))
+        {
+            var now = DateTime.Now;
+            _model.AlarmierungsZeit = now;
+            _model.Alarmiert = now.ToString("dd.MM.yyyy HH:mm");
+            return true;
+        }
+
+        if (DateTime.TryParseExact(_model.Alarmiert.Trim(), AlarmDateFormats, System.Globalization.CultureInfo.GetCultureInfo("de-DE"), System.Globalization.DateTimeStyles.AssumeLocal, out var parsed)
+            || DateTime.TryParse(_model.Alarmiert.Trim(), System.Globalization.CultureInfo.GetCultureInfo("de-DE"), System.Globalization.DateTimeStyles.AssumeLocal, out parsed))
+        {
+            _model.AlarmierungsZeit = parsed;
+            _model.Alarmiert = parsed.ToString("dd.MM.yyyy HH:mm");
+            return true;
+        }
+
+        return false;
     }
 }

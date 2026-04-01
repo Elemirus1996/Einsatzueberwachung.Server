@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Einsatzueberwachung.Domain.Interfaces;
@@ -13,6 +14,16 @@ namespace Einsatzueberwachung.Domain.Services
 {
     public class EinsatzService : IEinsatzService
     {
+        private static readonly CultureInfo DeCulture = CultureInfo.GetCultureInfo("de-DE");
+        private static readonly string[] AlarmDateFormats =
+        {
+            "dd.MM.yyyy HH:mm",
+            "dd.MM.yyyy HH:mm:ss",
+            "yyyy-MM-dd HH:mm",
+            "yyyy-MM-ddTHH:mm",
+            "yyyy-MM-ddTHH:mm:ss"
+        };
+
         private readonly ISettingsService? _settingsService;
         private EinsatzData _currentEinsatz;
         private readonly List<Team> _teams;
@@ -44,6 +55,7 @@ namespace Einsatzueberwachung.Domain.Services
         public async Task StartEinsatzAsync(EinsatzData einsatzData)
         {
             await ApplyStaffelFallbackAsync(einsatzData);
+            EnsureAlarmTime(einsatzData);
 
             _currentEinsatz = einsatzData;
             _teams.Clear();
@@ -63,6 +75,36 @@ namespace Einsatzueberwachung.Domain.Services
             NoteAdded?.Invoke(startNote);
 
             return;
+        }
+
+        private static DateTime GetServerNowLocal() => DateTimeOffset.Now.LocalDateTime;
+
+        private static void EnsureAlarmTime(EinsatzData einsatzData)
+        {
+            if (!einsatzData.AlarmierungsZeit.HasValue && TryParseAlarmText(einsatzData.Alarmiert, out var parsedAlarm))
+            {
+                einsatzData.AlarmierungsZeit = parsedAlarm;
+            }
+
+            if (!einsatzData.AlarmierungsZeit.HasValue)
+            {
+                einsatzData.AlarmierungsZeit = GetServerNowLocal();
+            }
+
+            einsatzData.Alarmiert = einsatzData.AlarmierungsZeit.Value.ToString("dd.MM.yyyy HH:mm", DeCulture);
+        }
+
+        private static bool TryParseAlarmText(string? alarmText, out DateTime parsed)
+        {
+            parsed = default;
+            if (string.IsNullOrWhiteSpace(alarmText))
+            {
+                return false;
+            }
+
+            return DateTime.TryParseExact(alarmText.Trim(), AlarmDateFormats, DeCulture, DateTimeStyles.AssumeLocal, out parsed)
+                || DateTime.TryParse(alarmText.Trim(), DeCulture, DateTimeStyles.AssumeLocal, out parsed)
+                || DateTime.TryParse(alarmText.Trim(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out parsed);
         }
 
         private async Task ApplyStaffelFallbackAsync(EinsatzData einsatzData)

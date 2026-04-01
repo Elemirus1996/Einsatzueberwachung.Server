@@ -33,6 +33,7 @@ Zusatzfunktionen nach Setup:
 - persistente Laufzeitdaten unter `/opt/einsatzueberwachung/data`
 - PDF-Berichte unter `/opt/einsatzueberwachung/data/berichte`
 - serverseitiger Updater via `deploy/scripts/apply-update.sh`
+- aktive Zeit-Synchronisierung via `chrony` (NTP)
 
 ## 4. Dienste pruefen
 
@@ -43,6 +44,20 @@ sudo systemctl status nginx
 sudo systemctl status einsatzueberwachung-backup.timer
 sudo systemctl status einsatzueberwachung-healthcheck.timer
 ```
+
+Zeit-Synchronisierung pruefen:
+
+```bash
+timedatectl status
+timedatectl show -p NTPSynchronized -p SystemClockSynchronized --value
+chronyc tracking
+```
+
+Erwartung:
+
+- `NTPSynchronized=yes`
+- `SystemClockSynchronized=yes`
+- `chronyc tracking` liefert valide Daten
 
 ## 5. Backup und Restore
 

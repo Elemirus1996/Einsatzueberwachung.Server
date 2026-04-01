@@ -17,7 +17,11 @@ fi
 
 echo "[1/8] Pakete installieren"
 apt-get update
-apt-get install -y nginx ufw curl rsync unzip dotnet-runtime-9.0
+apt-get install -y nginx ufw curl rsync unzip chrony dotnet-runtime-9.0
+
+echo "[1b/8] Zeit-Synchronisierung (chrony) aktivieren"
+systemctl enable chrony
+systemctl restart chrony
 
 echo "[2/8] Systembenutzer sicherstellen"
 if ! id "$APP_USER" >/dev/null 2>&1; then
