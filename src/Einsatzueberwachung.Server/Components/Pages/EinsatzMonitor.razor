@@ -887,7 +887,8 @@
 
     private void ApplyFormValues(Team team)
     {
-        team.TeamName = _teamForm.TeamName.Trim();
+        var resolvedTeamName = ResolveTeamNameFromForm();
+        team.TeamName = resolvedTeamName;
         team.HundefuehrerId = _teamForm.HundefuehrerId;
         team.HelferId = _teamForm.HelferId;
         team.DogId = string.Empty;
@@ -932,6 +933,8 @@
             _teamForm.SearchAreaId = string.Empty;
         }
 
+        SyncTeamNameFromSelection();
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -943,11 +946,14 @@
             _teamForm.HundefuehrerId = dog.HundefuehrerId;
         }
 
+        SyncTeamNameFromSelection();
+
         await InvokeAsync(StateHasChanged);
     }
 
     private async Task OnDroneChangedAsync()
     {
+        SyncTeamNameFromSelection();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -956,9 +962,32 @@
         if (!string.IsNullOrWhiteSpace(_teamForm.DogId) && AvailableDogs.All(dog => dog.Id != _teamForm.DogId))
         {
             _teamForm.DogId = string.Empty;
+            SyncTeamNameFromSelection();
         }
 
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void SyncTeamNameFromSelection()
+    {
+        _teamForm.TeamName = ResolveTeamNameFromForm();
+    }
+
+    private string ResolveTeamNameFromForm()
+    {
+        if (_teamForm.TeamType == "dog")
+        {
+            var dogName = _dogList.FirstOrDefault(entry => entry.Id == _teamForm.DogId)?.Name;
+            return dogName?.Trim() ?? string.Empty;
+        }
+
+        if (_teamForm.TeamType == "drone")
+        {
+            var droneName = _droneList.FirstOrDefault(entry => entry.Id == _teamForm.DroneId)?.DisplayName;
+            return droneName?.Trim() ?? string.Empty;
+        }
+
+        return _teamForm.TeamName.Trim();
     }
 
     private async Task AddGlobalNoteAsync()

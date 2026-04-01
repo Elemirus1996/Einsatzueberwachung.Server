@@ -4,8 +4,13 @@
             <i class="bi bi-radar brand-icon"></i>
             <span class="brand-text">Einsatzüberwachung</span>
         </a>
-        <button class="btn-sidebar-toggle" type="button" title="Sidebar ein-/ausblenden" @onclick="() => OnToggleSidebar.InvokeAsync()">
-            <i class="bi bi-chevron-left toggle-icon"></i>
+        <button class="btn-sidebar-toggle"
+                type="button"
+                title="@(IsCollapsed ? "Navigation ausklappen" : "Navigation einklappen")"
+                aria-label="@(IsCollapsed ? "Navigation ausklappen" : "Navigation einklappen")"
+                aria-expanded="@(!IsCollapsed)"
+                @onclick="() => OnToggleSidebar.InvokeAsync()">
+            <i class="bi @(IsCollapsed ? "bi-chevron-right" : "bi-chevron-left") toggle-icon"></i>
         </button>
     </div>
 </div>

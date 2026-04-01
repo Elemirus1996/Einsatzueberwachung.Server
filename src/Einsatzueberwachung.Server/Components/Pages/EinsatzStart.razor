@@ -1,6 +1,8 @@
 @page "/einsatz-start"
 @rendermode InteractiveServer
 
+@using Einsatzueberwachung.Domain.Models.Enums
+
 @inject IEinsatzService EinsatzService
 @inject IMasterDataService MasterDataService
 @inject NavigationManager Navigation
@@ -87,7 +89,7 @@
                         <div class="input-group">
                             <select class="form-select" @onchange="e => SetEinsatzleiter(e.Value?.ToString())">
                                 <option value="">- aus Stammdaten waehlen -</option>
-                                @foreach (var p in _personal)
+                                @foreach (var p in EinsatzleiterOptions)
                                 {
                                     <option value="@p.Id">@p.FullName</option>
                                 }
@@ -101,7 +103,7 @@
                         <div class="input-group">
                             <select class="form-select" @onchange="e => SetFuehrungsassistent(e.Value?.ToString())">
                                 <option value="">- aus Stammdaten waehlen -</option>
-                                @foreach (var p in _personal)
+                                @foreach (var p in FuehrungsassistentOptions)
                                 {
                                     <option value="@p.Id">@p.FullName</option>
                                 }
@@ -148,6 +150,17 @@
     private string _status = string.Empty;
     private bool _error;
     private bool _busy;
+
+    private IEnumerable<PersonalEntry> ActivePersonnel => _personal
+        .Where(person => person.IsActive)
+        .OrderBy(person => person.Nachname)
+        .ThenBy(person => person.Vorname);
+
+    private IEnumerable<PersonalEntry> EinsatzleiterOptions => ActivePersonnel
+        .Where(person => person.Skills.HasFlag(PersonalSkills.Einsatzleiter));
+
+    private IEnumerable<PersonalEntry> FuehrungsassistentOptions => ActivePersonnel
+        .Where(person => person.Skills.HasFlag(PersonalSkills.Fuehrungsassistent));
 
     protected override async Task OnInitializedAsync()
     {

@@ -10,7 +10,20 @@ window.themeSync = (() => {
     }
 
     function parseStoredTheme(value) {
-        return value === "dark";
+        if (typeof value === "boolean") {
+            return value;
+        }
+
+        if (value === null || value === undefined) {
+            return false;
+        }
+
+        const normalized = String(value).trim().toLowerCase();
+        return normalized === "dark"
+            || normalized === "true"
+            || normalized === "1"
+            || normalized === "yes"
+            || normalized === "on";
     }
 
     function getStoredTheme() {
@@ -21,7 +34,7 @@ window.themeSync = (() => {
         dotNetRef = ref;
 
         const stored = getStoredTheme();
-        const isDark = stored === null ? initialIsDark : parseStoredTheme(stored);
+        const isDark = stored === null ? Boolean(initialIsDark) : parseStoredTheme(stored);
 
         applyTheme(isDark);
         localStorage.setItem(storageKey, isDark ? "dark" : "light");

@@ -6,7 +6,7 @@
 
 <div class="page @(_sidebarCollapsed ? "sidebar-collapsed" : string.Empty)">
     <div class="sidebar">
-        <NavMenu IsCollapsed="_sidebarCollapsed" OnToggleSidebar="ToggleSidebar" />
+        <NavMenu IsCollapsed="_sidebarCollapsed" OnToggleSidebar="ToggleSidebarAsync" />
     </div>
 
     <main>
@@ -57,6 +57,11 @@
     private bool _sidebarCollapsed;
     private DotNetObjectReference<MainLayout>? _dotNetRef;
 
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
@@ -65,16 +70,42 @@
         }
 
         _isDarkMode = await SettingsService.GetIsDarkModeAsync();
+        _sidebarCollapsed = await JS.InvokeAsync<bool>("layoutTools.getSidebarCollapsed");
         _dotNetRef = DotNetObjectReference.Create(this);
 
         await JS.InvokeVoidAsync("themeSync.init", _dotNetRef, _isDarkMode);
+        await ApplyPersistedThemeAsync();
         await JS.InvokeVoidAsync("initializeClock");
         StateHasChanged();
     }
 
-    private void ToggleSidebar()
+    private async Task ApplyPersistedThemeAsync()
+    {
+        _isDarkMode = await SettingsService.GetIsDarkModeAsync();
+        await JS.InvokeVoidAsync("themeSync.setTheme", _isDarkMode);
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        try
+        {
+            await ApplyPersistedThemeAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (JSDisconnectedException)
+        {
+            // Ignore navigation-time JS disconnects.
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignore cancellation during shutdown/disconnect.
+        }
+    }
+
+    private async Task ToggleSidebarAsync()
     {
         _sidebarCollapsed = !_sidebarCollapsed;
+        await JS.InvokeVoidAsync("layoutTools.setSidebarCollapsed", _sidebarCollapsed);
     }
 
     private void GoHome()
@@ -104,6 +135,8 @@
 
     public async ValueTask DisposeAsync()
     {
+        Navigation.LocationChanged -= OnLocationChanged;
+
         try
         {
             await JS.InvokeVoidAsync("themeSync.dispose");

@@ -9,8 +9,14 @@
         (function () {
             const storageKey = "einsatz.theme";
             const legacyStorageKey = "theme";
-            const storedValue = localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey);
-            const normalized = storedValue === "dark" ? "dark" : "light";
+            const storedValue = localStorage.getItem(storageKey) ?? localStorage.getItem(legacyStorageKey);
+            const normalizedValue = (storedValue ?? "").toString().trim().toLowerCase();
+            const isDark = normalizedValue === "dark"
+                || normalizedValue === "true"
+                || normalizedValue === "1"
+                || normalizedValue === "yes"
+                || normalizedValue === "on";
+            const normalized = isDark ? "dark" : "light";
             document.documentElement.setAttribute("data-bs-theme", normalized);
         })();
     </script>
