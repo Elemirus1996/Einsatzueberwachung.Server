@@ -248,14 +248,34 @@
                                         <div class="team-timer">
                                             @if (!team.IsDroneTeam && !team.IsSupportTeam)
                                             {
-                                                <div class="timer-display @GetTimerDisplayClass(team)">@team.ElapsedTime.ToString(@"hh\:mm\:ss")</div>
-                                                @if (team.IsSecondWarning)
+                                                @if (team.IsPausing)
                                                 {
-                                                    <span class="warning-badge badge bg-danger">KRITISCH</span>
+                                                    <div class="timer-display timer-pausing">
+                                                        @if (team.IsPauseComplete)
+                                                        {
+                                                            <i class="bi bi-check-circle-fill text-success me-1"></i>
+                                                        }
+                                                        @FormatPauseRemaining(team)
+                                                    </div>
+                                                    <span class="warning-badge badge @(team.IsPauseComplete ? "bg-success" : "bg-warning text-dark")">
+                                                        @(team.IsPauseComplete ? "PAUSE OK" : "IN PAUSE")
+                                                    </span>
+                                                    <div class="pause-info-line small text-muted mt-1">
+                                                        Gelaufen: @((int)team.RunTimeBeforePause.TotalMinutes) Min. &bull;
+                                                        Pflichtpause: @team.RequiredPauseMinutes Min.
+                                                    </div>
                                                 }
-                                                else if (team.IsFirstWarning)
+                                                else
                                                 {
-                                                    <span class="warning-badge badge bg-warning text-dark">Warnung</span>
+                                                    <div class="timer-display @GetTimerDisplayClass(team)">@team.ElapsedTime.ToString(@"hh\:mm\:ss")</div>
+                                                    @if (team.IsSecondWarning)
+                                                    {
+                                                        <span class="warning-badge badge bg-danger">KRITISCH</span>
+                                                    }
+                                                    else if (team.IsFirstWarning)
+                                                    {
+                                                        <span class="warning-badge badge bg-warning text-dark">Warnung</span>
+                                                    }
                                                 }
                                             }
                                             else
@@ -271,11 +291,15 @@
                                                 {
                                                     <button class="btn btn-warning" @onclick="() => StopTeamAsync(team.TeamId)">Stopp</button>
                                                 }
-                                                else
+                                                else if (!team.IsPausing)
                                                 {
                                                     <button class="btn btn-success" @onclick="() => StartTeamAsync(team.TeamId)">Start</button>
                                                 }
-                                                <button class="btn btn-secondary" @onclick="() => ResetTeamAsync(team.TeamId)">Reset</button>
+                                                else
+                                                {
+                                                    <button class="btn btn-success" @onclick="() => StartTeamAsync(team.TeamId)" title="Neuen Einsatz starten (Pause beendet)">Start</button>
+                                                }
+                                                <button class="btn btn-secondary" @onclick="() => RequestResetTeamAsync(team.TeamId)">Reset</button>
                                             }
                                             <button class="btn btn-sm btn-primary" @onclick="() => EditTeam(team.TeamId)">Bearbeiten</button>
                                         </div>
@@ -397,6 +421,66 @@
                 </div>
             </div>
         </div>
+    }
+
+    @if (_showPauseResetModal)
+    {
+        var pauseTeam = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == _pauseResetTeamId);
+        @if (pauseTeam is not null)
+        {
+            <div class="modal-overlay" @onclick="ClosePauseResetModal">
+                <div class="modal-modern" style="max-width:480px" @onclick:stopPropagation="true">
+                    <div class="modal-modern-header" style="background:var(--bs-warning);color:#212529;">
+                        <h4 class="mb-0"><i class="bi bi-pause-circle-fill me-2"></i>Pflichtpause nicht abgeschlossen</h4>
+                        <button class="btn btn-sm btn-outline-dark" @onclick="ClosePauseResetModal">X</button>
+                    </div>
+                    <div class="modal-modern-body">
+                        <div class="alert alert-warning py-2 mb-3">
+                            <strong>@pauseTeam.DogName</strong> hat noch nicht die volle Pflichtpause erreicht.
+                        </div>
+                        <table class="table table-sm mb-3">
+                            <tbody>
+                                <tr>
+                                    <td>Gelaufene Zeit</td>
+                                    <td><strong>@((int)pauseTeam.RunTimeBeforePause.TotalMinutes) Minuten</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Pflichtpause</td>
+                                    <td><strong>@pauseTeam.RequiredPauseMinutes Minuten</strong>
+                                        @if (pauseTeam.RunTimeBeforePause.TotalMinutes <= 20)
+                                        {
+                                            <span class="text-muted"> (≤ 20 Min. gelaufen → 60 Min. Pause)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted"> (> 20 Min. gelaufen → 3 Std. Pause)</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Bisherige Pause</td>
+                                    <td><strong>@((int)pauseTeam.PausedDuration.TotalMinutes) Minuten</strong></td>
+                                </tr>
+                                <tr class="table-danger">
+                                    <td>Noch erforderlich</td>
+                                    <td><strong>@pauseTeam.RemainingPauseMinutes Minuten</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="small text-muted mb-0">
+                            Wenn Sie den Timer trotzdem zurücksetzen, übernehmen Sie die Verantwortung
+                            für die Gesundheit des Hundes. Bitte nur im absoluten Ausnahmefall fortfahren.
+                        </p>
+                    </div>
+                    <div class="modal-modern-footer">
+                        <button class="btn btn-outline-secondary" @onclick="ClosePauseResetModal">Abbrechen</button>
+                        <button class="btn btn-danger" @onclick="ConfirmResetTeamAsync">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Trotzdem zurücksetzen
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
     }
 
     @if (_showTeamModal)
@@ -720,6 +804,8 @@
     private bool _teamFormIsError;
     private bool _showTeamModal;
     private bool _showCloseMissionModal;
+    private bool _showPauseResetModal;
+    private string? _pauseResetTeamId;
     private bool _closeMissionChecklistConfirmed;
     private bool _closingMission;
     private string _closeMissionResult = string.Empty;
@@ -1144,6 +1230,11 @@
             classes.Add("team-running");
         }
 
+        if (team.IsPausing)
+        {
+            classes.Add("team-pausing");
+        }
+
         if (team.IsSecondWarning)
         {
             classes.Add("team-critical");
@@ -1451,6 +1542,48 @@
     private async Task ResetTeamAsync(string teamId)
     {
         await EinsatzService.ResetTeamTimerAsync(teamId);
+    }
+
+    private Task RequestResetTeamAsync(string teamId)
+    {
+        var team = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
+        if (team is not null && team.IsPausing && !team.IsPauseComplete)
+        {
+            _pauseResetTeamId = teamId;
+            _showPauseResetModal = true;
+        }
+        else
+        {
+            _ = ResetTeamAsync(teamId);
+        }
+        return Task.CompletedTask;
+    }
+
+    private async Task ConfirmResetTeamAsync()
+    {
+        _showPauseResetModal = false;
+        if (_pauseResetTeamId is not null)
+        {
+            await ResetTeamAsync(_pauseResetTeamId);
+            _pauseResetTeamId = null;
+        }
+    }
+
+    private void ClosePauseResetModal()
+    {
+        _showPauseResetModal = false;
+        _pauseResetTeamId = null;
+    }
+
+    private static string FormatPauseRemaining(Team team)
+    {
+        if (team.IsPauseComplete)
+        {
+            return "Pause abgeschlossen";
+        }
+
+        var remaining = TimeSpan.FromMinutes(team.RemainingPauseMinutes);
+        return $"Noch {remaining:hh\\:mm} Pause";
     }
 
     private void EditTeam(string teamId)

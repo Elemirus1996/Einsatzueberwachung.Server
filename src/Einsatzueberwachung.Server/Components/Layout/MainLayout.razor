@@ -24,6 +24,10 @@
                 @if (HasActiveEinsatz)
                 {
                     <span class="badge text-bg-success">Laufend: @RunningTeamsCount</span>
+                    @if (PausingTeamsCount > 0)
+                    {
+                        <span class="badge text-bg-warning">In Pause: @PausingTeamsCount</span>
+                    }
                     <span class="badge text-bg-secondary">Bereit: @ReadyTeamsCount</span>
                     <span class="mission-status-location">@EinsatzService.CurrentEinsatz.Einsatzort</span>
                 }
@@ -107,7 +111,9 @@
 
     private int RunningTeamsCount => EinsatzService.Teams.Count(team => team.IsRunning);
 
-    private int ReadyTeamsCount => EinsatzService.Teams.Count(team => !team.IsDroneTeam && !team.IsSupportTeam && !team.IsRunning);
+    private int PausingTeamsCount => EinsatzService.Teams.Count(team => team.IsPausing);
+
+    private int ReadyTeamsCount => EinsatzService.Teams.Count(team => !team.IsDroneTeam && !team.IsSupportTeam && !team.IsRunning && !team.IsPausing);
 
     protected override void OnInitialized()
     {

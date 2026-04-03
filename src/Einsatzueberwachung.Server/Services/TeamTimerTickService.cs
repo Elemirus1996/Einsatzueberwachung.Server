@@ -27,6 +27,16 @@ public sealed class TeamTimerTickService : BackgroundService
                 team.Tick(now);
                 await _einsatzService.UpdateTeamAsync(team);
             }
+
+            // Pausierende Teams ebenfalls broadcasten, damit der Pausen-Countdown live läuft
+            var pausingTeams = _einsatzService.Teams
+                .Where(t => t.IsPausing)
+                .ToList();
+
+            foreach (var team in pausingTeams)
+            {
+                await _einsatzService.UpdateTeamAsync(team);
+            }
         }
     }
 

@@ -1148,6 +1148,11 @@ a {
     animation: pulse-critical 2s infinite;
 }
 
+.monitor-team-card.team-pausing {
+    border-color: var(--warning-color);
+    background: rgba(255, 193, 7, 0.07);
+}
+
 @keyframes pulse-critical {
     0%, 100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
     50% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
@@ -1189,6 +1194,16 @@ a {
 
 .timer-display.timer-critical {
     color: var(--danger-color);
+}
+
+.timer-display.timer-pausing {
+    font-size: 1.6rem;
+    color: var(--warning-color);
+}
+
+.pause-info-line {
+    font-size: 0.78rem;
+    opacity: 0.75;
 }
 
 .warning-badge {

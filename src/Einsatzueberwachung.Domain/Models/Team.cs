@@ -39,6 +39,24 @@ namespace Einsatzueberwachung.Domain.Models
         public string DroneId { get; set; }
         public bool IsSupportTeam { get; set; }
 
+        // Pausen-Modus für Hundeteams
+        public bool IsPausing { get; set; }
+        public DateTime? PauseStartTime { get; set; }
+        public TimeSpan RunTimeBeforePause { get; set; }
+        public int RequiredPauseMinutes { get; set; }
+
+        public TimeSpan PausedDuration => IsPausing && PauseStartTime.HasValue
+            ? DateTime.Now - PauseStartTime.Value
+            : TimeSpan.Zero;
+
+        public int RemainingPauseMinutes => IsPausing
+            ? Math.Max(0, RequiredPauseMinutes - (int)PausedDuration.TotalMinutes)
+            : 0;
+
+        public bool IsPauseComplete => IsPausing && PausedDuration.TotalMinutes >= RequiredPauseMinutes;
+
+        private bool IsHundeteam => !IsDroneTeam && !IsSupportTeam && !string.IsNullOrEmpty(DogId);
+
         public event Action<Team>? TimerStarted;
         public event Action<Team>? TimerStopped;
         public event Action<Team>? TimerReset;
@@ -69,6 +87,10 @@ namespace Einsatzueberwachung.Domain.Models
             DroneType = string.Empty;
             DroneId = string.Empty;
             IsSupportTeam = false;
+            IsPausing = false;
+            PauseStartTime = null;
+            RunTimeBeforePause = TimeSpan.Zero;
+            RequiredPauseMinutes = 0;
         }
 
         public void StartTimer()
@@ -87,6 +109,11 @@ namespace Einsatzueberwachung.Domain.Models
             {
                 IsRunning = false;
                 TimerStopped?.Invoke(this);
+
+                if (IsHundeteam && ElapsedTime.TotalMinutes >= 10)
+                {
+                    EnterPauseMode();
+                }
             }
         }
 
@@ -96,7 +123,19 @@ namespace Einsatzueberwachung.Domain.Models
             ElapsedTime = TimeSpan.Zero;
             IsFirstWarning = false;
             IsSecondWarning = false;
+            IsPausing = false;
+            PauseStartTime = null;
+            RunTimeBeforePause = TimeSpan.Zero;
+            RequiredPauseMinutes = 0;
             TimerReset?.Invoke(this);
+        }
+
+        public void EnterPauseMode()
+        {
+            RunTimeBeforePause = ElapsedTime;
+            RequiredPauseMinutes = ElapsedTime.TotalMinutes <= 20 ? 60 : 180;
+            PauseStartTime = DateTime.Now;
+            IsPausing = true;
         }
 
         public void CheckWarnings()
