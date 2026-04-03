@@ -8,6 +8,7 @@
 @inject IMasterDataService MasterDataService
 @inject IArchivService ArchivService
 @inject GitHubUpdateService UpdateService
+@inject Einsatzueberwachung.Server.Services.BrowserPreferencesService BrowserPrefs
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -88,18 +89,18 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">Theme-Modus</label>
-                        <InputSelect class="form-select" @bind-Value="_appSettings.ThemeMode">
+                        <InputSelect class="form-select" @bind-Value="BrowserPrefs.Preferences.ThemeMode">
                             <option value="Manual">Manuell (per Button umschalten)</option>
                             <option value="Auto">Automatisch (Systemmodus)</option>
                             <option value="Scheduled">Geplant (Zeitfenster)</option>
                         </InputSelect>
-                        @if (_appSettings.ThemeMode == "Auto")
+                        @if (BrowserPrefs.Preferences.ThemeMode == "Auto")
                         {
                             <div class="form-text"><i class="bi bi-info-circle me-1"></i>Das Theme folgt automatisch dem Betriebssystemmodus des Browsers.</div>
                         }
                     </div>
 
-                    @if (_appSettings.ThemeMode == "Scheduled")
+                    @if (BrowserPrefs.Preferences.ThemeMode == "Scheduled")
                     {
                         <div class="mb-3">
                             <label class="form-label"><i class="bi bi-clock me-1"></i>Zeitfenster für Dunkel-Modus</label>
@@ -107,32 +108,32 @@
                                 <div class="col-6">
                                     <label class="form-label small text-muted mb-1">Dunkel ab</label>
                                     <input type="time" class="form-control"
-                                           value="@_darkStartTimeStr"
-                                           @onchange="e => _darkStartTimeStr = e.Value?.ToString() ?? _darkStartTimeStr" />
+                                           value="@BrowserPrefs.Preferences.DarkModeStartTime"
+                                           @onchange="e => BrowserPrefs.Preferences.DarkModeStartTime = e.Value?.ToString() ?? BrowserPrefs.Preferences.DarkModeStartTime" />
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label small text-muted mb-1">Hell ab</label>
                                     <input type="time" class="form-control"
-                                           value="@_darkEndTimeStr"
-                                           @onchange="e => _darkEndTimeStr = e.Value?.ToString() ?? _darkEndTimeStr" />
+                                           value="@BrowserPrefs.Preferences.DarkModeEndTime"
+                                           @onchange="e => BrowserPrefs.Preferences.DarkModeEndTime = e.Value?.ToString() ?? BrowserPrefs.Preferences.DarkModeEndTime" />
                                 </div>
                             </div>
                             <div class="form-text">Z.B. Dunkel ab 20:00, Hell ab 06:00 (über Mitternacht möglich).</div>
                         </div>
                     }
 
-                    @if (_appSettings.ThemeMode == "Manual")
+                    @if (BrowserPrefs.Preferences.ThemeMode == "Manual")
                     {
                         <div class="mb-3">
                             <label class="form-label">Design-Modus</label>
                             <div class="settings-segmented">
                                 <button type="button"
-                                        class="btn @(_appSettings.IsDarkMode ? "btn-outline-light" : "btn-light")"
+                                        class="btn @(BrowserPrefs.Preferences.IsDarkMode ? "btn-outline-light" : "btn-light")"
                                         @onclick="() => SetDesignModeAsync(false)">
                                     <i class="bi bi-brightness-high me-1"></i>Hell
                                 </button>
                                 <button type="button"
-                                        class="btn @(_appSettings.IsDarkMode ? "btn-secondary" : "btn-outline-secondary")"
+                                        class="btn @(BrowserPrefs.Preferences.IsDarkMode ? "btn-secondary" : "btn-outline-secondary")"
                                         @onclick="() => SetDesignModeAsync(true)">
                                     <i class="bi bi-moon-stars me-1"></i>Dunkel
                                 </button>
@@ -170,19 +171,19 @@
 
                     <h3 class="h5 mb-3"><i class="bi bi-volume-up me-1"></i>Sound-Warnungen</h3>
                     <div class="form-check form-switch mb-2">
-                        <InputCheckbox class="form-check-input" id="soundAlerts" @bind-Value="_appSettings.SoundAlertsEnabled" />
+                        <InputCheckbox class="form-check-input" id="soundAlerts" @bind-Value="BrowserPrefs.Preferences.SoundAlertsEnabled" />
                         <label class="form-check-label" for="soundAlerts">Akustische Warnungen aktiviert</label>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Lautstärke: @_appSettings.SoundVolume%</label>
-                        <input class="form-range" type="range" min="0" max="100" @bind="_appSettings.SoundVolume" />
+                        <label class="form-label">Lautstärke: @BrowserPrefs.Preferences.SoundVolume%</label>
+                        <input class="form-range" type="range" min="0" max="100" @bind="BrowserPrefs.Preferences.SoundVolume" />
                     </div>
 
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
                             <label class="form-label">Erste Warnung - Sound</label>
-                            <InputSelect class="form-select" @bind-Value="_appSettings.FirstWarningSound">
+                            <InputSelect class="form-select" @bind-Value="BrowserPrefs.Preferences.FirstWarningSound">
                                 <option value="beep">Signalton</option>
                                 <option value="bell">Glocke</option>
                                 <option value="alarm">Alarm</option>
@@ -200,12 +201,12 @@
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label">Frequenz (Hz)</label>
-                            <InputNumber class="form-control" @bind-Value="_appSettings.FirstWarningFrequency" />
+                            <InputNumber class="form-control" @bind-Value="BrowserPrefs.Preferences.FirstWarningFrequency" />
                             <div class="form-text">Standard: 800 Hz</div>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label">Kritische Warnung - Sound</label>
-                            <InputSelect class="form-select" @bind-Value="_appSettings.SecondWarningSound">
+                            <InputSelect class="form-select" @bind-Value="BrowserPrefs.Preferences.SecondWarningSound">
                                 <option value="beep">Signalton</option>
                                 <option value="bell">Glocke</option>
                                 <option value="alarm">Alarm (Standard)</option>
@@ -223,19 +224,19 @@
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label">Frequenz (Hz)</label>
-                            <InputNumber class="form-control" @bind-Value="_appSettings.SecondWarningFrequency" />
+                            <InputNumber class="form-control" @bind-Value="BrowserPrefs.Preferences.SecondWarningFrequency" />
                             <div class="form-text">Standard: 1200 Hz</div>
                         </div>
                     </div>
 
                     <div class="form-check form-switch mt-3">
-                        <InputCheckbox class="form-check-input" id="repeatSecondWarning" @bind-Value="_appSettings.RepeatSecondWarning" />
+                        <InputCheckbox class="form-check-input" id="repeatSecondWarning" @bind-Value="BrowserPrefs.Preferences.RepeatSecondWarning" />
                         <label class="form-check-label" for="repeatSecondWarning">Kritische Warnung wiederholen</label>
                     </div>
 
                     <div class="mt-2">
                         <label class="form-label">Wiederholungs-Intervall (Sekunden)</label>
-                        <InputNumber class="form-control" @bind-Value="_appSettings.RepeatWarningIntervalSeconds" />
+                        <InputNumber class="form-control" @bind-Value="BrowserPrefs.Preferences.RepeatWarningIntervalSeconds" />
                         <div class="form-text">Standard: 30 Sekunden</div>
                     </div>
 
@@ -324,7 +325,7 @@
                     <h2 class="h4 mb-0"><i class="bi bi-info-circle me-2"></i>System-Information</h2>
                 </div>
                 <div class="card-body">
-                    <div class="mb-2"><strong>Version:</strong> 1.1.11</div>
+                    <div class="mb-2"><strong>Version:</strong> 1.2.0</div>
                     <div class="mb-2"><strong>Framework:</strong> .NET 8 / Blazor Server</div>
                     <div class="mb-3"><strong>Plattform:</strong> Web-basiert</div>
 
@@ -428,8 +429,6 @@
     private bool _audioTestError;
     private UpdateRuntimeStatus _updateStatus = new();
     private string _quickNoteTemplatesText = string.Empty;
-    private string _darkStartTimeStr = "20:00";
-    private string _darkEndTimeStr = "06:00";
 
     protected override async Task OnInitializedAsync()
     {
@@ -437,12 +436,18 @@
         _appSettings = await SettingsService.GetAppSettingsAsync();
         EnsureQuickNoteTemplatesInitialized(_appSettings);
         _quickNoteTemplatesText = string.Join(Environment.NewLine, _appSettings.QuickNoteTemplates);
-        _darkStartTimeStr = _appSettings.DarkModeStartTime.ToString(@"hh\:mm");
-        _darkEndTimeStr = _appSettings.DarkModeEndTime.ToString(@"hh\:mm");
         _dataDirectory = AppPathResolver.GetDataDirectory();
         _reportDirectory = AppPathResolver.GetReportDirectory();
         _mobileUrl = new Uri(new Uri(Navigation.BaseUri), "mobile/").ToString();
         _updateStatus = UpdateService.GetStatusSnapshot();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        // BrowserPrefs aus localStorage laden (vom MainLayout ggf. bereits geladen)
+        await BrowserPrefs.LoadAsync();
+        StateHasChanged();
     }
 
     private async Task CheckForUpdatesAsync()
@@ -499,6 +504,7 @@
 
     private async Task SaveAsync()
     {
+        // --- Server-globale Einstellungen (Timer, Updates, Schnell-Notizen) ---
         _appSettings.QuickNoteTemplates = ParseQuickNoteTemplates(_quickNoteTemplatesText);
         if (_appSettings.QuickNoteTemplates.Count == 0)
         {
@@ -506,40 +512,36 @@
             _quickNoteTemplatesText = string.Join(Environment.NewLine, _appSettings.QuickNoteTemplates);
         }
 
-        // Zeitfenster aus den Eingabefeldern übernehmen
-        if (TimeSpan.TryParse(_darkStartTimeStr, out var parsedStart))
-            _appSettings.DarkModeStartTime = parsedStart;
-        if (TimeSpan.TryParse(_darkEndTimeStr, out var parsedEnd))
-            _appSettings.DarkModeEndTime = parsedEnd;
-
-        _appSettings.Theme = _appSettings.IsDarkMode ? "Dark" : "Light";
         await SettingsService.SaveStaffelSettingsAsync(_staffelSettings);
         await SettingsService.SaveAppSettingsAsync(_appSettings);
 
-        // Theme sofort anwenden je nach aktivem Modus
-        if (_appSettings.ThemeMode == "Auto")
+        // --- Browser-lokale Einstellungen (Theme + Sound) ---
+        var prefs = BrowserPrefs.Preferences;
+
+        // Scheduled-Modus: Dark/Light sofort berechnen
+        if (prefs.ThemeMode == "Scheduled")
+        {
+            if (TimeSpan.TryParse(prefs.DarkModeStartTime, out var start)
+                && TimeSpan.TryParse(prefs.DarkModeEndTime, out var end))
+            {
+                var now = DateTime.Now.TimeOfDay;
+                prefs.IsDarkMode = start < end
+                    ? now >= start && now < end
+                    : now >= start || now < end;
+            }
+        }
+
+        await BrowserPrefs.SaveAsync();
+
+        // Theme im Browser sofort anwenden
+        if (prefs.ThemeMode == "Auto")
         {
             await JS.InvokeVoidAsync("themeSync.watchSystemTheme");
         }
-        else if (_appSettings.ThemeMode == "Scheduled")
+        else
         {
             await JS.InvokeVoidAsync("themeSync.stopWatchingSystemTheme");
-            // Sofort prüfen ob Dark-Modus aktiv sein soll
-            var now = DateTime.Now.TimeOfDay;
-            var start = _appSettings.DarkModeStartTime;
-            var end = _appSettings.DarkModeEndTime;
-            bool shouldBeDark = start < end
-                ? now >= start && now < end
-                : now >= start || now < end;
-            _appSettings.IsDarkMode = shouldBeDark;
-            _appSettings.Theme = shouldBeDark ? "Dark" : "Light";
-            await SettingsService.SetIsDarkModeAsync(shouldBeDark);
-            await JS.InvokeVoidAsync("themeSync.setTheme", shouldBeDark);
-        }
-        else // Manual
-        {
-            await JS.InvokeVoidAsync("themeSync.stopWatchingSystemTheme");
-            await JS.InvokeVoidAsync("themeSync.setTheme", _appSettings.IsDarkMode);
+            await JS.InvokeVoidAsync("themeSync.setTheme", prefs.IsDarkMode);
         }
 
         _status = "Einstellungen gespeichert.";
@@ -610,12 +612,11 @@
 
     private async Task SetDesignModeAsync(bool darkMode)
     {
-        if (_appSettings.ThemeMode != "Manual")
+        if (BrowserPrefs.Preferences.ThemeMode != "Manual")
             return;
 
-        _appSettings.IsDarkMode = darkMode;
-        _appSettings.Theme = darkMode ? "Dark" : "Light";
-        await SettingsService.SetIsDarkModeAsync(darkMode);
+        BrowserPrefs.Update(p => p.IsDarkMode = darkMode);
+        await BrowserPrefs.SaveAsync();
         await JS.InvokeVoidAsync("themeSync.setTheme", darkMode);
     }
 
@@ -928,9 +929,10 @@
 
     private async Task PlayFirstWarningTestAsync()
     {
+        var p = BrowserPrefs.Preferences;
         await PlayWarningTestAsync(
-            _appSettings.FirstWarningSound,
-            _appSettings.FirstWarningFrequency,
+            p.FirstWarningSound,
+            p.FirstWarningFrequency,
             repeat: false,
             repeatSeconds: 0,
             "Test fuer erste Warnung abgespielt.");
@@ -938,11 +940,12 @@
 
     private async Task PlayCriticalWarningTestAsync()
     {
+        var p = BrowserPrefs.Preferences;
         await PlayWarningTestAsync(
-            _appSettings.SecondWarningSound,
-            _appSettings.SecondWarningFrequency,
-            _appSettings.RepeatSecondWarning,
-            Math.Max(1, _appSettings.RepeatWarningIntervalSeconds),
+            p.SecondWarningSound,
+            p.SecondWarningFrequency,
+            p.RepeatSecondWarning,
+            Math.Max(1, p.RepeatWarningIntervalSeconds),
             "Test fuer kritische Warnung gestartet.");
     }
 
@@ -967,7 +970,7 @@
                 "layoutTools.playWarningAlert",
                 soundType,
                 frequency,
-                _appSettings.SoundVolume,
+                BrowserPrefs.Preferences.SoundVolume,
                 repeat,
                 repeatSeconds);
 

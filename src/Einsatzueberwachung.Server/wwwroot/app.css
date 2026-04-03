@@ -1996,6 +1996,11 @@ a {
     border-color: var(--ui-form-border);
 }
 
+.modal-modern .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
 .form-group-modern {
     margin-bottom: 1.5rem;
 }

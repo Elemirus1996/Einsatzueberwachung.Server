@@ -1,7 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @implements IAsyncDisposable
 @using Einsatzueberwachung.Domain.Models
-@inject Einsatzueberwachung.Domain.Interfaces.ISettingsService SettingsService
+@inject Einsatzueberwachung.Server.Services.BrowserPreferencesService BrowserPrefs
 @inject Einsatzueberwachung.Domain.Interfaces.IEinsatzService EinsatzService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
@@ -41,8 +41,8 @@
             <div class="mission-topbar-actions">
                 <button class="btn btn-sm btn-outline-secondary"
                         type="button"
-                        title="@(_appSettings.ThemeMode == "Auto" ? "Theme: Automatisch (Systemmodus)" : _appSettings.ThemeMode == "Scheduled" ? "Theme: Zeitsteuerung aktiv" : "Dark Mode umschalten")"
-                        disabled="@(_appSettings.ThemeMode != "Manual")"
+                        title="@(BrowserPrefs.Preferences.ThemeMode == "Auto" ? "Theme: Automatisch (Systemmodus)" : BrowserPrefs.Preferences.ThemeMode == "Scheduled" ? "Theme: Zeitsteuerung aktiv" : "Dark Mode umschalten")"
+                        disabled="@(BrowserPrefs.Preferences.ThemeMode != "Manual")"
                         @onclick="ToggleThemeAsync">
                     <i class="bi @( _isDarkMode ? "bi-sun" : "bi-moon-stars")"></i>
                 </button>
@@ -96,7 +96,6 @@
     private bool _isDarkMode;
     private bool _sidebarCollapsed;
     private DotNetObjectReference<MainLayout>? _dotNetRef;
-    private AppSettings _appSettings = new();
     private bool _showCriticalWarningPopup;
     private string _criticalWarningTitle = string.Empty;
     private string _criticalWarningMessage = string.Empty;
@@ -127,14 +126,14 @@
             return;
         }
 
-        _isDarkMode = await SettingsService.GetIsDarkModeAsync();
-        _appSettings = await SettingsService.GetAppSettingsAsync();
+        await BrowserPrefs.LoadAsync();
+        _isDarkMode = BrowserPrefs.Preferences.IsDarkMode;
         _sidebarCollapsed = await JS.InvokeAsync<bool>("layoutTools.getSidebarCollapsed");
         _dotNetRef = DotNetObjectReference.Create(this);
 
         await JS.InvokeVoidAsync("themeSync.init", _dotNetRef, _isDarkMode);
 
-        if (_appSettings.ThemeMode == "Auto")
+        if (BrowserPrefs.Preferences.ThemeMode == "Auto")
         {
             await JS.InvokeVoidAsync("themeSync.watchSystemTheme");
         }
@@ -161,14 +160,14 @@
     {
         _ = InvokeAsync(async () =>
         {
-            _appSettings = await SettingsService.GetAppSettingsAsync();
+            var prefs = BrowserPrefs.Preferences;
             var audioStarted = true;
-            if (_appSettings.SoundAlertsEnabled)
+            if (prefs.SoundAlertsEnabled)
             {
-                var soundType = isSecondWarning ? _appSettings.SecondWarningSound : _appSettings.FirstWarningSound;
-                var frequency = isSecondWarning ? _appSettings.SecondWarningFrequency : _appSettings.FirstWarningFrequency;
-                var shouldRepeat = isSecondWarning && _appSettings.RepeatSecondWarning;
-                var repeatSeconds = Math.Max(1, _appSettings.RepeatWarningIntervalSeconds);
+                var soundType = isSecondWarning ? prefs.SecondWarningSound : prefs.FirstWarningSound;
+                var frequency = isSecondWarning ? prefs.SecondWarningFrequency : prefs.FirstWarningFrequency;
+                var shouldRepeat = isSecondWarning && prefs.RepeatSecondWarning;
+                var repeatSeconds = Math.Max(1, prefs.RepeatWarningIntervalSeconds);
 
                 try
                 {
@@ -176,7 +175,7 @@
                         "layoutTools.playWarningAlert",
                         soundType,
                         frequency,
-                        _appSettings.SoundVolume,
+                        prefs.SoundVolume,
                         shouldRepeat,
                         repeatSeconds);
                 }
@@ -186,7 +185,7 @@
                 }
             }
 
-            _audioEnableHintVisible = _appSettings.SoundAlertsEnabled && !audioStarted;
+            _audioEnableHintVisible = prefs.SoundAlertsEnabled && !audioStarted;
 
             if (isSecondWarning)
             {
@@ -216,7 +215,7 @@
 
     private async Task ApplyPersistedThemeAsync()
     {
-        _isDarkMode = await SettingsService.GetIsDarkModeAsync();
+        _isDarkMode = BrowserPrefs.Preferences.IsDarkMode;
         await JS.InvokeVoidAsync("themeSync.setTheme", _isDarkMode);
     }
 
@@ -250,12 +249,12 @@
 
     private async Task ToggleThemeAsync()
     {
-        _appSettings = await SettingsService.GetAppSettingsAsync();
-        if (_appSettings.ThemeMode != "Manual")
+        if (BrowserPrefs.Preferences.ThemeMode != "Manual")
             return;
 
         _isDarkMode = !_isDarkMode;
-        await SettingsService.SetIsDarkModeAsync(_isDarkMode);
+        BrowserPrefs.Update(p => p.IsDarkMode = _isDarkMode);
+        await BrowserPrefs.SaveAsync();
         await JS.InvokeVoidAsync("themeSync.setTheme", _isDarkMode);
     }
 
@@ -268,7 +267,8 @@
     public async Task OnThemeChangedFromStorage(bool isDark)
     {
         _isDarkMode = isDark;
-        await SettingsService.SetIsDarkModeAsync(isDark);
+        BrowserPrefs.Update(p => p.IsDarkMode = isDark);
+        // SaveAsync() NICHT aufrufen – die Änderung kam bereits aus dem localStorage
         await InvokeAsync(StateHasChanged);
     }
 
