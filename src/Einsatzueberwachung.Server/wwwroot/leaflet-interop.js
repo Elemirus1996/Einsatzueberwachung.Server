@@ -93,11 +93,15 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         layerControl.addTo(map);
         log('Layer Control hinzugeFuegt:', layerControl);
             
-        // FeatureGroup fuer gezeichnete Items
+        // FeatureGroup fuer gezeichnete Items (NUR neue, ungespeicherte Zeichnungen!)
         const drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
+        
+        // NEUE FeatureGroup für gespeicherte Suchgebiete (SEPARATE Layer!)
+        const savedAreas = new L.FeatureGroup();
+        map.addLayer(savedAreas);
             
-        // Draw Control hinzufuegen
+        // Draw Control erstellen
         const drawControl = new L.Control.Draw({
             edit: {
                 featureGroup: drawnItems,
@@ -124,6 +128,8 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                 marker: true
             }
         });
+        // Draw Control zur Karte hinzufügen (nötig für interne Funktionalität)
+        // Die Buttons werden via CSS versteckt und über externe Buttons gesteuert
         map.addControl(drawControl);
             
         // Event-Listener fuer gezeichnete Shapes
@@ -166,6 +172,8 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         this.maps[mapId] = {
             map: map,
             drawnItems: drawnItems,
+            savedAreas: savedAreas,
+            drawControl: drawControl,
             markers: {},
             dotNetReference: dotNetReference,
             layers: {
@@ -200,7 +208,9 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             });
             
             layer.bindPopup(`<strong>${name}</strong>`);
-            layer.addTo(mapData.drawnItems);
+            // WICHTIG: Zu savedAreas hinzufügen (NICHT drawnItems!)
+            // Das verhindert, dass gespeicherte Gebiete gelöscht werden
+            layer.addTo(mapData.savedAreas);
             this.setSearchAreaMetadata(layer, areaId);
             
             // Layer-ID speichern
@@ -219,7 +229,15 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             const mapData = this.maps[mapId];
             if (!mapData || !mapData.markers[areaId]) return false;
             
-            mapData.drawnItems.removeLayer(mapData.markers[areaId]);
+            const layer = mapData.markers[areaId];
+            
+            // Versuche aus beiden Gruppen zu entfernen (savedAreas oder drawnItems)
+            if (mapData.savedAreas.hasLayer(layer)) {
+                mapData.savedAreas.removeLayer(layer);
+            } else if (mapData.drawnItems.hasLayer(layer)) {
+                mapData.drawnItems.removeLayer(layer);
+            }
+            
             delete mapData.markers[areaId];
             
             return true;
@@ -450,10 +468,20 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                 });
             }
             
-            // Alle gezeichneten Elemente (Suchgebiete) aus drawnItems
+            // Alle gespeicherten Suchgebiete aus savedAreas
+            if (mapData.savedAreas) {
+                mapData.savedAreas.eachLayer(layer => {
+                    // Nur hinzufügen wenn nicht schon in allLayers
+                    if (!allLayers.includes(layer)) {
+                        allLayers.push(layer);
+                    }
+                });
+            }
+            
+            // Alle neuen, ungespeicherten Zeichnungen aus drawnItems
             if (mapData.drawnItems) {
                 mapData.drawnItems.eachLayer(layer => {
-                    // Nur hinzufügen wenn nicht schon in markers
+                    // Nur hinzufügen wenn nicht schon in allLayers
                     if (!allLayers.includes(layer)) {
                         allLayers.push(layer);
                     }
@@ -607,6 +635,87 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             return true;
         } catch (error) {
             error('Fehler beim Dispose der Karte:', error);
+            return false;
+        }
+    },
+    
+    // Aktiviert einen spezifischen Draw-Modus (polygon, rectangle, marker)
+    activateDrawMode: function(mapId, drawType) {
+        try {
+            const mapData = this.maps[mapId];
+            if (!mapData) {
+                console.error('Karte nicht gefunden:', mapId);
+                return false;
+            }
+            
+            const drawControl = mapData.drawControl;
+            if (!drawControl) {
+                console.error('Draw Control nicht gefunden für Karte:', mapId);
+                return false;
+            }
+            
+            const drawMode = drawControl._toolbars && drawControl._toolbars.draw;
+            if (!drawMode) {
+                console.error('Draw Toolbar nicht verfügbar');
+                return false;
+            }
+            
+            // Aktiviere den spezifischen Draw-Modus gegenüber Leaflet Draw API
+            switch(drawType.toLowerCase()) {
+                case 'polygon':
+                    if (drawMode._modes.polygon) {
+                        drawMode._modes.polygon.handler.enable();
+                        console.log('✓ Polygon-Modus aktiviert');
+                    }
+                    break;
+                case 'rectangle':
+                    if (drawMode._modes.rectangle) {
+                        drawMode._modes.rectangle.handler.enable();
+                        console.log('✓ Rechteck-Modus aktiviert');
+                    }
+                    break;
+                case 'marker':
+                    if (drawMode._modes.marker) {
+                        drawMode._modes.marker.handler.enable();
+                        console.log('✓ Marker-Modus aktiviert');
+                    }
+                    break;
+                default:
+                    console.error('Unbekannter Draw-Typ:', drawType);
+                    return false;
+            }
+            
+            return true;
+        } catch (err) {
+            console.error('Fehler beim Aktivieren des Draw-Modus:', err);
+            console.error('Error stack:', err.stack);
+            return false;
+        }
+    },
+    
+    // Löscht alle Zeichnungen von der Karte
+    clearAllDrawings: function(mapId) {
+        try {
+            const mapData = this.maps[mapId];
+            if (!mapData || !mapData.drawnItems) {
+                error('Karte oder drawnItems nicht gefunden:', mapId);
+                return false;
+            }
+            
+            // Alle Layer aus drawnItems entfernen
+            const layersToRemove = [];
+            mapData.drawnItems.eachLayer(layer => {
+                layersToRemove.push(layer);
+            });
+            
+            layersToRemove.forEach(layer => {
+                mapData.drawnItems.removeLayer(layer);
+            });
+            
+            log('Alle Zeichnungen gelöscht, Anzahl:', layersToRemove.length);
+            return true;
+        } catch (err) {
+            error('Fehler beim Löschen der Zeichnungen:', err);
             return false;
         }
     }

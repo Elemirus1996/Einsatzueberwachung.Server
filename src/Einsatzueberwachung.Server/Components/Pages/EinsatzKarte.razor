@@ -10,273 +10,200 @@
 
 <PageTitle>Karte | Einsatzüberwachung</PageTitle>
 
-<div class="map-container">
-    <div class="page-header">
-        <h1><i class="bi bi-map-fill"></i> Karte & Suchgebiete</h1>
-        <p class="text-muted">Interaktive Karte zur Verwaltung von Suchgebieten</p>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <div class="input-group">
+<div class="map-page-layout">
+    <!-- Header -->
+    <header class="map-header">
+        <div class="header-left">
+            <h1><i class="bi bi-map-fill"></i> Karte</h1>
+        </div>
+        
+        <div class="header-center">
+            <div class="input-group input-group-sm">
                 <input type="text" 
                        class="form-control" 
                        @bind="_addressSearch" 
                        @bind:event="oninput"
-                       placeholder="Adresse oder Ort suchen..." 
-                       aria-label="Adresse oder Ort suchen" />
+                       placeholder="Adresse suchen..." 
+                       aria-label="Adresse suchen" />
                 <button class="btn btn-primary" @onclick="SearchAddress" aria-label="Adresse suchen">
-                    <i class="bi bi-search" aria-hidden="true"></i> Suchen
+                    <i class="bi bi-search"></i>
                 </button>
             </div>
-            @if (!string.IsNullOrEmpty(_searchMessage))
-            {
-                <small class="text-muted">@_searchMessage</small>
-            }
         </div>
-        <div class="col-md-6 text-end">
-            <button class="btn btn-success" @onclick="ShowAddAreaDialog" aria-label="Suchgebiet hinzufügen">
-                <i class="bi bi-plus-circle-fill" aria-hidden="true"></i> Suchgebiet Hinzufügen
-            </button>
-            <button class="btn btn-info" @onclick="SetElwPosition" aria-label="@(_hasElwPosition ? "ELW verschieben" : "ELW-Position setzen")">
-                <i class="bi bi-geo-fill" aria-hidden="true"></i> @(_hasElwPosition ? "ELW verschieben" : "ELW-Position setzen")
-            </button>
-            <button class="btn btn-warning" @onclick="PrintMap" aria-label="Karte drucken">
-                <i class="bi bi-printer-fill" aria-hidden="true"></i> Karte drucken
-            </button>
-            <button class="btn btn-secondary" @onclick="GoBack" aria-label="Zurück zur vorherigen Seite">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> Zurück
-            </button>
-        </div>
-    </div>
-    
-    <!-- Kartenansicht-Umschalter -->
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="btn-group" role="group" aria-label="Kartenansicht auswählen">
+        
+        <div class="header-right">
+            <div class="btn-group btn-group-sm" role="group">
                 <button type="button" 
                         class="btn btn-outline-primary @(_currentMapLayer == "streets" ? "active" : "")" 
                         @onclick="@(() => ChangeMapLayer("streets"))"
-                        aria-label="Straßenkarte" 
-                        aria-pressed="@(_currentMapLayer == "streets")">
-                    <i class="bi bi-map" aria-hidden="true"></i> Straßenkarte
+                        title="Straßenkarte">
+                    <i class="bi bi-map"></i>
                 </button>
                 <button type="button" 
                         class="btn btn-outline-primary @(_currentMapLayer == "satellite" ? "active" : "")" 
                         @onclick="@(() => ChangeMapLayer("satellite"))"
-                        aria-label="Satellitenansicht" 
-                        aria-pressed="@(_currentMapLayer == "satellite")">
-                    <i class="bi bi-globe" aria-hidden="true"></i> Satellit
+                        title="Satellit">
+                    <i class="bi bi-globe"></i>
                 </button>
                 <button type="button" 
                         class="btn btn-outline-primary @(_currentMapLayer == "hybrid" ? "active" : "")" 
                         @onclick="@(() => ChangeMapLayer("hybrid"))"
-                        aria-label="Hybrid-Ansicht" 
-                        aria-pressed="@(_currentMapLayer == "hybrid")">
-                    <i class="bi bi-layers" aria-hidden="true"></i> Hybrid
+                        title="Hybrid">
+                    <i class="bi bi-layers"></i>
                 </button>
             </div>
-            @if (_hasElwPosition)
-            {
-                <span class="badge bg-success ms-3" role="status">
-                    <i class="bi bi-geo-fill" aria-hidden="true"></i> ELW-Position gesetzt
-                </span>
-            }
-            <button type="button" class="btn btn-sm btn-outline-info ms-2" @onclick="ShowHelp" aria-label="Hilfe anzeigen">
-                <i class="bi bi-question-circle" aria-hidden="true"></i> Hilfe
+            
+            <button class="btn btn-sm btn-outline-info btn-elw" @onclick="SetElwPosition" 
+                    title="@(_hasElwPosition ? "ELW verschieben" : "ELW setzen")">
+                <i class="bi bi-geo-fill"></i> @(_hasElwPosition ? "ELW verschieben" : "ELW setzen")
+            </button>
+            <button class="btn btn-sm btn-outline-warning" @onclick="PrintMap" title="Drucken">
+                <i class="bi bi-printer"></i>
             </button>
         </div>
-    </div>
+    </header>
 
-    <!-- Karte -->
-    <div class="card mb-4 map-page">
-        <div class="card-body p-0">
-            <!-- Kompakte Druck-Kopfzeile für Karte (nur beim Drucken sichtbar) -->
-            <div class="print-map-header">
-                <h3>@EinsatzService.CurrentEinsatz.EinsatzNummer - @EinsatzService.CurrentEinsatz.Einsatzort</h3>
-                <small>@EinsatzService.CurrentEinsatz.EinsatzDatum.ToString("dd.MM.yyyy HH:mm") Uhr | Einsatzleiter: @EinsatzService.CurrentEinsatz.Einsatzleiter</small>
-            </div>
-            
-            <div id="einsatzMap" style="height: 600px; width: 100%;"></div>
-        </div>
-    </div>
-    
-    <!-- Seite 2: Druckbare Suchgebiete-Liste (nur beim Drucken sichtbar) -->
-    <div class="print-list-page">
-        <div class="print-list-header">
-            <h2><i class="bi bi-geo-alt-fill"></i> Suchgebiete - @EinsatzService.CurrentEinsatz.EinsatzNummer</h2>
-            <p>@EinsatzService.CurrentEinsatz.Einsatzort | @EinsatzService.CurrentEinsatz.EinsatzDatum.ToString("dd.MM.yyyy HH:mm") Uhr</p>
-            <p><strong>Einsatzleiter:</strong> @EinsatzService.CurrentEinsatz.Einsatzleiter</p>
-        </div>
-        
-        @if (_hasElwPosition && EinsatzService.CurrentEinsatz.ElwPosition.HasValue)
-        {
-            var elw = EinsatzService.CurrentEinsatz.ElwPosition.Value;
-            <div class="elw-info">
-                <strong><i class="bi bi-geo-fill"></i> ELW-Position:</strong>
-                @elw.Latitude.ToString("F5")°, @elw.Longitude.ToString("F5")°
-            </div>
-        }
-        
-        @if (_searchAreas.Any())
-        {
-            <table class="search-areas-table">
-                <thead>
-                    <tr>
-                        <th style="width: 5%;">Nr.</th>
-                        <th style="width: 20%;">Name</th>
-                        <th style="width: 20%;">Zugewiesenes Team</th>
-                        <th style="width: 15%;">Status</th>
-                        <th style="width: 15%;">Fläche</th>
-                        <th style="width: 25%;">Notizen</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @{ var index = 1; }
-                    @foreach (var area in _searchAreas.OrderBy(a => a.Name))
-                    {
-                        <tr>
-                            <td>@index</td>
-                            <td>
-                                <span class="color-box" style="background-color: @area.Color;"></span>
-                                <strong>@area.Name</strong>
-                            </td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(area.AssignedTeamName))
-                                {
-                                    <span class="team-name">@area.AssignedTeamName</span>
-                                }
-                                else
-                                {
-                                    <span style="color: #666; font-style: italic;">Nicht zugewiesen</span>
-                                }
-                            </td>
-                            <td>
-                                @if (area.IsCompleted)
-                                {
-                                    <span class="status-completed">&#10003; Abgeschlossen</span>
-                                }
-                                else
-                                {
-                                    <span class="status-in-progress">&#9679; In Bearbeitung</span>
-                                }
-                            </td>
-                            <td>@area.FormattedArea</td>
-                            <td>@(string.IsNullOrEmpty(area.Notes) ? "-" : area.Notes)</td>
-                        </tr>
-                        index++;
-                    }
-                </tbody>
-            </table>
-            
-            <div class="statistics-box">
-                <h4><i class="bi bi-bar-chart-fill"></i> Statistik</h4>
-                <div class="stat-row">
-                    <span>Gebiete gesamt:</span>
-                    <span class="stat-value">@_searchAreas.Count</span>
-                </div>
-                <div class="stat-row">
-                    <span>Abgeschlossen:</span>
-                    <span class="stat-value">@_searchAreas.Count(a => a.IsCompleted)</span>
-                </div>
-                <div class="stat-row">
-                    <span>In Bearbeitung:</span>
-                    <span class="stat-value">@_searchAreas.Count(a => !a.IsCompleted)</span>
-                </div>
-                <div class="stat-row">
-                    <span>Gesamtfläche:</span>
-                    <span class="stat-value">@GetTotalArea()</span>
-                </div>
-            </div>
-        }
-        else
-        {
-            <p style="text-align: center; font-style: italic; color: #666; padding: 30px;">Keine Suchgebiete definiert</p>
-        }
-    </div>
+    @if (!string.IsNullOrEmpty(_searchMessage))
+    {
+        <div class="search-message">@_searchMessage</div>
+    }
 
-    <!-- Suchgebiete Liste -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4><i class="bi bi-geo-alt-fill"></i> Suchgebiete (@_searchAreas.Count)</h4>
-        </div>
-        <div class="card-body">
+    <!-- Main Content: Sidebar + Map -->
+    <div class="map-content">
+        <!-- Sidebar: Suchgebiete -->
+        <aside class="map-sidebar">
+            <div class="sidebar-header">
+                <h3>Suchgebiete</h3>
+                <div class="sidebar-header-right">
+                    <span class="badge bg-primary">@_searchAreas.Count</span>
+                    <button class="btn btn-circle btn-primary" 
+                            @onclick="ActivateDrawPolygon"
+                            title="Neues Suchgebiet zeichnen">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+            </div>
+
             @if (_searchAreas.Any())
             {
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Zugewiesenes Team</th>
-                                <th>Status</th>
-                                <th>Fläche</th>
-                                <th>Aktionen</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var area in _searchAreas)
-                            {
-                                <tr>
-                                    <td>
-                                        <span style="display: inline-block; width: 20px; height: 20px; background-color: @area.Color; border-radius: 3px; margin-right: 8px;"></span>
-                                        <strong>@area.Name</strong>
-                                    </td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(area.AssignedTeamName))
-                                        {
-                                            <span class="badge bg-primary">@area.AssignedTeamName</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">Nicht zugewiesen</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (area.IsCompleted)
-                                        {
-                                            <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Abgeschlossen</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-warning">In Bearbeitung</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">@area.FormattedArea</small>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-info" @onclick="() => ZoomToArea(area)">
-                                            <i class="bi bi-zoom-in"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-primary" @onclick="() => EditSearchArea(area)">
-                                            <i class="bi bi-pencil-fill"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteSearchArea(area)">
-                                            <i class="bi bi-trash-fill"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                <div class="sidebar-list">
+                    @foreach (var area in _searchAreas)
+                    {
+                        <div class="search-area-item">
+                            <div class="area-header">
+                                <span class="color-box" style="background-color: @area.Color;"></span>
+                                <span class="area-name">@area.Name</span>
+                            </div>
+                            <div class="area-info">
+                                <small>@area.FormattedArea</small>
+                                @if (!string.IsNullOrEmpty(area.AssignedTeamName))
+                                {
+                                    <small class="text-primary">@area.AssignedTeamName</small>
+                                }
+                                @if (area.IsCompleted)
+                                {
+                                    <small class="text-success">✓</small>
+                                }
+                            </div>
+                            <div class="area-actions">
+                                <button class="btn btn-xs btn-link" @onclick="() => ZoomToArea(area)" title="Zoomen">
+                                    <i class="bi bi-zoom-in"></i>
+                                </button>
+                                <button class="btn btn-xs btn-link" @onclick="() => EditSearchArea(area)" title="Bearbeiten">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-xs btn-link text-danger" @onclick="() => DeleteSearchArea(area)" title="Löschen">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
                 </div>
             }
             else
             {
-                <div class="alert alert-info">
-                    <h5><i class="bi bi-info-circle"></i> Noch keine Suchgebiete definiert</h5>
-                    <p>Verwenden Sie die Zeichenwerkzeuge auf der Karte, um Suchgebiete zu erstellen:</p>
-                    <ul>
-                        <li><strong>Polygon:</strong> Zeichnen Sie ein beliebiges Polygon</li>
-                        <li><strong>Rechteck:</strong> Zeichnen Sie ein Rechteck</li>
-                        <li><strong>Marker:</strong> Setzen Sie einen Marker</li>
-                    </ul>
-                    <p class="mb-0">Klicken Sie nach dem Zeichnen auf "Suchgebiet HinzuFügen", um Details einzugeben.</p>
+                <div class="sidebar-empty">
+                    <p><i class="bi bi-inbox"></i><br>Keine Suchgebiete</p>
                 </div>
             }
-        </div>
+        </aside>
+
+        <!-- Map Area -->
+        <main class="map-main">
+            <!-- Karte -->
+            <div id="einsatzMap" class="map-wrapper"></div>
+        </main>
     </div>
+</div>
+
+<!-- Seite 2: Druckbare Suchgebiete-Liste (nur beim Drucken sichtbar, ausgeblendet im Bildschirm) -->
+<div class="print-list-page" style="display: none;">
+    <div class="print-list-header">
+        <h2><i class="bi bi-geo-alt-fill"></i> Suchgebiete - @EinsatzService.CurrentEinsatz.EinsatzNummer</h2>
+        <p>@EinsatzService.CurrentEinsatz.Einsatzort | @EinsatzService.CurrentEinsatz.EinsatzDatum.ToString("dd.MM.yyyy HH:mm") Uhr</p>
+        <p><strong>Einsatzleiter:</strong> @EinsatzService.CurrentEinsatz.Einsatzleiter</p>
+    </div>
+    
+    @if (_hasElwPosition && EinsatzService.CurrentEinsatz.ElwPosition.HasValue)
+    {
+        var elw = EinsatzService.CurrentEinsatz.ElwPosition.Value;
+        <div class="elw-info">
+            <strong><i class="bi bi-geo-fill"></i> ELW-Position:</strong>
+            @elw.Latitude.ToString("F5")°, @elw.Longitude.ToString("F5")°
+        </div>
+    }
+    
+    @if (_searchAreas.Any())
+    {
+        <table class="search-areas-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">Nr.</th>
+                    <th style="width: 20%;">Name</th>
+                    <th style="width: 20%;">Zugewiesenes Team</th>
+                    <th style="width: 15%;">Status</th>
+                    <th style="width: 15%;">Fläche</th>
+                    <th style="width: 25%;">Notizen</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ var index = 1; }
+                @foreach (var area in _searchAreas.OrderBy(a => a.Name))
+                {
+                    <tr>
+                        <td>@index</td>
+                        <td>
+                            <span class="color-box" style="background-color: @area.Color;"></span>
+                            <strong>@area.Name</strong>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(area.AssignedTeamName))
+                            {
+                                <span class="team-name">@area.AssignedTeamName</span>
+                            }
+                            else
+                            {
+                                <span style="color: #666; font-style: italic;">Nicht zugewiesen</span>
+                            }
+                        </td>
+                        <td>
+                            @if (area.IsCompleted)
+                            {
+                                <span class="status-completed">✓ Abgeschlossen</span>
+                            }
+                            else
+                            {
+                                <span class="status-in-progress">• In Bearbeitung</span>
+                            }
+                        </td>
+                        <td>@area.FormattedArea</td>
+                        <td>@(string.IsNullOrEmpty(area.Notes) ? "-" : area.Notes)</td>
+                    </tr>
+                    index++;
+                }
+            </tbody>
+        </table>
+    }
 </div>
 
 @if (_showDialog)
@@ -357,6 +284,7 @@
     private string _addressSearch = "";
     private string _searchMessage = "";
     private string _lastDrawnGeoJson = "";
+    private bool _drawingSaved = false; // Flag: wurde die aktuelle Zeichnung gespeichert?
     private DotNetObjectReference<EinsatzKarte>? _dotNetReference;
     
     // Standardposition (Speyer, Deutschland)
@@ -546,8 +474,13 @@
         }
         
         _searchAreas = EinsatzService.CurrentEinsatz.SearchAreas.ToList();
-        _lastDrawnGeoJson = ""; // Reset
-        CloseDialog();
+        
+        // Alte, ungespeicherte Zeichnung löschen
+        await JSRuntime.InvokeVoidAsync("LeafletMap.clearAllDrawings", "einsatzMap");
+        
+        _lastDrawnGeoJson = "";
+        _drawingSaved = true; // Flag setzen, damit CloseDialog nicht erneut löscht
+        await CloseDialog();
     }
 
     private async Task DeleteSearchArea(SearchArea area)
@@ -567,10 +500,23 @@
         }
     }
 
-    private void CloseDialog()
+    private async Task CloseDialog()
     {
         _showDialog = false;
         _editingArea = null;
+        
+        // Wenn Dialog geschlossen wird UND die Zeichnung wurde NICHT gespeichert:
+        // Ungespeicherte Zeichnung entfernen (damit nicht mehrere Zeichnungen auf der Karte bleiben)
+        if (!_drawingSaved && !string.IsNullOrEmpty(_lastDrawnGeoJson))
+        {
+            await JSRuntime.InvokeVoidAsync("LeafletMap.clearAllDrawings", "einsatzMap");
+            _lastDrawnGeoJson = "";
+            _searchMessage = "Zeichnung verworfen. Sie können ein neues Suchgebiet zeichnen.";
+            StateHasChanged();
+        }
+        
+        // Flag zurücksetzen für nächste Zeichnung
+        _drawingSaved = false;
     }
 
     private void GoBack()
@@ -647,38 +593,21 @@
             _searchMessage = $"Fehler beim Wechseln der Kartenansicht: {ex.Message}";
         }
     }
-    
-    private async Task ShowHelp()
+
+    // Draw-Modi aktivieren
+    private async Task ActivateDrawPolygon()
     {
-        await JSRuntime.InvokeVoidAsync("alert", 
-            @"🗺️ Karten-Funktionen:
-
-🖼️ KARTENANSICHTEN:
-• Straßenkarte: Klassische Straßenkarte mit Details
-• Satellit: Satellitenbild der Gegend
-• Hybrid: Kombination aus Satellitenbild und Straßennamen
-
-📍 SUCHGEBIETE EINZEICHNEN:
-• Verwenden Sie die Zeichenwerkzeuge am linken Rand der Karte
-• Polygon: Zeichnen Sie beliebige Formen (Klicken für jeden Punkt, Doppelklick zum Beenden)
-• Rechteck: Ziehen Sie ein Rechteck auf
-• Marker: Setzen Sie einzelne Marker
-
-🚩 ELW-POSITION:
-• Zoomen/Verschieben Sie die Karte zur gewünschten Position
-• Klicken Sie auf 'ELW-Position setzen'
-• Der rote ELW-Marker wird in der Kartenmitte platziert
-• Sie können den ELW-Marker mit der Maus verschieben
-
-🖨️ KARTE DRUCKEN:
-• Klicken Sie auf 'Karte drucken'
-• Wählen Sie 'Als PDF speichern', um eine PDF-Datei zu erstellen
-• Die Legende mit allen Suchgebieten wird automatisch eingefügt
-
-💡 TIPPS:
-• Alle Änderungen werden automatisch gespeichert
-• Suchgebiete können Teams zugewiesen werden
-• Die Fläche wird automatisch berechnet");
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("LeafletMap.activateDrawMode", "einsatzMap", "polygon");
+            _searchMessage = "Zeichenmodus aktiviert: Klicken Sie auf die Karte, um Punkte zu setzen. Doppelklick zum Beenden.";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _searchMessage = $"Fehler: {ex.Message}";
+            Console.WriteLine(ex.Message);
+        }
     }
 
     private string GetRandomColor()
@@ -741,10 +670,12 @@
     {
         Console.WriteLine($"Shape created: {geoJson}");
         _lastDrawnGeoJson = geoJson;
+        _drawingSaved = false; // Neue Zeichnung wurde noch nicht gespeichert
         
-        // Dialog automatisch öffnen
+        // Dialog automatisch öffnen mit Erfolgsbestätigung
         await InvokeAsync(() =>
         {
+            _searchMessage = "✓ Suchgebiet erfolgreich gezeichnet! Bitte geben Sie die Details ein.";
             ShowAddAreaDialog();
             StateHasChanged();
         });
