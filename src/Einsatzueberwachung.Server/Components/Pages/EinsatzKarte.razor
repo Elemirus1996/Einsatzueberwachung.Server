@@ -535,14 +535,19 @@
         }
     }
 
-    private void ToggleSidebar()
+    private async Task ToggleSidebar()
     {
         _sidebarMinimized = !_sidebarMinimized;
+        // CSS-Transition dauert 250ms – danach Kartengröße aktualisieren
+        await Task.Delay(300);
+        await JSRuntime.InvokeVoidAsync("LeafletMap.invalidateSize", "einsatzMap");
     }
 
     private async Task ExpandAndZoom(SearchArea area)
     {
         _sidebarMinimized = false;
+        await Task.Delay(300);
+        await JSRuntime.InvokeVoidAsync("LeafletMap.invalidateSize", "einsatzMap");
         await ZoomToArea(area);
     }
 

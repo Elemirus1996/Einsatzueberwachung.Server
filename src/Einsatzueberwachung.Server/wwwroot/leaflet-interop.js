@@ -624,6 +624,14 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         }
     },
     
+    // Kartengröße nach Container-Änderung aktualisieren
+    invalidateSize: function(mapId) {
+        const mapData = this.maps[mapId];
+        if (mapData && mapData.map) {
+            mapData.map.invalidateSize();
+        }
+    },
+
     // Karte aufraeumen
     dispose: function(mapId) {
         try {
