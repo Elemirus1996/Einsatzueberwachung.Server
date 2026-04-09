@@ -528,9 +528,10 @@
     {
         if (area.Coordinates.Any())
         {
-            var center = area.Coordinates.First();
+            var avgLat = area.Coordinates.Average(c => c.Latitude);
+            var avgLng = area.Coordinates.Average(c => c.Longitude);
             await JSRuntime.InvokeVoidAsync("LeafletMap.centerMap", 
-                "einsatzMap", center.Latitude, center.Longitude, 15);
+                "einsatzMap", avgLat, avgLng, 15);
         }
     }
 
