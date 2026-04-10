@@ -30,6 +30,9 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
             PropertyNameCaseInsensitive = true,
             WriteIndented = false
         };
+        _jsonOptions.Converters.Add(new CoordinateTupleConverter());
+        _jsonOptions.Converters.Add(new NullableCoordinateTupleConverter());
+        _jsonOptions.Converters.Add(new CoordinateTupleListConverter());
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

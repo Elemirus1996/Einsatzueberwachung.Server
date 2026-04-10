@@ -53,6 +53,9 @@ namespace Einsatzueberwachung.Domain.Interfaces
         Task DeleteSearchAreaAsync(string areaId);
         Task AssignTeamToSearchAreaAsync(string areaId, string teamId);
 
+        Task SetElwPositionAsync(double latitude, double longitude);
+        Task ClearElwPositionAsync();
+
         EinsatzRuntimeSnapshot ExportRuntimeSnapshot();
         Task ImportRuntimeSnapshotAsync(EinsatzRuntimeSnapshot snapshot);
         

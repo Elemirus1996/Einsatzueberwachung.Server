@@ -36,14 +36,14 @@ html, body {
 .sidebar {
     background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
     width: 250px;
+    min-width: 250px;
     height: 100vh;
-    position: fixed !important;
-    left: 0 !important;
-    top: 0 !important;
+    position: sticky;
+    top: 0;
     overflow-y: auto;
     z-index: 100;
-    display: block !important;
-    transition: width 0.3s ease;
+    flex-shrink: 0;
+    transition: width 0.3s ease, min-width 0.3s ease;
 }
 
 /* Sidebar Text (Light Theme) */
@@ -77,9 +77,7 @@ main {
     display: flex;
     flex-direction: column;
     overflow: auto;
-    margin-left: 250px;
-    width: calc(100% - 250px);
-    transition: margin-left 0.3s ease, width 0.3s ease;
+    min-width: 0;
 }
 
 /* ========================================
@@ -87,12 +85,8 @@ main {
    ======================================== */
 
 .page.sidebar-collapsed .sidebar {
-    width: 60px !important;
-}
-
-.page.sidebar-collapsed main {
-    margin-left: 60px !important;
-    width: calc(100% - 60px) !important;
+    width: 60px;
+    min-width: 60px;
 }
 
 /* Nav wrapper in sidebar */
@@ -216,17 +210,12 @@ main {
     }
     
     main {
-        margin-left: 0 !important;
-        width: 100% !important;
+        margin: 0;
+        width: 100%;
     }
     
     /* Disable collapsed state on mobile */
     .page.sidebar-collapsed .sidebar {
-        width: 100%;
-    }
-    
-    .page.sidebar-collapsed main {
-        margin-left: 0;
         width: 100%;
     }
     
@@ -2162,7 +2151,21 @@ a {
     font-size: 1.05rem;
 }
 
-/* Draw Control Styles */
+/* Leaflet Draw Toolbar - Alle Buttons verstecken (wir verwenden externe Buttons) */
+.leaflet-draw-toolbar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Draw Actions Toolbar während des Zeichnens (Finish, Delete last point, Cancel) */
+.leaflet-draw-actions {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Draw Control Styles (unsichtbar, nur intern) */
 .leaflet-draw-toolbar a {
     background-color: white;
     border-radius: 4px;
@@ -2174,6 +2177,349 @@ a {
 .leaflet-draw-toolbar a:hover {
     background-color: #f0f0f0;
 }
+
+/* ========================================
+   MAP PAGE LAYOUT - Sauberes 2-Spalten Design
+   ======================================== */
+
+.map-page-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Header: Top Bar */
+.map-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: white;
+    border-bottom: 1px solid #dee2e6;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.map-header .header-left {
+    flex-shrink: 0;
+    min-width: 120px;
+}
+
+.map-header h1 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.map-header .header-center {
+    flex: 1;
+    min-width: 200px;
+    max-width: 400px;
+}
+
+.map-header .header-right {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    margin-left: auto;
+}
+
+.search-message {
+    padding: 0.5rem 1.5rem;
+    background: #e8f4f8;
+    border-bottom: 1px solid #b8dfe8;
+    font-size: 0.9rem;
+    color: #0c5460;
+    flex-shrink: 0;
+}
+
+/* Main Content: Sidebar + Map */
+.map-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+    z-index: 1;
+}
+
+/* Sidebar */
+.map-sidebar {
+    width: 300px;
+    border-right: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #f8f9fa;
+    flex-shrink: 0;
+    transition: width 0.25s ease;
+}
+
+/* Minimierte Sidebar */
+.map-sidebar.minimized {
+    width: 60px;
+}
+
+.map-sidebar.minimized .sidebar-header {
+    padding: 0.6rem 0.5rem;
+    flex-direction: column;
+}
+
+.map-sidebar.minimized .sidebar-header-right {
+    flex-direction: column;
+}
+
+.sidebar-mini-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.sidebar-mini-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.3rem;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    overflow: hidden;
+}
+
+.sidebar-mini-item:hover {
+    border-color: #007bff;
+    background: #f0f7ff;
+}
+
+.sidebar-mini-item .color-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.mini-area-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 90px;
+    line-height: 1.2;
+}
+
+.sidebar-mini-empty {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 1.5rem;
+    color: #6c757d;
+    font-size: 1.2rem;
+}
+
+.map-sidebar .sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.map-sidebar .sidebar-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.map-sidebar .sidebar-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-circle {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.btn-circle:hover {
+    transform: scale(1.1);
+}
+
+.map-sidebar .sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.map-sidebar .sidebar-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    text-align: center;
+}
+
+/* Suchgebiet Items */
+.search-area-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.search-area-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 6px rgba(0, 123, 255, 0.15);
+    background: #f0f7ff;
+}
+
+.search-area-item .area-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.search-area-item .color-box {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.search-area-item .area-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-area-item .area-info {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.search-area-item .area-info small {
+    display: block;
+}
+
+.search-area-item .area-actions {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: flex-end;
+}
+
+.search-area-item .btn-xs {
+    padding: 0;
+    font-size: 0.75rem;
+    height: 24px;
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.search-area-item .btn-xs:hover {
+    opacity: 1;
+}
+
+/* Main Map Area */
+.map-main {
+    flex: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+    z-index: 10;
+    margin-left: 0 !important;
+    width: 100% !important;
+}
+
+.map-wrapper {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    z-index: 10;
+}
+
+/* ELW Button - wider for better readability */
+.btn-elw {
+    min-width: 50px;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .map-sidebar {
+        width: 250px;
+    }
+}
+
+@media (max-width: 768px) {
+    .map-sidebar {
+        width: 200px;
+    }
+
+    .map-sidebar.minimized {
+        width: 120px;
+    }
+    
+    .map-header {
+        padding: 0.5rem 1rem;
+        gap: 0.5rem;
+    }
+    
+    .map-header h1 {
+        font-size: 1.1rem;
+    }
+}7
+
+@media (max-width: 576px) {
+    .map-content {
+        flex-direction: column;
+    }
+    
+    .map-sidebar {
+        width: 100%;
+        height: 150px;
+        border-right: none;
+        border-bottom: 1px solid #dee2e6;
+    }
+}
+
 
 /* Marker Cluster */
 .marker-cluster-small {

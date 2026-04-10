@@ -410,6 +410,20 @@ namespace Einsatzueberwachung.Domain.Services
             return Task.CompletedTask;
         }
 
+        public Task SetElwPositionAsync(double latitude, double longitude)
+        {
+            _currentEinsatz.ElwPosition = (latitude, longitude);
+            EinsatzChanged?.Invoke();
+            return Task.CompletedTask;
+        }
+
+        public Task ClearElwPositionAsync()
+        {
+            _currentEinsatz.ElwPosition = null;
+            EinsatzChanged?.Invoke();
+            return Task.CompletedTask;
+        }
+
         private void Team_TimerStarted(Team team)
         {
             _ = AddGlobalNoteAsync($"Timer gestartet", GlobalNotesEntryType.TeamStart, team.TeamId);
@@ -682,10 +696,48 @@ namespace Einsatzueberwachung.Domain.Services
             _currentEinsatz.GlobalNotesEntries.Clear();
             _currentEinsatz.GlobalNotesEntries.AddRange(_globalNotes);
 
+            // Koordinaten aus GeoJSON wiederherstellen (Tuples überleben JSON-Serialisierung nicht)
+            if (_currentEinsatz.SearchAreas != null)
+            {
+                foreach (var area in _currentEinsatz.SearchAreas)
+                {
+                    if (!string.IsNullOrEmpty(area.GeoJsonData) &&
+                        (area.Coordinates == null || area.Coordinates.Count == 0 ||
+                         area.Coordinates.All(c => c.Latitude == 0 && c.Longitude == 0)))
+                    {
+                        ExtractCoordinatesFromGeoJson(area);
+                    }
+                }
+            }
+
             EnsureCurrentEinsatzTeamReference();
             EinsatzChanged?.Invoke();
 
             return Task.CompletedTask;
+        }
+
+        private static void ExtractCoordinatesFromGeoJson(SearchArea area)
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(area.GeoJsonData);
+                if (doc.RootElement.TryGetProperty("geometry", out var geometry) &&
+                    geometry.TryGetProperty("coordinates", out var coordinates))
+                {
+                    area.Coordinates = new List<(double, double)>();
+                    var firstRing = coordinates[0];
+                    foreach (var coord in firstRing.EnumerateArray())
+                    {
+                        var lng = coord[0].GetDouble();
+                        var lat = coord[1].GetDouble();
+                        area.Coordinates.Add((lat, lng));
+                    }
+                }
+            }
+            catch
+            {
+                // GeoJSON konnte nicht geparst werden – Koordinaten bleiben leer
+            }
         }
 
         private void EnsureCurrentEinsatzTeamReference()
