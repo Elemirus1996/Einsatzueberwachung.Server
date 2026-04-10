@@ -22,6 +22,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         event Action<Team, bool>? TeamWarningTriggered;
 
         Task StartEinsatzAsync(EinsatzData einsatzData);
+        Task UpdateEinsatzAsync(EinsatzData einsatzData);
         Task EndEinsatzAsync();
 
         Task<Team> AddTeamAsync(Team team);

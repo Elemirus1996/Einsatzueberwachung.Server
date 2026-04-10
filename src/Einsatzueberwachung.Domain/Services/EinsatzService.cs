@@ -87,6 +87,23 @@ namespace Einsatzueberwachung.Domain.Services
             return;
         }
 
+        public Task UpdateEinsatzAsync(EinsatzData einsatzData)
+        {
+            _currentEinsatz.IstEinsatz = einsatzData.IstEinsatz;
+            _currentEinsatz.EinsatzNummer = einsatzData.EinsatzNummer;
+            _currentEinsatz.Einsatzort = einsatzData.Einsatzort;
+            _currentEinsatz.MapAddress = einsatzData.MapAddress;
+            _currentEinsatz.Alarmiert = einsatzData.Alarmiert;
+            _currentEinsatz.AlarmierungsZeit = einsatzData.AlarmierungsZeit;
+            _currentEinsatz.AnzahlTeams = einsatzData.AnzahlTeams;
+            _currentEinsatz.ExportPfad = einsatzData.ExportPfad;
+            _currentEinsatz.Einsatzleiter = einsatzData.Einsatzleiter;
+            _currentEinsatz.Fuehrungsassistent = einsatzData.Fuehrungsassistent;
+
+            EinsatzChanged?.Invoke();
+            return Task.CompletedTask;
+        }
+
         private DateTime GetServerNowLocal() => _timeService?.Now ?? DateTimeOffset.Now.LocalDateTime;
 
         private void EnsureAlarmTime(EinsatzData einsatzData)

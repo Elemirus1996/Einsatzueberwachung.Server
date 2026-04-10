@@ -30,6 +30,9 @@
                     <br /><small><i class="bi bi-clock-history me-1"></i>Einsatzzeit: @GetEinsatzdauerDisplay()</small>
                 }
             </p>
+            <button class="btn btn-outline-secondary btn-sm mt-1" @onclick="OpenEditEinsatzModal">
+                <i class="bi bi-pencil me-1"></i>Einsatz bearbeiten
+            </button>
         </div>
         <div class="d-flex align-items-start gap-3">
             @if (_monitorWeather is not null)
@@ -513,6 +516,96 @@
         }
     }
 
+    @if (_showEditEinsatzModal)
+    {
+        <div class="modal-overlay" @onclick="CloseEditEinsatzModal">
+            <div class="modal-modern" style="max-width:640px" @onclick:stopPropagation="true">
+                <div class="modal-modern-header">
+                    <h3><i class="bi bi-pencil-square me-2"></i>Einsatz bearbeiten</h3>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseEditEinsatzModal">Schliessen</button>
+                </div>
+                <div class="modal-modern-body">
+                    @if (!string.IsNullOrWhiteSpace(_editEinsatzMessage))
+                    {
+                        <div class="alert @(_editEinsatzIsError ? "alert-danger" : "alert-success") py-2">@_editEinsatzMessage</div>
+                    }
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Typ</label>
+                            <select class="form-select" @bind="_editEinsatzForm.IstEinsatz">
+                                <option value="true">Einsatz</option>
+                                <option value="false">Uebung</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Einsatznummer</label>
+                            <input class="form-control" @bind="_editEinsatzForm.EinsatzNummer" placeholder="z. B. EVD-2026-001" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Alarmierungszeit</label>
+                            <input class="form-control" type="time" step="60"
+                                   value="@_editEinsatzForm.AlarmierungsZeit"
+                                   @onchange="e => _editEinsatzForm.AlarmierungsZeit = e.Value?.ToString() ?? _editEinsatzForm.AlarmierungsZeit" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Einsatzort <span class="text-danger">*</span></label>
+                            <input class="form-control" @bind="_editEinsatzForm.Einsatzort" placeholder="Strasse, Ort" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Karten-Adresse</label>
+                            <input class="form-control" @bind="_editEinsatzForm.MapAddress" placeholder="Adresse fuer Kartensuche" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Alarmiert durch (Melder)</label>
+                            <input class="form-control" @bind="_editEinsatzForm.Alarmiert" placeholder="z. B. Leitstelle" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Anzahl Teams (geplant)</label>
+                            <input class="form-control" type="number" min="0" @bind="_editEinsatzForm.AnzahlTeams" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Einsatzleiter</label>
+                            <div class="input-group">
+                                <select class="form-select" @onchange="e => _editEinsatzForm.Einsatzleiter = e.Value?.ToString() ?? _editEinsatzForm.Einsatzleiter">
+                                    <option value="">- aus Stammdaten -</option>
+                                    @foreach (var p in _personalList.Where(x => x.IsActive && x.Skills.HasFlag(PersonalSkills.Einsatzleiter)).OrderBy(x => x.Nachname))
+                                    {
+                                        <option value="@p.FullName">@p.FullName</option>
+                                    }
+                                </select>
+                                <input class="form-control" @bind="_editEinsatzForm.Einsatzleiter" placeholder="oder Freitext" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fuerungsassistent</label>
+                            <div class="input-group">
+                                <select class="form-select" @onchange="e => _editEinsatzForm.Fuehrungsassistent = e.Value?.ToString() ?? _editEinsatzForm.Fuehrungsassistent">
+                                    <option value="">- aus Stammdaten -</option>
+                                    @foreach (var p in _personalList.Where(x => x.IsActive && x.Skills.HasFlag(PersonalSkills.Fuehrungsassistent)).OrderBy(x => x.Nachname))
+                                    {
+                                        <option value="@p.FullName">@p.FullName</option>
+                                    }
+                                </select>
+                                <input class="form-control" @bind="_editEinsatzForm.Fuehrungsassistent" placeholder="oder Freitext" />
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Bemerkungen</label>
+                            <textarea class="form-control" rows="3" @bind="_editEinsatzForm.Bemerkungen" placeholder="Weitere Informationen zum Einsatz"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-modern-footer">
+                    <button class="btn btn-outline-secondary" @onclick="CloseEditEinsatzModal">Abbrechen</button>
+                    <button class="btn btn-primary" @onclick="SaveEditEinsatzAsync">
+                        <i class="bi bi-check-lg me-1"></i>Speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
     @if (_showTeamModal)
     {
         <div class="modal-overlay" @onclick="CloseTeamModal">
@@ -690,6 +783,10 @@
     private bool _showTeamModal;
     private bool _showCloseMissionModal;
     private bool _showPauseResetModal;
+    private bool _showEditEinsatzModal;
+    private string _editEinsatzMessage = string.Empty;
+    private bool _editEinsatzIsError;
+    private EditEinsatzForm _editEinsatzForm = new();
     private string? _pauseResetTeamId;
     private bool _closeMissionChecklistConfirmed;
     private bool _closingMission;
@@ -729,6 +826,7 @@
     private System.Threading.Timer? _weatherRefreshTimer;
     private System.Threading.Timer? _durationRefreshTimer;
     private TimeSpan? _einsatzdauerFromHeader;
+    private AppSettings _appSettings = new();
 
     private sealed class ClientLocalNowDto
     {
@@ -751,8 +849,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _appSettings = await SettingsService.GetAppSettingsAsync();
         await LoadMasterDataAsync();
-        await LoadQuickNoteTemplatesAsync();
+        LoadQuickNoteTemplates();
         await RefreshMonitorWeatherAsync(forceGeocoding: true);
         StartWeatherRefreshTimer();
         StartDurationRefreshTimer();
@@ -830,10 +929,9 @@
         _droneList = await MasterDataService.GetDroneListAsync();
     }
 
-    private async Task LoadQuickNoteTemplatesAsync()
+    private void LoadQuickNoteTemplates()
     {
-        var settings = await SettingsService.GetAppSettingsAsync();
-        _quickNoteTemplates = settings.QuickNoteTemplates?
+        _quickNoteTemplates = _appSettings.QuickNoteTemplates?
             .Where(text => !string.IsNullOrWhiteSpace(text))
             .Select(text => text.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -1901,8 +1999,8 @@
         _teamForm.HundefuehrerId = string.Empty;
         _teamForm.HelferId = string.Empty;
         _teamForm.SearchAreaId = string.Empty;
-        _teamForm.FirstWarningMinutes = 45;
-        _teamForm.SecondWarningMinutes = 60;
+        _teamForm.FirstWarningMinutes = _appSettings.DefaultFirstWarningMinutes;
+        _teamForm.SecondWarningMinutes = _appSettings.DefaultSecondWarningMinutes;
         _teamForm.Notes = string.Empty;
     }
 
@@ -1930,5 +2028,79 @@
         public int FirstWarningMinutes { get; set; } = 45;
         public int SecondWarningMinutes { get; set; } = 60;
         public string Notes { get; set; } = string.Empty;
+    }
+
+    private sealed class EditEinsatzForm
+    {
+        public bool IstEinsatz { get; set; } = true;
+        public string EinsatzNummer { get; set; } = string.Empty;
+        public string AlarmierungsZeit { get; set; } = string.Empty;
+        public string Einsatzort { get; set; } = string.Empty;
+        public string MapAddress { get; set; } = string.Empty;
+        public string Alarmiert { get; set; } = string.Empty;
+        public int AnzahlTeams { get; set; }
+        public string Einsatzleiter { get; set; } = string.Empty;
+        public string Fuehrungsassistent { get; set; } = string.Empty;
+        public string Bemerkungen { get; set; } = string.Empty;
+    }
+
+    private void OpenEditEinsatzModal()
+    {
+        var e = EinsatzService.CurrentEinsatz;
+        _editEinsatzForm.IstEinsatz = e.IstEinsatz;
+        _editEinsatzForm.EinsatzNummer = e.EinsatzNummer;
+        _editEinsatzForm.AlarmierungsZeit = e.AlarmierungsZeit?.ToString("HH:mm") ?? string.Empty;
+        _editEinsatzForm.Einsatzort = e.Einsatzort;
+        _editEinsatzForm.MapAddress = e.MapAddress;
+        _editEinsatzForm.Alarmiert = e.Alarmiert;
+        _editEinsatzForm.AnzahlTeams = e.AnzahlTeams;
+        _editEinsatzForm.Einsatzleiter = e.Einsatzleiter;
+        _editEinsatzForm.Fuehrungsassistent = e.Fuehrungsassistent;
+        _editEinsatzForm.Bemerkungen = e.ExportPfad;
+        _editEinsatzMessage = string.Empty;
+        _editEinsatzIsError = false;
+        _showEditEinsatzModal = true;
+    }
+
+    private void CloseEditEinsatzModal()
+    {
+        _showEditEinsatzModal = false;
+    }
+
+    private async Task SaveEditEinsatzAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_editEinsatzForm.Einsatzort))
+        {
+            _editEinsatzMessage = "Einsatzort ist erforderlich.";
+            _editEinsatzIsError = true;
+            return;
+        }
+
+        var current = EinsatzService.CurrentEinsatz;
+        DateTime? newAlarmierungsZeit = current.AlarmierungsZeit;
+        if (!string.IsNullOrWhiteSpace(_editEinsatzForm.AlarmierungsZeit)
+            && TimeOnly.TryParse(_editEinsatzForm.AlarmierungsZeit, out var alarmTime))
+        {
+            var baseDate = current.AlarmierungsZeit ?? current.EinsatzDatum;
+            newAlarmierungsZeit = new DateTime(baseDate.Year, baseDate.Month, baseDate.Day,
+                alarmTime.Hour, alarmTime.Minute, 0);
+        }
+
+        var updated = new EinsatzData
+        {
+            IstEinsatz = _editEinsatzForm.IstEinsatz,
+            EinsatzNummer = _editEinsatzForm.EinsatzNummer,
+            Einsatzort = _editEinsatzForm.Einsatzort,
+            MapAddress = _editEinsatzForm.MapAddress,
+            Alarmiert = _editEinsatzForm.Alarmiert,
+            AlarmierungsZeit = newAlarmierungsZeit,
+            AnzahlTeams = _editEinsatzForm.AnzahlTeams,
+            ExportPfad = _editEinsatzForm.Bemerkungen,
+            Einsatzleiter = _editEinsatzForm.Einsatzleiter,
+            Fuehrungsassistent = _editEinsatzForm.Fuehrungsassistent
+        };
+
+        await EinsatzService.UpdateEinsatzAsync(updated);
+        _showEditEinsatzModal = false;
     }
 }

@@ -22,6 +22,21 @@
         </a>
     </div>
 
+    @if (_einsatzBereitsAktiv)
+    {
+        <div class="alert alert-warning d-flex align-items-start gap-3 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-4 mt-1"></i>
+            <div>
+                <h5 class="alert-heading mb-1">Einsatz bereits aktiv</h5>
+                <p class="mb-2">Es läuft bereits ein Einsatz. Bitte beende den aktuellen Einsatz, bevor du einen neuen anlegen kannst.</p>
+                <a class="btn btn-warning btn-sm" href="/einsatz-monitor">
+                    <i class="bi bi-speedometer2 me-1"></i>Zum aktiven Einsatz
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
     <EditForm Model="_model" OnValidSubmit="StartAsync" class="row g-3">
         <DataAnnotationsValidator />
 
@@ -148,6 +163,7 @@
             @_status
         </div>
     }
+    } @* end else *@
 </div>
 
 @code {
@@ -171,6 +187,7 @@
     private string _status = string.Empty;
     private bool _error;
     private bool _busy;
+    private bool _einsatzBereitsAktiv;
 
     private sealed class ClientLocalNowDto
     {
@@ -195,6 +212,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var einsatz = EinsatzService.CurrentEinsatz;
+        _einsatzBereitsAktiv = !string.IsNullOrWhiteSpace(einsatz.Einsatzort)
+            && einsatz.EinsatzEnde is null;
+
+        if (_einsatzBereitsAktiv)
+        {
+            return;
+        }
+
         var personalTask = MasterDataService.GetPersonalListAsync();
         var settingsTask = SettingsService.GetStaffelSettingsAsync();
 
