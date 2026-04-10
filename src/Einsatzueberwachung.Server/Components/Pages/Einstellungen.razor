@@ -12,6 +12,7 @@
 @inject ITimeService TimeService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject IDiveraService DiveraService
 
 <PageTitle>Einstellungen</PageTitle>
 
@@ -348,10 +349,80 @@
         <div class="col-12 col-xl-6">
             <div class="card h-100">
                 <div class="card-header">
+                    <h2 class="h4 mb-0"><i class="bi bi-broadcast-pin me-2"></i>Divera 24/7</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <InputCheckbox class="form-check-input" id="diveraEnabled" @bind-Value="_appSettings.DiveraEnabled" />
+                        <label class="form-check-label" for="diveraEnabled">Divera 24/7 Integration aktivieren</label>
+                    </div>
+
+                    @if (_appSettings.DiveraEnabled)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">API Access-Key</label>
+                            <div class="input-group">
+                                <input type="@(_showDiveraKey ? "text" : "password")"
+                                       class="form-control"
+                                       placeholder="Divera API-Key eingeben"
+                                       @bind="_appSettings.DiveraAccessKey" />
+                                <button class="btn btn-outline-secondary" type="button"
+                                        @onclick="() => _showDiveraKey = !_showDiveraKey">
+                                    <i class="bi @(_showDiveraKey ? "bi-eye-slash" : "bi-eye")"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                Den API-Key findest du in Divera unter Verwaltung &rarr; Schnittstellen &rarr; API-Access-Key.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">API Base-URL</label>
+                            <InputText class="form-control" @bind-Value="_appSettings.DiveraBaseUrl" placeholder="https://app.divera247.com/api/v2" />
+                            <div class="form-text">Standard: https://app.divera247.com/api/v2 &mdash; nur &auml;ndern wenn abweichend.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Poll-Intervall &mdash; kein Alarm aktiv (Sekunden)</label>
+                            <InputNumber class="form-control" @bind-Value="_appSettings.DiveraPollIntervalIdleSeconds" />
+                            <div class="form-text">Abfrageintervall wenn kein Alarm vorliegt. Standard: 600 (= 10 Minuten).</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Poll-Intervall &mdash; Alarm aktiv (Sekunden)</label>
+                            <InputNumber class="form-control" @bind-Value="_appSettings.DiveraPollIntervalActiveSeconds" />
+                            <div class="form-text">Abfrageintervall sobald ein Alarm anliegt. Standard: 60 (= 1 Minute).</div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-outline-primary" type="button" @onclick="TestDiveraConnectionAsync" disabled="@_diveraTestBusy">
+                                @if (_diveraTestBusy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                <i class="bi bi-plug me-1"></i>Verbindung testen
+                            </button>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(_diveraTestStatus))
+                        {
+                            <div class="alert @(_diveraTestError ? "alert-danger" : "alert-success") py-2 mt-2 mb-0">
+                                <i class="bi @(_diveraTestError ? "bi-x-circle" : "bi-check-circle") me-1"></i>@_diveraTestStatus
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted">Aktiviere die Integration, um den API-Key einzugeben und Divera zu nutzen.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <div class="card h-100">
+                <div class="card-header">
                     <h2 class="h4 mb-0"><i class="bi bi-info-circle me-2"></i>System-Information</h2>
                 </div>
                 <div class="card-body">
-                    <div class="mb-2"><strong>Version:</strong> 1.3.0</div>
+                    <div class="mb-2"><strong>Version:</strong> 1.3.5</div>
                     <div class="mb-2"><strong>Framework:</strong> .NET 8 / Blazor Server</div>
                     <div class="mb-3"><strong>Plattform:</strong> Web-basiert</div>
 
@@ -457,6 +528,12 @@
     private UpdateRuntimeStatus _updateStatus = new();
     private string _quickNoteTemplatesText = string.Empty;
 
+    // Divera 24/7 Felder
+    private bool _showDiveraKey;
+    private bool _diveraTestBusy;
+    private string _diveraTestStatus = string.Empty;
+    private bool _diveraTestError;
+
     protected override async Task OnInitializedAsync()
     {
         _staffelSettings = await SettingsService.GetStaffelSettingsAsync();
@@ -542,6 +619,9 @@
 
         await SettingsService.SaveStaffelSettingsAsync(_staffelSettings);
         await SettingsService.SaveAppSettingsAsync(_appSettings);
+
+        // Divera-Konfiguration sofort uebernehmen
+        await DiveraService.RefreshConfigurationAsync();
 
         // Zeitzone sofort neu laden, damit neue Zeitstempel korrekt sind
         TimeService.Refresh();
@@ -924,6 +1004,48 @@
     {
         _logoStatus = message;
         _logoStatusIsError = isError;
+    }
+
+    private async Task TestDiveraConnectionAsync()
+    {
+        _diveraTestBusy = true;
+        _diveraTestStatus = string.Empty;
+        _diveraTestError = false;
+
+        try
+        {
+            // Zuerst aktuelle Settings speichern damit DiveraService den neuen Key hat
+            await SettingsService.SaveAppSettingsAsync(_appSettings);
+            await DiveraService.RefreshConfigurationAsync();
+
+            if (!DiveraService.IsConfigured)
+            {
+                _diveraTestStatus = "Bitte API-Key eingeben und Integration aktivieren.";
+                _diveraTestError = true;
+                return;
+            }
+
+            var success = await DiveraService.TestConnectionAsync();
+            if (success)
+            {
+                _diveraTestStatus = "Verbindung erfolgreich! Divera 24/7 ist erreichbar.";
+                _diveraTestError = false;
+            }
+            else
+            {
+                _diveraTestStatus = "Verbindung fehlgeschlagen. Bitte API-Key prüfen.";
+                _diveraTestError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _diveraTestStatus = $"Fehler: {ex.Message}";
+            _diveraTestError = true;
+        }
+        finally
+        {
+            _diveraTestBusy = false;
+        }
     }
 
     private static void EnsureQuickNoteTemplatesInitialized(AppSettings settings)

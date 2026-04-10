@@ -68,6 +68,17 @@ namespace Einsatzueberwachung.Domain.Models
         // Zeitzone für Server-seitige Zeitstempel (IANA-ID, z.B. "Europe/Berlin")
         public string TimeZoneId { get; set; }
 
+        // Divera 24/7 Integration
+        public bool DiveraEnabled { get; set; }
+        public string DiveraAccessKey { get; set; }
+        public string DiveraBaseUrl { get; set; }
+
+        /// <summary>Poll-Intervall wenn KEIN Alarm aktiv ist (Standard: 600 = 10 Minuten)</summary>
+        public int DiveraPollIntervalIdleSeconds { get; set; }
+
+        /// <summary>Poll-Intervall wenn ein Alarm aktiv ist (Standard: 60 = 1 Minute)</summary>
+        public int DiveraPollIntervalActiveSeconds { get; set; }
+
         public AppSettings()
         {
             Theme = "Light";
@@ -100,6 +111,13 @@ namespace Einsatzueberwachung.Domain.Models
                 "Suche gestartet",
                 "Suche beendet"
             };
+
+            // Divera 24/7 Defaults
+            DiveraEnabled = false;
+            DiveraAccessKey = string.Empty;
+            DiveraBaseUrl = "https://app.divera247.com/api/v2";
+            DiveraPollIntervalIdleSeconds = 600;  // 10 Minuten bei Ruhe
+            DiveraPollIntervalActiveSeconds = 60; // 1 Minute bei aktivem Alarm
         }
     }
 }

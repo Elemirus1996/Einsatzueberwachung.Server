@@ -11,6 +11,7 @@ namespace Einsatzueberwachung.Domain.Models
         public string Einsatzleiter { get; set; }
         public string Fuehrungsassistent { get; set; }
         public string Alarmiert { get; set; }
+        public string Stichwort { get; set; }
         public string Einsatzort { get; set; }
         public string MapAddress { get; set; }
         public string ExportPfad { get; set; }
@@ -42,6 +43,7 @@ namespace Einsatzueberwachung.Domain.Models
             Einsatzleiter = string.Empty;
             Fuehrungsassistent = string.Empty;
             Alarmiert = string.Empty;
+            Stichwort = string.Empty;
             Einsatzort = string.Empty;
             MapAddress = string.Empty;
             ExportPfad = string.Empty;

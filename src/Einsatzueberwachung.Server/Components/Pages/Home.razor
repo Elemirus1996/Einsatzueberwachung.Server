@@ -3,6 +3,8 @@
 @inject IEinsatzService EinsatzService
 @inject IArchivService ArchivService
 @inject IHttpClientFactory HttpClientFactory
+@inject IDiveraService DiveraService
+@using Einsatzueberwachung.Domain.Models.Divera
 @implements IDisposable
 
 <PageTitle>Startseite — Einsatzüberwachung</PageTitle>
@@ -22,6 +24,36 @@
 }
 
 <div class="container-fluid py-4 dashboard-page">
+    @* Divera-Alarm-Banner *@
+    @if (DiveraService.IsConfigured && _diveraAlarms.Any())
+    {
+        <div class="alert alert-danger d-flex align-items-start gap-3 mb-4 shadow-sm" role="alert" style="border-left: 4px solid var(--bs-danger);">
+            <i class="bi bi-broadcast-pin fs-3 flex-shrink-0 mt-1"></i>
+            <div class="flex-grow-1">
+                <h5 class="alert-heading mb-1">@_diveraAlarms.Count Divera-Alarm@(_diveraAlarms.Count > 1 ? "e" : "") aktiv</h5>
+                @foreach (var alarm in _diveraAlarms.Take(3))
+                {
+                    <div class="mb-1">
+                        <strong>@alarm.Title</strong>
+                        @if (!string.IsNullOrWhiteSpace(alarm.Address))
+                        {
+                            <span class="text-danger-emphasis ms-2 small"><i class="bi bi-geo-alt me-1"></i>@alarm.Address</span>
+                        }
+                        <span class="text-danger-emphasis ms-2 small"><i class="bi bi-clock me-1"></i>@alarm.DateFormatted</span>
+                    </div>
+                }
+            </div>
+            <div class="d-flex flex-column gap-2 flex-shrink-0">
+                <a class="btn btn-danger btn-sm" href="/einsatz-start">
+                    <i class="bi bi-plus-circle me-1"></i>Einsatz anlegen
+                </a>
+                <a class="btn btn-outline-danger btn-sm" href="/divera">
+                    <i class="bi bi-broadcast-pin me-1"></i>Divera-Details
+                </a>
+            </div>
+        </div>
+    }
+
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4 page-headline-row">
         <div>
@@ -286,6 +318,10 @@
     private string _serverStatusError = string.Empty;
     private DateTime? _serverLastCheckedAt;
 
+    // Divera-Polling
+    private List<DiveraAlarm> _diveraAlarms = new();
+    private System.Threading.Timer? _diveraTimer;
+
     protected override void OnInitialized()
     {
         _teamAddedHandler = _ => Refresh();
@@ -300,6 +336,47 @@
         EinsatzService.NoteAdded += _noteAddedHandler;
 
         _ = RefreshServerStatusAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (DiveraService.IsConfigured)
+        {
+            await PollDiveraAsync();
+            ScheduleDiveraTimer();
+        }
+    }
+
+    private void ScheduleDiveraTimer()
+    {
+        _diveraTimer?.Dispose();
+        // Naechstes Intervall je nach aktuellem Alarm-Status bestimmen
+        var intervalMs = _diveraAlarms.Any()
+            ? DiveraService.PollIntervalActiveSeconds * 1000
+            : DiveraService.PollIntervalIdleSeconds * 1000;
+
+        _diveraTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await PollDiveraAsync();
+                StateHasChanged();
+            });
+        }, null, intervalMs, System.Threading.Timeout.Infinite);
+    }
+
+    private async Task PollDiveraAsync()
+    {
+        try
+        {
+            _diveraAlarms = await DiveraService.GetActiveAlarmsAsync();
+        }
+        catch
+        {
+            _diveraAlarms = new();
+        }
+        // Timer neu planen damit Intervall auf aktuellem Status basiert
+        ScheduleDiveraTimer();
     }
 
     private void Refresh() => InvokeAsync(StateHasChanged);
@@ -343,5 +420,6 @@
         if (_teamRemovedHandler is not null) EinsatzService.TeamRemoved -= _teamRemovedHandler;
         if (_teamUpdatedHandler is not null) EinsatzService.TeamUpdated -= _teamUpdatedHandler;
         if (_noteAddedHandler is not null) EinsatzService.NoteAdded -= _noteAddedHandler;
+        _diveraTimer?.Dispose();
     }
 }

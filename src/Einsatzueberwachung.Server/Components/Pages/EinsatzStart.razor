@@ -2,10 +2,12 @@
 @rendermode InteractiveServer
 
 @using Einsatzueberwachung.Domain.Models.Enums
+@using Einsatzueberwachung.Domain.Models.Divera
 
 @inject IEinsatzService EinsatzService
 @inject IMasterDataService MasterDataService
 @inject ISettingsService SettingsService
+@inject IDiveraService DiveraService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
@@ -37,6 +39,31 @@
     }
     else
     {
+    @* Divera-Alarm-Hinweis — wird oberhalb des Formulars angezeigt wenn Alarm(e) vorliegen *@
+    @if (DiveraService.IsConfigured && _diveraAlarms.Any())
+    {
+        <div class="alert alert-danger d-flex align-items-start gap-3 mb-4 shadow-sm" role="alert" style="border-left: 4px solid var(--bs-danger);">
+            <i class="bi bi-broadcast-pin fs-3 flex-shrink-0 mt-1"></i>
+            <div class="flex-grow-1">
+                <h5 class="alert-heading mb-1">@_diveraAlarms.Count Divera-Alarm@(_diveraAlarms.Count > 1 ? "e" : "") — bitte Felder unten ausfüllen</h5>
+                @foreach (var alarm in _diveraAlarms.Take(2))
+                {
+                    <div class="small mb-1">
+                        <strong>@alarm.Title</strong>
+                        @if (!string.IsNullOrWhiteSpace(alarm.Address))
+                        {
+                            <span class="ms-2"><i class="bi bi-geo-alt me-1"></i>@alarm.Address</span>
+                        }
+                        <span class="ms-2 text-danger-emphasis"><i class="bi bi-clock me-1"></i>@alarm.DateFormatted</span>
+                    </div>
+                }
+                <p class="mb-0 mt-1 small">
+                    <i class="bi bi-arrow-down-circle me-1"></i>Alarm unten anklicken um das Formular automatisch zu befüllen.
+                </p>
+            </div>
+        </div>
+    }
+
     <EditForm Model="_model" OnValidSubmit="StartAsync" class="row g-3">
         <DataAnnotationsValidator />
 
@@ -77,13 +104,18 @@
                         </div>
 
                         <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold">Stichwort</label>
+                            <InputText class="form-control" @bind-Value="_model.Stichwort" placeholder="z.B. Vermisstensuche, Personensuche" />
+                        </div>
+
+                        <div class="col-12 col-md-6">
                             <label class="form-label fw-semibold">Karten-Adresse</label>
                             <InputText class="form-control" @bind-Value="_model.MapAddress" placeholder="fuer Leaflet-Suche (optional)" />
                         </div>
 
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-semibold">Alarmiert durch (Melder)</label>
-                            <InputText class="form-control" @bind-Value="_model.Alarmiert" placeholder="z.B. Polizei, Leitstelle, Angehoerige" />
+                            <InputText class="form-control" @bind-Value="_model.Alarmiert" placeholder="z.B. Polizei, Leitstelle, Angeh&ouml;rige" />
                         </div>
 
                         <div class="col-12 col-md-6">
@@ -157,6 +189,86 @@
 
     </EditForm>
 
+    @if (DiveraService.IsConfigured)
+    {
+        <div class="col-12 mt-3">
+            <div class="card start-section-card">
+                <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-broadcast-pin me-2"></i>Aus Divera 24/7 importieren</span>
+                    @if (_diveraAlarms.Any())
+                    {
+                        <span class="badge bg-danger">@_diveraAlarms.Count aktiv</span>
+                    }
+                </div>
+                <div class="card-body">
+                    @if (_diveraLoading)
+                    {
+                        <div class="text-center py-3">
+                            <span class="spinner-border spinner-border-sm me-2"></span>Lade Divera-Alarme...
+                        </div>
+                    }
+                    else if (_diveraAlarms.Any())
+                    {
+                        <p class="text-muted small mb-2">Alarm anklicken, um die Felder automatisch zu befüllen:</p>
+                        <div class="list-group">
+                            @foreach (var alarm in _diveraAlarms)
+                            {
+                                <button class="list-group-item list-group-item-action"
+                                        type="button"
+                                        @onclick="() => ImportFromDivera(alarm)">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                @if (alarm.Priority)
+                                                {
+                                                    <span class="badge bg-danger"><i class="bi bi-exclamation-circle"></i> PRIO</span>
+                                                }
+                                                <strong>@alarm.Title</strong>
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(alarm.Text))
+                                            {
+                                                <div class="small mb-1">@alarm.Text</div>
+                                            }
+                                            <div class="d-flex flex-wrap gap-2 small text-muted">
+                                                @if (!string.IsNullOrWhiteSpace(alarm.Address))
+                                                {
+                                                    <span><i class="bi bi-geo-alt me-1"></i>@alarm.Address</span>
+                                                }
+                                                <span><i class="bi bi-clock me-1"></i>@alarm.DateFormatted</span>
+                                                @if (alarm.Lat.HasValue && alarm.Lng.HasValue)
+                                                {
+                                                    <span class="text-success"><i class="bi bi-crosshair me-1"></i>GPS vorhanden</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="text-end ms-3 flex-shrink-0">
+                                            <span class="badge bg-success d-block mb-1">@alarm.CountKomme kommen</span>
+                                            @if (alarm.CountSpaeter > 0)
+                                            {
+                                                <span class="badge bg-warning text-dark d-block mb-1">@alarm.CountSpaeter später</span>
+                                            }
+                                            @if (alarm.CountKommeNicht > 0)
+                                            {
+                                                <span class="badge bg-danger d-block">@alarm.CountKommeNicht kommen nicht</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-2"><i class="bi bi-check-circle me-1"></i>Keine aktiven Alarme in Divera.</p>
+                    }
+                    <button class="btn btn-outline-primary btn-sm mt-2" @onclick="LoadDiveraAlarmsAsync" disabled="@_diveraLoading">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Alarme aktualisieren
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
     @if (!string.IsNullOrWhiteSpace(_status))
     {
         <div class="alert @(_error ? "alert-danger" : "alert-success") mt-3" role="alert">
@@ -188,6 +300,10 @@
     private bool _error;
     private bool _busy;
     private bool _einsatzBereitsAktiv;
+
+    // Divera 24/7 Import-Felder
+    private List<DiveraAlarm> _diveraAlarms = new();
+    private bool _diveraLoading;
 
     private sealed class ClientLocalNowDto
     {
@@ -241,6 +357,12 @@
 
         var alarmBase = _model.AlarmierungsZeit ?? DateTime.Now;
         _alarmStartTime = alarmBase.ToString("HH:mm");
+
+        // Divera-Alarme laden wenn konfiguriert
+        if (DiveraService.IsConfigured)
+        {
+            await LoadDiveraAlarmsAsync();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -355,4 +477,64 @@
 
         return false;
     }
+
+    private async Task LoadDiveraAlarmsAsync()
+    {
+        _diveraLoading = true;
+        try
+        {
+            _diveraAlarms = await DiveraService.GetActiveAlarmsAsync();
+        }
+        catch
+        {
+            _diveraAlarms = new();
+        }
+        finally
+        {
+            _diveraLoading = false;
+        }
+    }
+
+    private void ImportFromDivera(DiveraAlarm alarm)
+    {
+        // Einsatzort immer aus der Adresse
+        _model.Einsatzort = alarm.Address;
+
+        // Karten-Adresse: GPS-Koordinaten bevorzugen (direkter Leaflet-Zoom), sonst Adresse
+        if (alarm.Lat.HasValue && alarm.Lng.HasValue)
+        {
+            _model.MapAddress = string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "{0:F6},{1:F6}", alarm.Lat.Value, alarm.Lng.Value);
+            // GPS-Position auch als ELW-Position setzen
+            _model.ElwPosition = (alarm.Lat.Value, alarm.Lng.Value);
+        }
+        else
+        {
+            _model.MapAddress = alarm.Address;
+        }
+
+        // Stichwort = Alarm-Titel aus Divera (z.B. "Vermisstensuche")
+        _model.Stichwort = alarm.Title;
+
+        // Alarmiert bleibt leer — muss manuell eingetragen werden (Leitstelle, Polizei etc.)
+        _model.Alarmiert = string.Empty;
+
+        _model.EinsatzNummer = $"D-{alarm.Id}";
+        _model.IstEinsatz = true;
+
+        // Lagetext als Bemerkungen
+        _model.ExportPfad = string.IsNullOrWhiteSpace(alarm.Text)
+            ? alarm.Title
+            : $"{alarm.Title}: {alarm.Text}";
+
+        if (alarm.Date != default)
+        {
+            _model.AlarmierungsZeit = alarm.Date;
+            _alarmStartTime = alarm.Date.ToString("HH:mm");
+        }
+
+        StateHasChanged();
+    }
 }
+

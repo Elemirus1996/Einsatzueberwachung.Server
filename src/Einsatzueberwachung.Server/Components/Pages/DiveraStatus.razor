@@ -1,0 +1,276 @@
+@page "/divera"
+@rendermode InteractiveServer
+
+@using Einsatzueberwachung.Domain.Models.Divera
+
+@inject IDiveraService DiveraService
+@inject NavigationManager Navigation
+
+@implements IDisposable
+
+<PageTitle>Divera 24/7</PageTitle>
+
+<div class="container py-4" style="max-width:1200px;">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="mb-1"><i class="bi bi-broadcast-pin me-2"></i>Divera 24/7</h1>
+            <p class="text-muted mb-0">Aktive Alarme und Verfügbarkeitsstatus</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            @if (_loading)
+            {
+                <span class="spinner-border spinner-border-sm text-secondary"></span>
+            }
+            @if (_lastUpdated.HasValue)
+            {
+                <small class="text-muted">Zuletzt: @_lastUpdated.Value.ToString("HH:mm:ss")</small>
+            }
+            <small class="text-muted">
+                &#x2022; Polling: @(_alarms.Any()
+                    ? $"alle {DiveraService.PollIntervalActiveSeconds}s (Alarm aktiv)"
+                    : $"alle {DiveraService.PollIntervalIdleSeconds / 60}min (kein Alarm)")
+            </small>
+            <button class="btn btn-outline-primary btn-sm" @onclick="RefreshAsync" disabled="@_loading">
+                <i class="bi bi-arrow-clockwise me-1"></i>Aktualisieren
+            </button>
+        </div>
+    </div>
+
+    @if (!DiveraService.IsConfigured)
+    {
+        <div class="card border-warning mb-4">
+            <div class="card-body d-flex align-items-start gap-3">
+                <i class="bi bi-exclamation-triangle-fill fs-3 text-warning mt-1"></i>
+                <div>
+                    <h5 class="mb-1">Divera 24/7 nicht konfiguriert</h5>
+                    <p class="mb-2">Bitte hinterlege deinen Divera API-Key in den Einstellungen, um diese Seite zu nutzen.</p>
+                    <a class="btn btn-warning btn-sm" href="/einstellungen">
+                        <i class="bi bi-gear me-1"></i>Zu den Einstellungen
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* Verbindungsstatus-Badge *@
+        <div class="mb-3">
+            @if (_connectionOk)
+            {
+                <span class="badge bg-success fs-6"><i class="bi bi-wifi me-1"></i>Verbunden</span>
+            }
+            else if (_errorMessage != null)
+            {
+                <span class="badge bg-danger fs-6"><i class="bi bi-wifi-off me-1"></i>Verbindungsfehler</span>
+                <p class="text-danger mt-2 mb-0">@_errorMessage</p>
+            }
+        </div>
+
+        <div class="row g-4">
+            @* --- Aktive Alarme --- *@
+            <div class="col-12 col-xl-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h2 class="h5 mb-0"><i class="bi bi-alarm me-2"></i>Aktive Alarme</h2>
+                        <span class="badge bg-secondary">@_alarms.Count</span>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (_alarms.Count == 0)
+                        {
+                            <div class="p-3 text-muted">
+                                <i class="bi bi-check-circle me-1"></i>Keine aktiven Alarme.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="list-group list-group-flush">
+                                @foreach (var alarm in _alarms)
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <strong>
+                                                @if (alarm.Priority)
+                                                {
+                                                    <i class="bi bi-exclamation-circle-fill text-danger me-1"></i>
+                                                }
+                                                @alarm.Title
+                                            </strong>
+                                            <small class="text-muted ms-2 text-nowrap">@alarm.DateFormatted</small>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(alarm.Text))
+                                        {
+                                            <p class="mb-1 small">@alarm.Text</p>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(alarm.Address))
+                                        {
+                                            <p class="mb-1 small text-muted">
+                                                <i class="bi bi-geo-alt me-1"></i>@alarm.Address
+                                            </p>
+                                        }
+                                        <div class="d-flex gap-2 flex-wrap mt-1">
+                                            <span class="badge bg-success">@alarm.CountKomme kommt</span>
+                                            <span class="badge bg-danger">@alarm.CountKommeNicht kommt nicht</span>
+                                            @if (alarm.CountSpaeter > 0)
+                                            {
+                                                <span class="badge bg-warning text-dark">@alarm.CountSpaeter später</span>
+                                            }
+                                            @if (alarm.CountKeineAntwort > 0)
+                                            {
+                                                <span class="badge bg-secondary">@alarm.CountKeineAntwort keine Antwort</span>
+                                            }
+                                        </div>
+                                        @if (alarm.UcrDetails.Any())
+                                        {
+                                            <details class="mt-2">
+                                                <summary class="small text-muted" style="cursor:pointer;">Rückmeldungen anzeigen</summary>
+                                                <ul class="list-unstyled mb-0 mt-1 ps-2">
+                                                    @foreach (var ucr in alarm.UcrDetails.OrderBy(u => u.Status == 0).ThenBy(u => u.MemberName))
+                                                    {
+                                                        <li class="small">
+                                                            <span class="badge @ucr.StatusBadgeCss me-1">@ucr.StatusText</span>
+                                                            @ucr.MemberName
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </details>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* --- Personal-Ampel --- *@
+            <div class="col-12 col-xl-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h2 class="h5 mb-0"><i class="bi bi-people me-2"></i>Personal-Ampel</h2>
+                        <div class="d-flex gap-1">
+                            <span class="badge bg-success">@_members.Count(m => m.IsVerfuegbar) verfügbar</span>
+                            <span class="badge bg-warning text-dark">@_members.Count(m => m.IsBedingtVerfuegbar) bedingt</span>
+                            <span class="badge bg-danger">@_members.Count(m => m.IsNichtVerfuegbar) nicht</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (_members.Count == 0)
+                        {
+                            <div class="p-3 text-muted">
+                                <i class="bi bi-person-dash me-1"></i>Keine Mitglieder gefunden.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var member in _members)
+                                        {
+                                            <tr>
+                                                <td>@member.FullName</td>
+                                                <td>
+                                                    <span class="badge @member.StatusBadgeCss">
+                                                        @member.StatusText
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<DiveraAlarm> _alarms = new();
+    private List<DiveraMember> _members = new();
+    private bool _loading;
+    private bool _connectionOk;
+    private string? _errorMessage;
+    private DateTime? _lastUpdated;
+    private System.Threading.Timer? _pollTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // RefreshAsync laedt die Konfiguration lazy via PullAllAsync —
+        // daher hier NICHT vorher auf IsConfigured pruefen (waere eine neue Instanz, noch nicht geladen)
+        await RefreshAsync();
+    }
+
+    /// <summary>Plant den naechsten Poll als One-Shot-Timer.
+    /// Intervall passt sich an: kurz bei aktiven Alarmen, lang bei Ruhe.</summary>
+    private void ScheduleNextPoll()
+    {
+        _pollTimer?.Dispose();
+        var intervalMs = _alarms.Any()
+            ? DiveraService.PollIntervalActiveSeconds * 1000
+            : DiveraService.PollIntervalIdleSeconds * 1000;
+
+        _pollTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await RefreshAsync();
+                StateHasChanged();
+            });
+        }, null, intervalMs, System.Threading.Timeout.Infinite);
+    }
+
+    private async Task RefreshAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var pull = await DiveraService.PullAllAsync();
+            if (pull == null)
+            {
+                _connectionOk = false;
+                // Nur Fehler anzeigen wenn konfiguriert — sonst ist es kein Fehler, nur nicht eingerichtet
+                if (DiveraService.IsConfigured)
+                    _errorMessage = "Keine Antwort von Divera erhalten. Bitte Verbindung und API-Key prüfen.";
+                return;
+            }
+
+            _connectionOk = true;
+            _alarms = pull.Alarms.Where(a => !a.Closed).ToList();
+            _members = pull.Members
+                .OrderBy(m => m.StatusId == 0 ? 99 : m.StatusId)
+                .ThenBy(m => m.Lastname)
+                .ThenBy(m => m.Firstname)
+                .ToList();
+            _lastUpdated = pull.LastUpdated;
+        }
+        catch (Exception ex)
+        {
+            _connectionOk = false;
+            _errorMessage = $"Fehler: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        // Timer nur planen wenn Divera konfiguriert ist
+        if (DiveraService.IsConfigured)
+            ScheduleNextPoll();
+    }
+
+    public void Dispose()
+    {
+        _pollTimer?.Dispose();
+    }
+}
