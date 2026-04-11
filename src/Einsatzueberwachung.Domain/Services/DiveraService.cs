@@ -348,7 +348,7 @@ namespace Einsatzueberwachung.Domain.Services
                     element.Value.GetString(),
                     NumberStyles.Any,
                     CultureInfo.InvariantCulture,
-                    out var d2) && d2 != 0 ? d2 : null,
+                    out var d2) ? d2 : null,
                 _ => null
             };
         }
