@@ -117,6 +117,9 @@ builder.Services.AddSingleton<GitHubUpdateService>(sp =>
 // Wetter-Service (DWD via BrightSky API)
 builder.Services.AddHttpClient<IWeatherService, DwdWeatherService>();
 
+// Divera 24/7 Integration (Einheiten-Zugangscode in appsettings.json konfigurieren)
+builder.Services.AddHttpClient<IDiveraService, DiveraService>();
+
 // FluentValidation Validators registrieren
 builder.Services.AddValidatorsFromAssembly(typeof(Einsatzueberwachung.Domain.Models.PersonalEntry).Assembly);
 

@@ -1,4 +1,5 @@
 ﻿@inject ISettingsService SettingsService
+@inject IDiveraService DiveraService
 
 <div class="top-row navbar navbar-dark">
     <div class="container-fluid nav-brand-row">
@@ -73,6 +74,15 @@
                 <span class="nav-text">Wetter</span>
             </NavLink>
         </div>
+        @if (_diveraKonfiguriert)
+        {
+            <div class="nav-item px-2">
+                <NavLink class="nav-link" href="/divera">
+                    <span class="nav-icon"><i class="bi bi-broadcast"></i></span>
+                    <span class="nav-text">Divera 24/7</span>
+                </NavLink>
+            </div>
+        }
 
         <div class="nav-section-header">VERWALTUNG</div>
 
@@ -93,6 +103,7 @@
 
 @code {
     private string _staffelLogoUrl = string.Empty;
+    private bool _diveraKonfiguriert;
 
     [Parameter]
     public bool IsCollapsed { get; set; }
@@ -102,6 +113,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _diveraKonfiguriert = DiveraService.IsConfigured;
+
         var settings = await SettingsService.GetStaffelSettingsAsync();
         if (string.IsNullOrWhiteSpace(settings.StaffelLogoPfad))
         {

@@ -1,0 +1,454 @@
+@page "/divera"
+@rendermode InteractiveServer
+
+@inject IDiveraService DiveraService
+@inject IEinsatzService EinsatzService
+@inject NavigationManager Navigation
+
+<PageTitle>Divera 24/7</PageTitle>
+
+<div class="container py-4" style="max-width:1200px;">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="mb-1"><i class="bi bi-broadcast me-2"></i>Divera 24/7</h1>
+            <p class="text-muted mb-0">Alarme, Rueckmeldungen und Verfuegbarkeit</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-secondary btn-sm" @onclick="AktualisierenAsync" disabled="@_ladeVorgang">
+                @if (_ladeVorgang)
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                else
+                {
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                }
+                Aktualisieren
+            </button>
+            <a class="btn btn-outline-secondary btn-sm" href="/">
+                <i class="bi bi-arrow-left me-1"></i>Zurueck
+            </a>
+        </div>
+    </div>
+
+    @* ── Konfigurationswarnung ─────────────────────────────────────────── *@
+    @if (!DiveraService.IsConfigured)
+    {
+        <div class="alert alert-warning d-flex gap-3 align-items-start">
+            <i class="bi bi-exclamation-triangle-fill fs-4 mt-1 flex-shrink-0"></i>
+            <div>
+                <h5 class="alert-heading mb-1">Divera 24/7 nicht konfiguriert</h5>
+                <p class="mb-2">
+                    Bitte trage den <strong>Einheiten-Zugangscode</strong> in der <code>appsettings.json</code> ein.
+                    <br />
+                    <strong class="text-danger">Wichtig:</strong> Verwende den <em>Einheiten-Zugangscode</em>,
+                    nicht deinen persoenlichen Benutzer-API-Schluessel!
+                    Den Einheiten-Zugangscode findest du in Divera unter:
+                    <strong>Verwaltung → Schnittstellen → API</strong>.
+                </p>
+                <pre class="bg-body-tertiary p-2 rounded small mb-0">"Divera": {
+  "Enabled": true,
+  "AccessKey": "DEIN-EINHEITEN-ZUGANGSCODE-HIER"
+}</pre>
+            </div>
+        </div>
+        return;
+    }
+
+    @* ── Verbindungsstatus ─────────────────────────────────────────────── *@
+    <div class="row g-3 mb-4">
+        <div class="col-auto">
+            <div class="card border-0 bg-body-tertiary">
+                <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+                    @if (_verbunden)
+                    {
+                        <span class="badge bg-success fs-6"><i class="bi bi-wifi me-1"></i>Verbunden</span>
+                    }
+                    else if (_ladeVorgang)
+                    {
+                        <span class="badge bg-secondary fs-6"><i class="bi bi-hourglass-split me-1"></i>Verbinde...</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger fs-6"><i class="bi bi-wifi-off me-1"></i>Getrennt</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_einheitName))
+                    {
+                        <span class="text-muted small">@_einheitName</span>
+                    }
+                    @if (_letzteAktualisierung.HasValue)
+                    {
+                        <span class="text-muted small">Stand: @_letzteAktualisierung.Value.ToString("HH:mm:ss")</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!_verbunden && !_ladeVorgang)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            Verbindung zu Divera 24/7 fehlgeschlagen. Bitte pruefen:
+            <ul class="mb-0 mt-2">
+                <li>Einheiten-Zugangscode korrekt eingetragen? (<strong>nicht</strong> den persoenlichen Benutzer-API-Schluessel)</li>
+                <li>Divera unter: <strong>Verwaltung → Schnittstellen → API → Einheiten-Zugangscode</strong></li>
+                <li>Netzwerkzugang zu <code>app.divera247.com</code> vorhanden?</li>
+            </ul>
+        </div>
+    }
+
+    @if (_verbunden)
+    {
+        <div class="row g-4">
+
+            @* ── Aktive Alarme ─────────────────────────────────────────── *@
+            <div class="col-12 col-xl-7">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-alarm-fill me-2 text-danger"></i>Aktive Alarme</span>
+                        <span class="badge bg-danger">@(_daten?.AktiveAlarme.Count ?? 0)</span>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (_daten == null || _daten.AktiveAlarme.Count == 0)
+                        {
+                            <p class="text-muted p-3 mb-0">Keine aktiven Alarme.</p>
+                        }
+                        else
+                        {
+                            <div class="list-group list-group-flush">
+                                @foreach (var alarm in _daten.AktiveAlarme)
+                                {
+                                    <div class="list-group-item list-group-item-action">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <div class="fw-semibold">
+                                                @if (alarm.Priority)
+                                                {
+                                                    <i class="bi bi-exclamation-circle-fill text-danger me-1"></i>
+                                                }
+                                                @alarm.Title
+                                                @if (!string.IsNullOrWhiteSpace(alarm.Type))
+                                                {
+                                                    <span class="badge bg-secondary ms-1 fw-normal">@alarm.Type</span>
+                                                }
+                                            </div>
+                                            <div class="d-flex gap-1 flex-shrink-0 ms-2">
+                                                <button class="btn btn-sm btn-outline-primary"
+                                                        @onclick="() => AlarmDetailsToggle(alarm.Id)"
+                                                        title="Rueckmeldungen anzeigen">
+                                                    <i class="bi bi-people"></i>
+                                                    @if (alarm.Rueckmeldungen.Count > 0)
+                                                    {
+                                                        <span class="ms-1">@alarm.Rueckmeldungen.Count</span>
+                                                    }
+                                                </button>
+                                                @if (!EinsatzIstAktiv)
+                                                {
+                                                    <button class="btn btn-sm btn-success"
+                                                            @onclick="() => AlarmImportierenAsync(alarm)"
+                                                            title="Als Einsatz starten">
+                                                        <i class="bi bi-play-fill me-1"></i>Starten
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <div class="small text-muted">
+                                            <i class="bi bi-geo-alt me-1"></i>@alarm.Address
+                                            @if (alarm.Lat.HasValue && alarm.Lng.HasValue)
+                                            {
+                                                <span class="ms-2 text-info" title="GPS-Koordinaten">
+                                                    <i class="bi bi-pin-map"></i> @alarm.Lat?.ToString("F5") / @alarm.Lng?.ToString("F5")
+                                                </span>
+                                            }
+                                        </div>
+                                        <div class="small text-muted">
+                                            <i class="bi bi-clock me-1"></i>@alarm.Date.ToString("dd.MM.yyyy HH:mm")
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(alarm.Text))
+                                        {
+                                            <div class="small mt-1 text-body-secondary">@alarm.Text</div>
+                                        }
+
+                                        @* Rueckmeldungs-Zusammenfassung *@
+                                        @if (alarm.Rueckmeldungen.Count > 0)
+                                        {
+                                            <div class="d-flex gap-2 mt-1">
+                                                @if (alarm.AnzahlKommt > 0)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check-lg me-1"></i>@alarm.AnzahlKommt Kommt
+                                                    </span>
+                                                }
+                                                @if (alarm.AnzahlVielleicht > 0)
+                                                {
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="bi bi-question-lg me-1"></i>@alarm.AnzahlVielleicht Vielleicht
+                                                    </span>
+                                                }
+                                                @if (alarm.AnzahlKommtNicht > 0)
+                                                {
+                                                    <span class="badge bg-danger">
+                                                        <i class="bi bi-x-lg me-1"></i>@alarm.AnzahlKommtNicht Kommt nicht
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+
+                                        @* Detail-Liste der Rueckmeldungen (Collapse) *@
+                                        @if (_aufgeklappteAlarmIds.Contains(alarm.Id) && alarm.Rueckmeldungen.Count > 0)
+                                        {
+                                            <div class="mt-2 border-top pt-2">
+                                                <div class="fw-semibold small mb-1">Rueckmeldungen:</div>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    @foreach (var ucr in alarm.Rueckmeldungen.OrderBy(r => r.Status))
+                                                    {
+                                                        <span class="badge @ucr.GetBadgeClass()" title="@(ucr.GetTimestamp()?.ToString("HH:mm") ?? "")">
+                                                            <i class="@ucr.GetIcon() me-1"></i>@ucr.MemberName
+                                                            @if (!string.IsNullOrWhiteSpace(ucr.Note))
+                                                            {
+                                                                <span class="ms-1 opacity-75">(@ucr.Note)</span>
+                                                            }
+                                                        </span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* ── Verfuegbarkeit Personal ───────────────────────────────── *@
+            <div class="col-12 col-xl-5">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people-fill me-2"></i>Personal-Verfuegbarkeit</span>
+                        <span class="badge bg-secondary">@(_daten?.Mitglieder.Count ?? 0)</span>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (_daten == null || _daten.Mitglieder.Count == 0)
+                        {
+                            <p class="text-muted p-3 mb-0">Keine Mitglieder gefunden.</p>
+                        }
+                        else
+                        {
+                            @* Verfuegbarkeits-Zusammenfassung *@
+                            <div class="d-flex gap-2 p-3 border-bottom flex-wrap">
+                                @{
+                                    var anzahlVerfuegbar = _daten.Mitglieder.Count(m => m.StatusId is 1 or 2);
+                                    var anzahlBedingt = _daten.Mitglieder.Count(m => m.StatusId == 3);
+                                    var anzahlNicht = _daten.Mitglieder.Count(m => m.StatusId == 4);
+                                    var anzahlKeinStatus = _daten.Mitglieder.Count(m => m.StatusId is 0 or > 4);
+                                }
+                                @if (anzahlVerfuegbar > 0)
+                                {
+                                    <span class="badge bg-success fs-6">
+                                        <i class="bi bi-check-circle me-1"></i>@anzahlVerfuegbar Verfuegbar
+                                    </span>
+                                }
+                                @if (anzahlBedingt > 0)
+                                {
+                                    <span class="badge bg-warning text-dark fs-6">
+                                        <i class="bi bi-dash-circle me-1"></i>@anzahlBedingt Bedingt
+                                    </span>
+                                }
+                                @if (anzahlNicht > 0)
+                                {
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="bi bi-x-circle me-1"></i>@anzahlNicht Nicht verfuegbar
+                                    </span>
+                                }
+                                @if (anzahlKeinStatus > 0)
+                                {
+                                    <span class="badge bg-secondary fs-6">
+                                        <i class="bi bi-circle me-1"></i>@anzahlKeinStatus Kein Status
+                                    </span>
+                                }
+                            </div>
+
+                            <div class="list-group list-group-flush" style="max-height:460px;overflow-y:auto;">
+                                @foreach (var mitglied in _daten.Mitglieder)
+                                {
+                                    <div class="list-group-item py-2 d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="@mitglied.GetVerfuegbarkeitIcon() fs-5"></i>
+                                            <span>@mitglied.FullName</span>
+                                        </div>
+                                        <span class="badge @mitglied.GetVerfuegbarkeitBadgeClass() small">
+                                            @mitglied.StatusText
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        @* ── Alle Alarme (Verlauf) ─────────────────────────────────────── *@
+        @if (_daten != null && _daten.AlleAlarme.Count > _daten.AktiveAlarme.Count)
+        {
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clock-history me-2"></i>Letzte geschlossene Alarme</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        @foreach (var alarm in _daten.AlleAlarme.Where(a => a.Closed).Take(10))
+                        {
+                            <div class="list-group-item opacity-75">
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-semibold text-muted">
+                                        <i class="bi bi-check2-circle me-1"></i>@alarm.Title
+                                    </span>
+                                    <span class="small text-muted">@alarm.Date.ToString("dd.MM. HH:mm")</span>
+                                </div>
+                                <div class="small text-muted">@alarm.Address</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@* ── Fehler-Toast ──────────────────────────────────────────────────────── *@
+@if (!string.IsNullOrWhiteSpace(_fehlerMeldung))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show align-items-center text-bg-danger border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-exclamation-triangle me-2"></i>@_fehlerMeldung
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                        @onclick="() => _fehlerMeldung = string.Empty"></button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private Einsatzueberwachung.Domain.Models.Divera.DiveraPullResponse? _daten;
+    private bool _verbunden;
+    private bool _ladeVorgang;
+    private string _einheitName = string.Empty;
+    private DateTime? _letzteAktualisierung;
+    private string _fehlerMeldung = string.Empty;
+    private readonly HashSet<int> _aufgeklappteAlarmIds = new();
+    private System.Threading.Timer? _autoRefreshTimer;
+
+    private bool EinsatzIstAktiv
+    {
+        get
+        {
+            var e = EinsatzService.CurrentEinsatz;
+            return !string.IsNullOrWhiteSpace(e.Einsatzort) && e.EinsatzEnde is null;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!DiveraService.IsConfigured) return;
+        await AktualisierenAsync();
+
+        // Auto-Refresh alle 60 Sekunden
+        _autoRefreshTimer = new System.Threading.Timer(
+            async _ =>
+            {
+                await InvokeAsync(async () =>
+                {
+                    await AktualisierenAsync();
+                    StateHasChanged();
+                });
+            },
+            null,
+            TimeSpan.FromSeconds(60),
+            TimeSpan.FromSeconds(60));
+    }
+
+    private async Task AktualisierenAsync()
+    {
+        _ladeVorgang = true;
+        _fehlerMeldung = string.Empty;
+
+        try
+        {
+            _daten = await DiveraService.PullAllAsync();
+            _verbunden = _daten != null;
+
+            if (_daten != null)
+            {
+                _einheitName = _daten.EinheitName;
+                _letzteAktualisierung = DateTime.Now;
+            }
+        }
+        catch (Exception ex)
+        {
+            _verbunden = false;
+            _fehlerMeldung = $"Fehler: {ex.Message}";
+        }
+        finally
+        {
+            _ladeVorgang = false;
+        }
+    }
+
+    private void AlarmDetailsToggle(int alarmId)
+    {
+        if (!_aufgeklappteAlarmIds.Remove(alarmId))
+            _aufgeklappteAlarmIds.Add(alarmId);
+    }
+
+    private async Task AlarmImportierenAsync(Einsatzueberwachung.Domain.Models.Divera.DiveraAlarm alarm)
+    {
+        try
+        {
+            var einsatz = new EinsatzData
+            {
+                EinsatzNummer = alarm.ForeignId?.Trim() is { Length: > 0 } fid ? fid : $"DIV-{alarm.Id}",
+                Alarmiert = "Divera 24/7",
+                Einsatzort = alarm.Address,
+                MapAddress = alarm.Address,
+                IstEinsatz = true,
+                EinsatzDatum = alarm.Date > DateTime.MinValue ? alarm.Date : DateTime.Now,
+                AlarmierungsZeit = alarm.Date > DateTime.MinValue ? alarm.Date : DateTime.Now,
+                ExportPfad = string.Empty
+            };
+
+            if (alarm.Lat.HasValue && alarm.Lng.HasValue)
+            {
+                einsatz.ElwPosition = (alarm.Lat.Value, alarm.Lng.Value);
+            }
+
+            await EinsatzService.StartEinsatzAsync(einsatz);
+
+            var notizText = $"Divera-Alarm #{alarm.Id}: {alarm.Title}";
+            if (!string.IsNullOrWhiteSpace(alarm.Text))
+                notizText += $"\n{alarm.Text}";
+
+            await EinsatzService.AddGlobalNoteWithSourceAsync(
+                notizText, "divera", "Divera 24/7", "Import",
+                GlobalNotesEntryType.System, "Divera");
+
+            Navigation.NavigateTo("/einsatz-monitor");
+        }
+        catch (Exception ex)
+        {
+            _fehlerMeldung = $"Import fehlgeschlagen: {ex.Message}";
+        }
+    }
+
+    public void Dispose()
+    {
+        _autoRefreshTimer?.Dispose();
+    }
+}

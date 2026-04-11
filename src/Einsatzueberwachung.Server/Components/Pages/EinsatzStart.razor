@@ -2,10 +2,12 @@
 @rendermode InteractiveServer
 
 @using Einsatzueberwachung.Domain.Models.Enums
+@using Einsatzueberwachung.Domain.Models.Divera
 
 @inject IEinsatzService EinsatzService
 @inject IMasterDataService MasterDataService
 @inject ISettingsService SettingsService
+@inject IDiveraService DiveraService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
@@ -37,6 +39,95 @@
     }
     else
     {
+
+    @* ── Divera 24/7 Import (nur sichtbar wenn konfiguriert) ──────────── *@
+    @if (DiveraService.IsConfigured)
+    {
+        <div class="card mb-4 border-primary">
+            <div class="card-header text-bg-primary fw-semibold">
+                <i class="bi bi-broadcast me-2"></i>Divera 24/7 — Aus Alarm importieren
+            </div>
+            <div class="card-body">
+                @if (_diveraLadeVorgang)
+                {
+                    <div class="d-flex align-items-center gap-2 text-muted">
+                        <span class="spinner-border spinner-border-sm"></span>
+                        Lade Divera-Alarme...
+                    </div>
+                }
+                else if (_diveraAlarme.Count == 0)
+                {
+                    <p class="text-muted mb-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Keine aktiven Divera-Alarme gefunden.
+                    </p>
+                    <button class="btn btn-outline-primary btn-sm" @onclick="DiveraAlarmeAbrufenAsync">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Nochmal pruefen
+                    </button>
+                }
+                else
+                {
+                    <p class="text-muted small mb-2">Waehle einen aktiven Alarm aus, um die Einsatzdaten automatisch zu befuellen:</p>
+                    <div class="list-group mb-2">
+                        @foreach (var alarm in _diveraAlarme)
+                        {
+                            <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-start gap-2"
+                                    @onclick="() => DiveraAlarmUebernehmen(alarm)">
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">
+                                        @if (alarm.Priority)
+                                        {
+                                            <i class="bi bi-exclamation-circle-fill text-danger me-1"></i>
+                                        }
+                                        @alarm.Title
+                                        @if (!string.IsNullOrWhiteSpace(alarm.Type))
+                                        {
+                                            <span class="badge bg-secondary fw-normal ms-1">@alarm.Type</span>
+                                        }
+                                    </div>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-geo-alt me-1"></i>@alarm.Address
+                                    </div>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-clock me-1"></i>@alarm.Date.ToString("dd.MM.yyyy HH:mm")
+                                    </div>
+                                    @if (alarm.Rueckmeldungen.Count > 0)
+                                    {
+                                        <div class="d-flex gap-1 mt-1">
+                                            @if (alarm.AnzahlKommt > 0)
+                                            {
+                                                <span class="badge bg-success small">
+                                                    <i class="bi bi-check-lg me-1"></i>@alarm.AnzahlKommt
+                                                </span>
+                                            }
+                                            @if (alarm.AnzahlVielleicht > 0)
+                                            {
+                                                <span class="badge bg-warning text-dark small">
+                                                    <i class="bi bi-question-lg me-1"></i>@alarm.AnzahlVielleicht
+                                                </span>
+                                            }
+                                            @if (alarm.AnzahlKommtNicht > 0)
+                                            {
+                                                <span class="badge bg-danger small">
+                                                    <i class="bi bi-x-lg me-1"></i>@alarm.AnzahlKommtNicht
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                <span class="badge bg-primary align-self-center flex-shrink-0">
+                                    <i class="bi bi-arrow-right"></i>
+                                </span>
+                            </button>
+                        }
+                    </div>
+                    <a class="btn btn-outline-secondary btn-sm" href="/divera">
+                        <i class="bi bi-broadcast me-1"></i>Alle Details anzeigen
+                    </a>
+                }
+            </div>
+        </div>
+    }
     <EditForm Model="_model" OnValidSubmit="StartAsync" class="row g-3">
         <DataAnnotationsValidator />
 
@@ -189,6 +280,10 @@
     private bool _busy;
     private bool _einsatzBereitsAktiv;
 
+    // Divera-spezifische Felder
+    private List<DiveraAlarm> _diveraAlarme = new();
+    private bool _diveraLadeVorgang;
+
     private sealed class ClientLocalNowDto
     {
         public int Year { get; set; }
@@ -241,6 +336,12 @@
 
         var alarmBase = _model.AlarmierungsZeit ?? DateTime.Now;
         _alarmStartTime = alarmBase.ToString("HH:mm");
+
+        // Divera-Alarme laden (ohne die Seite zu blockieren)
+        if (DiveraService.IsConfigured)
+        {
+            _ = DiveraAlarmeAbrufenAsync();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -354,5 +455,67 @@
         }
 
         return false;
+    }
+
+    // ── Divera-Hilfsmethoden ──────────────────────────────────────────────
+
+    private async Task DiveraAlarmeAbrufenAsync()
+    {
+        _diveraLadeVorgang = true;
+        try
+        {
+            _diveraAlarme = await DiveraService.GetActiveAlarmsAsync();
+        }
+        catch
+        {
+            _diveraAlarme = new List<DiveraAlarm>();
+        }
+        finally
+        {
+            _diveraLadeVorgang = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void DiveraAlarmUebernehmen(DiveraAlarm alarm)
+    {
+        // Einsatzort aus Divera-Adresse
+        if (!string.IsNullOrWhiteSpace(alarm.Address))
+        {
+            _model.Einsatzort = alarm.Address;
+            _model.MapAddress = alarm.Address;
+        }
+
+        // Alarmiert durch
+        _model.Alarmiert = "Divera 24/7";
+
+        // Einsatznummer (aus ForeignId oder Divera-ID)
+        if (!string.IsNullOrWhiteSpace(alarm.ForeignId))
+            _model.EinsatzNummer = alarm.ForeignId;
+        else
+            _model.EinsatzNummer = $"DIV-{alarm.Id}";
+
+        // Alarmzeit
+        if (alarm.Date > DateTime.MinValue)
+        {
+            _model.AlarmierungsZeit = alarm.Date;
+            _model.EinsatzDatum = alarm.Date;
+            _alarmStartTime = alarm.Date.ToString("HH:mm");
+        }
+
+        // GPS-Koordinaten uebernehmen
+        if (alarm.Lat.HasValue && alarm.Lng.HasValue)
+        {
+            _model.ElwPosition = (alarm.Lat.Value, alarm.Lng.Value);
+        }
+
+        // Stichwort als Bemerkung eintragen
+        if (!string.IsNullOrWhiteSpace(alarm.Title))
+        {
+            var bemerkung = alarm.Title;
+            if (!string.IsNullOrWhiteSpace(alarm.Text))
+                bemerkung += $"\n{alarm.Text}";
+            _model.ExportPfad = bemerkung;
+        }
     }
 }
