@@ -2,8 +2,10 @@
 @rendermode InteractiveServer
 
 @using Einsatzueberwachung.Domain.Models.Divera
+@using Einsatzueberwachung.Domain.Interfaces
 
 @inject IDiveraService DiveraService
+@inject IMasterDataService MasterDataService
 @inject NavigationManager Navigation
 
 @implements IDisposable
@@ -108,8 +110,11 @@
                                             </p>
                                         }
                                         <div class="d-flex gap-2 flex-wrap mt-1">
-                                            <span class="badge bg-success">@alarm.CountKomme kommt</span>
-                                            <span class="badge bg-danger">@alarm.CountKommeNicht kommt nicht</span>
+                                            <span class="badge bg-success">@alarm.CountKomme geantwortet</span>
+                                            @if (alarm.CountKommeNicht > 0)
+                                            {
+                                                <span class="badge bg-danger">@alarm.CountKommeNicht kommt nicht</span>
+                                            }
                                             @if (alarm.CountSpaeter > 0)
                                             {
                                                 <span class="badge bg-warning text-dark">@alarm.CountSpaeter später</span>
@@ -235,29 +240,36 @@
 
         try
         {
-            // GetActiveAlarmsAsync hat den last-alarm Fallback — daher statt pull.Alarms direkt verwenden
-            var alarmsTask = DiveraService.GetActiveAlarmsAsync();
-            var pullTask = DiveraService.PullAllAsync();
-            await Task.WhenAll(alarmsTask, pullTask);
+            // GetActiveAlarmsAsync ruft PullAllAsync intern auf und nutzt last-alarm als Fallback.
+            // Danach PullAllAsync nochmal fuer Members — wird aus Cache bedient (kein zweiter HTTP-Call).
+            _alarms = await DiveraService.GetActiveAlarmsAsync();
 
-            var alarms = await alarmsTask;
-            var pull = await pullTask;
+            // Namen aus Stammdaten aufloesen (DiveraUserId → FullName)
+            var personalList = await MasterDataService.GetPersonalListAsync();
+            var stammdatenLookup = personalList
+                .Where(p => p.DiveraUserId.HasValue)
+                .ToDictionary(p => p.DiveraUserId!.Value, p => p.FullName);
+            foreach (var alarm in _alarms)
+                foreach (var ucr in alarm.UcrDetails)
+                    if (stammdatenLookup.TryGetValue(ucr.MemberId, out var realName) && !string.IsNullOrWhiteSpace(realName))
+                        ucr.MemberName = realName;
 
-            // Verbindung gilt als OK wenn mindestens einer der Calls etwas zurueckgab
-            _connectionOk = alarms.Any() || pull != null;
+            var pull = await DiveraService.PullAllAsync();
+
+            // Verbindung gilt als OK sobald Konfiguration geladen (IsConfigured ist nach dem Aufruf korrekt)
+            _connectionOk = _alarms.Any() || pull != null;
 
             if (!_connectionOk && DiveraService.IsConfigured)
             {
                 _errorMessage = "Keine Antwort von Divera erhalten. Bitte Verbindung und API-Key prüfen.";
             }
 
-            _alarms = alarms;
             _members = pull?.Members
                 .OrderBy(m => m.StatusId == 0 ? 99 : m.StatusId)
                 .ThenBy(m => m.Lastname)
                 .ThenBy(m => m.Firstname)
                 .ToList() ?? new();
-            _lastUpdated = pull?.LastUpdated ?? (alarms.Any() ? DateTime.Now : null);
+            _lastUpdated = pull?.LastUpdated ?? (_alarms.Any() ? DateTime.Now : null);
         }
         catch (Exception ex)
         {

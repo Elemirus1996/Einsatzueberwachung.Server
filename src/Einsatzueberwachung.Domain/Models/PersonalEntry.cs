@@ -16,6 +16,8 @@ namespace Einsatzueberwachung.Domain.Models
         public PersonalSkills Skills { get; set; }
         public string Notizen { get; set; }
         public bool IsActive { get; set; }
+        /// <summary>Divera 24/7 Benutzer-ID (optional) — fuer Namensaufloesung bei UCR-Rueckmeldungen</summary>
+        public int? DiveraUserId { get; set; }
 
         public PersonalEntry()
         {
@@ -25,6 +27,7 @@ namespace Einsatzueberwachung.Domain.Models
             Skills = PersonalSkills.None;
             Notizen = string.Empty;
             IsActive = true;
+            DiveraUserId = null;
         }
 
         public string FullName => $"{Vorname} {Nachname}".Trim();

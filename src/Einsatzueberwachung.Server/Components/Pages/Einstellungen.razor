@@ -360,7 +360,7 @@
                     @if (_appSettings.DiveraEnabled)
                     {
                         <div class="mb-3">
-                            <label class="form-label">API Access-Key</label>
+                            <label class="form-label">API Access-Key <span class="badge bg-secondary">Staffel / Einheit</span></label>
                             <div class="input-group">
                                 <input type="@(_showDiveraKey ? "text" : "password")"
                                        class="form-control"
@@ -373,6 +373,7 @@
                             </div>
                             <div class="form-text">
                                 Den API-Key findest du in Divera unter Verwaltung &rarr; Schnittstellen &rarr; API-Access-Key.
+                                Wird f&uuml;r Alarmabfragen verwendet.
                             </div>
                         </div>
 
@@ -422,7 +423,7 @@
                     <h2 class="h4 mb-0"><i class="bi bi-info-circle me-2"></i>System-Information</h2>
                 </div>
                 <div class="card-body">
-                    <div class="mb-2"><strong>Version:</strong> 1.3.7</div>
+                    <div class="mb-2"><strong>Version:</strong> 1.3.8</div>
                     <div class="mb-2"><strong>Framework:</strong> .NET 8 / Blazor Server</div>
                     <div class="mb-3"><strong>Plattform:</strong> Web-basiert</div>
 

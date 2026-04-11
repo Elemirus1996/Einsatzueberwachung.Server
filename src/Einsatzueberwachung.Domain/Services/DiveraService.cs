@@ -269,25 +269,66 @@ namespace Einsatzueberwachung.Domain.Services
                     Remark = alarmEl.TryGetProperty("remark", out var remarkEl) ? remarkEl.GetString() ?? string.Empty : string.Empty,
                 };
 
-                // UCR: ucr_answered ist ein Array von user_cluster_relation_ids
-                if (alarmEl.TryGetProperty("ucr_answered", out var answeredEl) && answeredEl.ValueKind == JsonValueKind.Array)
+                // ucr_addressed: einfaches Array der adressierten user_cluster_relation IDs
+                var addressedIds = new System.Collections.Generic.HashSet<int>();
+                if (alarmEl.TryGetProperty("ucr_addressed", out var addressedEl) && addressedEl.ValueKind == JsonValueKind.Array)
                 {
-                    foreach (var uid in answeredEl.EnumerateArray())
+                    foreach (var uid in addressedEl.EnumerateArray())
                     {
-                        if (uid.ValueKind != JsonValueKind.Number) continue;
-                        var userId = uid.GetInt32();
-                        alarm.Ucr[userId] = 1; // 1 = hat geantwortet (Status unbekannt bei last-alarm)
+                        if (uid.ValueKind == JsonValueKind.Number)
+                        {
+                            var id = uid.GetInt32();
+                            addressedIds.Add(id);
+                            alarm.AddressedUserIds.Add(id);
+                        }
+                    }
+                }
+
+                // ucr_answered: {statusId: {userId: {ts, note}}} — KEIN Array, sondern verschachteltes Object!
+                // Outer key = org-spezifische Status-ID (z.B. 56298)
+                // Inner key = user_cluster_relation_id
+                var answeredIds = new System.Collections.Generic.HashSet<int>();
+                if (alarmEl.TryGetProperty("ucr_answered", out var answeredEl) && answeredEl.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var statusProp in answeredEl.EnumerateObject())
+                    {
+                        if (!int.TryParse(statusProp.Name, out var statusId)) continue;
+                        if (statusProp.Value.ValueKind != JsonValueKind.Object) continue;
+
+                        foreach (var userProp in statusProp.Value.EnumerateObject())
+                        {
+                            if (!int.TryParse(userProp.Name, out var userId)) continue;
+                            if (answeredIds.Contains(userId)) continue; // Duplikat verhindern
+
+                            answeredIds.Add(userId);
+                            alarm.Ucr[userId] = statusId;
+                            alarm.UcrDetails.Add(new DiveraUcrEntry
+                            {
+                                MemberId = userId,
+                                MemberName = $"#{userId}",
+                                Status = statusId  // org-spezifische Status-ID
+                            });
+                        }
+                    }
+                }
+
+                // Adressierte die NICHT geantwortet haben → Status 0
+                foreach (var addressedId in addressedIds)
+                {
+                    if (!answeredIds.Contains(addressedId))
+                    {
+                        alarm.Ucr[addressedId] = 0;
                         alarm.UcrDetails.Add(new DiveraUcrEntry
                         {
-                            MemberId = userId,
-                            MemberName = $"User #{userId}",
-                            Status = 1
+                            MemberId = addressedId,
+                            MemberName = $"#{addressedId}",
+                            Status = 0
                         });
                     }
                 }
 
-                _logger.LogInformation("Divera LastAlarm geparst: ID={Id}, Titel='{Title}', UCR-Antworten={Count}",
-                    alarm.Id, alarm.Title, alarm.UcrDetails.Count);
+                _logger.LogInformation("Divera LastAlarm geparst: ID={Id}, Titel='{Title}', Adressiert={Addressed}, Geantwortet={Answered}",
+                    alarm.Id, alarm.Title, addressedIds.Count, answeredIds.Count);
 
                 return alarm;
             }
@@ -305,22 +346,30 @@ namespace Einsatzueberwachung.Domain.Services
             var alarms = pull?.Alarms.Where(a => !a.Closed).ToList() ?? new List<DiveraAlarm>();
 
             // Fallback: Wenn pull/all keine Alarme liefert, last-alarm Endpunkt probieren.
-            // Wichtig fuer Staffel-API-Keys bei denen pull/all ggf. andere Datenstruktur liefert.
             if (!alarms.Any())
             {
                 var lastAlarm = await GetLastAlarmAsync();
                 if (lastAlarm != null)
                 {
-                    // UCR-Namen aus pull/all-Members aufloesen (falls Members geladen wurden)
+                    // Status-Namen aus pull/all StatusDefinitions aufloesen (falls vorhanden)
+                    if (pull?.StatusDefinitions?.Count > 0)
+                    {
+                        foreach (var ucrEntry in lastAlarm.UcrDetails)
+                        {
+                            if (pull.StatusDefinitions.TryGetValue(ucrEntry.Status, out var statusDef))
+                                ucrEntry.StatusName = statusDef.Name;
+                        }
+                    }
+                    // Member-Namen aus pull/all Members aufloesen (falls vorhanden)
                     if (pull?.Members?.Count > 0)
                     {
                         var memberLookup = pull.Members.ToDictionary(m => m.Id, m => m.FullName);
                         foreach (var ucrEntry in lastAlarm.UcrDetails)
-                        {
-                            if (memberLookup.TryGetValue(ucrEntry.MemberId, out var name))
+                            if (memberLookup.TryGetValue(ucrEntry.MemberId, out var name) && !string.IsNullOrWhiteSpace(name))
                                 ucrEntry.MemberName = name;
-                        }
+                        // Weiterer Fallback: Stammdaten-Lookup erfolgt in der Razor-Page (DiveraStatus.razor)
                     }
+
                     alarms.Add(lastAlarm);
                 }
             }

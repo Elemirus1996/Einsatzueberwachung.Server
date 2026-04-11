@@ -70,6 +70,7 @@ namespace Einsatzueberwachung.Domain.Models
 
         // Divera 24/7 Integration
         public bool DiveraEnabled { get; set; }
+        /// <summary>Staffel/Einheit API-Key — fuer Alarmabfrage (Web-API-Accesskey)</summary>
         public string DiveraAccessKey { get; set; }
         public string DiveraBaseUrl { get; set; }
 

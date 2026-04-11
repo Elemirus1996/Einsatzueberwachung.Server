@@ -22,13 +22,18 @@ namespace Einsatzueberwachung.Domain.Models.Divera
         /// <summary>Bemerkungen/Hinweise fuer die Einsatzkraefte</summary>
         public string Remark { get; set; } = string.Empty;
 
-        /// <summary>Key = MemberId, Value = UCR-Status (0=keine, 1=komme, 2=komme nicht, 3=spaeter)</summary>
+        /// <summary>Key = MemberId, Value = StatusId (0=keine Antwort, sonst org-spezifische Status-ID)</summary>
         public Dictionary<int, int> Ucr { get; set; } = new();
 
         /// <summary>Aufgeloeste Rueckmeldungen mit Namen (nach PullAll befuellt)</summary>
         public List<DiveraUcrEntry> UcrDetails { get; set; } = new();
 
-        public int CountKomme => Ucr?.Values.Count(v => v == 1) ?? 0;
+        /// <summary>Alle adressierten User-IDs aus ucr_addressed</summary>
+        public List<int> AddressedUserIds { get; set; } = new();
+
+        // Jeder nicht-null Status gilt als "hat geantwortet" (org-spezifische IDs wie 56298)
+        public int CountKomme => Ucr?.Values.Count(v => v != 0) ?? 0;
+        // Nur relevant wenn pull/all UCR-Daten mit Status 2 liefert (persoenlicher API-Key liefert das nicht)
         public int CountKommeNicht => Ucr?.Values.Count(v => v == 2) ?? 0;
         public int CountSpaeter => Ucr?.Values.Count(v => v == 3) ?? 0;
         public int CountKeineAntwort => Ucr?.Values.Count(v => v == 0) ?? 0;

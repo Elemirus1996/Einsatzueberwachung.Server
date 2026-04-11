@@ -24,8 +24,8 @@
 }
 
 <div class="container-fluid py-4 dashboard-page">
-    @* Divera-Alarm-Banner *@
-    @if (DiveraService.IsConfigured && _diveraAlarms.Any())
+    @* Divera-Alarm-Banner — _diveraAlarms wird nur befuellt wenn konfiguriert und Alarm aktiv *@
+    @if (_diveraAlarms.Any())
     {
         <div class="alert alert-danger d-flex align-items-start gap-3 mb-4 shadow-sm" role="alert" style="border-left: 4px solid var(--bs-danger);">
             <i class="bi bi-broadcast-pin fs-3 flex-shrink-0 mt-1"></i>
