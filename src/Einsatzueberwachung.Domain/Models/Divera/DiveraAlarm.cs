@@ -33,9 +33,11 @@ namespace Einsatzueberwachung.Domain.Models.Divera
 
         // Jeder nicht-null Status gilt als "hat geantwortet" (org-spezifische IDs wie 56298)
         public int CountKomme => Ucr?.Values.Count(v => v != 0) ?? 0;
-        // Nur relevant wenn pull/all UCR-Daten mit Status 2 liefert (persoenlicher API-Key liefert das nicht)
-        public int CountKommeNicht => Ucr?.Values.Count(v => v == 2) ?? 0;
-        public int CountSpaeter => Ucr?.Values.Count(v => v == 3) ?? 0;
+        public int Count30Min => Ucr?.Values.Count(v => v == 56296) ?? 0;
+        public int Count1Std => Ucr?.Values.Count(v => v == 56297) ?? 0;
+        public int CountNichtEinsatzbereit => Ucr?.Values.Count(v => v == 56298) ?? 0;
+        public int CountKommeNicht => Ucr?.Values.Count(v => v == 2 || v == 56298) ?? 0;
+        public int CountSpaeter => Ucr?.Values.Count(v => v == 3 || v == 56297) ?? 0;
         public int CountKeineAntwort => Ucr?.Values.Count(v => v == 0) ?? 0;
         public string DateFormatted => Date.ToString("dd.MM.yyyy HH:mm");
     }

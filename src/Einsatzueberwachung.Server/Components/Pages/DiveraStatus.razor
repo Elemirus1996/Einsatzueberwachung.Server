@@ -111,34 +111,23 @@
                                         }
                                         <div class="d-flex gap-2 flex-wrap mt-1">
                                             <span class="badge bg-success">@alarm.CountKomme geantwortet</span>
-                                            @if (alarm.CountKommeNicht > 0)
+                                            @if (alarm.Count30Min > 0)
                                             {
-                                                <span class="badge bg-danger">@alarm.CountKommeNicht kommt nicht</span>
+                                                <span class="badge bg-success">@alarm.Count30Min 30 Min</span>
                                             }
-                                            @if (alarm.CountSpaeter > 0)
+                                            @if (alarm.Count1Std > 0)
                                             {
-                                                <span class="badge bg-warning text-dark">@alarm.CountSpaeter später</span>
+                                                <span class="badge bg-warning text-dark">@alarm.Count1Std 1 Std</span>
+                                            }
+                                            @if (alarm.CountNichtEinsatzbereit > 0)
+                                            {
+                                                <span class="badge bg-danger">@alarm.CountNichtEinsatzbereit nicht einsatzbereit</span>
                                             }
                                             @if (alarm.CountKeineAntwort > 0)
                                             {
                                                 <span class="badge bg-secondary">@alarm.CountKeineAntwort keine Antwort</span>
                                             }
                                         </div>
-                                        @if (alarm.UcrDetails.Any())
-                                        {
-                                            <details class="mt-2">
-                                                <summary class="small text-muted" style="cursor:pointer;">Rückmeldungen anzeigen</summary>
-                                                <ul class="list-unstyled mb-0 mt-1 ps-2">
-                                                    @foreach (var ucr in alarm.UcrDetails.OrderBy(u => u.Status == 0).ThenBy(u => u.MemberName))
-                                                    {
-                                                        <li class="small">
-                                                            <span class="badge @ucr.StatusBadgeCss me-1">@ucr.StatusText</span>
-                                                            @ucr.MemberName
-                                                        </li>
-                                                    }
-                                                </ul>
-                                            </details>
-                                        }
                                     </div>
                                 }
                             </div>
@@ -159,10 +148,47 @@
                         </div>
                     </div>
                     <div class="card-body p-0">
-                        @if (_members.Count == 0)
+                        <div class="p-3 border-bottom bg-body-tertiary">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <span class="badge bg-success">30 Min: @Members30Minutes.Count</span>
+                                <span class="badge bg-warning text-dark">1 Std: @MembersOneHour.Count</span>
+                                <span class="badge bg-danger">Nicht einsatzbereit: @MembersNotReady.Count</span>
+                                <span class="badge bg-secondary">Gesamt Antworten: @CurrentAlarmResponses.Count</span>
+                            </div>
+                        </div>
+
+                        @if (_members.Count == 0 && !CurrentAlarmResponses.Any())
                         {
                             <div class="p-3 text-muted">
                                 <i class="bi bi-person-dash me-1"></i>Keine Mitglieder gefunden.
+                            </div>
+                        }
+                        else if (_members.Count == 0)
+                        {
+                            <div class="p-3 text-muted border-bottom small">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Mitgliederliste ist mit diesem Divera-Key nicht verfuegbar. Es werden die Rueckmeldungen des aktuellen Alarms angezeigt.
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var response in CurrentAlarmResponses.OrderBy(r => GetUcrDisplayName(r)))
+                                        {
+                                            <tr>
+                                                <td>@GetUcrDisplayName(response)</td>
+                                                <td>
+                                                    <span class="badge @response.StatusBadgeCss">@response.StatusText</span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
                             </div>
                         }
                         else
@@ -179,7 +205,7 @@
                                         @foreach (var member in _members)
                                         {
                                             <tr>
-                                                <td>@member.FullName</td>
+                                                <td>@GetMemberDisplayName(member)</td>
                                                 <td>
                                                     <span class="badge @member.StatusBadgeCss">
                                                         @member.StatusText
@@ -201,36 +227,86 @@
 @code {
     private List<DiveraAlarm> _alarms = new();
     private List<DiveraMember> _members = new();
+    private Dictionary<int, string> _personalByDiveraId = new();
     private bool _loading;
     private bool _connectionOk;
     private string? _errorMessage;
     private DateTime? _lastUpdated;
-    private System.Threading.Timer? _pollTimer;
+    private CancellationTokenSource? _pollingCts;
+
+    private const int Status30Minutes = 56296;
+    private const int StatusOneHour = 56297;
+    private const int StatusNotReady = 56298;
+
+    private List<DiveraUcrEntry> CurrentAlarmResponses => _alarms
+        .OrderByDescending(alarm => alarm.Date)
+        .FirstOrDefault()?.UcrDetails ?? new List<DiveraUcrEntry>();
+
+    private List<DiveraUcrEntry> Members30Minutes => CurrentAlarmResponses
+        .Where(response => response.Status == Status30Minutes)
+        .OrderBy(response => GetUcrDisplayName(response))
+        .ToList();
+
+    private List<DiveraUcrEntry> MembersOneHour => CurrentAlarmResponses
+        .Where(response => response.Status == StatusOneHour)
+        .OrderBy(response => GetUcrDisplayName(response))
+        .ToList();
+
+    private List<DiveraUcrEntry> MembersNotReady => CurrentAlarmResponses
+        .Where(response => response.Status == StatusNotReady)
+        .OrderBy(response => GetUcrDisplayName(response))
+        .ToList();
 
     protected override async Task OnInitializedAsync()
     {
         // RefreshAsync laedt die Konfiguration lazy via PullAllAsync —
         // daher hier NICHT vorher auf IsConfigured pruefen (waere eine neue Instanz, noch nicht geladen)
         await RefreshAsync();
+        StartPolling();
     }
 
-    /// <summary>Plant den naechsten Poll als One-Shot-Timer.
-    /// Intervall passt sich an: kurz bei aktiven Alarmen, lang bei Ruhe.</summary>
-    private void ScheduleNextPoll()
+    /// <summary>
+    /// Startet einen robusten Polling-Loop.
+    /// Das Intervall passt sich dynamisch an (Alarm aktiv vs. kein Alarm).
+    /// </summary>
+    private void StartPolling()
     {
-        _pollTimer?.Dispose();
-        var intervalMs = _alarms.Any()
-            ? DiveraService.PollIntervalActiveSeconds * 1000
-            : DiveraService.PollIntervalIdleSeconds * 1000;
+        _pollingCts?.Cancel();
+        _pollingCts?.Dispose();
+        _pollingCts = new CancellationTokenSource();
+        _ = RunPollingLoopAsync(_pollingCts.Token);
+    }
 
-        _pollTimer = new System.Threading.Timer(async _ =>
+    private async Task RunPollingLoopAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
         {
+            var intervalSeconds = _alarms.Any()
+                ? DiveraService.PollIntervalActiveSeconds
+                : DiveraService.PollIntervalIdleSeconds;
+
+            // Mindestintervall verhindert zu aggressive Polls bei fehlerhaften Settings.
+            if (intervalSeconds < 5)
+                intervalSeconds = 5;
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(intervalSeconds), cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+                break;
+
             await InvokeAsync(async () =>
             {
                 await RefreshAsync();
                 StateHasChanged();
             });
-        }, null, intervalMs, System.Threading.Timeout.Infinite);
+        }
     }
 
     private async Task RefreshAsync()
@@ -246,12 +322,12 @@
 
             // Namen aus Stammdaten aufloesen (DiveraUserId → FullName)
             var personalList = await MasterDataService.GetPersonalListAsync();
-            var stammdatenLookup = personalList
+            _personalByDiveraId = personalList
                 .Where(p => p.DiveraUserId.HasValue)
                 .ToDictionary(p => p.DiveraUserId!.Value, p => p.FullName);
             foreach (var alarm in _alarms)
                 foreach (var ucr in alarm.UcrDetails)
-                    if (stammdatenLookup.TryGetValue(ucr.MemberId, out var realName) && !string.IsNullOrWhiteSpace(realName))
+                    if (_personalByDiveraId.TryGetValue(ucr.MemberId, out var realName) && !string.IsNullOrWhiteSpace(realName))
                         ucr.MemberName = realName;
 
             var pull = await DiveraService.PullAllAsync();
@@ -281,13 +357,27 @@
             _loading = false;
         }
 
-        // Timer nur planen wenn Divera konfiguriert ist
-        if (DiveraService.IsConfigured)
-            ScheduleNextPoll();
     }
 
     public void Dispose()
     {
-        _pollTimer?.Dispose();
+        _pollingCts?.Cancel();
+        _pollingCts?.Dispose();
+    }
+
+    private string GetMemberDisplayName(DiveraMember member)
+    {
+        if (_personalByDiveraId.TryGetValue(member.Id, out var name) && !string.IsNullOrWhiteSpace(name))
+            return name;
+        return member.FullName;
+    }
+
+    private string GetUcrDisplayName(DiveraUcrEntry response)
+    {
+        if (!string.IsNullOrWhiteSpace(response.MemberName) && !response.MemberName.StartsWith("#"))
+            return response.MemberName;
+        if (_personalByDiveraId.TryGetValue(response.MemberId, out var name) && !string.IsNullOrWhiteSpace(name))
+            return name;
+        return response.MemberName;
     }
 }

@@ -37,9 +37,22 @@ namespace Einsatzueberwachung.Domain.Services
         private int _pollIntervalIdleSeconds = 600;   // 10 Minuten bei Ruhe
         private int _pollIntervalActiveSeconds = 60;  // 1 Minute bei aktivem Alarm
 
-        /// <summary>Aktuell gueltige Cache-Dauer abhaengig vom Alarm-Status</summary>
-        private TimeSpan CurrentCacheDuration =>
-            _cachedPull?.Alarms.Any(a => !a.Closed) == true
+        /// <summary>
+        /// Cache-Dauer fuer pull/all.
+        /// Aktiv-Intervall wenn pull/all einen offenen Alarm kennt ODER last-alarm offen gecached ist.
+        /// </summary>
+        private TimeSpan PullCacheDuration =>
+            (_cachedPull?.Alarms.Any(a => !a.Closed) == true) ||
+            (_cachedLastAlarm != null && !_cachedLastAlarm.Closed && _cachedLastAlarm.Id > 0)
+                ? TimeSpan.FromSeconds(_pollIntervalActiveSeconds)
+                : TimeSpan.FromSeconds(_pollIntervalIdleSeconds);
+
+        /// <summary>
+        /// Cache-Dauer fuer last-alarm.
+        /// Wenn aktuell ein offener Alarm gecached ist, aktiv pollen; sonst Idle-Intervall.
+        /// </summary>
+        private TimeSpan LastAlarmCacheDuration =>
+            (_cachedLastAlarm != null && !_cachedLastAlarm.Closed && _cachedLastAlarm.Id > 0)
                 ? TimeSpan.FromSeconds(_pollIntervalActiveSeconds)
                 : TimeSpan.FromSeconds(_pollIntervalIdleSeconds);
 
@@ -116,7 +129,7 @@ namespace Einsatzueberwachung.Domain.Services
             }
 
             // Cache pruefen — Dauer ist dynamisch je nach Alarm-Status
-            if (_cachedPull != null && DateTime.UtcNow - _cacheTime < CurrentCacheDuration)
+            if (_cachedPull != null && DateTime.UtcNow - _cacheTime < PullCacheDuration)
             {
                 return _cachedPull;
             }
@@ -176,7 +189,7 @@ namespace Einsatzueberwachung.Domain.Services
             if (!IsConfigured) return null;
 
             // Cache pruefen
-            if (_cachedLastAlarm != null && DateTime.UtcNow - _lastAlarmCacheTime < CurrentCacheDuration)
+            if (_cachedLastAlarm != null && DateTime.UtcNow - _lastAlarmCacheTime < LastAlarmCacheDuration)
                 return _cachedLastAlarm.Id > 0 && !_cachedLastAlarm.Closed ? _cachedLastAlarm : null;
 
             try
