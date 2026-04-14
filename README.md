@@ -34,107 +34,71 @@ Linux-faehiger Nachbau der Anwendung Einsatzueberwachung.Web mit separater Mobil
 
 ## Live GPS-Halsband Tracking
 
-Echtzeit-Tracking von bis zu 20 GPS-Halsbaendern fuer Rettungshunde. Eine externe Halsband-Software sendet GPS-Positionen per REST-API. Die Positionen werden live auf der Einsatzkarte als Polylines dargestellt.
+Einfache Bedienung fuer den Einsatzbetrieb.
 
-### Architektur
+### Bedienungsanleitung Live-Tracking
 
-```
-GPS USB-Geraet (Handheld)
-        |
-        v
-  Einsatzueberwachung.LiveTracking (Windows WPF Desktop-App)
-        |  liest Halsband-Daten via USB
-        |  leitet GPS-Positionen weiter
-        v
-  POST /api/CollarWebhook/location
-        |
-        v
-  CollarTrackingService (in-memory, thread-safe)
-        |
-        +---> CollarLocationReceived event
-        |         |
-        |         v
-        |   CollarTrackingRelayService (hosted service)
-        |         |
-        |         v
-        |   SignalR broadcast "collar.location"
-        |         |
-        |         v
-        |   EinsatzKarte.razor --> collar-tracking.js --> Leaflet polyline + marker
-        |
-        +---> OutOfBoundsDetected event (falls ausserhalb Suchgebiet)
-                  |
-                  v
-            SignalR broadcast "collar.outofbounds"
-                  |
-                  v
-            Roter pulsierender Kreis auf Karte + UI-Warnung
-```
+#### 1. Vorbereitung
 
-### GPS LiveTracking Desktop-App
+1. GPS-Handheld per USB am Rechner anschliessen, auf dem die **LiveTracking Desktop-App** laeuft.
+2. In der Desktop-App die Server-URL eintragen (z.B. `http://10.0.0.1:5000`) und verbinden.
+3. Sobald Halsbaender erkannt werden, erscheinen sie automatisch im System.
 
-Eigenstaendige Windows WPF-Anwendung (`Einsatzueberwachung.LiveTracking`), die als Bruecke zwischen dem GPS USB-Empfaenger und dem Einsatzueberwachung-Server dient.
+#### 2. Halsband einem Team zuweisen
 
-**Funktion:**
-- Verbindet sich per USB mit einem GPS-Handheld (z.B. Astro/Alpha)
-- Empfaengt Echtzeit-GPS-Daten der Hundehalsbänder ueber das GPS USB-Protokoll
-- Leitet die Positionen automatisch per HTTP an den Einsatzueberwachung-Server weiter
-- Zeigt Verbindungsstatus, erkannte Hunde und Uebertragungsstatistik an
+1. Im **EinsatzMonitor** ein Hundeteam anlegen oder bearbeiten.
+2. Im Team-Formular unter **GPS-Halsband** das gewuenschte Halsband aus der Dropdown-Liste waehlen.  
+   Nur nicht-zugewiesene Halsbaender werden angezeigt.
+3. Team speichern — das Halsband ist nun dem Team zugeordnet.
 
-**Unterstuetzte GPS-Pakete:**
-| Paket-ID | Typ | Beschreibung |
-|---|---|---|
-| `0x0033` | PVT Data (D800) | GPS-Position des Hauptgeraets |
-| `0x0C06` | Dog Collar Data | Halsband-Telemetrie (Position, Batterie, Signalstaerke, Hundename) |
-| `0x0072` | Multi-Person Data | Mehrere getrackte Personen |
+#### 3. Suche starten und Live-Pfad verfolgen
 
-**Konfiguration:** Server-URL wird in den App-Einstellungen gespeichert und bleibt ueber Neustarts erhalten.
+1. Im EinsatzMonitor auf **Start** klicken, um den Team-Timer zu starten.  
+   Der bisherige GPS-Verlauf des Halsbands wird dabei zurueckgesetzt.
+2. Zur **Einsatzkarte** wechseln und den **GPS**-Button in der Kopfzeile aktivieren.
+3. Das schwebende Tracking-Panel zeigt alle aktiven Halsbaender mit Farbcodierung an.
+4. Der Live-Pfad wird als farbige Linie auf der Karte gezeichnet. Die Farbe entspricht der Farbe des zugewiesenen Suchgebiets.
 
-**Voraussetzungen:** Windows mit installiertem GPS USB-Treiber, .NET 9 Runtime.
+#### 4. Suchgebiet-Warnung
 
-### Ablauf
+Verlaesst ein Hund sein zugewiesenes Suchgebiet, erscheint:
+- Ein **rot pulsierender Marker** an der aktuellen Position auf der Karte.
+- Eine **Warnmeldung** im Tracking-Panel.
+- Kehrt der Hund ins Suchgebiet zurueck, wird die Warnung automatisch entfernt.
 
-1. Externe Software sendet GPS-Daten an `POST /api/CollarWebhook/location`
-2. Halsband wird automatisch registriert (erstmalig) oder aktualisiert
-3. Dispatcher weist Halsband im Team-Editor (EinsatzMonitor) einem Hundeteam zu
-4. Live-Pfad wird auf der Karte gezeichnet (Toggle ueber GPS-Button)
-5. Bei Verlassen des Suchgebiets wird eine Warnung ausgeloest
+#### 5. Team stoppen und Track sichern
 
-### REST-API Endpunkte
+1. Im EinsatzMonitor auf **Stopp** klicken.
+2. Der gesamte aufgezeichnete GPS-Track wird als Snapshot gespeichert.
+3. Der Snapshot steht anschliessend fuer den PDF-Bericht zur Verfuegung.
 
-| Methode | Route | Beschreibung |
-|---|---|---|
-| `POST` | `/api/CollarWebhook/location` | GPS-Position empfangen |
-| `GET` | `/api/CollarWebhook/collars` | Alle bekannten Halsbaender auflisten |
-| `GET` | `/api/CollarWebhook/collars/available` | Nicht zugewiesene Halsbaender |
-| `GET` | `/api/CollarWebhook/history/{collarId}` | Positionsverlauf eines Halsbands |
+## Einsatzbericht und PDF-Export
 
-### Payload fuer `POST /api/CollarWebhook/location`
+### Bedienungsanleitung Berichterstellung
 
-```json
-{
-  "Id": "collar-001",
-  "CollarName": "Rex GPS",
-  "Coordinates": {
-    "Lat": 49.3188,
-    "Lng": 8.4312
-  }
-}
-```
+#### 1. Bericht oeffnen
 
-### SignalR-Events
+Im Hauptmenue auf **Bericht** klicken oder ueber den EinsatzMonitor den Bericht aufrufen.
 
-| Event | Beschreibung |
-|---|---|
-| `collar.location` | Neue GPS-Position (collarId, lat, lng, timestamp) |
-| `collar.outofbounds` | Hund hat Suchgebiet verlassen (teamId, collarId, lat, lng) |
+#### 2. Berichtsdaten eingeben
 
-### Hinweise
+- **Ergebnis**: Kurztext zum Einsatzergebnis (z.B. „Person gefunden", „Suche erfolglos").
+- **Bemerkungen**: Ausfuehrliche Anmerkungen zum Einsatzverlauf.
 
-- Halsband-Daten sind In-Memory (kein DB-Schema noetig) und werden bei Einsatz-Ende zurueckgesetzt
-- Zuordnung Halsband-zu-Team erfolgt ausschliesslich ueber das Team-Formular im EinsatzMonitor (kein REST-Endpunkt)
-- Maximal 20 gleichzeitige Halsbaender, thread-safe via ConcurrentDictionary
-- Out-of-Bounds-Pruefung nutzt Ray-Casting Algorithmus gegen das zugewiesene Suchgebiet-Polygon
+#### 3. GPS-Tracks einschliessen (optional)
+
+- Die Checkbox **„GPS-Tracks in PDF einschliessen"** aktivieren.  
+  Ein Badge zeigt die Anzahl der verfuegbaren Tracks an.
+- Ist die Checkbox aktiv, werden die gesicherten Tracks als Kartenansichten in die PDF aufgenommen.
+
+#### 4. PDF erzeugen
+
+Auf **„PDF erzeugen"** klicken. Die PDF-Datei wird serverseitig generiert und zum Download angeboten.
+
+#### 5. Einsatz archivieren
+
+- **„Einsatz beenden und archivieren"** — speichert den Bericht und verschiebt den Einsatz ins Archiv.
+- **„Archivieren und neuen Einsatz vorbereiten"** — archiviert und setzt das System fuer einen neuen Einsatz zurueck.
 
 ## Mobile Funktionen
 
