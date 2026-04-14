@@ -99,6 +99,7 @@ builder.Services.AddSingleton<IMasterDataService, MasterDataService>();
 builder.Services.AddSingleton<ISettingsService, SettingsService>();
 builder.Services.AddSingleton<ITimeService, AppTimeService>();
 builder.Services.AddSingleton<IEinsatzService, EinsatzService>();
+builder.Services.AddSingleton<ICollarTrackingService, CollarTrackingService>();
 builder.Services.AddSingleton<IPdfExportService, PdfExportService>();
 builder.Services.AddSingleton<IExcelExportService, ExcelExportService>();
 builder.Services.AddSingleton<IArchivService, ArchivService>();
@@ -128,6 +129,7 @@ builder.Services.AddHealthChecks();
 
 // Relay Domain-Events an SignalR Clients
 builder.Services.AddHostedService<EinsatzHubRelayService>();
+builder.Services.AddHostedService<CollarTrackingRelayService>();
 builder.Services.AddHostedService<TeamTimerTickService>();
 builder.Services.AddHostedService<UpdateAutoCheckService>();
 builder.Services.AddHostedService<RuntimeStatePersistenceService>();

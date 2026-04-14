@@ -8,10 +8,12 @@ namespace Einsatzueberwachung.Server.Hubs;
 public class EinsatzHub : Hub
 {
     private readonly IEinsatzService _einsatzService;
+    private readonly ICollarTrackingService _collarTrackingService;
 
-    public EinsatzHub(IEinsatzService einsatzService)
+    public EinsatzHub(IEinsatzService einsatzService, ICollarTrackingService collarTrackingService)
     {
         _einsatzService = einsatzService;
+        _collarTrackingService = collarTrackingService;
     }
 
     public Task JoinChannel(string channel)
@@ -93,5 +95,32 @@ public class EinsatzHub : Hub
             "mobile",
             "Mobile",
             "Mobile");
+    }
+
+    // --- Collar Tracking ---
+
+    public List<Collar> GetCollarsSnapshot()
+    {
+        return _collarTrackingService.Collars.ToList();
+    }
+
+    public List<Collar> GetAvailableCollars()
+    {
+        return _collarTrackingService.GetAvailableCollars().ToList();
+    }
+
+    public List<CollarLocation> GetCollarHistory(string collarId)
+    {
+        return _collarTrackingService.GetLocationHistory(collarId).ToList();
+    }
+
+    public Task AssignCollarToTeam(string collarId, string teamId)
+    {
+        return _collarTrackingService.AssignCollarToTeamAsync(collarId, teamId);
+    }
+
+    public Task UnassignCollar(string collarId)
+    {
+        return _collarTrackingService.UnassignCollarAsync(collarId);
     }
 }

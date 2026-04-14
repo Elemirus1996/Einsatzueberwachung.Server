@@ -3,6 +3,7 @@
 @using Einsatzueberwachung.Domain.Interfaces
 @using Einsatzueberwachung.Domain.Models
 @inject IEinsatzService EinsatzService
+@inject ICollarTrackingService CollarTrackingService
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
@@ -59,6 +60,11 @@
             </button>
             <button class="btn btn-sm btn-outline-warning" @onclick="PrintMap" title="Drucken">
                 <i class="bi bi-printer"></i>
+            </button>
+            <button class="btn btn-sm @(_trackingVisible ? "btn-success" : "btn-outline-secondary")" 
+                    @onclick="ToggleTracking" 
+                    title="@(_trackingVisible ? "Live-Tracking ausblenden" : "Live-Tracking einblenden")">
+                <i class="bi bi-broadcast"></i> GPS
             </button>
         </div>
     </header>
@@ -165,6 +171,54 @@
         <main class="map-main">
             <!-- Karte -->
             <div id="einsatzMap" class="map-wrapper"></div>
+
+            @* Collar Tracking Panel (schwebt über der Karte) *@
+            @if (_trackingVisible)
+            {
+                <div class="collar-tracking-panel">
+                    <div class="collar-panel-header">
+                        <h6><i class="bi bi-broadcast"></i> Live-Tracking</h6>
+                        <span class="badge bg-info">@_collars.Count Halsbänder</span>
+                    </div>
+
+                    @if (_collars.Any())
+                    {
+                        <div class="collar-list">
+                            @foreach (var collar in _collars)
+                            {
+                                <div class="collar-item">
+                                    <span class="collar-name">
+                                        <i class="bi bi-geo-alt-fill" style="color: @GetCollarColor(collar.Id);"></i>
+                                        @collar.CollarName [@collar.Id]
+                                    </span>
+                                    @if (collar.IsAssigned)
+                                    {
+                                        var team = _teams.FirstOrDefault(t => t.TeamId == collar.AssignedTeamId);
+                                        <span class="collar-team text-primary">@(team?.TeamName ?? "?")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="collar-team text-muted">Nicht zugewiesen</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="collar-empty">
+                            <small class="text-muted">Warte auf GPS-Daten...</small>
+                        </div>
+                    }
+
+                    @foreach (var warning in _oobWarnings.Values)
+                    {
+                        <div class="collar-warning alert alert-danger mt-2 mb-0 py-1 px-2">
+                            <i class="bi bi-exclamation-triangle-fill"></i> @warning
+                        </div>
+                    }
+                </div>
+            }
         </main>
     </div>
 </div>
@@ -330,10 +384,16 @@
     private string _currentMapLayer = "streets";
     private bool _sidebarMinimized = false;
 
+    // Collar-Tracking
+    private List<Collar> _collars = new();
+    private bool _trackingVisible = false;
+    private Dictionary<string, string> _oobWarnings = new();
+
     protected override void OnInitialized()
     {
         _searchAreas = EinsatzService.CurrentEinsatz.SearchAreas.ToList();
         _teams = EinsatzService.Teams;
+        _collars = CollarTrackingService.Collars.ToList();
         
         // DotNetObjectReference für Callbacks erstellen
         _dotNetReference = DotNetObjectReference.Create(this);
@@ -383,6 +443,32 @@
                 if (!string.IsNullOrEmpty(_addressSearch))
                 {
                     await SearchAddress();
+                }
+                
+                // Collar-Tracking initialisieren
+                await JSRuntime.InvokeVoidAsync("CollarTracking.initialize", "einsatzMap", _dotNetReference);
+                
+                // Domain-Events für Live-Tracking abonnieren
+                CollarTrackingService.CollarLocationReceived += OnCollarLocationReceived;
+                CollarTrackingService.OutOfBoundsDetected += OnOutOfBoundsDetected;
+                CollarTrackingService.CollarHistoryCleared += OnCollarHistoryCleared;
+                
+                // Bestehende Tracking-Daten automatisch laden (falls Daten vor Seitenbesuch gesendet wurden)
+                _collars = CollarTrackingService.Collars.ToList();
+                if (_collars.Count > 0)
+                {
+                    _trackingVisible = true;
+                    foreach (var collar in _collars)
+                    {
+                        var history = CollarTrackingService.GetLocationHistory(collar.Id);
+                        if (history.Count > 0)
+                        {
+                            var color = GetCollarColor(collar.Id);
+                            await JSRuntime.InvokeVoidAsync("CollarTracking.loadHistory",
+                                "einsatzMap", collar.Id, history, color);
+                        }
+                    }
+                    StateHasChanged();
                 }
             }
             catch (Exception ex)
@@ -667,6 +753,110 @@
         var random = new Random();
         return colors[random.Next(colors.Length)];
     }
+
+    // --- Collar-Tracking Methoden ---
+
+    private async Task ToggleTracking()
+    {
+        _trackingVisible = !_trackingVisible;
+        _collars = CollarTrackingService.Collars.ToList();
+        await JSRuntime.InvokeVoidAsync("CollarTracking.toggleVisibility", "einsatzMap", _trackingVisible);
+
+        // Bestehende Pfade laden fuer alle Halsbaender
+        if (_trackingVisible)
+        {
+            foreach (var collar in _collars)
+            {
+                var history = CollarTrackingService.GetLocationHistory(collar.Id);
+                if (history.Count > 0)
+                {
+                    var color = GetCollarColor(collar.Id);
+                    await JSRuntime.InvokeVoidAsync("CollarTracking.loadHistory",
+                        "einsatzMap", collar.Id, history, color);
+                }
+            }
+        }
+    }
+
+    private string GetCollarColor(string collarId)
+    {
+        // Halsband → Team → Suchgebiet → Suchgebiet-Farbe
+        var collar = _collars.FirstOrDefault(c => c.Id == collarId);
+        if (collar is { IsAssigned: true, AssignedTeamId: not null })
+        {
+            var area = _searchAreas.FirstOrDefault(a => a.AssignedTeamId == collar.AssignedTeamId);
+            if (area != null)
+                return area.Color;
+        }
+
+        // Fallback: feste Farbpalette (identisch mit JS _colors)
+        var colors = new[] {
+            "#FF4444", "#44FF44", "#4444FF", "#FFAA00", "#FF44FF",
+            "#00FFFF", "#FF8800", "#8844FF", "#44FF88", "#FF4488"
+        };
+        var index = Math.Abs(collarId.GetHashCode()) % colors.Length;
+        return colors[index];
+    }
+
+    // Domain-Event Handler für GPS-Positionen
+    private void OnCollarLocationReceived(string collarId, CollarLocation location)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                _collars = CollarTrackingService.Collars.ToList();
+                var color = GetCollarColor(collarId);
+                await JSRuntime.InvokeVoidAsync("CollarTracking.updatePosition",
+                    "einsatzMap", collarId, location.Latitude, location.Longitude, location.Timestamp, color);
+
+                // Direkte Geometrie-Prüfung: ist der Hund (wieder) im Suchgebiet?
+                if (_oobWarnings.ContainsKey(collarId) &&
+                    IsCollarInsideAssignedArea(collarId, location.Latitude, location.Longitude))
+                {
+                    _oobWarnings.Remove(collarId);
+                    await JSRuntime.InvokeVoidAsync("CollarTracking.clearOobWarning",
+                        "einsatzMap", collarId);
+                }
+
+                StateHasChanged();
+            }
+            catch (ObjectDisposedException) { }
+        });
+    }
+
+    private void OnOutOfBoundsDetected(string teamId, string collarId, CollarLocation location)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                var team = _teams.FirstOrDefault(t => t.TeamId == teamId);
+                _oobWarnings[collarId] = $"⚠ {team?.TeamName ?? teamId}: Hund hat Suchgebiet verlassen!";
+
+                if (_trackingVisible)
+                {
+                    await JSRuntime.InvokeVoidAsync("CollarTracking.showOutOfBoundsWarning",
+                        "einsatzMap", collarId, teamId, location.Latitude, location.Longitude);
+                }
+
+                StateHasChanged();
+            }
+            catch (ObjectDisposedException) { }
+        });
+    }
+
+    private void OnCollarHistoryCleared(string collarId)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("CollarTracking.clearTrack", "einsatzMap", collarId);
+            }
+            catch (ObjectDisposedException) { }
+        });
+    }
     
     private string GetTotalArea()
     {
@@ -713,6 +903,41 @@
         {
             Console.WriteLine($"Fehler beim Extrahieren der Koordinaten: {ex.Message}");
         }
+    }
+
+    // Prüft ob das Halsband innerhalb seines zugewiesenen Suchgebiets ist
+    private bool IsCollarInsideAssignedArea(string collarId, double lat, double lng)
+    {
+        var collar = _collars.FirstOrDefault(c => c.Id == collarId);
+        if (collar is not { IsAssigned: true, AssignedTeamId: not null })
+            return true; // kein Team = kann nicht OOB sein
+
+        var team = _teams.FirstOrDefault(t => t.TeamId == collar.AssignedTeamId);
+        if (team == null || string.IsNullOrEmpty(team.SearchAreaId))
+            return true; // kein Suchgebiet zugewiesen
+
+        var area = _searchAreas.FirstOrDefault(a => a.Id == team.SearchAreaId);
+        if (area?.Coordinates == null || area.Coordinates.Count < 3)
+            return true; // kein gültiges Polygon
+
+        return IsPointInPolygon(lat, lng, area.Coordinates);
+    }
+
+    // Ray-Casting Algorithmus (identisch mit CollarTrackingService)
+    private static bool IsPointInPolygon(double lat, double lng, List<(double Latitude, double Longitude)> polygon)
+    {
+        bool inside = false;
+        for (int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++)
+        {
+            var pi = polygon[i];
+            var pj = polygon[j];
+            if ((pi.Longitude > lng) != (pj.Longitude > lng) &&
+                lat < (pj.Latitude - pi.Latitude) * (lng - pi.Longitude) / (pj.Longitude - pi.Longitude) + pi.Latitude)
+            {
+                inside = !inside;
+            }
+        }
+        return inside;
     }
 
     // Callbacks von JavaScript (jetzt als Instanz-Methoden)
@@ -786,6 +1011,9 @@
     {
         try
         {
+            CollarTrackingService.CollarLocationReceived -= OnCollarLocationReceived;
+            CollarTrackingService.OutOfBoundsDetected -= OnOutOfBoundsDetected;
+            CollarTrackingService.CollarHistoryCleared -= OnCollarHistoryCleared;
             await JSRuntime.InvokeVoidAsync("LeafletMap.dispose", "einsatzMap");
             _dotNetReference?.Dispose();
         }

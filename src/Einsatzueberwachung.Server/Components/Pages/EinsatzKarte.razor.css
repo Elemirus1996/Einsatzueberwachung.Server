@@ -1,0 +1,83 @@
+/* Collar Tracking Panel - schwebt über der Karte */
+.collar-tracking-panel {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: var(--bs-body-bg, #fff);
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 8px;
+    padding: 10px;
+    min-width: 260px;
+    max-width: 320px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.collar-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.collar-panel-header h6 {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.collar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.collar-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    font-size: 0.8rem;
+}
+
+.collar-name {
+    flex: 1;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.collar-team {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.collar-assign-select {
+    max-width: 120px;
+    font-size: 0.75rem;
+    padding: 1px 4px;
+    height: auto;
+}
+
+.collar-empty {
+    text-align: center;
+    padding: 8px;
+}
+
+.collar-warning {
+    font-size: 0.8rem;
+}
+
+/* Collar-Marker und OOB-Styles: siehe leaflet-custom.css (global, da Leaflet DOM außerhalb Blazor Scope) */
+
+/* Map-Main muss relative sein damit das Panel korrekt positioniert wird */
+.map-main {
+    position: relative;
+}
