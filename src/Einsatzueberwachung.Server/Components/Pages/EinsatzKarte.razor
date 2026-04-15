@@ -269,6 +269,12 @@
                     <div class="marker-list-section">
                         <div class="marker-list-header">
                             <small class="fw-bold">Gesetzte Punkte (@_mapMarkers.Count)</small>
+                            @if (_mapMarkers.Any())
+                            {
+                                <button class="btn btn-xs btn-link p-0 ms-1" @onclick="DownloadAllMarkersGpx" title="Alle Punkte als GPX herunterladen">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                            }
                         </div>
                         @if (_mapMarkers.Any())
                         {
@@ -295,6 +301,10 @@
                                             <button class="btn btn-xs btn-link p-0" 
                                                     @onclick="() => StartEditMarker(marker)" title="Bearbeiten">
                                                 <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-xs btn-link p-0"
+                                                    @onclick="() => DownloadMarkerGpx(marker)" title="GPX herunterladen">
+                                                <i class="bi bi-download"></i>
                                             </button>
                                             <button class="btn btn-xs btn-link text-danger p-0" 
                                                     @onclick="() => RemoveMarker(marker)" title="Entfernen">
@@ -968,6 +978,75 @@
         {
             _searchMessage = $"Fehler beim GPX-Export: {ex.Message}";
             Console.WriteLine($"GPX-Export Fehler: {ex.Message}");
+            StateHasChanged();
+        }
+    }
+
+    private static string EscapeXml(string text)
+        => text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
+
+    private static System.Text.StringBuilder BuildGpxHeader()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        sb.AppendLine("<gpx version=\"1.1\" creator=\"Einsatzueberwachung.Server\"");
+        sb.AppendLine("     xmlns=\"http://www.topografix.com/GPX/1/1\"");
+        sb.AppendLine("     xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
+        sb.AppendLine("     xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">");
+        return sb;
+    }
+
+    private static void AppendWaypoint(System.Text.StringBuilder sb, MapMarker marker)
+    {
+        var timestamp = marker.CreatedAt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var displayName = string.IsNullOrEmpty(marker.Label) ? $"Punkt {marker.FormattedTimestamp}" : marker.Label;
+        sb.AppendLine($"  <wpt lat=\"{marker.Latitude.ToString("F7", System.Globalization.CultureInfo.InvariantCulture)}\" lon=\"{marker.Longitude.ToString("F7", System.Globalization.CultureInfo.InvariantCulture)}\">");
+        sb.AppendLine($"    <name>{EscapeXml(displayName)}</name>");
+        sb.AppendLine($"    <time>{timestamp}</time>");
+        sb.AppendLine("  </wpt>");
+    }
+
+    private async Task DownloadMarkerGpx(MapMarker marker)
+    {
+        try
+        {
+            var sb = BuildGpxHeader();
+            AppendWaypoint(sb, marker);
+            sb.AppendLine("</gpx>");
+
+            var safeFileName = (string.IsNullOrEmpty(marker.Label) ? $"Punkt_{marker.FormattedTimestamp}" : marker.Label)
+                .Replace(" ", "_").Replace(":", "-");
+            await JSRuntime.InvokeVoidAsync("downloadFile", $"{safeFileName}.gpx", sb.ToString(), "application/gpx+xml");
+        }
+        catch (Exception ex)
+        {
+            _markerMessage = $"Fehler beim GPX-Export: {ex.Message}";
+            _markerMessageType = "alert-danger";
+            Console.WriteLine($"Marker GPX-Export Fehler: {ex.Message}");
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadAllMarkersGpx()
+    {
+        if (!_mapMarkers.Any())
+            return;
+
+        try
+        {
+            var sb = BuildGpxHeader();
+            foreach (var marker in _mapMarkers.OrderBy(m => m.CreatedAt))
+                AppendWaypoint(sb, marker);
+            sb.AppendLine("</gpx>");
+
+            var dateStamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            await JSRuntime.InvokeVoidAsync("downloadFile", $"Punkte_{dateStamp}.gpx", sb.ToString(), "application/gpx+xml");
+        }
+        catch (Exception ex)
+        {
+            _markerMessage = $"Fehler beim GPX-Export: {ex.Message}";
+            _markerMessageType = "alert-danger";
+            Console.WriteLine($"Marker GPX-Export Fehler: {ex.Message}");
             StateHasChanged();
         }
     }
