@@ -601,6 +601,7 @@
     {
         await JSRuntime.InvokeVoidAsync("LeafletMap.savePolygonEdit", "einsatzMap");
         _polygonEditMode = false;
+        _showDialog = false;
         _editingArea = null;
         _editingAreaForPolygon = null;
         StateHasChanged();

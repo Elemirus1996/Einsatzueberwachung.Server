@@ -723,12 +723,20 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
 
             // Inneren Polygon-Layer extrahieren
             let innerLayer = null;
-            outerLayer.eachLayer(function(l) { innerLayer = l; });
+            let innerLayerCount = 0;
+            outerLayer.eachLayer(function(l) {
+                innerLayerCount++;
+                if (!innerLayer) innerLayer = l;
+            });
 
             if (!innerLayer) {
                 console.error('Kein innerer Layer gefunden für Area:', areaId);
                 mapData.savedAreas.addLayer(outerLayer);
                 return false;
+            }
+
+            if (innerLayerCount > 1) {
+                console.warn('Mehrere innere Layer gefunden für Area:', areaId, '- nur der erste wird bearbeitet');
             }
 
             // Metadaten auf innerem Layer sicherstellen
