@@ -184,7 +184,63 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             },
             currentLayer: osmLayer
         };
-            
+
+        // ---- Live-Flächen-Anzeige: DOM-Element im Karten-Container ----
+        const liveAreaEl = document.createElement('div');
+        liveAreaEl.className = 'live-area-display';
+        liveAreaEl.style.display = 'none';
+        map.getContainer().appendChild(liveAreaEl);
+        this.maps[mapId].liveAreaEl = liveAreaEl;
+
+        let drawModeActive = false;
+
+        // Hilfsfunktion: Fläche berechnen und anzeigen
+        const showLiveArea = (latLngs) => {
+            if (!latLngs || latLngs.length < 3) return;
+            const area = window.LeafletMap.calcGeodesicArea(latLngs);
+            liveAreaEl.textContent = '\u{1F4D0} ' + window.LeafletMap.formatArea(area);
+            liveAreaEl.style.display = 'block';
+        };
+
+        // Draw-Modus: Vertex gesetzt → Fläche der bestätigten Punkte anzeigen
+        map.on('draw:drawvertex', function() {
+            const polyMode = drawControl._toolbars.draw._modes.polygon;
+            if (!polyMode || !polyMode.handler._poly) return;
+            showLiveArea(polyMode.handler._poly.getLatLngs());
+        });
+
+        // Draw-Modus: Mausbewegung → vorläufige Fläche mit Cursor-Position anzeigen
+        map.on('mousemove', function(e) {
+            if (!drawModeActive) return;
+            const polyMode = drawControl._toolbars.draw._modes.polygon;
+            if (!polyMode || !polyMode.handler._enabled || !polyMode.handler._poly) return;
+            const existing = polyMode.handler._poly.getLatLngs();
+            if (existing.length < 2) return; // mindestens 2 Punkte + Cursor = 3 Ecken nötig
+            showLiveArea(existing.concat([e.latlng]));
+        });
+
+        // Edit-Modus: Vertex gezogen → Fläche live aktualisieren
+        map.on('draw:editvertex', function(e) {
+            if (!e.poly) return;
+            const rings = e.poly.getLatLngs();
+            // getLatLngs() liefert [[LatLng,...]] für Polygone → äußeren Ring nehmen
+            const flat = (rings.length > 0 && rings[0].lat === undefined) ? rings[0] : rings;
+            showLiveArea(flat);
+        });
+
+        // Draw aktiviert / deaktiviert
+        map.on('draw:drawstart', function() { drawModeActive = true; });
+        map.on('draw:drawstop', function() {
+            drawModeActive = false;
+            liveAreaEl.style.display = 'none';
+        });
+
+        // Edit beendet → ausblenden
+        map.on('draw:editstop', function() {
+            liveAreaEl.style.display = 'none';
+        });
+        // ---- Ende Live-Flächen-Anzeige ----
+
         return true;
     } catch (error) {
         error('Fehler beim Initialisieren der Karte:', error);
@@ -824,6 +880,33 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             console.error('Fehler beim Abbrechen des Polygon-Edits:', e);
             return false;
         }
+    },
+
+    // Berechnet geodätische Fläche (m²) aus einem flachen Array von {lat, lng} Objekten.
+    // Verwendet dieselbe sphärische Formel wie die C#-Klasse SearchArea.CalculatePolygonArea.
+    calcGeodesicArea: function(latLngs) {
+        if (!latLngs || latLngs.length < 3) return 0;
+        const R = 6371000.0;
+        let area = 0;
+        const n = latLngs.length;
+        for (let i = 0; i < n; i++) {
+            const p1 = latLngs[i];
+            const p2 = latLngs[(i + 1) % n];
+            const lat1 = p1.lat * Math.PI / 180;
+            const lat2 = p2.lat * Math.PI / 180;
+            const lon1 = p1.lng * Math.PI / 180;
+            const lon2 = p2.lng * Math.PI / 180;
+            area += (lon2 - lon1) * (2 + Math.sin(lat1) + Math.sin(lat2));
+        }
+        return Math.abs(area * R * R / 2.0);
+    },
+
+    // Formatiert Fläche in m²/ha/km² (gleiche Schwellwerte wie C# FormattedArea).
+    formatArea: function(sqm) {
+        if (sqm < 1) return '< 1 m²';
+        if (sqm < 50000) return Math.round(sqm).toLocaleString('de-DE') + ' m²';
+        if (sqm < 1000000) return (sqm / 10000).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ha';
+        return (sqm / 1000000).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' km²';
     },
 
     // Löscht alle Zeichnungen von der Karte

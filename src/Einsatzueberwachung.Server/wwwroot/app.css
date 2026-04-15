@@ -2496,6 +2496,25 @@ main:has(.map-page-layout) {
     min-width: 50px;
 }
 
+/* Live-Flächen-Anzeige: erscheint während des Zeichnens / Bearbeitens im Karten-Container */
+.live-area-display {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1001;
+    background: rgba(20, 20, 30, 0.88);
+    color: #fff;
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    white-space: nowrap;
+}
+
 /* Polygon-Bearbeitungsmodus Overlay */
 .polygon-edit-overlay {
     position: absolute;
