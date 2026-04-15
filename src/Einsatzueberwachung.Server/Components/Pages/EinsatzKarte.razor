@@ -1115,22 +1115,27 @@
 
     // --- Koordinaten-Marker Methoden ---
 
-    private void ToggleMarkerPanel()
+    private async Task ToggleMarkerPanel()
     {
         _markerPanelVisible = !_markerPanelVisible;
         if (!_markerPanelVisible && _clickToPlaceActive)
         {
-            _ = DeactivateClickToPlaceMode();
+            await DeactivateClickToPlaceMode();
+        }
+        else if (_markerPanelVisible && _coordInputMode == "click" && !_clickToPlaceActive)
+        {
+            // Automatically activate click-to-place when panel opens in click mode
+            await ActivateClickToPlaceMode();
         }
     }
 
-    private void SetCoordInputMode(string mode)
+    private async Task SetCoordInputMode(string mode)
     {
         _coordInputMode = mode;
         _markerMessage = "";
         if (_clickToPlaceActive)
         {
-            _ = DeactivateClickToPlaceMode();
+            await DeactivateClickToPlaceMode();
         }
     }
 
