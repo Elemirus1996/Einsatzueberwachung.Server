@@ -20,13 +20,31 @@
 
 ## 🖥️ Desktop-Verknüpfung erstellen (einmalig, falls noch nicht vorhanden)
 
+### Schritt 1 — Logo herunterladen
+
+1. Browser öffnen und diese Adresse aufrufen: **`http://10.10.0.1/favicon.png`**
+2. Rechtsklick auf das Bild → **„Bild speichern unter"**
+3. Speichern unter: `C:\Users\Öffentlich\Einsatzueberwachung.png` (oder ein anderer fester Ordner)
+
+### Schritt 2 — Verknüpfung erstellen
+
 1. Rechtsklick auf eine freie Stelle des Desktops
 2. **„Neu" → „Verknüpfung"** wählen
 3. Als Adresse eingeben: `http://10.10.0.1`
 4. **„Weiter"** → Name eingeben: **Einsatzüberwachung**
 5. **„Fertig stellen"**
 
-Das Symbol erscheint nun auf dem Desktop und öffnet das Programm mit einem Doppelklick.
+### Schritt 3 — Logo als Icon setzen
+
+1. Rechtsklick auf die neue Verknüpfung → **„Eigenschaften"**
+2. Button **„Anderes Symbol..."** klicken
+3. Im erscheinenden Fenster auf **„Durchsuchen"** klicken
+4. Die gespeicherte Datei `Einsatzueberwachung.png` auswählen
+5. **„OK"** → **„Übernehmen"** → **„OK"**
+
+Das Programm-Logo erscheint jetzt auf dem Desktop-Symbol.
+
+> **Tipp für Chrome/Edge:** Alternativ die Seite `http://10.10.0.1` im Browser öffnen → oben rechts auf **⋮ (Menü)** → **„Weitere Tools" → „Verknüpfung erstellen"** → Häkchen bei „Als Fenster öffnen". Der Browser übernimmt das Logo automatisch.
 
 ---
 
