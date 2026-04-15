@@ -1368,8 +1368,7 @@
             TryParseDecimalInput(_editMarkerLng, out var lng) &&
             lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180)
         {
-            var (utmZone, utmBand, utmEasting, utmNorthing) = Domain.Services.UtmConverter.LatLongToUtm(lat, lng);
-            _editMarkerUtm = $"{Domain.Services.UtmConverter.FormatUtmZone(utmZone, utmBand)} {utmEasting:F0} {utmNorthing:F0}";
+            _editMarkerUtm = FormatUtmString(lat, lng);
         }
     }
 
@@ -1517,8 +1516,7 @@
                 _editMarkerLng = lng.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
 
                 // UTM automatisch aktualisieren
-                var (utmZone, utmBand, utmEasting, utmNorthing) = Domain.Services.UtmConverter.LatLongToUtm(lat, lng);
-                _editMarkerUtm = $"{Domain.Services.UtmConverter.FormatUtmZone(utmZone, utmBand)} {utmEasting:F0} {utmNorthing:F0}";
+                _editMarkerUtm = FormatUtmString(lat, lng);
 
                 _editMarkerMessage = "✓ Position aktualisiert. Klicken Sie \"Speichern\" um die Änderung zu übernehmen.";
                 _editMarkerMessageType = "alert-info";
@@ -1537,6 +1535,12 @@
         return double.TryParse(input.Replace(",", "."),
             System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out result);
+    }
+
+    private static string FormatUtmString(double lat, double lng)
+    {
+        var (utmZone, utmBand, utmEasting, utmNorthing) = Domain.Services.UtmConverter.LatLongToUtm(lat, lng);
+        return $"{Domain.Services.UtmConverter.FormatUtmZone(utmZone, utmBand)} {utmEasting:F0} {utmNorthing:F0}";
     }
 
     [JSInvokable]
