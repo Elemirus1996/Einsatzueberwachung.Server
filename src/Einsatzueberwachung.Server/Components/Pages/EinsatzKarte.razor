@@ -175,6 +175,23 @@
             <!-- Karte -->
             <div id="einsatzMap" class="map-wrapper"></div>
 
+            @* Polygon-Bearbeitungsmodus Overlay *@
+            @if (_polygonEditMode)
+            {
+                <div class="polygon-edit-overlay">
+                    <span class="polygon-edit-hint">
+                        <i class="bi bi-vector-pen"></i>
+                        Eckpunkte ziehen zum Verschieben &middot; Mittelpunkte anklicken zum Einfügen &middot; Eckpunkt anklicken + Entf zum Löschen
+                    </span>
+                    <button class="btn btn-success btn-sm" @onclick="SavePolygonEdit">
+                        <i class="bi bi-check-lg"></i> Speichern
+                    </button>
+                    <button class="btn btn-secondary btn-sm" @onclick="CancelPolygonEdit">
+                        <i class="bi bi-x-lg"></i> Abbrechen
+                    </button>
+                </div>
+            }
+
             @* Collar Tracking Panel (schwebt über der Karte) *@
             @if (_trackingVisible)
             {
@@ -354,6 +371,12 @@
                         </div>
 
                         <div class="modal-footer">
+                            @if (_editingArea != null)
+                            {
+                                <button type="button" class="btn btn-outline-primary me-auto" @onclick="StartPolygonEditMode">
+                                    <i class="bi bi-vector-pen"></i> Polygon bearbeiten
+                                </button>
+                            }
                             <button type="button" class="btn btn-secondary" @onclick="CloseDialog">Abbrechen</button>
                             <button type="submit" class="btn btn-success">Speichern</button>
                         </div>
@@ -376,6 +399,10 @@
     private string _lastDrawnGeoJson = "";
     private bool _drawingSaved = false; // Flag: wurde die aktuelle Zeichnung gespeichert?
     private DotNetObjectReference<EinsatzKarte>? _dotNetReference;
+    
+    // Polygon-Bearbeitungsmodus
+    private bool _polygonEditMode = false;
+    private SearchArea? _editingAreaForPolygon = null;
     
     // Standardposition (Speyer, Deutschland)
     private double _mapCenterLat = 49.3188;
@@ -556,6 +583,42 @@
         };
         _selectedTeamId = area.AssignedTeamId;
         _showDialog = true;
+    }
+
+    private async Task StartPolygonEditMode()
+    {
+        if (_editingArea == null) return;
+
+        _editingAreaForPolygon = _editingArea;
+        _showDialog = false;
+        _polygonEditMode = true;
+        StateHasChanged();
+
+        await JSRuntime.InvokeVoidAsync("LeafletMap.startPolygonEdit", "einsatzMap", _editingArea.Id);
+    }
+
+    private async Task SavePolygonEdit()
+    {
+        await JSRuntime.InvokeVoidAsync("LeafletMap.savePolygonEdit", "einsatzMap");
+        _polygonEditMode = false;
+        _editingArea = null;
+        _editingAreaForPolygon = null;
+        StateHasChanged();
+    }
+
+    private async Task CancelPolygonEdit()
+    {
+        await JSRuntime.InvokeVoidAsync("LeafletMap.cancelPolygonEdit", "einsatzMap");
+        _polygonEditMode = false;
+
+        // Dialog erneut öffnen, damit der Nutzer weiterarbeiten kann
+        if (_editingAreaForPolygon != null)
+        {
+            EditSearchArea(_editingAreaForPolygon);
+        }
+
+        _editingAreaForPolygon = null;
+        StateHasChanged();
     }
 
     private async Task SaveArea()
@@ -1054,6 +1117,11 @@
         ExtractCoordinatesFromGeoJson(area);
         await EinsatzService.UpdateSearchAreaAsync(area);
         _searchAreas = EinsatzService.CurrentEinsatz.SearchAreas.ToList();
+
+        // Polygon auf der Karte mit neuem GeoJSON und Originalfarbe/-name neu rendern
+        await JSRuntime.InvokeVoidAsync("LeafletMap.removeSearchArea", "einsatzMap", areaId);
+        await JSRuntime.InvokeVoidAsync("LeafletMap.addSearchArea",
+            "einsatzMap", areaId, geoJson, area.Color, area.Name);
 
         await InvokeAsync(StateHasChanged);
     }

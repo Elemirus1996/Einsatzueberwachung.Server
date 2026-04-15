@@ -701,6 +701,123 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         }
     },
     
+    // Aktiviert den Bearbeitungsmodus für ein bestehendes Suchgebiet
+    startPolygonEdit: function(mapId, areaId) {
+        const mapData = this.maps[mapId];
+        if (!mapData) {
+            console.error('Karte nicht gefunden:', mapId);
+            return false;
+        }
+
+        try {
+            const outerLayer = mapData.markers[areaId];
+            if (!outerLayer) {
+                console.error('Layer nicht gefunden für Area:', areaId);
+                return false;
+            }
+
+            // Äußere GeoJSON-Gruppe aus savedAreas entfernen
+            if (mapData.savedAreas.hasLayer(outerLayer)) {
+                mapData.savedAreas.removeLayer(outerLayer);
+            }
+
+            // Inneren Polygon-Layer extrahieren
+            let innerLayer = null;
+            outerLayer.eachLayer(function(l) { innerLayer = l; });
+
+            if (!innerLayer) {
+                console.error('Kein innerer Layer gefunden für Area:', areaId);
+                mapData.savedAreas.addLayer(outerLayer);
+                return false;
+            }
+
+            // Metadaten auf innerem Layer sicherstellen
+            window.LeafletMap.setSearchAreaMetadata(innerLayer, areaId);
+
+            // In drawnItems verschieben (wird von Leaflet.draw bearbeitet)
+            mapData.drawnItems.addLayer(innerLayer);
+
+            // Bearbeitungszustand speichern
+            mapData.editingAreaId = areaId;
+            mapData.editingOuterLayer = outerLayer;
+            mapData.editingInnerLayer = innerLayer;
+
+            // Leaflet.draw Bearbeitungsmodus aktivieren
+            const editHandler = mapData.drawControl._toolbars.edit._modes.edit.handler;
+            editHandler.enable();
+
+            console.log('Polygon-Bearbeitung gestartet für Area:', areaId);
+            return true;
+        } catch (e) {
+            console.error('Fehler beim Starten des Polygon-Edits:', e);
+            return false;
+        }
+    },
+
+    // Speichert die Änderungen der Polygon-Bearbeitung
+    savePolygonEdit: function(mapId) {
+        const mapData = this.maps[mapId];
+        if (!mapData) {
+            console.error('Karte nicht gefunden:', mapId);
+            return false;
+        }
+
+        try {
+            const editHandler = mapData.drawControl._toolbars.edit._modes.edit.handler;
+            // save() feuert L.Draw.Event.EDITED und deaktiviert danach den Edit-Modus
+            editHandler.save();
+
+            // Inneren Layer aus drawnItems entfernen (OnShapeEdited fügt ihn über addSearchArea neu hinzu)
+            if (mapData.editingInnerLayer && mapData.drawnItems.hasLayer(mapData.editingInnerLayer)) {
+                mapData.drawnItems.removeLayer(mapData.editingInnerLayer);
+            }
+
+            // Bearbeitungszustand zurücksetzen
+            mapData.editingAreaId = null;
+            mapData.editingOuterLayer = null;
+            mapData.editingInnerLayer = null;
+
+            return true;
+        } catch (e) {
+            console.error('Fehler beim Speichern des Polygon-Edits:', e);
+            return false;
+        }
+    },
+
+    // Bricht die Polygon-Bearbeitung ab und stellt den Originalzustand wieder her
+    cancelPolygonEdit: function(mapId) {
+        const mapData = this.maps[mapId];
+        if (!mapData) {
+            console.error('Karte nicht gefunden:', mapId);
+            return false;
+        }
+
+        try {
+            const editHandler = mapData.drawControl._toolbars.edit._modes.edit.handler;
+            editHandler.revertLayers();
+            editHandler.disable();
+
+            // Inneren Layer aus drawnItems entfernen und äußeren Layer wiederherstellen
+            if (mapData.editingInnerLayer && mapData.drawnItems.hasLayer(mapData.editingInnerLayer)) {
+                mapData.drawnItems.removeLayer(mapData.editingInnerLayer);
+            }
+
+            if (mapData.editingOuterLayer) {
+                mapData.savedAreas.addLayer(mapData.editingOuterLayer);
+            }
+
+            // Bearbeitungszustand zurücksetzen
+            mapData.editingAreaId = null;
+            mapData.editingOuterLayer = null;
+            mapData.editingInnerLayer = null;
+
+            return true;
+        } catch (e) {
+            console.error('Fehler beim Abbrechen des Polygon-Edits:', e);
+            return false;
+        }
+    },
+
     // Löscht alle Zeichnungen von der Karte
     clearAllDrawings: function(mapId) {
         try {
