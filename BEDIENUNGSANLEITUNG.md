@@ -1,437 +1,374 @@
-# 📋 Bedienungsanleitung — Einsatzüberwachung (ELW)
-### Für Personen ohne technische Vorkenntnisse
+# Bedienungsanleitung — Einsatzüberwachung
+### Für den Einsatz im ELW — auch ohne Computerkenntnisse
 
 ---
 
-## 🚀 1. Programm starten
+## 💻 Schritt 1: Programm öffnen
 
 1. ELW-PC einschalten und warten, bis der Desktop erscheint.
-2. Auf dem Desktop das Symbol **„Einsatzüberwachung"** doppelklicken.
-   → Der Browser öffnet sich automatisch (z. B. `http://10.0.0.1`).
-3. Es erscheint die **Startseite (Dashboard)** — das Programm ist sofort bereit.
+2. Das Symbol **„Einsatzüberwachung"** auf dem Desktop **doppelklicken**.
+   → Der Browser öffnet sich und zeigt automatisch `http://10.10.0.1`.
+3. Die **Startseite** erscheint — das System ist sofort einsatzbereit.
 
-> ⚠️ Falls der Browser eine Fehlermeldung zeigt: kurz warten (ca. 30 Sekunden) und **F5** drücken.
+> **Kein Symbol auf dem Desktop?**
+> Browser öffnen (z. B. Chrome oder Edge) und in die Adresszeile oben eintippen:
+> **`http://10.10.0.1`** → Enter drücken.
+
+> **Seite lädt nicht?** Kurz warten (ca. 30 Sekunden), dann **F5** drücken.
 
 ---
 
-## 🏠 2. Startseite (Dashboard)
+## 🖥️ Desktop-Verknüpfung erstellen (einmalig, falls noch nicht vorhanden)
 
-Die Startseite zeigt immer eine **Übersicht des aktuellen Standes**:
+1. Rechtsklick auf eine freie Stelle des Desktops
+2. **„Neu" → „Verknüpfung"** wählen
+3. Als Adresse eingeben: `http://10.10.0.1`
+4. **„Weiter"** → Name eingeben: **Einsatzüberwachung**
+5. **„Fertig stellen"**
 
-| Bereich | Inhalt |
+Das Symbol erscheint nun auf dem Desktop und öffnet das Programm mit einem Doppelklick.
+
+---
+
+## 🏠 Die Startseite — was bedeutet was?
+
+Nach dem Öffnen sieht man das **Dashboard** mit einer Übersicht:
+
+| Anzeige | Bedeutung |
 |---|---|
-| **Teams gesamt** | Wie viele Teams insgesamt angelegt sind |
-| **Teams im Einsatz** | Wie viele Teams aktuell laufen (grüner Timer) |
-| **Kritische Teams** | Teams, die zu lange unterwegs sind (rot, mit Zahl) |
-| **Einträge gesamt** | Summe aller Notizen und Funksprüche |
-| **Aktueller Einsatz** | Typ, Einsatzort, Alarmzeit, Einsatzleiter, Führungsassistent |
-| **Letzte Notizen** | Die 3 zuletzt erfassten Notizen |
-| **Letzte Funksprüche** | Die 3 zuletzt erfassten Funksprüche |
-| **Server-Status** | Ob der Server erreichbar ist; „Status aktualisieren"-Button |
+| **Teams gesamt** | Alle angelegten Teams in dieser Sitzung |
+| **Teams im Einsatz** | Teams, bei denen der Timer gerade läuft |
+| **Kritische Teams** | Teams, die zu lange unterwegs sind (wird rot angezeigt) |
+| **Einträge gesamt** | Alle Notizen und Funksprüche zusammen |
+| **Aktueller Einsatz** | Wo, wann und wer — auf einen Blick |
+| **Letzte Notizen** | Die zuletzt eingetragenen Notizen |
+| **Letzte Funksprüche** | Die zuletzt eingetragenen Funksprüche |
 
-Oben rechts erscheint ein Badge:
-- 🟢 **„Einsatz aktiv"** — ein Einsatz läuft gerade
+Oben rechts steht:
+- 🟢 **„Einsatz aktiv"** — läuft gerade ein Einsatz
 - ⚫ **„Kein Einsatz"** — System wartet auf neuen Einsatz
 
-### ⚡ Divera-Alarm-Banner
-Wenn Divera 24/7 konfiguriert ist und ein aktiver Alarm vorliegt, erscheint **ganz oben** ein **roter Banner**:
-- Zeigt Alarmtitel, Einsatzort und Uhrzeit
-- Schaltfläche **„Einsatz anlegen"** → springt direkt zum Formular (bereits vorausgefüllt!)
-- Schaltfläche **„Divera-Details"** → öffnet die Divera-Statusseite
+### 🔴 Roter Banner ganz oben — was ist das?
+Wenn **Divera 24/7** verbunden ist und ein Alarm eingeht, erscheint oben ein roter Alarm-Banner mit Titel, Ort und Uhrzeit.
+- **„Einsatz anlegen"** klicken → Formular öffnet sich und ist bereits vorausgefüllt!
+- **„Divera-Details"** klicken → öffnet die vollständige Divera-Ansicht
 
 ---
 
-## 🚨 3. Neuen Einsatz anlegen
+## 🚨 Neuen Einsatz anlegen
 
-**Linkes Menü → „Neuer Einsatz"** (oder „Einsatz anlegen" auf der Startseite)
+Im linken Menü auf **„Neuer Einsatz"** klicken (oder „Einsatz anlegen" auf der Startseite).
 
-### Hinweis: Einsatz bereits aktiv
-Falls ein Einsatz noch läuft, erscheint eine gelbe Warnung mit einem Link zum laufenden Monitor. Zuerst den alten Einsatz beenden, dann einen neuen anlegen.
+> ⚠️ **Läuft bereits ein Einsatz?** Eine gelbe Warnung erscheint. Erst den laufenden Einsatz beenden, dann einen neuen anlegen.
 
----
+### Was ausfüllen?
 
-### Linke Karte: „Einsatzinformationen"
+**Linke Seite — Einsatzinformationen:**
 
-| Feld | Pflicht | Was eintragen | Beispiel |
-|---|---|---|---|
-| **Typ** | ✅ | Auswahl: *Einsatz* oder *Übung* | Einsatz |
-| **Timer-Start (Alarmierung)** | — | Uhrzeit der Alarmierung (Datum wird automatisch gesetzt) | 14:32 |
-| **Einsatznummer** | — | Nummer von der Leitstelle | 2024-042 |
-| **Einsatzort** | ✅ | Straße, Ort oder GPS-Koordinaten | Waldweg 5, Musterstadt |
-| **Stichwort** | — | Kurzbezeichnung des Einsatzes | Vermisstensuche |
-| **Karten-Adresse** | — | Adresse für die automatische Karten-Suche | Musterstadt Innenstadt |
-| **Alarmiert durch (Melder)** | — | Wer hat alarmiert | Polizei, Leitstelle, Angehörige |
-| **Staffel-Name** | — | Name der eigenen Staffel | RHS Musterstadt |
-| **Anzahl Teams (geplant)** | — | Geplante Teamanzahl | 5 |
-| **Bemerkungen** | — | Lagebeschreibung, Anfahrt, sonstige Hinweise | Waldgebiet, Zufahrt über B3 |
+| Feld | Pflicht? | Was eintragen |
+|---|---|---|
+| **Typ** | ✅ Ja | „Einsatz" oder „Übung" wählen |
+| **Timer-Start** | — | Uhrzeit der Alarmierung (z. B. 14:32) |
+| **Einsatznummer** | — | Nummer von der Leitstelle |
+| **Einsatzort** | ✅ Ja | Straße und Ort (z. B. „Waldweg 5, Musterstadt") |
+| **Stichwort** | — | Kurze Beschreibung (z. B. „Vermisstensuche") |
+| **Karten-Adresse** | — | Ort für die Karte (ermöglicht automatische Zentrierung) |
+| **Alarmiert durch** | — | Wer hat alarmiert (z. B. Polizei, Leitstelle) |
+| **Bemerkungen** | — | Sonstige Hinweise (Zufahrt, Lage, etc.) |
 
-### Rechte Karte: „Führungspersonal"
-
-Jedes Feld bietet **zwei Eingabewege**:
-1. **Dropdown**: aus der Stammdaten-Liste wählen (empfohlen)
-2. **Freitextfeld**: Namen direkt eintippen (wenn Person nicht in Stammdaten)
+**Rechte Seite — Führungspersonal:**
 
 | Feld | Beschreibung |
 |---|---|
-| **Einsatzleiter** | Verantwortliche Führungskraft |
-| **Führungsassistent** | Unterstützung der Einsatzleitung (optional) |
+| **Einsatzleiter** | Name aus der Liste wählen oder selbst eintippen |
+| **Führungsassistent** | Optional, falls besetzt |
 
-### Divera 24/7 — Alarm-Import (nur wenn konfiguriert)
+### Divera-Alarm direkt übernehmen
+Falls Divera aktiv ist, erscheint unterhalb des Formulars ein Kasten mit aktuellen Alarmen.
+→ Alarm **anklicken** → alle Felder werden automatisch ausgefüllt (Adresse, Uhrzeit, Stichwort).
 
-Wenn Divera aktiviert ist, erscheint unterhalb des Formulars die Karte **„Aus Divera 24/7 importieren"**:
-
-- Aktive Alarme werden automatisch aufgelistet
-- Jeder Alarm zeigt: Titel, Text, Adresse, Uhrzeit, Prioritäts-Badge (⚠️ PRIO), GPS-Verfügbarkeit und Rückmeldungen (wie viele kommen in 30 Min / 1 Std / nicht einsatzbereit)
-- **Alarm anklicken** → alle Felder im Formular werden automatisch ausgefüllt (Titel → Stichwort, Adresse → Einsatzort & Karten-Adresse, GPS → Kartenposition, Uhrzeit → Timer-Start)
-- **„Alarme aktualisieren"**-Button → lädt frische Daten von Divera
-
-### ✅ Einsatz starten
-
-Schaltfläche **„Einsatz starten"** (blauer Button, rechte Karte) klicken.
-→ Das System wechselt automatisch zum **Einsatz-Monitor**.
+### Einsatz starten
+Auf den blauen Button **„Einsatz starten"** klicken.
+→ Das Programm wechselt automatisch zum **Einsatz-Monitor**.
 
 ---
 
-## 📊 4. Einsatz-Monitor
+## 📊 Einsatz-Monitor — die Hauptseite im Einsatz
 
-**Linkes Menü → „Monitor"**
+Im linken Menü: **„Monitor"**
 
-Hauptseite während eines laufenden Einsatzes.
-
-**Header-Bereich** zeigt:
-- Einsatztyp und Ort
-- Datum und Uhrzeit des Einsatzbeginns
-- Gesamte Einsatzdauer
-- Aktuelles **Wetter** (Temperatur, Wind, Niederschlag, DWD-Warnung) — wird automatisch angezeigt, wenn die ELW-Position auf der Karte gesetzt ist
+Oben im Monitor sieht man: Einsatztyp, Ort, Startzeit, Gesamtdauer und (wenn ELW-Marker auf der Karte gesetzt) das aktuelle Wetter.
 
 ---
 
-### 4a. Team anlegen
+### Teams anlegen
 
-1. **„+ Team anlegen"** klicken (oben rechts der Teams-Karte)
+1. Auf **„+ Team anlegen"** klicken (oben bei der Teams-Liste)
 2. Felder ausfüllen:
 
 | Feld | Was eintragen |
 |---|---|
-| **Teamname** | Pflichtfeld, z. B. *Team Maier*, *Alpha-1* |
-| **Hundeführer** | Name aus der Liste oder Freitext |
+| **Teamname** | Pflichtfeld — z. B. „Team Maier" oder „Alpha-1" |
+| **Hundeführer** | Name aus der Liste oder eintippen |
 | **Hund** | Name des Einsatzhundes |
 | **Helfer** | Begleitperson |
-| **Suchgebiet** | Dem Team zugewiesenes Suchgebiet |
-| **Drohnenteam** | Checkbox: Team nutzt eine Drohne |
-| **Supportteam** | Checkbox: kein Timer erforderlich (Versorger, ELW-Besatzung) |
+| **Suchgebiet** | Welches Gebiet sucht das Team |
+| **Drohnenteam** | Häkchen setzen, wenn das Team eine Drohne hat |
+| **Supportteam** | Häkchen setzen für Versorger / ELW-Besatzung (kein Timer) |
 
 3. **„Speichern"** klicken
 
 ---
 
-### 4b. Timer-Farben verstehen
+### Timer-Farben — was bedeuten sie?
 
-| Farbe / Badge | Bedeutung |
+| Farbe / Anzeige | Bedeutung | Was tun? |
+|---|---|---|
+| 🟢 **Grün** | Alles normal, Team ist unterwegs | Nichts, weiter beobachten |
+| 🟡 **Orange / „Warnung"** | Team ist schon länger draußen | Aufmerksamkeit, ggf. Funkkontakt |
+| 🔴 **Rot / „KRITISCH"** | Team überschreitet Zeitlimit | Sofort Funkkontakt herstellen! |
+| **„IN PAUSE"** | Team macht Pflichtpause, Countdown läuft | Warten bis Pause endet |
+| **„PAUSE OK"** | Pflichtpause ist abgeleistet | Team kann neu starten |
+
+> Drohnenteams und Supportteams haben keinen Timer — dort steht „Kein Timer erforderlich".
+
+---
+
+### Team-Buttons im Monitor
+
+| Button | Was passiert |
 |---|---|
-| 🟢 **Grün** | Team läuft normal, alles ok |
-| 🟡 **Orange / „Warnung"** | Team ist bereits länger unterwegs — Aufmerksamkeit empfohlen |
-| 🔴 **Rot / „KRITISCH"** | Team ist zu lange unterwegs — sofort Funkkontakt herstellen! |
-| 🔵 **„IN PAUSE"** | Team macht Pflichtpause, Countdown läuft |
-| ✅ **„PAUSE OK"** | Pflichtpause ist abgeleistet |
-
-Bei **Drohnenteams** und **Supportteams** läuft kein Timer (dort steht „Kein Timer erforderlich").
+| **Start** (grün) | Timer startet — Team rückt aus |
+| **Stopp** (gelb) | Timer hält an — Team kehrt zurück |
+| **Reset** (grau) | Timer zurück auf 0 — für neue Runde oder neues Gebiet |
+| **Bearbeiten** (blau) | Namen, Gebiet oder Personal des Teams ändern |
 
 ---
 
-### 4c. Team-Buttons
+### Notizen und Funksprüche erfassen
 
-| Button | Funktion |
-|---|---|
-| **Start** (grün) | Timer starten (Team rückt aus) |
-| **Stopp** (gelb) | Timer anhalten (Team kehrt zurück) |
-| **Reset** (grau) | Timer auf 0 zurücksetzen (neues Gebiet, neue Runde) |
-| **Bearbeiten** (blau) | Teamname, Suchgebiet, Personal ändern |
+Rechts im Monitor befindet sich der Bereich **„Notizen & Funksprüche"**.
 
----
+So geht's:
+1. **Team/Quelle** auswählen ← **Pflichtfeld!** (z. B. „Team Maier" oder „Einsatzleitung")
+2. **Typ** wählen: „Notiz" (interner Vermerk) oder „Funk" (Funkspruch)
+3. Text eingeben
+4. **„Hinzufügen"** klicken → erscheint sofort mit Uhrzeit
 
-### 4d. Notizen & Funksprüche erfassen
+**Schnell-Notizen:** Falls vordefinierte Buttons erscheinen (z. B. „Anmarsch", „Im Gebiet", „Rückkehr") → einmal klicken = automatischer Eintrag mit Uhrzeit.
 
-Rechte Spalte im Monitor: **„Notizen & Funksprüche"**
-
-**Neuen Eintrag hinzufügen:**
-
-| Feld | Beschreibung |
-|---|---|
-| **Team/Quelle** ✅ Pflicht | Das Team oder „Einsatzleitung" als Absender wählen |
-| **Typ** | *Notiz* (interne Vermerke) oder *Funk* (Funksprüche) |
-| **Text** | Inhalt des Eintrags |
-
-Dann **„Hinzufügen"** klicken → Eintrag erscheint sofort mit Zeitstempel.
-
-**Schnell-Notizen** (wenn konfiguriert): Vordefinierte Buttons wie „Anmarsch", „Im Gebiet", „Rückkehr" → einmal klicken = automatischer Eintrag mit Zeitstempel.
-
-**Auf Eintrag antworten:**
-Unter jedem Eintrag gibt es ein kleines Antwortfeld. Team/Quelle auswählen, Text eingeben, **„Antworten"** klicken → wird als eingerückter Thread gespeichert.
-
-**Historie eines Eintrags:**
-**„Historie"**-Button klickt man zum Anzeigen aller nachträglichen Änderungen (wer hat wann was geändert).
+**Antworten auf einen Eintrag:** Unterhalb jeden Eintrags gibt es ein kleines Antwortfeld — Team wählen, Text schreiben, „Antworten" klicken.
 
 ---
 
-### 4e. Popout-Fenster (für Zweiten Monitor)
+### Zweiter Monitor — Popout-Fenster
 
-- Beim Teams-Bereich oben: kleines **„↗"**-Icon → öffnet Teams als separates Fenster
-- Beim Notizen-Bereich oben: kleines **„↗"**-Icon → öffnet Notizen als separates Fenster
-
-Ideal für Zwei-Monitor-Setups (z. B. Notizen auf Monitor 2).
+Beim Teams-Bereich und beim Notizen-Bereich gibt es oben je ein kleines **↗-Symbol**.
+Darauf klicken → öffnet den Bereich in einem **separaten Fenster** (ideal für einen zweiten Bildschirm).
 
 ---
 
-### 4f. Einsatz beenden
+### Einsatz beenden
 
-Roter Button **„Beenden"** oben rechts.
+Roter Button **„Beenden"** oben rechts im Monitor klicken.
 
-Es öffnet sich ein Bestätigungsformular:
+Ein Formular öffnet sich:
 
-| Feld | Beschreibung |
+| Feld | Was eintragen |
 |---|---|
 | **Ergebnis** | z. B. „Person gefunden", „Person gefunden – verletzt", „Einsatz abgebrochen" |
 | **Ende-Zeit** | Uhrzeit des Einsatzendes |
-| **Bemerkungen** | Abschlusshinweise |
+| **Bemerkungen** | Abschlussbemerkungen |
 
-Eine **Zusammenfassung** zeigt nochmals: Anzahl Teams, Personal, Hunde, Notizen/Funk.
+Eine Zusammenfassung (Teams, Personal, Notizen) wird nochmals angezeigt.
 
 Nach Bestätigung:
-- Einsatz wird **archiviert**
-- **PDF-Bericht** wird automatisch erstellt
-- System ist sofort bereit für den nächsten Einsatz
+- Einsatz wird automatisch **archiviert**
+- **PDF-Bericht** wird erstellt und ist im Archiv abrufbar
+- System ist sofort wieder bereit
 
 ---
 
-## 🗺️ 5. Karte
+## 🗺️ Karte
 
-**Linkes Menü → „Karte"** (oder im Monitor auf **„Karte"** klicken)
+Im linken Menü: **„Karte"** (oder im Monitor auf den **„Karte"**-Button klicken)
 
-| Funktion | Beschreibung |
+| Was | Wie |
 |---|---|
-| **Suchgebiete zeichnen** | Als Polygone (Flächen) einzeichnen und benennen |
-| **Teams zuweisen** | Gebiete direkt einem Team zuordnen |
-| **ELW-Marker setzen** | Position der Einsatzleitung → aktiviert automatische Wetteranzeige im Monitor |
-| **Suchgebiet-Marker** | Zusätzliche Punkte (Fundstellen, Treffpunkte) markieren |
-| **Farben** | Gebiete können farblich unterschieden werden |
-| **Druckansicht** | Karte für den Ausdruck aufbereiten |
+| **Adresse suchen** | Oben in der Suchzeile Adresse eintippen → Lupe klicken |
+| **Kartentyp wechseln** | Oben rechts: Straße / Satellit / Hybrid (Karten-Icons) |
+| **Suchgebiet zeichnen** | Links auf **„+"** klicken → Fläche auf der Karte einzeichnen → benennen → Farbe wählen |
+| **Team einem Gebiet zuweisen** | Gebiet in der linken Liste anklicken → Team aus Dropdown wählen |
+| **ELW-Position setzen** | Oben rechts **„ELW setzen"** klicken → auf der Karte den Standort anklicken |
+| **Zusätzliche Marker** | Auf der Karte klicken und Marker-Typ wählen (Fundstelle, Treffpunkt, etc.) |
+| **Karte drucken** | Oben rechts **Drucker-Symbol** klicken |
 
-> 💡 Die Karte funktioniert am besten, wenn bei „Einsatz anlegen" unter **Karten-Adresse** eine Adresse eingegeben wurde (automatische Zentrierung).
+> **Wichtig:** ELW-Position setzen → aktiviert automatisch die **Wetteranzeige** im Monitor!
 
----
-
-## ⚡ 6. Divera 24/7
-
-**Linkes Menü → „Divera 24/7"**
-
-> Diese Seite ist nur verfügbar, wenn in den **Einstellungen** ein Divera API-Key hinterlegt ist.
+> **Tipp:** Wenn beim Einsatz anlegen unter „Karten-Adresse" eine Adresse eingegeben wurde, springt die Karte automatisch dorthin.
 
 ---
 
-### 6a. Was zeigt die Seite?
+## ⚡ Divera 24/7
 
-**Linke Hälfte: Aktive Alarme**
+Im linken Menü: **„Divera 24/7"**
 
-Alle aktuell offenen Divera-Alarme mit:
-- **Alarmtitel** (mit ⚠️-Icon bei Prio-Alarm)
-- **Alarmtext** (Zusatzinfo aus Divera)
-- **Adresse** des Einsatzortes
-- **Zeitstempel** (Datum und Uhrzeit der Alarmierung)
-- **Rückmelde-Badges**:
+> Diese Seite funktioniert nur, wenn in den **Einstellungen** ein Divera API-Key eingetragen ist.
 
-| Badge | Bedeutung |
+### Was zeigt die Seite?
+
+**Linke Seite — Aktive Alarme:**
+- Alle aktuell offenen Divera-Alarme mit Titel, Text, Adresse und Uhrzeit
+- Bei Prioritäts-Alarm: ⚠️-Symbol
+- **Rückmeldungen pro Alarm:**
+
+| Anzeige | Bedeutung |
 |---|---|
-| 🟢 X geantwortet | X Personen haben generell geantwortet |
-| 🟢 X 30 Min | X Personen sind in 30 Minuten vor Ort |
-| 🟡 X 1 Std | X Personen sind in 1 Stunde vor Ort |
+| 🟢 X – 30 Min | X Personen sind in 30 Min vor Ort |
+| 🟡 X – 1 Std | X Personen sind in 1 Stunde vor Ort |
 | 🔴 X nicht einsatzbereit | X Personen sind verhindert |
 | ⚫ X keine Antwort | X Personen haben noch nicht geantwortet |
 
----
+**Rechte Seite — Personal-Ampel:**
+- Listet alle Mitglieder mit ihrem aktuellen Status: verfügbar / bedingt / nicht verfügbar
 
-**Rechte Hälfte: Personal-Ampel**
+### Automatische Aktualisierung
+Die Seite lädt selbständig im Hintergrund:
+- **Kein Alarm aktiv:** alle 10 Minuten
+- **Alarm aktiv:** jede Minute
 
-Zeigt den aktuellen Verfügbarkeitsstatus aller Mitglieder:
+Mit dem Button **„Aktualisieren"** kann jederzeit manuell neu geladen werden.
 
-| Badge | Bedeutung |
-|---|---|
-| 🟢 **verfügbar** | Grüner Status in Divera |
-| 🟡 **bedingt** | Gelber Status (eingeschränkt verfügbar) |
-| 🔴 **nicht** | Roter Status (nicht verfügbar) |
-
-Die Tabelle listet alle Mitglieder mit ihrem Status (z. B. „30 Minuten", „1 Stunde", „Nicht einsatzbereit", „Kommt").
-
-> Wenn die Mitgliederliste mit dem verwendeten API-Key nicht abrufbar ist, werden stattdessen die Rückmeldungen des aktuellen Alarms angezeigt.
+### Verbindungsanzeige (oben links)
+- 🟢 **Verbunden** → Divera antwortet, alles ok
+- 🔴 **Verbindungsfehler** → Fehlermeldung erscheint darunter; API-Key in Einstellungen prüfen
 
 ---
 
-### 6b. Polling-Anzeige (oben rechts auf der Seite)
+## ⛅ Wetter
 
-Die Seite aktualisiert sich **automatisch im Hintergrund**:
+Im linken Menü: **„Wetter"**
 
-| Situation | Aktualisierungsintervall |
-|---|---|
-| Kein Alarm aktiv | Alle **10 Minuten** (Standard) |
-| Alarm aktiv | Alle **60 Sekunden** (Standard) |
+Zeigt aktuelle Wetterdaten vom **Deutschen Wetterdienst (DWD)**:
+- Temperatur, Wind, Luftfeuchtigkeit, Luftdruck, Niederschlag
+- **Flugwetter** (für Drohneneinsätze): wird als farbiges Badge angezeigt
+- **DWD-Warnung:** wenn eine offizielle Unwetterwarnung vorliegt, erscheint ein farbiges Warn-Badge
 
-Neben der Uhrzeit des letzten Updates steht das aktuelle Intervall. Mit **„Aktualisieren"** kann manuell sofort neu geladen werden.
+**So Wetter abrufen:**
+1. Ort in das Textfeld eingeben (z. B. „Musterstadt")
+2. **„Wetter abrufen"** klicken
 
----
-
-### 6c. Verbindungsstatus
-
-| Badge | Bedeutung |
-|---|---|
-| 🟢 **Verbunden** | Divera API ist erreichbar, Daten werden geladen |
-| 🔴 **Verbindungsfehler** | Keine Verbindung — Fehlermeldung erscheint darunter |
+> **Wetter im Monitor automatisch:** Wenn auf der Karte ein **ELW-Marker gesetzt** ist, wird das Wetter für diesen Standort automatisch im Monitor-Header angezeigt — ohne manuelles Eingeben.
 
 ---
 
-## 📂 7. Einsatz-Archiv
+## 📂 Archiv
 
-**Linkes Menü → „Archiv"**
+Im linken Menü: **„Archiv"**
 
-Zeigt alle abgeschlossenen Einsätze als Liste. Pro Einsatz:
-- Einsatzort, Typ, Datum, Dauer
-- Anzahl Teams, Personal, Notizen
-- Schaltfläche zum Öffnen des gespeicherten PDF-Berichts
-
----
-
-## ⛅ 8. Wetter
-
-**Linkes Menü → „Wetter"**
-
-Zeigt aktuelle Wetterdaten vom Deutschen Wetterdienst (DWD):
-- Temperatur
-- Windgeschwindigkeit
-- Niederschlag (mm/h)
-- **DWD-Warnungsstufe** (wird als farbiges Badge angezeigt, wenn eine aktive Warnung vorliegt)
-
-Das Wetter wird für den **Standort der ELW** abgerufen. Dazu muss in der Karte ein ELW-Marker gesetzt sein.
+Zeigt alle abgeschlossenen Einsätze als Liste:
+- Einsatzort, Typ, Datum und Uhrzeit
+- Einsatzdauer, Anzahl Teams, Personal, Notizen
+- Button zum Öffnen des **PDF-Berichts** des jeweiligen Einsatzes
 
 ---
 
-## 👥 9. Stammdaten
+## 👥 Stammdaten (Personal, Hunde, Drohnen)
 
-**Linkes Menü → „Stammdaten"**
+Im linken Menü: **„Stammdaten"**
 
-Verwaltet das gesamte Personal, die Hunde und Drohnen der Staffel.
+Hier werden alle Einsatzkräfte, Hunde und Drohnen der Staffel hinterlegt.
 
-### Tabs:
-- **Personal** — alle Einsatzkräfte
-- **Hunde** — alle Suchhunde mit Hundeführer-Zuordnung
-- **Drohnen** — alle verfügbaren Drohnen
+**Tabs:**
+- **Personal** — alle Personen
+- **Hunde** — alle Suchhunde mit zugeordnetem Hundeführer
+- **Drohnen** — alle Drohnen
 
-### Personal — wichtige Felder:
+**Wichtiges Feld beim Personal:**
+„**Divera Benutzer-ID**" — die Nummer aus Divera (z. B. `681743`).
+Wenn eingetragen, werden in der Divera-Ansicht die echten Namen statt internen IDs angezeigt.
+→ Zu finden in der Divera-App unter „Profil" oder aus einer Alarm-Rückmeldung (dort als `#681743`).
 
-| Feld | Beschreibung |
-|---|---|
-| Vorname / Nachname | Name der Person |
-| Qualifikationen | z. B. Hundeführer, Teamführer, Sanitäter |
-| **Divera Benutzer-ID** | Numerische ID aus Divera (z. B. `681743`) — verknüpft die Person mit Divera-Rückmeldungen |
-
-**Divera-ID eintragen:** In der Divera-App unter „Profil" oder aus einer Alarm-Rückmeldung (dort als `#681743` angezeigt). Wenn hinterlegt, werden Rückmeldungen in der Divera-Ansicht mit dem echten Namen statt der internen ID angezeigt.
-
-### Export / Import:
-- **Excel-Export** → alle Stammdaten als `.xlsx` Datei herunterladen
-- **Vorlage herunterladen** → leere Excel-Vorlage für Massenimport
-- **Datei hochladen** → vorbereitete Excel-Datei importieren (ersetzt alle bestehenden Daten!)
+**Daten exportieren/importieren:**
+- **„Exportieren"** → lädt alle Stammdaten als Excel-Datei herunter
+- **„Vorlage"** → leere Excel-Vorlage herunterladen
+- **Datei hochladen** → ausgefüllte Excel-Datei importieren
 
 ---
 
-## ⚙️ 10. Einstellungen
+## ⚙️ Einstellungen
 
-**Linkes Menü → „Einstellungen"**
+Im linken Menü: **„Einstellungen"**
 
-### Staffel-Informationen
+Hier werden einmalig die Grunddaten der Staffel und Divera eingerichtet. Diese Seite wird normalerweise nur vom Administrator bedient.
 
-| Feld | Beschreibung |
-|---|---|
-| **Staffel-Name** | Name der Staffel (erscheint im PDF-Bericht) |
-| **Adresse** | Standortadresse der Staffel |
-| **Telefon / E-Mail** | Kontaktdaten |
-| **Logo** | Staffel-Logo hochladen (Datei-Upload, für PDF-Export) |
+**Staffel-Informationen:** Name, Adresse, Telefon, E-Mail, Logo für PDF-Berichte.
 
----
+**Darstellung:** Hell- oder Dunkelmodus (manuell oder automatisch nach Systemzeit).
 
-### Divera 24/7 — Einrichtung
+**Timer-Warnungen:** Ab wie vielen Minuten ein Team „orange" oder „rot" wird (Standard: 45 / 60 Min).
 
-1. **„Divera 24/7 Integration aktivieren"** — Checkbox aktivieren
-2. **API-Key eingeben**:
-   - In Divera öffnen: **Verwaltung → Schnittstellen → API-Access-Key**
-   - Key kopieren und hier einfügen
-   - 👁️-Button: Key sichtbar/verbergen umschalten
-3. **API-URL**: Standardwert `https://app.divera247.com/api/v2` — nur ändern, wenn euer Anbieter eine andere URL nennt
-4. **Poll-Intervall (kein Alarm)**: Wie oft (in Sekunden) Divera im Ruhezustand abgefragt wird (Standard: 600 = 10 Min)
-5. **Poll-Intervall (Alarm aktiv)**: Wie oft bei aktivem Alarm abgefragt wird (Standard: 60 = 1 Min)
-6. **„Verbindung testen"** — prüft ob der API-Key korrekt ist:
-   - ✅ „Verbindung erfolgreich!" → alles ok
-   - ❌ „Verbindung fehlgeschlagen" → API-Key prüfen oder Internetverbindung prüfen
-7. **„Speichern"** nicht vergessen!
+**Sound-Warnungen:** Akustische Signale bei Timerwarnungen aktivieren und konfigurieren.
+
+**Divera 24/7 einrichten:**
+1. „Divera Integration aktivieren" → Häkchen setzen
+2. API-Key eingeben (aus Divera: Verwaltung → Schnittstellen → API)
+3. „Verbindung testen" → prüft ob alles korrekt ist
+4. **„Speichern"** klicken
 
 ---
 
-## 🔑 Divera API-Key finden
-
-**In der Divera 24/7 App / Webseite:**
-1. Als Administrator einloggen
-2. Oben rechts: Organisations-Menü → **Verwaltung**
-3. Links: **Schnittstellen** → **API**
-4. Dort findet sich der **Access-Key** (lange Zeichenkette)
-5. Key kopieren und in den Einstellungen der Einsatzüberwachung einfügen
-
----
-
-## ❗ 11. Häufige Probleme und Lösungen
+## ❗ Häufige Probleme — schnelle Hilfe
 
 | Problem | Lösung |
 |---|---|
-| Seite lädt nicht / leer | **F5** drücken zum Neu-Laden |
-| „Einsatz bereits aktiv" | Zum Monitor → laufenden Einsatz zuerst beenden |
-| Timer läuft nicht | Prüfen ob **„Start"** beim Team gedrückt wurde |
-| Notiz lässt sich nicht speichern | **Team/Quelle** muss ausgewählt sein (Pflichtfeld!) |
+| Seite lädt nicht / ist leer | **F5** drücken (Seite neu laden) |
+| „Einsatz bereits aktiv"-Warnung | Zum Monitor → laufenden Einsatz erst beenden |
+| Timer läuft nicht | Prüfen ob beim Team auf **„Start"** gedrückt wurde |
+| Notiz kann nicht gespeichert werden | **Team/Quelle** muss ausgewählt sein — Pflichtfeld! |
 | Divera zeigt „nicht konfiguriert" | Einstellungen → API-Key hinterlegen und aktivieren |
-| Divera-Verbindungsfehler | API-Key prüfen, Internetverbindung prüfen, „Verbindung testen" |
-| Divera-Namen als #ID angezeigt | Divera-Benutzer-ID in Stammdaten beim jeweiligen Personal eintragen |
-| Kein Alarm-Banner auf Startseite | Divera-Polling läuft im Hintergrund — kurz warten oder Seite neu laden |
-| Wetter wird nicht angezeigt | ELW-Position auf der Karte als Marker setzen |
-| Alles weg / Fehlermeldung | IT/Administrator informieren |
+| Divera zeigt Namen als Nummer (#ID) | Divera Benutzer-ID in Stammdaten beim Personal eintragen |
+| Roter Divera-Banner erscheint nicht | Kurz warten (Polling läuft im Hintergrund) oder Seite neu laden |
+| Wetter wird nicht angezeigt | ELW-Position auf der Karte setzen |
+| Alles weg / Fehlermeldung | Administrator informieren |
 
 ---
 
-## ⌨️ 12. Tastenkürzel
+## ⌨️ Tastenkürzel
 
 | Taste | Funktion |
 |---|---|
 | **F5** | Seite neu laden |
-| **Strg + H** | Startseite |
-| **Strg + M** | Karte |
+| **Strg + H** | Zur Startseite |
+| **Strg + M** | Zur Karte |
 | **Strg + T** | Neues Team anlegen |
 | **Strg + N** | Neue Notiz |
 
 ---
 
-## 🔄 13. Typischer Ablauf mit Divera
+## 🔄 Typischer Ablauf — Schritt für Schritt
 
 ```
-📱 Divera-Alarm geht ein
-        ↓
-🟥 Roter Banner auf der Startseite erscheint
-        ↓
-🔗 "Einsatz anlegen" klicken → Formular öffnet sich
-        ↓
-📋 Alarm in der Divera-Importliste anklicken → Felder werden befüllt
-        ↓
-✅ "Einsatz starten" → Monitor öffnet sich
-        ↓
-👥 Teams anlegen → Start-Button pro Team
-        ↓
-📻 Funksprüche und Notizen erfassen
-        ↓
-🔴 "Beenden" → Einsatz archivieren, PDF erstellt
+1️⃣  Divera-Alarm geht ein
+       ↓
+2️⃣  Roter Banner auf der Startseite erscheint
+       ↓
+3️⃣  "Einsatz anlegen" klicken → Formular öffnet sich
+       ↓
+4️⃣  Alarm in der Divera-Liste anklicken → Felder werden automatisch befüllt
+       ↓
+5️⃣  "Einsatz starten" klicken → Monitor öffnet sich
+       ↓
+6️⃣  "+ Team anlegen" für jedes Team → Start-Button drücken
+       ↓
+7️⃣  Funksprüche und Notizen laufend erfassen
+       ↓
+8️⃣  Karte öffnen → Suchgebiete einzeichnen → Teams zuweisen
+       ↓
+9️⃣  ELW-Marker setzen → Wetter wird automatisch angezeigt
+       ↓
+🔟  Roter "Beenden"-Button → Ergebnis eingeben → Einsatz archiviert
 ```
 
-> 📌 **Merksatz:**
-> **Divera-Alarm → Einsatz anlegen (auto-befüllt) → Teams starten → Notizen erfassen → Beenden → Archiv**
+> **Merksatz für den Einsatz:**
+> **Alarm → Einsatz anlegen → Teams starten → Funk & Notizen → Beenden → fertig**
