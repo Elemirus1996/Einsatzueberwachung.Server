@@ -45,6 +45,24 @@
                     <InputTextArea class="form-control" @bind-Value="_bemerkungen" rows="3" />
                 </div>
             </div>
+            <div class="row g-3 mt-1">
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="includeTracks" @bind="_includeTracks" />
+                        <label class="form-check-label" for="includeTracks">
+                            <i class="bi bi-geo-alt me-1"></i>GPS-Tracks in PDF einschließen
+                            @if (_trackCount > 0)
+                            {
+                                <span class="badge bg-info ms-1">@_trackCount Track(s)</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted ms-1">(keine Tracks vorhanden)</span>
+                            }
+                        </label>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -64,17 +82,34 @@
     private string _status = string.Empty;
     private string _ergebnis = "";
     private string _bemerkungen = "";
+    private bool _includeTracks;
+    private int _trackCount => EinsatzService.CurrentEinsatz.TrackSnapshots?.Count ?? 0;
+
+    private bool _isExporting;
 
     private async Task ExportAsync()
     {
-        var result = await PdfExportService.ExportEinsatzToPdfAsync(
-            EinsatzService.CurrentEinsatz,
-            EinsatzService.Teams,
-            EinsatzService.GlobalNotes);
+        if (_isExporting) return;
+        _isExporting = true;
+        _status = "PDF wird erstellt...";
+        StateHasChanged();
 
-        _status = result.Success
-            ? $"PDF gespeichert: {result.FilePath}"
-            : $"Export fehlgeschlagen: {result.ErrorMessage}";
+        try
+        {
+            var result = await PdfExportService.ExportEinsatzToPdfAsync(
+                EinsatzService.CurrentEinsatz,
+                EinsatzService.Teams,
+                EinsatzService.GlobalNotes,
+                _includeTracks);
+
+            _status = result.Success
+                ? $"PDF gespeichert: {result.FilePath}"
+                : $"Export fehlgeschlagen: {result.ErrorMessage}";
+        }
+        finally
+        {
+            _isExporting = false;
+        }
     }
 
     private async Task ArchiveAndEndAsync()

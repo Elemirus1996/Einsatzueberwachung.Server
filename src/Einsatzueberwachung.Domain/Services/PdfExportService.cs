@@ -19,18 +19,23 @@ namespace Einsatzueberwachung.Domain.Services
     {
         private readonly ISettingsService? _settingsService;
         private readonly ITimeService? _timeService;
+        private readonly IStaticMapRenderer? _mapRenderer;
 
-        public PdfExportService(ISettingsService? settingsService = null, ITimeService? timeService = null)
+        public PdfExportService(ISettingsService? settingsService = null, ITimeService? timeService = null, IStaticMapRenderer? mapRenderer = null)
         {
             _settingsService = settingsService;
             _timeService = timeService;
+            _mapRenderer = mapRenderer;
             // QuestPDF Lizenz-Konfiguration (Community License für nicht-kommerzielle Nutzung)
             QuestPDF.Settings.License = LicenseType.Community;
         }
 
         private DateTime Now => _timeService?.Now ?? DateTime.Now;
 
-        public async Task<PdfExportResult> ExportEinsatzToPdfAsync(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes)
+        public Task<PdfExportResult> ExportEinsatzToPdfAsync(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes)
+            => ExportEinsatzToPdfAsync(einsatzData, teams, notes, false);
+
+        public async Task<PdfExportResult> ExportEinsatzToPdfAsync(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes, bool includeTracks)
         {
             try
             {
@@ -38,7 +43,15 @@ namespace Einsatzueberwachung.Domain.Services
                 var filename = $"Einsatzbericht_{einsatzData.EinsatzNummer}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
                 var einsatzPath = AppPathResolver.GetReportDirectory();
                 var filePath = Path.Combine(einsatzPath, filename);
-                var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo);
+                var tracks = includeTracks ? einsatzData.TrackSnapshots : null;
+
+                // Kartenbilder für Tracks rendern (Server-seitig OSM-Tiles)
+                if (tracks != null && _mapRenderer != null)
+                {
+                    await RenderTrackMapsAsync(tracks);
+                }
+
+                var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo, tracks);
 
                 await Task.Run(() =>
                 {
@@ -58,6 +71,31 @@ namespace Einsatzueberwachung.Domain.Services
                     Success = false,
                     ErrorMessage = ex.Message
                 };
+            }
+        }
+
+        private async Task RenderTrackMapsAsync(List<TeamTrackSnapshot> tracks)
+        {
+            foreach (var track in tracks.Where(t => t.Points.Count >= 2))
+            {
+                try
+                {
+                    var imageBytes = await _mapRenderer!.RenderTrackMapAsync(
+                        track.Points,
+                        track.SearchAreaCoordinates?.Count >= 3 ? track.SearchAreaCoordinates : null,
+                        track.Color,
+                        track.SearchAreaColor,
+                        800, 450);
+
+                    if (imageBytes != null)
+                    {
+                        track.MapImageBase64 = Convert.ToBase64String(imageBytes);
+                    }
+                }
+                catch
+                {
+                    // Fallback: SVG wird in ComposeGpsTracks verwendet
+                }
             }
         }
 
@@ -333,7 +371,10 @@ namespace Einsatzueberwachung.Domain.Services
         /// <summary>
         /// Exportiert einen archivierten Einsatz als PDF (speichert Datei)
         /// </summary>
-        public async Task<PdfExportResult> ExportArchivedEinsatzToPdfAsync(ArchivedEinsatz archivedEinsatz)
+        public Task<PdfExportResult> ExportArchivedEinsatzToPdfAsync(ArchivedEinsatz archivedEinsatz)
+            => ExportArchivedEinsatzToPdfAsync(archivedEinsatz, false);
+
+        public async Task<PdfExportResult> ExportArchivedEinsatzToPdfAsync(ArchivedEinsatz archivedEinsatz, bool includeTracks)
         {
             try
             {
@@ -341,7 +382,14 @@ namespace Einsatzueberwachung.Domain.Services
                 var filename = $"Einsatzbericht_{archivedEinsatz.EinsatzNummer}_{archivedEinsatz.EinsatzDatum:yyyyMMdd}.pdf";
                 var einsatzPath = AppPathResolver.GetReportDirectory();
                 var filePath = Path.Combine(einsatzPath, filename);
-                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo);
+                var tracks = includeTracks ? archivedEinsatz.TrackSnapshots : null;
+
+                if (tracks != null && _mapRenderer != null)
+                {
+                    await RenderTrackMapsAsync(tracks);
+                }
+
+                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks);
 
                 await Task.Run(() =>
                 {
@@ -370,7 +418,7 @@ namespace Einsatzueberwachung.Domain.Services
         public async Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz)
         {
             var staffelInfo = await ResolveStaffelInfoAsync(archivedEinsatz);
-            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo);
+            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, null);
             
             return await Task.Run(() =>
             {
@@ -383,20 +431,24 @@ namespace Einsatzueberwachung.Domain.Services
         /// <summary>
         /// Exportiert einen aktiven Einsatz als PDF-Byte-Array (für Browser-Download)
         /// </summary>
-        public async Task<byte[]> ExportEinsatzToPdfBytesAsync(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes)
+        public Task<byte[]> ExportEinsatzToPdfBytesAsync(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes)
+            => ExportEinsatzToPdfBytesAsync(einsatzData, teams, notes, false);
+
+        public async Task<byte[]> ExportEinsatzToPdfBytesAsync(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes, bool includeTracks)
         {
             var staffelInfo = await ResolveStaffelInfoAsync(einsatzData);
+            var tracks = includeTracks ? einsatzData.TrackSnapshots : null;
             return await Task.Run(() =>
             {
                 using var stream = new MemoryStream();
-                var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo);
+                var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo, tracks);
                 pdfDocument.GeneratePdf(stream);
                 
                 return stream.ToArray();
             });
         }
 
-        private Document CreateEinsatzDocument(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes, StaffelInfo staffelInfo)
+        private Document CreateEinsatzDocument(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null)
         {
             return Document.Create(container =>
             {
@@ -425,6 +477,11 @@ namespace Einsatzueberwachung.Domain.Services
                             column.Item().PaddingVertical(10).Element(c => ComposeTeams(c, teams, notes));
                             if (einsatzData.SearchAreas.Any())
                                 column.Item().PaddingVertical(10).Element(c => ComposeSuchgebiete(c, einsatzData.SearchAreas.ToList()));
+                            if (tracks?.Any() == true)
+                            {
+                                column.Item().PageBreak();
+                                column.Item().PaddingVertical(10).Element(c => ComposeGpsTracks(c, tracks));
+                            }
                             if (notes.Any())
                             {
                                 column.Item().PageBreak();
@@ -450,7 +507,7 @@ namespace Einsatzueberwachung.Domain.Services
         /// <summary>
         /// Erstellt das PDF-Dokument für einen archivierten Einsatz
         /// </summary>
-        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo)
+        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null)
         {
             return Document.Create(container =>
             {
@@ -486,6 +543,11 @@ namespace Einsatzueberwachung.Domain.Services
                                 column.Item().PaddingVertical(10).Element(c => ComposeArchivedTeams(c, einsatz.Teams, einsatz.GlobalNotesEntries ?? new()));
                             if (einsatz.SearchAreas?.Any() == true)
                                 column.Item().PaddingVertical(10).Element(c => ComposeSuchgebiete(c, einsatz.SearchAreas));
+                            if (tracks?.Any() == true)
+                            {
+                                column.Item().PageBreak();
+                                column.Item().PaddingVertical(10).Element(c => ComposeGpsTracks(c, tracks));
+                            }
                             if (einsatz.GlobalNotesEntries?.Any() == true)
                             {
                                 column.Item().PageBreak();
@@ -978,6 +1040,276 @@ namespace Einsatzueberwachung.Domain.Services
                     });
                 });
             });
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // GPS-Tracks Sektion
+        // ─────────────────────────────────────────────────────────────────────────
+
+        private void ComposeGpsTracks(IContainer container, List<TeamTrackSnapshot> tracks)
+        {
+            container.Column(column =>
+            {
+                column.Item().Element(c => ComposeSectionHeader(c, $"GPS-Tracks ({tracks.Count})"));
+
+                // Übersichtstabelle
+                column.Item().PaddingTop(10).Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.RelativeColumn(2);      // Team
+                        columns.RelativeColumn(1.5f);   // Halsband
+                        columns.RelativeColumn(1.5f);   // Suchgebiet
+                        columns.ConstantColumn(70);     // Strecke
+                        columns.ConstantColumn(70);     // Dauer
+                        columns.ConstantColumn(55);     // Punkte
+                        columns.ConstantColumn(70);     // Erfasst
+                    });
+
+                    table.Header(header =>
+                    {
+                        header.Cell().Element(HdrStyle).Text("Team").Bold();
+                        header.Cell().Element(HdrStyle).Text("Halsband").Bold();
+                        header.Cell().Element(HdrStyle).Text("Suchgebiet").Bold();
+                        header.Cell().Element(HdrStyle).AlignCenter().Text("Strecke").Bold();
+                        header.Cell().Element(HdrStyle).AlignCenter().Text("Dauer").Bold();
+                        header.Cell().Element(HdrStyle).AlignCenter().Text("Punkte").Bold();
+                        header.Cell().Element(HdrStyle).AlignCenter().Text("Erfasst").Bold();
+
+                        static IContainer HdrStyle(IContainer c) =>
+                            c.Background(Colors.Blue.Darken1).Padding(5);
+                    });
+
+                    var rowIndex = 0;
+                    foreach (var track in tracks)
+                    {
+                        var bg = rowIndex++ % 2 == 0 ? Colors.White : Colors.Grey.Lighten4;
+
+                        table.Cell().Element(c => RowCell(c, bg)).Text(track.TeamName).FontSize(9);
+                        table.Cell().Element(c => RowCell(c, bg)).Text(track.CollarName).FontSize(9);
+                        table.Cell().Element(c => RowCell(c, bg)).Text(string.IsNullOrEmpty(track.SearchAreaName) ? "-" : track.SearchAreaName).FontSize(9);
+                        table.Cell().Element(c => RowCell(c, bg)).AlignCenter().Text(track.FormattedDistance).FontSize(9);
+                        table.Cell().Element(c => RowCell(c, bg)).AlignCenter().Text(track.FormattedDuration).FontSize(9);
+                        table.Cell().Element(c => RowCell(c, bg)).AlignCenter().Text($"{track.Points.Count}").FontSize(9);
+                        table.Cell().Element(c => RowCell(c, bg)).AlignCenter().Text(track.CapturedAt.ToString("HH:mm")).FontSize(9);
+
+                        static IContainer RowCell(IContainer c, string bg) =>
+                            c.Background(bg).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5);
+                    }
+                });
+
+                // Grafische Darstellung jedes Tracks
+                foreach (var track in tracks)
+                {
+                    if (track.Points.Count < 2) continue;
+
+                    column.Item().PaddingTop(15).Column(trackCol =>
+                    {
+                        // Track-Header mit Farbindikator
+                        trackCol.Item().Row(row =>
+                        {
+                            row.ConstantItem(14).Height(14).Svg(BuildColorDotSvg(track.Color));
+                            row.AutoItem().PaddingLeft(6).AlignMiddle().Text($"{track.TeamName} — {track.CollarName}")
+                                .FontSize(11).Bold();
+                            row.RelativeItem().AlignRight().AlignMiddle().Text($"{track.FormattedDistance}  |  {track.FormattedDuration}")
+                                .FontSize(9).FontColor(Colors.Grey.Darken1);
+                        });
+
+                        // GPS-Track + Suchgebiet als Kartenbild (OSM-Tiles) oder SVG-Fallback
+                        if (!string.IsNullOrEmpty(track.MapImageBase64))
+                        {
+                            var imageBytes = Convert.FromBase64String(track.MapImageBase64);
+                            trackCol.Item().PaddingTop(5).Image(imageBytes).FitWidth();
+                        }
+                        else
+                        {
+                            trackCol.Item().PaddingTop(5).Height(280).ScaleToFit().Svg(BuildTrackSvg(track, 520, 300));
+                        }
+
+                        // Legende
+                        trackCol.Item().PaddingTop(3).Row(row =>
+                        {
+                            row.AutoItem().Text("● Start").FontSize(7).FontColor("#28a745");
+                            row.AutoItem().PaddingLeft(10).Text("● Ende").FontSize(7).FontColor("#dc3545");
+                            if (track.SearchAreaCoordinates?.Count >= 3)
+                            {
+                                row.AutoItem().PaddingLeft(10).Text($"▪ Suchgebiet: {track.SearchAreaName}").FontSize(7)
+                                    .FontColor(!string.IsNullOrEmpty(track.SearchAreaColor) ? track.SearchAreaColor : Colors.Blue.Medium);
+                            }
+                            row.RelativeItem();
+                        });
+                    });
+                }
+            });
+        }
+
+        private static string BuildColorDotSvg(string hexColor)
+        {
+            return $@"<svg xmlns=""http://www.w3.org/2000/svg"" width=""14"" height=""14"" viewBox=""0 0 14 14"">
+  <circle cx=""7"" cy=""7"" r=""6"" fill=""{System.Security.SecurityElement.Escape(hexColor)}""/>
+</svg>";
+        }
+
+        private static string BuildTrackSvg(TeamTrackSnapshot track, float width, float height)
+        {
+            var points = track.Points;
+            if (points.Count < 2) return $@"<svg xmlns=""http://www.w3.org/2000/svg"" width=""{width}"" height=""{height}"" viewBox=""0 0 {width} {height}""/>";
+
+            var hasArea = track.SearchAreaCoordinates?.Count >= 3;
+
+            // Bounding Box: Track-Punkte + Suchgebiet-Koordinaten
+            var allLats = points.Select(p => p.Latitude).ToList();
+            var allLons = points.Select(p => p.Longitude).ToList();
+            if (hasArea)
+            {
+                allLats.AddRange(track.SearchAreaCoordinates!.Select(c => c.Latitude));
+                allLons.AddRange(track.SearchAreaCoordinates!.Select(c => c.Longitude));
+            }
+
+            var minLat = allLats.Min();
+            var maxLat = allLats.Max();
+            var minLon = allLons.Min();
+            var maxLon = allLons.Max();
+
+            // Etwas Rand hinzufügen (10% der Spanne)
+            var latPad = (maxLat - minLat) * 0.1;
+            var lonPad = (maxLon - minLon) * 0.1;
+            if (latPad < 0.0001) latPad = 0.0005;
+            if (lonPad < 0.0001) lonPad = 0.0005;
+            minLat -= latPad; maxLat += latPad;
+            minLon -= lonPad; maxLon += lonPad;
+
+            var latRange = maxLat - minLat;
+            var lonRange = maxLon - minLon;
+
+            var marginLeft = 45.0;   // Platz für Y-Achse Labels
+            var marginRight = 15.0;
+            var marginTop = 15.0;
+            var marginBottom = 30.0; // Platz für X-Achse Labels + Maßstab
+            var w = width - marginLeft - marginRight;
+            var h = height - marginTop - marginBottom;
+
+            // Maintain aspect ratio using Mercator-like correction
+            var midLat = (minLat + maxLat) / 2.0;
+            var lonScale = Math.Cos(midLat * Math.PI / 180);
+            var effectiveLonRange = lonRange * lonScale;
+            if (effectiveLonRange < 0.00001) effectiveLonRange = 0.001;
+
+            var scaleX = w / effectiveLonRange;
+            var scaleY = h / latRange;
+            var scale = Math.Min(scaleX, scaleY);
+
+            var offsetX = marginLeft + (w - effectiveLonRange * scale) / 2.0;
+            var offsetY = marginTop + (h - latRange * scale) / 2.0;
+
+            double ToX(double lon) => offsetX + (lon - minLon) * lonScale * scale;
+            double ToY(double lat) => offsetY + (maxLat - lat) * scale;
+
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var svg = new System.Text.StringBuilder();
+            svg.AppendLine($@"<svg xmlns=""http://www.w3.org/2000/svg"" width=""{width}"" height=""{height}"" viewBox=""0 0 {width} {height}"">");
+
+            // Hintergrund
+            svg.AppendLine($@"  <rect x=""0"" y=""0"" width=""{width}"" height=""{height}"" rx=""4"" fill=""#eef2e6"" stroke=""#b0b0b0"" stroke-width=""1""/>");
+
+            // Koordinatengitter
+            var gridLines = 5;
+            for (int i = 0; i <= gridLines; i++)
+            {
+                // Horizontale Linien (Breitengrade)
+                var lat = minLat + latRange * i / gridLines;
+                var y = ToY(lat);
+                svg.AppendLine($@"  <line x1=""{marginLeft.ToString("F0", inv)}"" y1=""{y.ToString("F1", inv)}"" x2=""{(width - marginRight).ToString("F0", inv)}"" y2=""{y.ToString("F1", inv)}"" stroke=""#c8d0b8"" stroke-width=""0.5""/>");
+                svg.AppendLine($@"  <text x=""{(marginLeft - 3).ToString("F0", inv)}"" y=""{(y + 3).ToString("F1", inv)}"" font-size=""6.5"" fill=""#707070"" text-anchor=""end"">{lat.ToString("F4", inv)}°</text>");
+
+                // Vertikale Linien (Längengrade)
+                var lon = minLon + lonRange * i / gridLines;
+                var x = ToX(lon);
+                svg.AppendLine($@"  <line x1=""{x.ToString("F1", inv)}"" y1=""{marginTop.ToString("F0", inv)}"" x2=""{x.ToString("F1", inv)}"" y2=""{(height - marginBottom).ToString("F0", inv)}"" stroke=""#c8d0b8"" stroke-width=""0.5""/>");
+                svg.AppendLine($@"  <text x=""{x.ToString("F1", inv)}"" y=""{(height - marginBottom + 10).ToString("F0", inv)}"" font-size=""6.5"" fill=""#707070"" text-anchor=""middle"">{lon.ToString("F4", inv)}°</text>");
+            }
+
+            // Suchgebiet-Polygon (halbtransparent mit Füllmuster)
+            if (hasArea)
+            {
+                var areaColor = !string.IsNullOrEmpty(track.SearchAreaColor) ? track.SearchAreaColor : "#3388ff";
+                var safeAreaColor = System.Security.SecurityElement.Escape(areaColor);
+                var areaPoints = string.Join(" ", track.SearchAreaCoordinates!.Select(c =>
+                    $"{ToX(c.Longitude).ToString("F1", inv)},{ToY(c.Latitude).ToString("F1", inv)}"));
+                svg.AppendLine($@"  <polygon points=""{areaPoints}"" fill=""{safeAreaColor}"" fill-opacity=""0.12"" stroke=""{safeAreaColor}"" stroke-width=""2"" stroke-dasharray=""8,4""/>");
+
+                // Suchgebiet-Label
+                var cx = track.SearchAreaCoordinates!.Average(c => ToX(c.Longitude));
+                var cy = track.SearchAreaCoordinates!.Average(c => ToY(c.Latitude));
+                svg.AppendLine($@"  <text x=""{cx.ToString("F1", inv)}"" y=""{cy.ToString("F1", inv)}"" font-size=""9"" font-weight=""bold"" fill=""{safeAreaColor}"" text-anchor=""middle"" opacity=""0.5"">{System.Security.SecurityElement.Escape(track.SearchAreaName)}</text>");
+            }
+
+            // Track-Linie (mit Schatten für bessere Sichtbarkeit)
+            var polyPoints = string.Join(" ", points.Select(p =>
+                $"{ToX(p.Longitude).ToString("F1", inv)},{ToY(p.Latitude).ToString("F1", inv)}"));
+            var safeColor = System.Security.SecurityElement.Escape(track.Color);
+            svg.AppendLine($@"  <polyline points=""{polyPoints}"" fill=""none"" stroke=""#00000030"" stroke-width=""4"" stroke-linecap=""round"" stroke-linejoin=""round""/>");
+            svg.AppendLine($@"  <polyline points=""{polyPoints}"" fill=""none"" stroke=""{safeColor}"" stroke-width=""2.5"" stroke-linecap=""round"" stroke-linejoin=""round""/>");
+
+            // Start-Marker
+            var sx = ToX(points[0].Longitude);
+            var sy = ToY(points[0].Latitude);
+            svg.AppendLine($@"  <circle cx=""{sx.ToString("F1", inv)}"" cy=""{sy.ToString("F1", inv)}"" r=""7"" fill=""#28a745"" stroke=""white"" stroke-width=""2""/>");
+            svg.AppendLine($@"  <text x=""{(sx + 10).ToString("F1", inv)}"" y=""{(sy + 4).ToString("F1", inv)}"" font-size=""9"" font-weight=""bold"" fill=""#28a745"">Start</text>");
+
+            // Ende-Marker
+            var ex2 = ToX(points[^1].Longitude);
+            var ey = ToY(points[^1].Latitude);
+            svg.AppendLine($@"  <circle cx=""{ex2.ToString("F1", inv)}"" cy=""{ey.ToString("F1", inv)}"" r=""7"" fill=""#dc3545"" stroke=""white"" stroke-width=""2""/>");
+            svg.AppendLine($@"  <text x=""{(ex2 + 10).ToString("F1", inv)}"" y=""{(ey + 4).ToString("F1", inv)}"" font-size=""9"" font-weight=""bold"" fill=""#dc3545"">Ende</text>");
+
+            // Maßstab (unten rechts)
+            var scaleBarLon = lonRange * 0.25; // 25% der Kartenbreite
+            var scaleBarMeters = scaleBarLon * lonScale * 111320; // Grad → Meter
+            string scaleLabel;
+            if (scaleBarMeters >= 1000)
+                scaleLabel = $"{(scaleBarMeters / 1000.0).ToString("F1", inv)} km";
+            else
+                scaleLabel = $"{scaleBarMeters.ToString("F0", inv)} m";
+
+            var sbX1 = width - marginRight - 10 - scaleBarLon * lonScale * scale;
+            var sbX2 = width - marginRight - 10;
+            var sbY2 = height - 8;
+            svg.AppendLine($@"  <line x1=""{sbX1.ToString("F1", inv)}"" y1=""{sbY2.ToString("F0", inv)}"" x2=""{sbX2.ToString("F1", inv)}"" y2=""{sbY2.ToString("F0", inv)}"" stroke=""#404040"" stroke-width=""2""/>");
+            svg.AppendLine($@"  <line x1=""{sbX1.ToString("F1", inv)}"" y1=""{(sbY2 - 4).ToString("F0", inv)}"" x2=""{sbX1.ToString("F1", inv)}"" y2=""{(sbY2 + 1).ToString("F0", inv)}"" stroke=""#404040"" stroke-width=""1.5""/>");
+            svg.AppendLine($@"  <line x1=""{sbX2.ToString("F1", inv)}"" y1=""{(sbY2 - 4).ToString("F0", inv)}"" x2=""{sbX2.ToString("F1", inv)}"" y2=""{(sbY2 + 1).ToString("F0", inv)}"" stroke=""#404040"" stroke-width=""1.5""/>");
+            var sbMid = ((sbX1 + sbX2) / 2).ToString("F1", inv);
+            svg.AppendLine($@"  <text x=""{sbMid}"" y=""{(sbY2 - 5).ToString("F0", inv)}"" font-size=""7"" fill=""#404040"" text-anchor=""middle"">{scaleLabel}</text>");
+
+            // Nordpfeil (oben rechts)
+            var nX = width - marginRight - 14;
+            var nY = marginTop + 6;
+            svg.AppendLine($@"  <polygon points=""{nX.ToString("F0", inv)},{(nY + 16).ToString("F0", inv)} {(nX - 5).ToString("F0", inv)},{(nY + 16).ToString("F0", inv)} {nX.ToString("F0", inv)},{nY.ToString("F0", inv)}"" fill=""#404040""/>");
+            svg.AppendLine($@"  <polygon points=""{nX.ToString("F0", inv)},{(nY + 16).ToString("F0", inv)} {(nX + 5).ToString("F0", inv)},{(nY + 16).ToString("F0", inv)} {nX.ToString("F0", inv)},{nY.ToString("F0", inv)}"" fill=""#a0a0a0""/>");
+            svg.AppendLine($@"  <text x=""{nX.ToString("F0", inv)}"" y=""{(nY - 2).ToString("F0", inv)}"" font-size=""8"" font-weight=""bold"" fill=""#404040"" text-anchor=""middle"">N</text>");
+
+            svg.AppendLine("</svg>");
+            return svg.ToString();
+        }
+
+        private static (byte r, byte g, byte b) ParseHexColor(string hex)
+        {
+            if (string.IsNullOrEmpty(hex) || hex.Length < 7)
+                return (255, 68, 68); // default red
+
+            try
+            {
+                hex = hex.TrimStart('#');
+                return (
+                    Convert.ToByte(hex.Substring(0, 2), 16),
+                    Convert.ToByte(hex.Substring(2, 2), 16),
+                    Convert.ToByte(hex.Substring(4, 2), 16)
+                );
+            }
+            catch
+            {
+                return (255, 68, 68);
+            }
         }
     }
 }

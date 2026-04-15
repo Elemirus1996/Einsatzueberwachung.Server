@@ -60,6 +60,9 @@ namespace Einsatzueberwachung.Domain.Models
         // === Kartendaten ===
         public (double Latitude, double Longitude)? ElwPosition { get; set; }
 
+        // === GPS-Tracks ===
+        public List<TeamTrackSnapshot> TrackSnapshots { get; set; } = new();
+
         // === Berechnete Eigenschaften ===
         public string EinsatzTyp => IstEinsatz ? "Einsatz" : "Uebung";
         
@@ -100,7 +103,8 @@ namespace Einsatzueberwachung.Domain.Models
                 AnzahlTeams = data.Teams?.Count ?? 0,
                 GlobalNotesEntries = data.GlobalNotesEntries ?? new List<GlobalNotesEntry>(),
                 SearchAreas = data.SearchAreas ?? new List<SearchArea>(),
-                ElwPosition = data.ElwPosition
+                ElwPosition = data.ElwPosition,
+                TrackSnapshots = data.TrackSnapshots?.ToList() ?? new()
             };
 
             var personalNamen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -162,6 +166,7 @@ namespace Einsatzueberwachung.Domain.Models
         public string DroneName { get; set; } = string.Empty;
         public DateTime? AusrueckZeit { get; set; }
         public DateTime? EinrueckZeit { get; set; }
+        public List<TeamTrackSnapshot> TrackSnapshots { get; set; } = new();
 
         public static ArchivedTeam FromTeam(Team team)
         {
@@ -171,7 +176,8 @@ namespace Einsatzueberwachung.Domain.Models
                 Funkrufname = team.TeamName, // TeamName wird als Funkrufname verwendet
                 Status = team.IsRunning ? "Im Einsatz" : "Beendet",
                 DogName = team.DogName ?? string.Empty,
-                DroneName = team.IsDroneTeam ? team.DroneType ?? string.Empty : string.Empty
+                DroneName = team.IsDroneTeam ? team.DroneType ?? string.Empty : string.Empty,
+                TrackSnapshots = team.TrackSnapshots?.ToList() ?? new()
             };
 
             // Personal hinzufuegen

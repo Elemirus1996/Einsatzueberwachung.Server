@@ -38,6 +38,28 @@
     padding: 5px;
 }
 
+/* ========================================
+   COLLAR TRACKING STYLES
+   ======================================== */
+
+/* Collar-Marker Icon: kein Leaflet-Hintergrund */
+.collar-marker-icon {
+    background: none !important;
+    border: none !important;
+}
+
+/* Pulsierender roter Ring am Track-Kopf bei Out-of-Bounds */
+.collar-oob-active .collar-oob-ring {
+    animation: collar-oob-pulse 1s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes collar-oob-pulse {
+    0%   { r: 10; opacity: 0.8; }
+    50%  { r: 16; opacity: 0.3; }
+    100% { r: 10; opacity: 0.8; }
+}
+
 [data-bs-theme="dark"] .leaflet-popup-content-wrapper {
     background: #2d3238;
     color: #E0E0E0;

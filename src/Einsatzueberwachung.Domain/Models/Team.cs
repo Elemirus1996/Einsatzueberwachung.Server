@@ -39,6 +39,13 @@ namespace Einsatzueberwachung.Domain.Models
         public string DroneId { get; set; }
         public bool IsSupportTeam { get; set; }
 
+        // GPS-Halsband Zuordnung (Live-Tracking)
+        public string? CollarId { get; set; }
+        public string? CollarName { get; set; }
+
+        // Gespeicherte GPS-Tracks (bei Team-Stopp gesichert)
+        public List<TeamTrackSnapshot> TrackSnapshots { get; set; } = new();
+
         // Pausen-Modus für Hundeteams
         public bool IsPausing { get; set; }
         public DateTime? PauseStartTime { get; set; }

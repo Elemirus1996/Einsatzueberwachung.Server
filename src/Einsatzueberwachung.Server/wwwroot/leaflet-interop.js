@@ -728,7 +728,3 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         }
     }
 };
-
-
-
-

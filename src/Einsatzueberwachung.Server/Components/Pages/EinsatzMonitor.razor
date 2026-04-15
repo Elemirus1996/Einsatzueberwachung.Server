@@ -12,6 +12,7 @@
 @inject IPdfExportService PdfExportService
 @inject ISettingsService SettingsService
 @inject ITimeService TimeService
+@inject ICollarTrackingService CollarTrackingService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
@@ -740,6 +741,22 @@
                                 }
                             </select>
                         </div>
+
+                        @if (_teamForm.TeamType == "dog")
+                        {
+                            <div class="col-12">
+                                <label class="form-label"><i class="bi bi-broadcast me-1"></i>GPS-Halsband</label>
+                                <select class="form-select" @bind="_teamForm.CollarId">
+                                    <option value="">-- Kein Halsband --</option>
+                                    @foreach (var collar in CollarTrackingService.Collars
+                                        .Where(c => !c.IsAssigned || c.Id == _teamForm.CollarId)
+                                        .OrderBy(c => c.CollarName))
+                                    {
+                                        <option value="@collar.Id">@collar.CollarName [@collar.Id]</option>
+                                    }
+                                </select>
+                            </div>
+                        }
 
                         <div class="col-md-6">
                             <label class="form-label">Warnung 1 (Minuten)</label>
@@ -1514,11 +1531,59 @@
 
     private async Task StartTeamAsync(string teamId)
     {
+        // Bei Suchstart: Halsband-History löschen für frischen Track
+        var team = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
+        if (team != null && !string.IsNullOrEmpty(team.CollarId))
+        {
+            CollarTrackingService.ClearCollarHistory(team.CollarId);
+        }
+        
         await EinsatzService.StartTeamTimerAsync(teamId);
     }
 
     private async Task StopTeamAsync(string teamId)
     {
+        // GPS-Track sichern bevor der Timer gestoppt wird
+        var team = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
+        if (team?.CollarId != null)
+        {
+            var history = CollarTrackingService.GetLocationHistory(team.CollarId);
+            if (history.Count > 0)
+            {
+                // Farbe und Koordinaten des Suchgebiets ermitteln
+                var searchArea = EinsatzService.CurrentEinsatz.SearchAreas
+                    .FirstOrDefault(a => a.Id == team.SearchAreaId);
+                var color = searchArea?.Color ?? "#FF4444";
+
+                var snapshot = new TeamTrackSnapshot
+                {
+                    CollarId = team.CollarId,
+                    CollarName = team.CollarName ?? team.CollarId,
+                    TeamId = team.TeamId,
+                    TeamName = team.TeamName,
+                    SearchAreaName = team.SearchAreaName,
+                    Color = color,
+                    CapturedAt = DateTime.Now,
+                    Points = history.Select(loc => new TrackPoint
+                    {
+                        Latitude = loc.Latitude,
+                        Longitude = loc.Longitude,
+                        Timestamp = loc.Timestamp
+                    }).ToList()
+                };
+
+                // Suchgebiet-Koordinaten für PDF-Darstellung speichern
+                if (searchArea?.Coordinates != null && searchArea.Coordinates.Count >= 3)
+                {
+                    snapshot.SearchAreaCoordinates = new List<(double, double)>(searchArea.Coordinates);
+                    snapshot.SearchAreaColor = searchArea.Color;
+                }
+
+                team.TrackSnapshots.Add(snapshot);
+                EinsatzService.CurrentEinsatz.TrackSnapshots.Add(snapshot);
+            }
+        }
+
         await EinsatzService.StopTeamTimerAsync(teamId);
     }
 
@@ -1585,6 +1650,7 @@
         _teamForm.HundefuehrerId = team.HundefuehrerId;
         _teamForm.HelferId = team.HelferId;
         _teamForm.SearchAreaId = team.SearchAreaId;
+        _teamForm.CollarId = team.CollarId ?? string.Empty;
         _teamForm.FirstWarningMinutes = team.FirstWarningMinutes;
         _teamForm.SecondWarningMinutes = team.SecondWarningMinutes;
         _teamForm.Notes = team.Notes;
@@ -1607,6 +1673,7 @@
             var newTeam = BuildNewTeam();
             await EinsatzService.AddTeamAsync(newTeam);
             await SyncTeamSearchAreaAsync(newTeam, string.Empty);
+            await SyncCollarAssignmentAsync(newTeam);
 
             SetTeamFormMessage("Team wurde gespeichert.", false);
             ResetTeamForm();
@@ -1622,9 +1689,11 @@
         }
 
         var previousAreaId = existingTeam.SearchAreaId;
+        var previousCollarId = existingTeam.CollarId;
         ApplyFormToExistingTeam(existingTeam);
         await EinsatzService.UpdateTeamAsync(existingTeam);
         await SyncTeamSearchAreaAsync(existingTeam, previousAreaId);
+        await SyncCollarAssignmentAsync(existingTeam, previousCollarId);
         await EinsatzService.AddGlobalNoteWithSourceAsync(
             $"{existingTeam.TeamName} wurde aktualisiert.",
             existingTeam.TeamId,
@@ -1653,6 +1722,31 @@
         {
             team.SearchAreaId = string.Empty;
             team.SearchAreaName = string.Empty;
+            await EinsatzService.UpdateTeamAsync(team);
+        }
+    }
+
+    private async Task SyncCollarAssignmentAsync(Team team, string? previousCollarId = null)
+    {
+        // Altes Halsband entfernen falls gewechselt
+        if (!string.IsNullOrWhiteSpace(previousCollarId) && previousCollarId != _teamForm.CollarId)
+        {
+            await CollarTrackingService.UnassignCollarAsync(previousCollarId);
+        }
+
+        // Neues Halsband zuweisen
+        if (!string.IsNullOrWhiteSpace(_teamForm.CollarId))
+        {
+            if (_teamForm.CollarId != previousCollarId)
+            {
+                await CollarTrackingService.AssignCollarToTeamAsync(_teamForm.CollarId, team.TeamId);
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(previousCollarId))
+        {
+            // Halsband wurde entfernt
+            team.CollarId = null;
+            team.CollarName = null;
             await EinsatzService.UpdateTeamAsync(team);
         }
     }
@@ -1999,6 +2093,7 @@
         _teamForm.HundefuehrerId = string.Empty;
         _teamForm.HelferId = string.Empty;
         _teamForm.SearchAreaId = string.Empty;
+        _teamForm.CollarId = string.Empty;
         _teamForm.FirstWarningMinutes = _appSettings.DefaultFirstWarningMinutes;
         _teamForm.SecondWarningMinutes = _appSettings.DefaultSecondWarningMinutes;
         _teamForm.Notes = string.Empty;
@@ -2025,6 +2120,7 @@
         public string HundefuehrerId { get; set; } = string.Empty;
         public string HelferId { get; set; } = string.Empty;
         public string SearchAreaId { get; set; } = string.Empty;
+        public string CollarId { get; set; } = string.Empty;
         public int FirstWarningMinutes { get; set; } = 45;
         public int SecondWarningMinutes { get; set; } = 60;
         public string Notes { get; set; } = string.Empty;

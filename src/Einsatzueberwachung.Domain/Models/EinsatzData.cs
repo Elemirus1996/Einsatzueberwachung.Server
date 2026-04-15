@@ -33,6 +33,9 @@ namespace Einsatzueberwachung.Domain.Models
         public List<Team> Teams { get; set; }
 
         public (double Latitude, double Longitude)? ElwPosition { get; set; }
+
+        // Alle gespeicherten GPS-Tracks des Einsatzes
+        public List<TeamTrackSnapshot> TrackSnapshots { get; set; }
         
         // Koordinaten fuer Wetter-Abfrage
         public double? ElwLatitude => ElwPosition?.Latitude;
@@ -62,6 +65,7 @@ namespace Einsatzueberwachung.Domain.Models
             SearchAreas = new List<SearchArea>();
             Teams = new List<Team>();
             ElwPosition = null;
+            TrackSnapshots = new List<TeamTrackSnapshot>();
         }
 
         public string EinsatzTyp => IstEinsatz ? "Einsatz" : "Übung";

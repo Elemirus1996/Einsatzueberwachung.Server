@@ -99,12 +99,22 @@ builder.Services.AddSingleton<IMasterDataService, MasterDataService>();
 builder.Services.AddSingleton<ISettingsService, SettingsService>();
 builder.Services.AddSingleton<ITimeService, AppTimeService>();
 builder.Services.AddSingleton<IEinsatzService, EinsatzService>();
+builder.Services.AddSingleton<ICollarTrackingService, CollarTrackingService>();
 builder.Services.AddSingleton<IPdfExportService, PdfExportService>();
 builder.Services.AddSingleton<IExcelExportService, ExcelExportService>();
 builder.Services.AddSingleton<IArchivService, ArchivService>();
 builder.Services.AddSingleton<ToastService>();
 builder.Services.AddScoped<BrowserPreferencesService>();
 builder.Services.AddScoped<IRadioService, RadioService>();
+
+// Statische Karten-Renderer (Carto-Tiles für PDF-Export)
+builder.Services.AddHttpClient("OsmTiles", client =>
+{
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Einsatzueberwachung/1.2 (+https://github.com/Elemirus1996/Einsatzueberwachung.Server)");
+    client.DefaultRequestHeaders.Referrer = new Uri("https://github.com/Elemirus1996/Einsatzueberwachung.Server");
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
+builder.Services.AddSingleton<IStaticMapRenderer, OsmStaticMapRenderer>();
 
 builder.Services.AddSingleton<GitHubUpdateService>(sp =>
 {
@@ -128,6 +138,7 @@ builder.Services.AddHealthChecks();
 
 // Relay Domain-Events an SignalR Clients
 builder.Services.AddHostedService<EinsatzHubRelayService>();
+builder.Services.AddHostedService<CollarTrackingRelayService>();
 builder.Services.AddHostedService<TeamTimerTickService>();
 builder.Services.AddHostedService<UpdateAutoCheckService>();
 builder.Services.AddHostedService<RuntimeStatePersistenceService>();
