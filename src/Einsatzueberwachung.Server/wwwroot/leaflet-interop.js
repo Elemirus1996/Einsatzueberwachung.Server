@@ -1009,7 +1009,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             const marker = L.marker([lat, lng], {
                 icon: icon,
                 title: label || 'Koordinaten-Marker',
-                draggable: true
+                draggable: false
             }).addTo(mapData.map);
 
             // Popup mit Koordinaten-Info
@@ -1022,25 +1022,6 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                 <small><strong>UTM:</strong> ${utmInfo}</small>
             </div>`;
             marker.bindPopup(popupHtml);
-
-            // Drag-Handler: aktualisiere Popup und informiere Blazor
-            marker.on('dragend', (e) => {
-                const newPos = e.target.getLatLng();
-                const newUtmInfo = window.LeafletMap._latLngToUtmString(newPos.lat, newPos.lng);
-                const updatedPopup = `<div class="coord-marker-popup">
-                    <strong>${label || 'Punkt'}</strong>
-                    ${description ? '<br><small>' + description + '</small>' : ''}
-                    <hr style="margin: 4px 0;">
-                    <small><strong>Lat/Long:</strong> ${newPos.lat.toFixed(6)}° / ${newPos.lng.toFixed(6)}°</small><br>
-                    <small><strong>UTM:</strong> ${newUtmInfo}</small>
-                </div>`;
-                marker.setPopupContent(updatedPopup);
-
-                if (mapData.dotNetReference) {
-                    mapData.dotNetReference.invokeMethodAsync('OnCoordinateMarkerDragged', markerId, newPos.lat, newPos.lng)
-                        .catch(err => error('Fehler beim Callback OnCoordinateMarkerDragged:', err));
-                }
-            });
 
             mapData.markers[coordMarkerId] = marker;
             return true;
@@ -1122,6 +1103,76 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             return true;
         } catch (err) {
             error('Fehler beim Deaktivieren des Klick-Modus:', err);
+            return false;
+        }
+    },
+
+    // Aktiviert einmaligen Drag-Modus für einen Koordinaten-Marker.
+    // Nach dem Drag wird draggable wieder deaktiviert und der Blazor-Callback aufgerufen.
+    enableCoordinateMarkerDrag: function(mapId, markerId) {
+        try {
+            const mapData = this.maps[mapId];
+            if (!mapData) return false;
+
+            const coordMarkerId = 'coord_' + markerId;
+            const marker = mapData.markers[coordMarkerId];
+            if (!marker) return false;
+
+            // Draggable aktivieren
+            marker.dragging.enable();
+            marker.getElement().style.cursor = 'grab';
+
+            // Einmaliger Drag-Handler
+            marker.once('dragend', (e) => {
+                const newPos = e.target.getLatLng();
+
+                // Draggable sofort wieder deaktivieren
+                marker.dragging.disable();
+                marker.getElement().style.cursor = '';
+
+                // Popup aktualisieren
+                const newUtmInfo = window.LeafletMap._latLngToUtmString(newPos.lat, newPos.lng);
+                const title = marker.options.title || 'Punkt';
+                const updatedPopup = `<div class="coord-marker-popup">
+                    <strong>${title}</strong>
+                    <hr style="margin: 4px 0;">
+                    <small><strong>Lat/Long:</strong> ${newPos.lat.toFixed(6)}° / ${newPos.lng.toFixed(6)}°</small><br>
+                    <small><strong>UTM:</strong> ${newUtmInfo}</small>
+                </div>`;
+                marker.setPopupContent(updatedPopup);
+
+                // Callback an Blazor (Koordinaten nur als Vorschlag, nicht gespeichert)
+                if (mapData.dotNetReference) {
+                    mapData.dotNetReference.invokeMethodAsync('OnCoordinateMarkerDragCompleted', markerId, newPos.lat, newPos.lng)
+                        .catch(err => error('Fehler beim Callback OnCoordinateMarkerDragCompleted:', err));
+                }
+            });
+
+            return true;
+        } catch (err) {
+            error('Fehler beim Aktivieren des Marker-Drag-Modus:', err);
+            return false;
+        }
+    },
+
+    // Deaktiviert den Drag-Modus für einen Koordinaten-Marker (falls noch aktiv)
+    disableCoordinateMarkerDrag: function(mapId, markerId) {
+        try {
+            const mapData = this.maps[mapId];
+            if (!mapData) return false;
+
+            const coordMarkerId = 'coord_' + markerId;
+            const marker = mapData.markers[coordMarkerId];
+            if (!marker) return false;
+
+            marker.dragging.disable();
+            if (marker.getElement()) {
+                marker.getElement().style.cursor = '';
+            }
+
+            return true;
+        } catch (err) {
+            error('Fehler beim Deaktivieren des Marker-Drag-Modus:', err);
             return false;
         }
     },

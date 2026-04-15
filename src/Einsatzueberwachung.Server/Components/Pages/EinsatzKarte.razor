@@ -569,33 +569,35 @@
                             <div class="col-6">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text">Lat</span>
-                                    <input type="text" class="form-control" @bind="_editMarkerLat" @bind:event="oninput" />
+                                    <input type="text" class="form-control" value="@_editMarkerLat"
+                                           @oninput="OnEditLatChanged" />
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text">Lng</span>
-                                    <input type="text" class="form-control" @bind="_editMarkerLng" @bind:event="oninput" />
+                                    <input type="text" class="form-control" value="@_editMarkerLng"
+                                           @oninput="OnEditLngChanged" />
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">oder UTM-Koordinaten</label>
+                        <label class="form-label">UTM-Koordinaten</label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text">UTM</span>
-                            <input type="text" class="form-control" @bind="_editMarkerUtm" @bind:event="oninput"
+                            <input type="text" class="form-control" value="@_editMarkerUtm"
+                                   @oninput="OnEditUtmChanged"
                                    placeholder="z.B. 32U 461344 5481745" />
-                            <button class="btn btn-outline-secondary" type="button" @onclick="ApplyUtmToEditDialog" title="UTM übernehmen">
-                                <i class="bi bi-arrow-left-right"></i>
-                            </button>
                         </div>
-                        <small class="text-muted">UTM eingeben und mit dem Button in Lat/Long umrechnen.</small>
+                        <small class="text-muted">Änderungen werden automatisch zwischen Lat/Long und UTM synchronisiert.</small>
                     </div>
 
-                    <div class="alert alert-light py-1 px-2">
-                        <small><i class="bi bi-info-circle"></i> Sie können den Marker auch direkt auf der Karte verschieben (Drag &amp; Drop).</small>
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-outline-primary btn-sm w-100" @onclick="StartMarkerDragMode">
+                            <i class="bi bi-arrows-move"></i> Position per Drag auf der Karte ändern
+                        </button>
                     </div>
 
                     @if (!string.IsNullOrEmpty(_editMarkerMessage))
@@ -1341,22 +1343,75 @@
         _editMarkerMessage = "";
     }
 
-    private void ApplyUtmToEditDialog()
+    private void OnEditLatChanged(ChangeEventArgs e)
+    {
+        _editMarkerLat = e.Value?.ToString() ?? "";
+        SyncLatLngToUtm();
+    }
+
+    private void OnEditLngChanged(ChangeEventArgs e)
+    {
+        _editMarkerLng = e.Value?.ToString() ?? "";
+        SyncLatLngToUtm();
+    }
+
+    private void OnEditUtmChanged(ChangeEventArgs e)
+    {
+        _editMarkerUtm = e.Value?.ToString() ?? "";
+        SyncUtmToLatLng();
+    }
+
+    private void SyncLatLngToUtm()
     {
         _editMarkerMessage = "";
-
-        if (!Domain.Services.UtmConverter.TryParseUtm(_editMarkerUtm ?? "", out int zone, out char band, out double easting, out double northing))
+        if (TryParseDecimalInput(_editMarkerLat, out var lat) &&
+            TryParseDecimalInput(_editMarkerLng, out var lng) &&
+            lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180)
         {
-            _editMarkerMessage = "Ungültiges UTM-Format.";
-            _editMarkerMessageType = "alert-danger";
-            return;
+            var (utmZone, utmBand, utmEasting, utmNorthing) = Domain.Services.UtmConverter.LatLongToUtm(lat, lng);
+            _editMarkerUtm = $"{Domain.Services.UtmConverter.FormatUtmZone(utmZone, utmBand)} {utmEasting:F0} {utmNorthing:F0}";
         }
+    }
 
-        var (lat, lng) = Domain.Services.UtmConverter.UtmToLatLong(zone, band, easting, northing);
-        _editMarkerLat = lat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
-        _editMarkerLng = lng.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
-        _editMarkerMessage = "✓ UTM-Koordinaten in Lat/Long umgerechnet.";
-        _editMarkerMessageType = "alert-success";
+    private void SyncUtmToLatLng()
+    {
+        _editMarkerMessage = "";
+        if (Domain.Services.UtmConverter.TryParseUtm(_editMarkerUtm ?? "", out int zone, out char band, out double easting, out double northing))
+        {
+            var (lat, lng) = Domain.Services.UtmConverter.UtmToLatLong(zone, band, easting, northing);
+            _editMarkerLat = lat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+            _editMarkerLng = lng.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+        }
+    }
+
+    private async Task StartMarkerDragMode()
+    {
+        if (_editingMarker == null) return;
+
+        var markerId = _editingMarker.Id;
+        // Dialog schließen (aber Marker-Referenz behalten)
+        _showMarkerEditDialog = false;
+        _editMarkerMessage = "";
+        StateHasChanged();
+
+        // Drag-Modus auf der Karte aktivieren
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("LeafletMap.enableCoordinateMarkerDrag", "einsatzMap", markerId);
+            // Zur Marker-Position zoomen, damit der Nutzer den Marker sieht
+            await JSRuntime.InvokeVoidAsync("LeafletMap.zoomToCoordinateMarker", "einsatzMap", markerId);
+
+            _markerMessage = "Verschieben Sie den Marker auf der Karte. Der Bearbeiten-Dialog öffnet sich nach dem Loslassen.";
+            _markerMessageType = "alert-info";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _editMarkerMessage = $"Fehler: {ex.Message}";
+            _editMarkerMessageType = "alert-danger";
+            _showMarkerEditDialog = true;
+            StateHasChanged();
+        }
     }
 
     private async Task SaveMarkerEdit()
@@ -1437,36 +1492,39 @@
     }
 
     [JSInvokable]
-    public async Task OnCoordinateMarkerDragged(string markerId, double lat, double lng)
+    public async Task OnCoordinateMarkerDragCompleted(string markerId, double lat, double lng)
     {
-        await InvokeAsync(async () =>
+        await InvokeAsync(() =>
         {
-            var updated = await EinsatzService.UpdateMapMarkerAsync(markerId, latitude: lat, longitude: lng);
-            if (updated != null)
+            // Finde den Marker, der gerade bearbeitet wird
+            var marker = _editingMarker;
+            if (marker == null || marker.Id != markerId)
             {
-                _mapMarkers = EinsatzService.CurrentEinsatz.MapMarkers.ToList();
+                // Fallback: Marker anhand der ID finden
+                marker = _mapMarkers.FirstOrDefault(m => m.Id == markerId);
+            }
 
-                // Protokolleintrag
-                var noteText = $"📍 Koordinaten-Marker \"{updated.Label}\" verschoben: {updated.FormattedLatLng} (UTM: {updated.FormattedUtm})";
-                await EinsatzService.AddGlobalNoteWithSourceAsync(
-                    noteText,
-                    "system",
-                    "Einsatzleitung",
-                    "Notiz",
-                    Domain.Models.Enums.GlobalNotesEntryType.EinsatzUpdate,
-                    "Karte");
-
-                _markerMessage = $"✓ Marker \"{updated.Label}\" verschoben ({lat:F6}° / {lng:F6}°)";
-                _markerMessageType = "alert-success";
-
-                // Falls Edit-Dialog für diesen Marker offen ist, Felder aktualisieren
-                if (_showMarkerEditDialog && _editingMarker?.Id == markerId)
+            if (marker != null)
+            {
+                // Dialog mit neuen Koordinaten wieder öffnen (ohne zu speichern)
+                _editingMarker = marker;
+                // Label beibehalten (falls nicht gesetzt, vom Marker übernehmen)
+                if (string.IsNullOrEmpty(_editMarkerLabel))
                 {
-                    _editMarkerLat = lat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
-                    _editMarkerLng = lng.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
-                    _editMarkerUtm = updated.FormattedUtm;
+                    _editMarkerLabel = marker.Label;
                 }
+                _editMarkerLat = lat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+                _editMarkerLng = lng.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
 
+                // UTM automatisch aktualisieren
+                var (utmZone, utmBand, utmEasting, utmNorthing) = Domain.Services.UtmConverter.LatLongToUtm(lat, lng);
+                _editMarkerUtm = $"{Domain.Services.UtmConverter.FormatUtmZone(utmZone, utmBand)} {utmEasting:F0} {utmNorthing:F0}";
+
+                _editMarkerMessage = "✓ Position aktualisiert. Klicken Sie \"Speichern\" um die Änderung zu übernehmen.";
+                _editMarkerMessageType = "alert-info";
+                _showMarkerEditDialog = true;
+
+                _markerMessage = "";
                 StateHasChanged();
             }
         });
