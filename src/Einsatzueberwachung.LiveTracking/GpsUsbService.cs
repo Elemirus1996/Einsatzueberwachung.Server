@@ -76,21 +76,20 @@ namespace Einsatzueberwachung.LiveTracking
                 bool wasConnected = false;
                 try
                 {
-                    StatusMessageChanged?.Invoke("Attempting to connect to GPS device...");
+                    StatusMessageChanged?.Invoke("Verbinde mit GPS-Gerät...");
 
                     bool connected = await Task.Run(() => _gpsDevice.Connect(), token);
 
                     if (connected)
                     {
                         Application.Current.Dispatcher.Invoke(() => IsConnectedChanged?.Invoke(true));
-                        StatusMessageChanged?.Invoke("Device connected. Starting listener...");
+                        StatusMessageChanged?.Invoke("GPS-Gerät verbunden.");
                         wasConnected = true;
-                        // StartListening blocks until the device disconnects or Stop() cancels it.
                         await Task.Run(() => _gpsDevice.StartListening(), token);
                     }
                     else
                     {
-                        StatusMessageChanged?.Invoke("Could not connect to GPS device.");
+                        StatusMessageChanged?.Invoke("Konnte GPS-Gerät nicht verbinden.");
                     }
                 }
                 catch (OperationCanceledException)

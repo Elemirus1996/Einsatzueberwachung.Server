@@ -378,7 +378,7 @@ namespace Einsatzueberwachung.LiveTracking
             var sb = new StringBuilder();
             sb.AppendLine($"Dog Name: \"{DogName}\"");
             sb.AppendLine($"  Location: {LatitudeDegrees:F6} N, {LongitudeDegrees:F6} E");
-            try { UtmCoordinate utm = CoordinateTranformer.ToUtm(LatitudeDegrees, LongitudeDegrees); sb.AppendLine($"  UTM: {utm}"); } catch { sb.AppendLine("  UTM: (Conversion Error/OOB)"); }
+            try { UtmCoordinate utm = CoordinateTranformer.ToUtm(LongitudeDegrees, LatitudeDegrees); sb.AppendLine($"  UTM: {utm}"); } catch { sb.AppendLine("  UTM: (Conversion Error/OOB)"); }
             //sb.AppendLine($"  StatusA (0x{RawStatusA:X8}): Batt:{BatteryLevel}, Comm:{CommStrength}, GPS:{GpsStrength}");
             //sb.AppendLine($"  Timestamp: {TimestampUtc:yyyy-MM-dd HH:mm:ss} UTC | Altitude: {AltitudeMeters:F2} m");
             //sb.AppendLine($"  StatusB (0x{RawStatusB:X8}): ChPri:{ChannelPrimary}, ChSec:{ChannelSecondary}, Color?:{ColorCandidateByte21}, SB20:0x{StatusByte20:X2}");
@@ -539,7 +539,8 @@ namespace Einsatzueberwachung.LiveTracking
             if (deviceHandle == NativeMethods.INVALID_HANDLE_VALUE) { _statusMessageHandler?.Invoke($"Error: Failed to open device. Win32 Error: {Marshal.GetLastWin32Error()}"); return false; }
             overlappedEventRead = NativeMethods.CreateEvent(IntPtr.Zero, true, false, null!);
             overlappedEventIoctl = NativeMethods.CreateEvent(IntPtr.Zero, true, false, null!);
-            if (overlappedEventRead == IntPtr.Zero || overlappedEventIoctl == IntPtr.Zero) { _statusMessageHandler?.Invoke($"Error: Failed to create event objects. Win32 Error: {Marshal.GetLastWin32Error()}"); CloseHandleInternal(); return false; }
+            overlappedEventWrite = NativeMethods.CreateEvent(IntPtr.Zero, true, false, null!);
+            if (overlappedEventRead == IntPtr.Zero || overlappedEventIoctl == IntPtr.Zero || overlappedEventWrite == IntPtr.Zero) { _statusMessageHandler?.Invoke($"Error: Failed to create event objects. Win32 Error: {Marshal.GetLastWin32Error()}"); CloseHandleInternal(); return false; }
             _statusMessageHandler?.Invoke("Device opened. Sending Start Session packet...");
             return SendStartSessionPacket();
         }
@@ -611,13 +612,13 @@ namespace Einsatzueberwachung.LiveTracking
         {
             if (!IsConnected || isListening) return;
             isListening = true; stopEvent.Reset();
-            listenThread = new Thread(ListenLoopOverlapped); listenThread.IsBackground = true; listenThread.Start();
             _statusMessageHandler?.Invoke("Started listening for GPS USB data (overlapped)...");
+            // Run listen loop on the calling thread so StartAsync can await it via Task.Run.
+            ListenLoopOverlapped();
         }
         public void StopListening()
         {
             isListening = false; stopEvent.Set();
-            listenThread?.Join(1000); // Give thread time to exit
             _statusMessageHandler?.Invoke("Stopped listening.");
         }
         private void ListenLoopOverlapped()
@@ -743,7 +744,7 @@ namespace Einsatzueberwachung.LiveTracking
                 }
                 if (success)
                 {
-                    if (bytesReadFromBulk == 0) { _statusMessageHandler?.Invoke("Zero length from bulk pipe."); keepReading = false; }
+                    if (bytesReadFromBulk == 0) { keepReading = false; } // Normal USB bulk transfer termination
                     else
                     {
                         //_statusMessageHandler?.Invoke($"ReadFile (Bulk) got {bytesReadFromBulk} bytes.");
@@ -778,12 +779,9 @@ namespace Einsatzueberwachung.LiveTracking
                     {
                         var pvt = PvtDataD800.FromPayload(payload);
                         _pvtDataHandler?.Invoke(pvt);
-                        _statusMessageHandler?.Invoke($"PVT Decoded: {pvt.LatitudeDegrees:F5}, {pvt.LongitudeDegrees:F5}");
+                        // Keine Koordinaten/UTM/Positionsdaten in StatusMessage!
                     }
-                    else
-                    {
-                        //_statusMessageHandler?.Invoke($"PVT packet size mismatch. Declared: {usbHeader.PayloadDataSize}, Have: {payload.Length}");
-                    }
+                    // Keine Statusmeldung bei Paketgrößenabweichung, nur Log
                     break;
                 case 0x0C06: // Dog collar
                     if (usbHeader.PayloadDataSize == 100 && payload.Length == 100)
@@ -792,10 +790,10 @@ namespace Einsatzueberwachung.LiveTracking
                         if (dogData != null)
                         {
                             _dogCollarDataHandler?.Invoke(dogData);
-                            _statusMessageHandler?.Invoke($"Dog Data: {dogData.DogName}");
+                            // Keine StatusMessage für Hundedaten
                         }
                     }
-                    else _statusMessageHandler?.Invoke($"Dog packet size mismatch. Declared: {usbHeader.PayloadDataSize}, Have: {payload.Length}");
+                    // Keine Statusmeldung bei Paketgrößenabweichung, nur Log
                     break;
                 case 0x0072: // Multi-person
                     if (usbHeader.PayloadDataSize == 72 && payload.Length == 72)
@@ -808,9 +806,13 @@ namespace Einsatzueberwachung.LiveTracking
                                 entities.Add(entity);
                         }
                         _multiPersonDataHandler?.Invoke(entities);
-                        //_statusMessageHandler?.Invoke($"Multi-Person packet with {entities.Count} entities.");
+                        // Keine StatusMessage
                     }
-                    else _statusMessageHandler?.Invoke($"Multi-Person packet size mismatch. Declared: {usbHeader.PayloadDataSize}, Have: {payload.Length}");
+                    else if (usbHeader.PayloadDataSize != payload.Length)
+                    {
+                        // Optional: Log nur bei echtem Fehler
+                        _statusMessageHandler?.Invoke($"Multi-Person packet size mismatch. Declared: {usbHeader.PayloadDataSize}, Have: {payload.Length}");
+                    }
                     break;
                 default:
                     _statusMessageHandler?.Invoke($"Received unhandled AppID: 0x{usbHeader.ApplicationPacketID:X4}");

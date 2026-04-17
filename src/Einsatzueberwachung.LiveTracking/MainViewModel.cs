@@ -210,11 +210,11 @@ namespace Einsatzueberwachung.LiveTracking
             Application.Current.Dispatcher.Invoke(() =>
             {
                 CurrentPvtData = pvtData;
-                MainDeviceCoords = $"{pvtData.LatitudeDegrees:F5}°N, {pvtData.LongitudeDegrees:F5}°E";
-                MainDeviceDecimalLonLat = $"{pvtData.LatitudeDegrees:F6}, {pvtData.LongitudeDegrees:F6}";
 
                 if (pvtData.FixType >= 2 && pvtData.LatitudeDegrees >= -80 && pvtData.LatitudeDegrees <= 84)
                 {
+                    MainDeviceCoords = $"{pvtData.LatitudeDegrees:F5}°N, {pvtData.LongitudeDegrees:F5}°E";
+                    MainDeviceDecimalLonLat = $"{pvtData.LatitudeDegrees:F6}, {pvtData.LongitudeDegrees:F6}";
                     try
                     {
                         CurrentUtmString = CoordinateTranformer.ToUtm(pvtData.LongitudeDegrees, pvtData.LatitudeDegrees).ToString();
@@ -226,7 +226,9 @@ namespace Einsatzueberwachung.LiveTracking
                 }
                 else
                 {
-                    CurrentUtmString = "Kein GPS-Fix";
+                    MainDeviceCoords = "Kein GPS-Empfang";
+                    MainDeviceDecimalLonLat = "--";
+                    CurrentUtmString = "Kein GPS-Empfang";
                 }
             });
         }
