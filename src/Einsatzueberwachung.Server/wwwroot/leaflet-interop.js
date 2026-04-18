@@ -599,7 +599,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         }
     },
     
-    // Druckt die Karte - zentriert vorher auf alle Elemente
+    // Druckt die Karte
     printMap: function(mapId) {
         log('printMap aufgerufen für:', mapId);
         try {
@@ -608,62 +608,199 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                 error('Karte nicht gefunden:', mapId);
                 return false;
             }
-            
+
             const map = mapData.map;
-            
-            // Speichere aktuelle Ansicht für später
+            const removedLayers = [];
+            const hadTrackingLayerVisible = !!(mapData.trackingLayer && map.hasLayer(mapData.trackingLayer));
+            const hadDrawnItemsVisible = !!(mapData.drawnItems && map.hasLayer(mapData.drawnItems));
+            const root = document.documentElement;
+            const body = document.body;
+            const printListTemplate = document.querySelector('.print-list-template');
+            let printListHost = null;
+
             const currentCenter = map.getCenter();
             const currentZoom = map.getZoom();
-            
-            console.log('printMap: Verwende aktuelle Bildschirmansicht - Center:', currentCenter, 'Zoom:', currentZoom);
 
-            // Vor dem Drucken Ansicht explizit auf aktuelle Bildschirmansicht fixieren
-            const beforePrintHandler = () => {
-                console.log('beforeprint: Setze gespeicherte Ansicht im Print-Layout');
-                setTimeout(() => {
-                    map.invalidateSize();
-                    map.setView(currentCenter, currentZoom, { animate: false });
+            Object.entries(mapData.markers || {}).forEach(([markerId, layer]) => {
+                const isSearchAreaLayer = mapData.savedAreas && mapData.savedAreas.hasLayer(layer);
+                const shouldRemainVisible = markerId === 'elw' || isSearchAreaLayer;
+                if (!shouldRemainVisible && map.hasLayer(layer)) {
+                    map.removeLayer(layer);
+                    removedLayers.push(layer);
+                }
+            });
 
-                    // Zweiter Pass nach Layout-Flush für stabile Position
-                    setTimeout(() => {
-                        map.invalidateSize();
-                        map.setView(currentCenter, currentZoom, { animate: false });
-                    }, 180);
-                }, 120);
+            if (hadTrackingLayerVisible) {
+                map.removeLayer(mapData.trackingLayer);
+            }
+
+            if (hadDrawnItemsVisible) {
+                map.removeLayer(mapData.drawnItems);
+            }
+
+            const extendBoundsWithLatLngs = (bounds, latLngs) => {
+                if (!latLngs) {
+                    return;
+                }
+
+                latLngs.forEach((entry) => {
+                    if (Array.isArray(entry)) {
+                        extendBoundsWithLatLngs(bounds, entry);
+                        return;
+                    }
+
+                    if (entry && typeof entry.lat === 'number' && typeof entry.lng === 'number') {
+                        bounds.extend(entry);
+                    }
+                });
             };
-            
-            // afterprint Event zum Wiederherstellen
+
+            const collectPrintBounds = () => {
+                const bounds = L.latLngBounds([]);
+
+                if (mapData.savedAreas) {
+                    mapData.savedAreas.eachLayer((layer) => {
+                        if (!layer) {
+                            return;
+                        }
+
+                        if (typeof layer.eachLayer === 'function' && !layer.getLatLngs && !layer.getLatLng) {
+                            layer.eachLayer((childLayer) => {
+                                if (childLayer && typeof childLayer.getLatLngs === 'function') {
+                                    extendBoundsWithLatLngs(bounds, childLayer.getLatLngs());
+                                } else if (childLayer && typeof childLayer.getLatLng === 'function') {
+                                    bounds.extend(childLayer.getLatLng());
+                                } else if (childLayer && typeof childLayer.getBounds === 'function') {
+                                    bounds.extend(childLayer.getBounds());
+                                }
+                            });
+                            return;
+                        }
+
+                        if (typeof layer.getLatLngs === 'function') {
+                            extendBoundsWithLatLngs(bounds, layer.getLatLngs());
+                            return;
+                        }
+
+                        if (typeof layer.getLatLng === 'function') {
+                            bounds.extend(layer.getLatLng());
+                            return;
+                        }
+
+                        if (typeof layer.getBounds === 'function') {
+                            bounds.extend(layer.getBounds());
+                        }
+                    });
+                }
+
+                if (mapData.markers && mapData.markers.elw && typeof mapData.markers.elw.getLatLng === 'function') {
+                    bounds.extend(mapData.markers.elw.getLatLng());
+                }
+
+                return bounds;
+            };
+
+            const bounds = collectPrintBounds();
+
+            const applyPrintView = () => {
+                map.invalidateSize();
+                if (bounds.isValid()) {
+                    map.fitBounds(bounds.pad(0.18), {
+                        maxZoom: 16,
+                        animate: false,
+                        paddingTopLeft: [40, 40],
+                        paddingBottomRight: [40, 40]
+                    });
+
+                    // Verschiebt den sichtbaren Druckbereich gezielt nach unten rechts.
+                    map.panBy([350, 250], { animate: false });
+                    return;
+                }
+
+                map.setView(currentCenter, currentZoom, { animate: false });
+            };
+
+            const enablePrintLayout = () => {
+                root.classList.add('map-print-mode');
+                body.classList.add('map-print-mode');
+
+                if (!printListHost && printListTemplate) {
+                    printListHost = printListTemplate.cloneNode(true);
+                    printListHost.classList.remove('print-list-template');
+                    printListHost.classList.add('print-list-page-host');
+                    printListHost.removeAttribute('aria-hidden');
+                    body.appendChild(printListHost);
+                }
+            };
+
+            const disablePrintLayout = () => {
+                root.classList.remove('map-print-mode');
+                body.classList.remove('map-print-mode');
+
+                if (printListHost && printListHost.parentNode) {
+                    printListHost.parentNode.removeChild(printListHost);
+                    printListHost = null;
+                }
+            };
+
+            const beforePrintHandler = () => {
+                enablePrintLayout();
+                requestAnimationFrame(() => {
+                    applyPrintView();
+
+                    requestAnimationFrame(() => {
+                        applyPrintView();
+                    });
+                });
+            };
+
             const afterPrintHandler = () => {
                 window.removeEventListener('beforeprint', beforePrintHandler);
                 window.removeEventListener('afterprint', afterPrintHandler);
-                
-                // Ansicht wiederherstellen
+
+                removedLayers.forEach(layer => {
+                    if (!map.hasLayer(layer)) {
+                        map.addLayer(layer);
+                    }
+                });
+
+                if (hadTrackingLayerVisible && mapData.trackingLayer && !map.hasLayer(mapData.trackingLayer)) {
+                    map.addLayer(mapData.trackingLayer);
+                }
+
+                if (hadDrawnItemsVisible && mapData.drawnItems && !map.hasLayer(mapData.drawnItems)) {
+                    map.addLayer(mapData.drawnItems);
+                }
+
+                disablePrintLayout();
+
                 setTimeout(() => {
                     map.invalidateSize();
-                    map.setView(currentCenter, currentZoom);
-                    console.log('printMap: Ansicht wiederhergestellt');
+                    map.setView(currentCenter, currentZoom, { animate: false });
                 }, 200);
             };
-            
+
             window.addEventListener('beforeprint', beforePrintHandler);
             window.addEventListener('afterprint', afterPrintHandler);
-            
-            // Direkt vor Druck auf die aktuelle Ansicht fixieren
-            setTimeout(() => {
-                map.invalidateSize();
-                map.setView(currentCenter, currentZoom, { animate: false });
-                
-                setTimeout(() => {
-                    map.invalidateSize();
-                    
-                    // Jetzt drucken
+
+            enablePrintLayout();
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    applyPrintView();
+
                     setTimeout(() => {
-                        log('Starte Druck-Dialog');
-                        window.print();
-                    }, 300);
-                }, 200);
-            }, 450);
-            
+                        map.invalidateSize();
+                        applyPrintView();
+
+                        setTimeout(() => {
+                            log('Starte Druck-Dialog');
+                            window.print();
+                        }, 250);
+                    }, 150);
+                });
+            });
+
             return true;
         } catch (err) {
             console.error('Fehler beim Drucken der Karte:', err);

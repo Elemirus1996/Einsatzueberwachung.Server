@@ -214,7 +214,8 @@ app.MapGet("/downloads/einsatz-archiv/{id}.pdf", async (string id, IArchivServic
         return Results.NotFound();
     }
 
-    var bytes = await pdfExportService.ExportArchivedEinsatzToPdfBytesAsync(archivedEinsatz);
+    var includeTracks = archivedEinsatz.TrackSnapshots?.Any(track => track.Points.Count >= 2) == true;
+    var bytes = await pdfExportService.ExportArchivedEinsatzToPdfBytesAsync(archivedEinsatz, includeTracks);
     var fileNamePart = string.IsNullOrWhiteSpace(archivedEinsatz.EinsatzNummer)
         ? $"einsatz-archiv-{archivedEinsatz.EinsatzDatum:yyyyMMdd-HHmmss}"
         : $"einsatz-archiv-{archivedEinsatz.EinsatzNummer}";
@@ -309,6 +310,40 @@ app.MapGet("/downloads/data-backup.zip", () =>
     }
 
     var fileName = $"einsatzueberwachung-data-backup-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+    return Results.File(memoryStream.ToArray(), "application/zip", fileName);
+});
+
+app.MapGet("/downloads/livetracking.zip", () =>
+{
+    var candidateDirectories = new[]
+    {
+        Path.Combine(AppContext.BaseDirectory, "livetracking"),
+        Path.Combine(AppPathResolver.GetDataDirectory(), "livetracking"),
+        Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "Einsatzueberwachung.LiveTracking", "bin", "Release", "net9.0-windows7.0")),
+        Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "Einsatzueberwachung.LiveTracking", "bin", "Debug", "net9.0-windows7.0"))
+    };
+
+    var sourceDirectory = candidateDirectories
+        .Where(Directory.Exists)
+        .FirstOrDefault(directory => Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories).Any());
+
+    if (sourceDirectory is null)
+    {
+        return Results.NotFound("LiveTracking-Paket wurde auf diesem System noch nicht bereitgestellt.");
+    }
+
+    using var memoryStream = new MemoryStream();
+    using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, leaveOpen: true))
+    {
+        var files = Directory.GetFiles(sourceDirectory, "*", SearchOption.AllDirectories);
+        foreach (var filePath in files)
+        {
+            var relativePath = Path.GetRelativePath(sourceDirectory, filePath);
+            archive.CreateEntryFromFile(filePath, relativePath, CompressionLevel.Optimal);
+        }
+    }
+
+    var fileName = $"einsatzueberwachung-livetracking-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
     return Results.File(memoryStream.ToArray(), "application/zip", fileName);
 });
 

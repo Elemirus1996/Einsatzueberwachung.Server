@@ -349,6 +349,42 @@
         <div class="col-12 col-xl-6">
             <div class="card h-100">
                 <div class="card-header">
+                    <h2 class="h4 mb-0"><i class="bi bi-geo-alt-fill me-2"></i>GPS-Livetracking</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <div class="fw-semibold mb-1">LiveTracking-Anwendung erforderlich</div>
+                        <div>
+                            Fuer das GPS-Livetracking muss die Anwendung
+                            <strong>Einsatzueberwachung.LiveTracking</strong>
+                            heruntergeladen und auf dem Windows-Rechner gestartet werden.
+                        </div>
+                    </div>
+
+                    <p class="text-muted mb-2">
+                        Die Server-Anwendung empf&auml;ngt die GPS-Daten nicht direkt vom Halsband. Starte deshalb zuerst die Anwendung aus
+                        <code>src/Einsatzueberwachung.LiveTracking</code>
+                        auf dem entsprechenden Windows-Rechner.
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <a class="btn btn-outline-primary" href="@GetDownloadUrl("/downloads/livetracking.zip")">
+                            <i class="bi bi-download me-1"></i>LiveTracking herunterladen
+                        </a>
+                    </div>
+
+                    <ol class="mb-0 ps-3">
+                        <li>Einsatzueberwachung.LiveTracking herunterladen bzw. bereitstellen.</li>
+                        <li>ZIP entpacken und <code>Einsatzueberwachung.LiveTracking.exe</code> auf dem Windows-Rechner starten.</li>
+                        <li>Danach die Verbindung zur Einsatz&uuml;berwachung konfigurieren.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <div class="card h-100">
+                <div class="card-header">
                     <h2 class="h4 mb-0"><i class="bi bi-broadcast-pin me-2"></i>Divera 24/7</h2>
                 </div>
                 <div class="card-body">
@@ -423,10 +459,10 @@
                     <h2 class="h4 mb-0"><i class="bi bi-info-circle me-2"></i>System-Information</h2>
                 </div>
                 <div class="card-body">
-                    <div class="mb-2"><strong>Version:</strong> 1.4.1</div>
+                    <div class="mb-2"><strong>Version:</strong> 1.5.0</div>
                     <div class="mb-2"><strong>Framework:</strong> .NET 8 / Blazor Server</div>
                     <div class="mb-3"><strong>Plattform:</strong> Web-basiert</div>
-                    <div class="mb-3"><strong>Integration:</strong> Divera 24/7 (aktive Alarme, Verfuegbarkeiten, Alarm-Import)</div>
+                    <div class="mb-3"><strong>Integration:</strong> Divera 24/7 und Live-Tracking (aktive Alarme, Verfuegbarkeiten, Alarm-Import, GPS-Halsband-Ortung)</div>
 
                     <dl class="row mb-0">
                         <dt class="col-sm-4">Datenpfad</dt>

@@ -250,6 +250,213 @@ public sealed class OsmStaticMapRenderer : IStaticMapRenderer, IDisposable
         }
     }
 
+    public async Task<byte[]?> RenderCombinedTrackMapAsync(
+        List<TeamTrackSnapshot> tracks,
+        (double Latitude, double Longitude)? elwPosition,
+        int width = 1200,
+        int height = 780)
+    {
+        var validTracks = tracks.Where(track => track.Points.Count >= 2).ToList();
+        if (validTracks.Count == 0)
+            return null;
+
+        try
+        {
+            var allLats = validTracks.SelectMany(track => track.Points.Select(point => point.Latitude)).ToList();
+            var allLons = validTracks.SelectMany(track => track.Points.Select(point => point.Longitude)).ToList();
+
+            foreach (var areaPoint in validTracks
+                .Where(track => track.SearchAreaCoordinates is { Count: >= 3 })
+                .SelectMany(track => track.SearchAreaCoordinates))
+            {
+                allLats.Add(areaPoint.Latitude);
+                allLons.Add(areaPoint.Longitude);
+            }
+
+            if (elwPosition.HasValue)
+            {
+                allLats.Add(elwPosition.Value.Latitude);
+                allLons.Add(elwPosition.Value.Longitude);
+            }
+
+            var minLat = allLats.Min();
+            var maxLat = allLats.Max();
+            var minLon = allLons.Min();
+            var maxLon = allLons.Max();
+
+            var latPad = Math.Max((maxLat - minLat) * 0.10, 0.001);
+            var lonPad = Math.Max((maxLon - minLon) * 0.10, 0.001);
+            minLat -= latPad; maxLat += latPad;
+            minLon -= lonPad; maxLon += lonPad;
+
+            var zoom = CalculateZoom(minLat, maxLat, minLon, maxLon, width, height);
+
+            var absCropLeft = LonToTileXFloat(minLon, zoom) * TileSize;
+            var absCropTop = LatToTileYFloat(maxLat, zoom) * TileSize;
+            var absCropRight = LonToTileXFloat(maxLon, zoom) * TileSize;
+            var absCropBottom = LatToTileYFloat(minLat, zoom) * TileSize;
+
+            var cropW = absCropRight - absCropLeft;
+            var cropH = absCropBottom - absCropTop;
+            var targetAspect = (double)width / height;
+            var cropAspect = cropW / cropH;
+
+            if (cropAspect < targetAspect)
+            {
+                var newW = cropH * targetAspect;
+                var delta = (newW - cropW) / 2.0;
+                absCropLeft -= delta;
+                absCropRight += delta;
+            }
+            else
+            {
+                var newH = cropW / targetAspect;
+                var delta = (newH - cropH) / 2.0;
+                absCropTop -= delta;
+                absCropBottom += delta;
+            }
+
+            var minTileX = (int)Math.Floor(absCropLeft / TileSize);
+            var maxTileX = (int)Math.Floor(absCropRight / TileSize);
+            var minTileY = (int)Math.Floor(absCropTop / TileSize);
+            var maxTileY = (int)Math.Floor(absCropBottom / TileSize);
+
+            var tiles = await DownloadTilesAsync(minTileX, maxTileX, minTileY, maxTileY, zoom);
+
+            var tileCountX = maxTileX - minTileX + 1;
+            var tileCountY = maxTileY - minTileY + 1;
+            var fullW = tileCountX * TileSize;
+            var fullH = tileCountY * TileSize;
+
+            using var fullBitmap = new SKBitmap(fullW, fullH);
+            using (var tileCanvas = new SKCanvas(fullBitmap))
+            {
+                tileCanvas.Clear(new SKColor(228, 228, 228));
+                foreach (var ((tx, ty), tileData) in tiles)
+                {
+                    if (tileData == null) continue;
+                    using var tileBitmap = SKBitmap.Decode(tileData);
+                    if (tileBitmap == null) continue;
+                    tileCanvas.DrawBitmap(tileBitmap, (tx - minTileX) * TileSize, (ty - minTileY) * TileSize);
+                }
+            }
+
+            var cropLeft = (float)(absCropLeft - minTileX * TileSize);
+            var cropTop = (float)(absCropTop - minTileY * TileSize);
+            var cropRight = (float)(absCropRight - minTileX * TileSize);
+            var cropBottom = (float)(absCropBottom - minTileY * TileSize);
+
+            using var outputBitmap = new SKBitmap(width, height);
+            using var canvas = new SKCanvas(outputBitmap);
+            canvas.DrawBitmap(fullBitmap, new SKRect(cropLeft, cropTop, cropRight, cropBottom), new SKRect(0, 0, width, height));
+
+            var scaleX = width / (cropRight - cropLeft);
+            var scaleY = height / (cropBottom - cropTop);
+            float ToX(double lon) => ((float)((LonToTileXFloat(lon, zoom) - minTileX) * TileSize) - cropLeft) * scaleX;
+            float ToY(double lat) => ((float)((LatToTileYFloat(lat, zoom) - minTileY) * TileSize) - cropTop) * scaleY;
+
+            var renderedAreas = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var track in validTracks.Where(track => track.SearchAreaCoordinates is { Count: >= 3 }))
+            {
+                var areaKey = string.Join('|', track.SearchAreaCoordinates.Select(c => $"{c.Latitude:F6},{c.Longitude:F6}"));
+                if (!renderedAreas.Add(areaKey))
+                    continue;
+
+                var areaPoints = track.SearchAreaCoordinates
+                    .Select(coord => new SKPoint(ToX(coord.Longitude), ToY(coord.Latitude)))
+                    .ToArray();
+
+                var parsedAreaColor = ParseColor(string.IsNullOrWhiteSpace(track.SearchAreaColor) ? "#3388ff" : track.SearchAreaColor);
+
+                using var areaPath = new SKPath();
+                areaPath.MoveTo(areaPoints[0]);
+                for (var index = 1; index < areaPoints.Length; index++)
+                    areaPath.LineTo(areaPoints[index]);
+                areaPath.Close();
+
+                using var fillPaint = new SKPaint
+                {
+                    Style = SKPaintStyle.Fill,
+                    Color = parsedAreaColor.WithAlpha(45),
+                    IsAntialias = true
+                };
+                canvas.DrawPath(areaPath, fillPaint);
+
+                using var strokePaint = new SKPaint
+                {
+                    Style = SKPaintStyle.Stroke,
+                    Color = parsedAreaColor,
+                    StrokeWidth = 2.5f,
+                    IsAntialias = true,
+                    PathEffect = SKPathEffect.CreateDash(new[] { 12f, 6f }, 0)
+                };
+                canvas.DrawPath(areaPath, strokePaint);
+            }
+
+            foreach (var track in validTracks)
+            {
+                var trackPoints = track.Points
+                    .Select(point => new SKPoint(ToX(point.Longitude), ToY(point.Latitude)))
+                    .ToArray();
+
+                using var shadowPaint = new SKPaint
+                {
+                    Style = SKPaintStyle.Stroke,
+                    Color = new SKColor(0, 0, 0, 65),
+                    StrokeWidth = 6f,
+                    StrokeCap = SKStrokeCap.Round,
+                    StrokeJoin = SKStrokeJoin.Round,
+                    IsAntialias = true
+                };
+
+                using var trackPath = new SKPath();
+                trackPath.MoveTo(trackPoints[0]);
+                for (var index = 1; index < trackPoints.Length; index++)
+                    trackPath.LineTo(trackPoints[index]);
+                canvas.DrawPath(trackPath, shadowPaint);
+
+                using var trackPaint = new SKPaint
+                {
+                    Style = SKPaintStyle.Stroke,
+                    Color = ParseColor(track.Color),
+                    StrokeWidth = 3.5f,
+                    StrokeCap = SKStrokeCap.Round,
+                    StrokeJoin = SKStrokeJoin.Round,
+                    IsAntialias = true
+                };
+                canvas.DrawPath(trackPath, trackPaint);
+            }
+
+            if (elwPosition.HasValue)
+            {
+                DrawMarker(
+                    canvas,
+                    new SKPoint(ToX(elwPosition.Value.Longitude), ToY(elwPosition.Value.Latitude)),
+                    new SKColor(220, 20, 60),
+                    "ELW");
+            }
+
+            using var attrFont = new SKFont(SKTypeface.Default, 10);
+            using var attrPaint = new SKPaint { Color = new SKColor(80, 80, 80), IsAntialias = true };
+            using var attrBgPaint = new SKPaint { Style = SKPaintStyle.Fill, Color = new SKColor(255, 255, 255, 180) };
+            const string attribution = "© OpenStreetMap © CARTO";
+            attrFont.MeasureText(attribution, out var textBounds);
+            var attrX = width - textBounds.Width - 6;
+            var attrY = height - 6;
+            canvas.DrawRect(attrX - 3, attrY - textBounds.Height - 2, textBounds.Width + 6, textBounds.Height + 4, attrBgPaint);
+            canvas.DrawText(attribution, attrX, attrY, SKTextAlign.Left, attrFont, attrPaint);
+
+            using var image = SKImage.FromBitmap(outputBitmap);
+            using var data = image.Encode(SKEncodedImageFormat.Png, 90);
+            return data.ToArray();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Fehler beim Rendern der kombinierten Track-Karte");
+            return null;
+        }
+    }
+
     private static void DrawMarker(SKCanvas canvas, SKPoint center, SKColor color, string label)
     {
         // Weißer Rand

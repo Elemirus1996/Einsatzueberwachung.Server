@@ -34,14 +34,20 @@ Linux-faehiger Nachbau der Anwendung Einsatzueberwachung.Web mit separater Mobil
 
 ## Live GPS-Halsband Tracking
 
+Fuer das GPS-Livetracking wird die projektinterne Anwendung `Einsatzueberwachung.LiveTracking` benoetigt:
+
+- Projektpfad: `src/Einsatzueberwachung.LiveTracking`
+- Die Anwendung muss auf dem Windows-Rechner mit dem GPS-Empfaenger heruntergeladen bzw. bereitgestellt und gestartet werden.
+- Direkt aus der Hauptanwendung verfuegbar ueber `/downloads/livetracking.zip`
+
 Einfache Bedienung fuer den Einsatzbetrieb.
 
 ### Bedienungsanleitung Live-Tracking
 
 #### 1. Vorbereitung
 
-1. GPS-Handheld per USB am Rechner anschliessen, auf dem die **LiveTracking Desktop-App** laeuft.
-2. In der Desktop-App die Server-URL eintragen (z.B. `http://10.0.0.1:5000`) und verbinden.
+1. Einsatzueberwachung.LiveTracking ueber `/downloads/livetracking.zip` herunterladen, entpacken und auf dem Windows-Rechner mit angeschlossenem GPS-Handheld starten.
+2. In Einsatzueberwachung.LiveTracking die Server-URL eintragen (z.B. `http://10.0.0.1:5000`) und verbinden.
 3. Sobald Halsbaender erkannt werden, erscheinen sie automatisch im System.
 
 #### 2. Halsband einem Team zuweisen

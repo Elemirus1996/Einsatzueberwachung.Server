@@ -30,6 +30,10 @@
     .mission-topbar,
     .map-header,
     .map-sidebar,
+    .search-message,
+    .coordinate-marker-panel,
+    .collar-tracking-panel,
+    .polygon-edit-overlay,
     .header-with-clock,
     .live-datetime,
     #live-datetime,
@@ -74,7 +78,6 @@
         width: 100% !important;
     }
 
-    /* Karten-Layout: map-content Flex zurücksetzen, damit map-main die volle Breite nutzt */
     .map-content {
         display: block !important;
         width: 100% !important;
@@ -88,6 +91,8 @@
 
     .map-page-layout {
         overflow: visible !important;
+        height: auto !important;
+        min-height: 0 !important;
     }
 
     .app-content:has(.map-page-layout) {
@@ -126,63 +131,29 @@
     /* ===============================================
        SEITE 1: Karte (Querformat)
        =============================================== */
-    .map-page {
-        page-break-after: always !important;
-        page-break-inside: avoid !important;
+    .map-content {
         display: block !important;
         width: 100% !important;
-        max-width: none !important;
         margin: 0 !important;
-    }
-    
-    .map-page .card {
-        border: none !important;
-        box-shadow: none !important;
-        margin-bottom: 0 !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        width: 100% !important;
-        max-width: none !important;
-    }
-    
-    .map-page .card-body {
         padding: 0 !important;
-        position: relative !important;
-        width: 100% !important;
-        max-width: none !important;
-        margin: 0 !important;
     }
-    
-    /* Kleine Kopfzeile auf Karten-Seite */
-    .print-map-header {
+
+    .map-main {
         display: block !important;
-        visibility: visible !important;
-        text-align: center !important;
-        padding: 8px !important;
-        background: #f8f9fa !important;
-        border-bottom: 2px solid #333 !important;
-        font-weight: bold !important;
-        font-size: 12pt !important;
-        margin-bottom: 5px !important;
-    }
-    
-    .print-map-header h3 {
-        margin: 0 !important;
-        font-size: 14pt !important;
-        color: #000 !important;
-    }
-    
-    .print-map-header small {
-        font-size: 10pt !important;
-        color: #666 !important;
-        font-weight: normal !important;
-    }
-    
-    /* Karte auf volle Seite */
-    #einsatzMap {
-        height: 80vh !important;
         width: 100% !important;
-        min-height: 500px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        break-after: page !important;
+        page-break-after: always !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    #einsatzMap {
+        height: 18cm !important;
+        width: 100% !important;
+        min-height: 18cm !important;
+        max-height: 18cm !important;
         border: 2px solid #333 !important;
         position: relative !important;
         left: 0 !important;
@@ -242,10 +213,20 @@
     .print-list-page {
         display: block !important;
         visibility: visible !important;
+        break-before: page !important;
         page-break-before: always !important;
         page-break-inside: avoid !important;
         background: white !important;
         padding: 20px !important;
+    }
+
+    .print-list-template {
+        display: none !important;
+    }
+
+    .print-list-page-host {
+        display: block !important;
+        visibility: visible !important;
     }
     
     .print-list-page .print-list-header {
@@ -355,49 +336,6 @@
         border-radius: 3px !important;
         font-size: 9pt !important;
     }
-    
-    /* ELW Info Box */
-    .print-list-page .elw-info {
-        display: block !important;
-        background: #fff3cd !important;
-        border: 2px solid #ff0000 !important;
-        border-radius: 5px !important;
-        padding: 12px !important;
-        margin-bottom: 20px !important;
-    }
-    
-    .print-list-page .elw-info strong {
-        font-size: 11pt !important;
-        color: #000 !important;
-    }
-    
-    /* Statistik-Box */
-    .print-list-page .statistics-box {
-        display: block !important;
-        background: #e9ecef !important;
-        border: 2px solid #333 !important;
-        border-radius: 5px !important;
-        padding: 15px !important;
-        margin-top: 20px !important;
-    }
-    
-    .print-list-page .statistics-box h4 {
-        margin: 0 0 10px 0 !important;
-        font-size: 12pt !important;
-        border-bottom: 2px solid #333 !important;
-        padding-bottom: 8px !important;
-    }
-    
-    .print-list-page .statistics-box .stat-row {
-        display: flex !important;
-        justify-content: space-between !important;
-        padding: 5px 0 !important;
-        font-size: 10pt !important;
-    }
-    
-    .print-list-page .statistics-box .stat-value {
-        font-weight: bold !important;
-    }
 
     /* ===============================================
        Alte Legende ausblenden (wird durch Liste ersetzt)
@@ -422,4 +360,10 @@
 .print-legend-page,
 .print-list-page {
     display: none;
+}
+
+html.map-print-mode .print-list-page-host,
+body.map-print-mode .print-list-page-host {
+    display: block !important;
+    visibility: visible !important;
 }

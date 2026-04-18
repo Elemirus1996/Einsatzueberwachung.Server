@@ -1,7 +1,7 @@
 /* Collar Tracking Panel - schwebt über der Karte */
 .collar-tracking-panel {
     position: absolute;
-    top: 10px;
+    top: 128px;
     right: 10px;
     z-index: 1000;
     background: var(--bs-body-bg, #fff);
@@ -44,6 +44,16 @@
     border-radius: 4px;
     background: var(--bs-tertiary-bg, #f8f9fa);
     font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.collar-item:hover {
+    background: var(--bs-secondary-bg, #e9ecef);
+}
+
+.collar-item:active {
+    transform: translateY(1px);
 }
 
 .collar-name {

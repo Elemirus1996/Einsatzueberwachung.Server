@@ -383,13 +383,14 @@ namespace Einsatzueberwachung.Domain.Services
                 var einsatzPath = AppPathResolver.GetReportDirectory();
                 var filePath = Path.Combine(einsatzPath, filename);
                 var tracks = includeTracks ? archivedEinsatz.TrackSnapshots : null;
+                byte[]? archivedTrackMapImage = null;
 
-                if (tracks != null && _mapRenderer != null)
+                if (tracks?.Any(track => track.Points.Count >= 2) == true && _mapRenderer != null)
                 {
-                    await RenderTrackMapsAsync(tracks);
+                    archivedTrackMapImage = await _mapRenderer.RenderCombinedTrackMapAsync(tracks, archivedEinsatz.ElwPosition);
                 }
 
-                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks);
+                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, archivedTrackMapImage);
 
                 await Task.Run(() =>
                 {
@@ -416,9 +417,23 @@ namespace Einsatzueberwachung.Domain.Services
         /// Exportiert einen archivierten Einsatz als PDF-Byte-Array (für Browser-Download)
         /// </summary>
         public async Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz)
+            => await ExportArchivedEinsatzToPdfBytesAsync(archivedEinsatz, false);
+
+        /// <summary>
+        /// Exportiert einen archivierten Einsatz als PDF-Byte-Array (für Browser-Download)
+        /// </summary>
+        public async Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz, bool includeTracks)
         {
             var staffelInfo = await ResolveStaffelInfoAsync(archivedEinsatz);
-            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, null);
+            var tracks = includeTracks ? archivedEinsatz.TrackSnapshots : null;
+            byte[]? archivedTrackMapImage = null;
+
+            if (tracks?.Any(track => track.Points.Count >= 2) == true && _mapRenderer != null)
+            {
+                archivedTrackMapImage = await _mapRenderer.RenderCombinedTrackMapAsync(tracks, archivedEinsatz.ElwPosition);
+            }
+
+            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, archivedTrackMapImage);
             
             return await Task.Run(() =>
             {
@@ -507,7 +522,7 @@ namespace Einsatzueberwachung.Domain.Services
         /// <summary>
         /// Erstellt das PDF-Dokument für einen archivierten Einsatz
         /// </summary>
-        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null)
+        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null, byte[]? archivedTrackMapImage = null)
         {
             return Document.Create(container =>
             {
@@ -546,7 +561,7 @@ namespace Einsatzueberwachung.Domain.Services
                             if (tracks?.Any() == true)
                             {
                                 column.Item().PageBreak();
-                                column.Item().PaddingVertical(10).Element(c => ComposeGpsTracks(c, tracks));
+                                column.Item().PaddingVertical(10).Element(c => ComposeArchivedGpsTrackMap(c, einsatz, tracks, archivedTrackMapImage));
                             }
                             if (einsatz.GlobalNotesEntries?.Any() == true)
                             {
@@ -1141,6 +1156,124 @@ namespace Einsatzueberwachung.Domain.Services
                     });
                 }
             });
+        }
+
+        private void ComposeArchivedGpsTrackMap(IContainer container, ArchivedEinsatz einsatz, List<TeamTrackSnapshot> tracks, byte[]? archivedTrackMapImage)
+        {
+            var validTracks = tracks.Where(track => track.Points.Count >= 2).ToList();
+            if (validTracks.Count == 0)
+                return;
+
+            container.Column(column =>
+            {
+                if (archivedTrackMapImage != null)
+                {
+                    column.Item().Image(archivedTrackMapImage).FitWidth();
+                    return;
+                }
+
+                column.Item().Height(430).ScaleToFit().Svg(BuildCombinedTrackSvg(validTracks, einsatz.ElwPosition, 760, 430));
+            });
+        }
+
+        private static string BuildCombinedTrackSvg(List<TeamTrackSnapshot> tracks, (double Latitude, double Longitude)? elwPosition, float width, float height)
+        {
+            var validTracks = tracks.Where(track => track.Points.Count >= 2).ToList();
+            if (validTracks.Count == 0)
+                return $@"<svg xmlns=""http://www.w3.org/2000/svg"" width=""{width}"" height=""{height}"" viewBox=""0 0 {width} {height}""/>";
+
+            var allLats = validTracks.SelectMany(track => track.Points.Select(point => point.Latitude)).ToList();
+            var allLons = validTracks.SelectMany(track => track.Points.Select(point => point.Longitude)).ToList();
+
+            foreach (var areaPoint in validTracks
+                .Where(track => track.SearchAreaCoordinates?.Count >= 3)
+                .SelectMany(track => track.SearchAreaCoordinates!))
+            {
+                allLats.Add(areaPoint.Latitude);
+                allLons.Add(areaPoint.Longitude);
+            }
+
+            if (elwPosition.HasValue)
+            {
+                allLats.Add(elwPosition.Value.Latitude);
+                allLons.Add(elwPosition.Value.Longitude);
+            }
+
+            var minLat = allLats.Min();
+            var maxLat = allLats.Max();
+            var minLon = allLons.Min();
+            var maxLon = allLons.Max();
+
+            var latPad = (maxLat - minLat) * 0.1;
+            var lonPad = (maxLon - minLon) * 0.1;
+            if (latPad < 0.0001) latPad = 0.0005;
+            if (lonPad < 0.0001) lonPad = 0.0005;
+            minLat -= latPad; maxLat += latPad;
+            minLon -= lonPad; maxLon += lonPad;
+
+            var latRange = maxLat - minLat;
+            var lonRange = maxLon - minLon;
+
+            var marginLeft = 20.0;
+            var marginRight = 20.0;
+            var marginTop = 20.0;
+            var marginBottom = 20.0;
+            var w = width - marginLeft - marginRight;
+            var h = height - marginTop - marginBottom;
+
+            var midLat = (minLat + maxLat) / 2.0;
+            var lonScale = Math.Cos(midLat * Math.PI / 180);
+            var effectiveLonRange = lonRange * lonScale;
+            if (effectiveLonRange < 0.00001) effectiveLonRange = 0.001;
+
+            var scaleX = w / effectiveLonRange;
+            var scaleY = h / latRange;
+            var scale = Math.Min(scaleX, scaleY);
+
+            var offsetX = marginLeft + (w - effectiveLonRange * scale) / 2.0;
+            var offsetY = marginTop + (h - latRange * scale) / 2.0;
+
+            double ToX(double lon) => offsetX + (lon - minLon) * lonScale * scale;
+            double ToY(double lat) => offsetY + (maxLat - lat) * scale;
+
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var svg = new System.Text.StringBuilder();
+            svg.AppendLine($@"<svg xmlns=""http://www.w3.org/2000/svg"" width=""{width}"" height=""{height}"" viewBox=""0 0 {width} {height}"">");
+            svg.AppendLine($@"  <rect x=""0"" y=""0"" width=""{width}"" height=""{height}"" rx=""4"" fill=""#eef2e6"" stroke=""#b0b0b0"" stroke-width=""1""/>");
+
+            var renderedAreas = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var track in validTracks.Where(track => track.SearchAreaCoordinates?.Count >= 3))
+            {
+                var areaKey = string.Join('|', track.SearchAreaCoordinates!.Select(coord => $"{coord.Latitude:F6},{coord.Longitude:F6}"));
+                if (!renderedAreas.Add(areaKey))
+                    continue;
+
+                var areaColor = !string.IsNullOrEmpty(track.SearchAreaColor) ? track.SearchAreaColor : "#3388ff";
+                var safeAreaColor = System.Security.SecurityElement.Escape(areaColor);
+                var areaPoints = string.Join(" ", track.SearchAreaCoordinates!.Select(coord =>
+                    $"{ToX(coord.Longitude).ToString("F1", inv)},{ToY(coord.Latitude).ToString("F1", inv)}"));
+                svg.AppendLine($@"  <polygon points=""{areaPoints}"" fill=""{safeAreaColor}"" fill-opacity=""0.10"" stroke=""{safeAreaColor}"" stroke-width=""2"" stroke-dasharray=""8,4""/>");
+            }
+
+            foreach (var track in validTracks)
+            {
+                var polyPoints = string.Join(" ", track.Points.Select(point =>
+                    $"{ToX(point.Longitude).ToString("F1", inv)},{ToY(point.Latitude).ToString("F1", inv)}"));
+                var safeColor = System.Security.SecurityElement.Escape(track.Color);
+                svg.AppendLine($@"  <polyline points=""{polyPoints}"" fill=""none"" stroke=""#00000030"" stroke-width=""4"" stroke-linecap=""round"" stroke-linejoin=""round""/>");
+                svg.AppendLine($@"  <polyline points=""{polyPoints}"" fill=""none"" stroke=""{safeColor}"" stroke-width=""2.5"" stroke-linecap=""round"" stroke-linejoin=""round""/>");
+            }
+
+            if (elwPosition.HasValue)
+            {
+                var elwX = ToX(elwPosition.Value.Longitude);
+                var elwY = ToY(elwPosition.Value.Latitude);
+                svg.AppendLine($@"  <circle cx=""{elwX.ToString("F1", inv)}"" cy=""{elwY.ToString("F1", inv)}"" r=""8"" fill=""#dc143c"" stroke=""white"" stroke-width=""2""/>");
+                svg.AppendLine($@"  <text x=""{(elwX + 12).ToString("F1", inv)}"" y=""{(elwY + 4).ToString("F1", inv)}"" font-size=""9"" font-weight=""bold"" fill=""#dc143c"">ELW</text>");
+            }
+
+            svg.AppendLine("</svg>");
+            return svg.ToString();
         }
 
         private static string BuildColorDotSvg(string hexColor)

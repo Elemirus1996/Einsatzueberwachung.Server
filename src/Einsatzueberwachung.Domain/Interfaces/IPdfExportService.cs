@@ -25,6 +25,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         /// Exportiert einen archivierten Einsatz als PDF-Byte-Array (für Browser-Download)
         /// </summary>
         Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz);
+        Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz, bool includeTracks);
         
         /// <summary>
         /// Exportiert einen aktiven Einsatz als PDF-Byte-Array (für Browser-Download)

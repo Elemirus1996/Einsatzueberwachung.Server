@@ -18,4 +18,13 @@ public interface IStaticMapRenderer
         string? areaColor,
         int width = 800,
         int height = 450);
+
+    /// <summary>
+    /// Rendert eine kombinierte Karte mit allen GPS-Tracks, Suchgebieten und optionalem ELW-Marker.
+    /// </summary>
+    Task<byte[]?> RenderCombinedTrackMapAsync(
+        List<TeamTrackSnapshot> tracks,
+        (double Latitude, double Longitude)? elwPosition,
+        int width = 1200,
+        int height = 780);
 }

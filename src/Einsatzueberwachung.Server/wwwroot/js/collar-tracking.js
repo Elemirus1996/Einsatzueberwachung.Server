@@ -288,5 +288,26 @@ window.CollarTracking = {
                 mapData.map.removeLayer(mapData.trackingLayer);
             }
         }
+    },
+
+    // Zentriert die Karte auf den aktuellen Marker eines Halsbands
+    zoomToCollar: function (mapId, collarId) {
+        const mapData = window.LeafletMap.maps[mapId];
+        if (!mapData) return;
+
+        const track = this._tracks[collarId];
+        if (!track) return;
+
+        if (track.marker) {
+            const position = track.marker.getLatLng();
+            mapData.map.setView([position.lat, position.lng], Math.max(mapData.map.getZoom(), 17));
+            track.marker.openPopup();
+            return;
+        }
+
+        if (track.positions && track.positions.length > 0) {
+            const lastPosition = track.positions[track.positions.length - 1];
+            mapData.map.setView(lastPosition, Math.max(mapData.map.getZoom(), 17));
+        }
     }
 };

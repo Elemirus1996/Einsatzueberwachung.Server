@@ -65,9 +65,6 @@
                 <a class="btn btn-info btn-lg" href="/einsatz-karte">
                     <i class="bi bi-map me-1"></i>Karte
                 </a>
-                <a class="btn btn-primary btn-lg" href="/einsatz-bericht">
-                    <i class="bi bi-file-earmark-text me-1"></i>Bericht
-                </a>
                 <button class="btn btn-danger btn-lg" type="button" @onclick="OpenCloseMissionModal">
                     <i class="bi bi-stop-circle me-1"></i>Beenden
                 </button>
@@ -383,6 +380,22 @@
                         <div class="col-12">
                             <label class="form-label">Bemerkungen</label>
                             <textarea class="form-control" rows="2" @bind="_closeMissionRemarks" placeholder="Zusatzinformationen zum Abschluss..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" @bind="_closeMissionIncludeTracks" />
+                                <span class="form-check-label">
+                                    <i class="bi bi-geo-alt me-1"></i>GPS-Livetracking der PDF hinzufuegen
+                                    @if (_closeMissionTrackCount > 0)
+                                    {
+                                        <span class="badge bg-info ms-1">@_closeMissionTrackCount Track(s)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted ms-1">(keine Tracks vorhanden)</span>
+                                    }
+                                </span>
+                            </label>
                         </div>
                     </div>
 
@@ -807,12 +820,14 @@
     private string? _pauseResetTeamId;
     private bool _closeMissionChecklistConfirmed;
     private bool _closingMission;
+    private bool _closeMissionIncludeTracks;
     private string _closeMissionResult = string.Empty;
     private TimeOnly? _closeMissionEndTime;
     private string _closeMissionRemarks = string.Empty;
     private string _closeMissionModalError = string.Empty;
     private string _closeMissionStatus = string.Empty;
     private bool _closeMissionStatusIsError;
+    private int _closeMissionTrackCount => EinsatzService.CurrentEinsatz.TrackSnapshots?.Count ?? 0;
 
     private List<PersonalEntry> _personalList = new();
     private List<DogEntry> _dogList = new();
@@ -1343,6 +1358,7 @@
         _showCloseMissionModal = true;
         _closeMissionModalError = string.Empty;
         _closeMissionChecklistConfirmed = false;
+        _closeMissionIncludeTracks = false;
         _closeMissionResult = string.Empty;
         _closeMissionRemarks = string.Empty;
         _closeMissionEndTime = TimeOnly.FromDateTime(TimeService.Now);
@@ -1465,7 +1481,7 @@
                 SelectedPersonnelNames,
                 SelectedDogNames);
 
-            var pdfExport = await PdfExportService.ExportArchivedEinsatzToPdfAsync(archived);
+            var pdfExport = await PdfExportService.ExportArchivedEinsatzToPdfAsync(archived, _closeMissionIncludeTracks);
 
             EinsatzService.ResetEinsatz();
             _showCloseMissionModal = false;
@@ -1525,7 +1541,8 @@
             ElwPosition = current.ElwPosition,
             Teams = EinsatzService.Teams.ToList(),
             SearchAreas = current.SearchAreas.ToList(),
-            GlobalNotesEntries = EinsatzService.GlobalNotes.ToList()
+            GlobalNotesEntries = EinsatzService.GlobalNotes.ToList(),
+            TrackSnapshots = current.TrackSnapshots.ToList()
         };
     }
 

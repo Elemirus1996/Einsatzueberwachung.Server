@@ -339,7 +339,9 @@
                         <div class="collar-list">
                             @foreach (var collar in _collars)
                             {
-                                <div class="collar-item">
+                                <div class="collar-item"
+                                     @onclick="() => ZoomToCollarAsync(collar)"
+                                     title="Zum Live-Punkt springen">
                                     <span class="collar-name">
                                         <i class="bi bi-geo-alt-fill" style="color: @GetCollarColor(collar.Id);"></i>
                                         @collar.CollarName [@collar.Id]
@@ -377,33 +379,23 @@
 </div>
 
 <!-- Seite 2: Druckbare Suchgebiete-Liste (nur beim Drucken sichtbar, ausgeblendet im Bildschirm) -->
-<div class="print-list-page" style="display: none;">
+<div class="print-list-page print-list-template" aria-hidden="true">
     <div class="print-list-header">
         <h2><i class="bi bi-geo-alt-fill"></i> Suchgebiete - @EinsatzService.CurrentEinsatz.EinsatzNummer</h2>
         <p>@EinsatzService.CurrentEinsatz.Einsatzort | @EinsatzService.CurrentEinsatz.EinsatzDatum.ToString("dd.MM.yyyy HH:mm") Uhr</p>
         <p><strong>Einsatzleiter:</strong> @EinsatzService.CurrentEinsatz.Einsatzleiter</p>
     </div>
-    
-    @if (_hasElwPosition && EinsatzService.CurrentEinsatz.ElwPosition.HasValue)
-    {
-        var elw = EinsatzService.CurrentEinsatz.ElwPosition.Value;
-        <div class="elw-info">
-            <strong><i class="bi bi-geo-fill"></i> ELW-Position:</strong>
-            @elw.Latitude.ToString("F5")°, @elw.Longitude.ToString("F5")°
-        </div>
-    }
-    
+
     @if (_searchAreas.Any())
     {
         <table class="search-areas-table">
             <thead>
                 <tr>
                     <th style="width: 5%;">Nr.</th>
-                    <th style="width: 20%;">Name</th>
-                    <th style="width: 20%;">Zugewiesenes Team</th>
-                    <th style="width: 15%;">Status</th>
-                    <th style="width: 15%;">Fläche</th>
-                    <th style="width: 25%;">Notizen</th>
+                    <th style="width: 25%;">Suchgebiet</th>
+                    <th style="width: 25%;">Zugewiesenes Team</th>
+                    <th style="width: 20%;">Hund</th>
+                    <th style="width: 25%;">Halsband</th>
                 </tr>
             </thead>
             <tbody>
@@ -427,17 +419,9 @@
                             }
                         </td>
                         <td>
-                            @if (area.IsCompleted)
-                            {
-                                <span class="status-completed">✓ Abgeschlossen</span>
-                            }
-                            else
-                            {
-                                <span class="status-in-progress">• In Bearbeitung</span>
-                            }
+                            @GetPrintDogName(area)
                         </td>
-                        <td>@area.FormattedArea</td>
-                        <td>@(string.IsNullOrEmpty(area.Notes) ? "-" : area.Notes)</td>
+                        <td>@GetPrintCollarName(area)</td>
                     </tr>
                     index++;
                 }
@@ -1634,6 +1618,53 @@
         };
         var index = Math.Abs(collarId.GetHashCode()) % colors.Length;
         return colors[index];
+    }
+
+    private async Task ZoomToCollarAsync(Collar collar)
+    {
+        await JSRuntime.InvokeVoidAsync("CollarTracking.zoomToCollar", "einsatzMap", collar.Id);
+    }
+
+    private Team? GetAssignedTeamForPrint(SearchArea area)
+    {
+        if (!string.IsNullOrWhiteSpace(area.AssignedTeamId))
+        {
+            return _teams.FirstOrDefault(team => team.TeamId == area.AssignedTeamId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(area.AssignedTeamName))
+        {
+            return _teams.FirstOrDefault(team => string.Equals(team.TeamName, area.AssignedTeamName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return null;
+    }
+
+    private string GetPrintDogName(SearchArea area)
+    {
+        var team = GetAssignedTeamForPrint(area);
+        return string.IsNullOrWhiteSpace(team?.DogName) ? "-" : team.DogName;
+    }
+
+    private string GetPrintCollarName(SearchArea area)
+    {
+        var team = GetAssignedTeamForPrint(area);
+        if (team == null)
+        {
+            return "-";
+        }
+
+        if (!string.IsNullOrWhiteSpace(team.CollarName) && !string.IsNullOrWhiteSpace(team.CollarId))
+        {
+            return $"{team.CollarName} [{team.CollarId}]";
+        }
+
+        if (!string.IsNullOrWhiteSpace(team.CollarName))
+        {
+            return team.CollarName;
+        }
+
+        return string.IsNullOrWhiteSpace(team.CollarId) ? "-" : team.CollarId;
     }
 
     // Domain-Event Handler für GPS-Positionen

@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Einsatzueberwachung Server",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"src/Einsatzueberwachung.Server"
+			],
+			"isBackground": true
+		}
+	]
+}
