@@ -40,7 +40,9 @@ html, body {
     height: 100vh;
     position: sticky;
     top: 0;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     z-index: 100;
     flex-shrink: 0;
     transition: width 0.3s ease, min-width 0.3s ease;
@@ -124,13 +126,17 @@ main {
 
 /* Nav items - center icons when collapsed */
 .page.sidebar-collapsed .nav-item {
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: 60px;
+    overflow: hidden;
 }
 
 .page.sidebar-collapsed .nav-item .nav-link {
     justify-content: center;
-    padding: 0.5rem;
+    padding: 0.5rem 0;
+    width: 100%;
+    max-width: 60px;
 }
 
 .page.sidebar-collapsed .nav-icon {
@@ -139,6 +145,7 @@ main {
 
 .page.sidebar-collapsed .nav-icon i {
     font-size: 1.2rem;
+    margin-right: 0;
 }
 
 /* Top row adjustments for collapsed */
@@ -150,8 +157,10 @@ main {
 .page.sidebar-collapsed .top-row .container-fluid {
     justify-content: center;
     padding: 0;
-    flex-direction: column;
-    gap: 0.25rem;
+}
+
+.page.sidebar-collapsed .btn-sidebar-toggle {
+    margin-left: 0;
 }
 
 .page.sidebar-collapsed .navbar-brand {
