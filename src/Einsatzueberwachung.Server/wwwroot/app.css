@@ -124,13 +124,13 @@ main {
 
 /* Nav items - center icons when collapsed */
 .page.sidebar-collapsed .nav-item {
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }
 
 .page.sidebar-collapsed .nav-item .nav-link {
     justify-content: center;
-    padding: 0.5rem;
+    padding: 0.5rem 0;
 }
 
 .page.sidebar-collapsed .nav-icon {
