@@ -730,6 +730,20 @@
                         <li>Verbindung zur Einsatzüberwachung im Tool konfigurieren.</li>
                     </ol>
                 </div>
+
+                <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-phone me-1"></i>Team-Mobile</h3>
+                    <p class="cfg-help">
+                        Der QR-Code für die Team-Smartphone-Anmeldung enthält die Basis-URL des Servers.
+                        Wenn das Feld leer ist, wird die URL automatisch aus dem Request abgeleitet (Standard für VPN-Betrieb).
+                        Für lokale Tests oder eine abweichende öffentliche Adresse kann hier eine eigene URL eingetragen werden.
+                    </p>
+                    <div class="cfg-field">
+                        <label class="cfg-label">Basis-URL (für QR-Code)</label>
+                        <InputText class="cfg-input" @bind-Value="_appSettings.MobileBaseUrl" placeholder="https://dein-einsatz.mywire.org" />
+                        <span class="cfg-help">Leer lassen = automatisch aus Request ableiten. URL-Schema optional – fehlt es, wird <code>https://</code> ergänzt. Beispiel: <code>192.168.1.100:5000</code></span>
+                    </div>
+                </div>
             }
 
             else if (_activeTab == SettingsTab.System)

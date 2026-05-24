@@ -42,7 +42,7 @@ public partial class EinsatzMonitor
         _teamMessageText = string.Empty;
     }
 
-    private void OpenTeamMobileModal()
+    private async Task OpenTeamMobileModalAsync()
     {
         var token = TeamMobileTokenService.CurrentMasterToken;
         if (string.IsNullOrEmpty(token))
@@ -52,7 +52,7 @@ public partial class EinsatzMonitor
         }
         else
         {
-            var baseUrl = (TeamMobileOptions.CurrentValue.PublicBaseUrl ?? string.Empty).TrimEnd('/');
+            var baseUrl = await ResolveTeamMobileBaseUrlAsync();
             _teamMobileFullUrl = string.IsNullOrEmpty(baseUrl)
                 ? $"/team/login/{token}"
                 : $"{baseUrl}/team/login/{token}";
@@ -60,6 +60,37 @@ public partial class EinsatzMonitor
             _teamMobileQrDataUrl = GenerateQrDataUrl(_teamMobileFullUrl);
         }
         _showTeamMobileModal = true;
+    }
+
+    /// <summary>
+    /// Gibt die effektive Basis-URL für den Team-Mobile QR-Code zurück.
+    /// Priorität: AppSettings.MobileBaseUrl > TeamMobileOptions.PublicBaseUrl > leer (= relativ).
+    /// </summary>
+    private async Task<string> ResolveTeamMobileBaseUrlAsync()
+    {
+        var appSettings = await SettingsService.GetAppSettingsAsync();
+        if (!string.IsNullOrWhiteSpace(appSettings.MobileBaseUrl))
+            return NormalizeBaseUrl(appSettings.MobileBaseUrl);
+
+        var configuredUrl = TeamMobileOptions.CurrentValue.PublicBaseUrl;
+        if (!string.IsNullOrWhiteSpace(configuredUrl))
+            return NormalizeBaseUrl(configuredUrl);
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Stellt sicher, dass die URL ein gültiges URL-Schema hat. Fehlt es, wird „https://" vorangestellt.
+    /// </summary>
+    private static string NormalizeBaseUrl(string url)
+    {
+        var trimmed = url.Trim().TrimEnd('/');
+        if (!trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = "https://" + trimmed;
+        }
+        return trimmed;
     }
 
     private void CloseTeamMobileModal() => _showTeamMobileModal = false;

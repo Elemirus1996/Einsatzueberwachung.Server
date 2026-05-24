@@ -119,6 +119,12 @@ namespace Einsatzueberwachung.Domain.Models
         /// <summary>Zeitpunkt des letzten Daten-Backups (ZIP-Download). Null = noch nie.</summary>
         public DateTime? LastBackupAt { get; set; }
 
+        /// <summary>
+        /// Öffentliche Basis-URL für den Team-Mobile QR-Code (z.B. https://dein-einsatz.mywire.org).
+        /// Wenn leer, wird die URL aus dem Request abgeleitet.
+        /// </summary>
+        public string MobileBaseUrl { get; set; } = string.Empty;
+
         public AppSettings()
         {
             Theme = "Light";
@@ -175,6 +181,8 @@ namespace Einsatzueberwachung.Domain.Models
             DiveraBaseUrl = "https://app.divera247.com/api/v2";
             DiveraPollIntervalIdleSeconds = 600;  // 10 Minuten bei Ruhe
             DiveraPollIntervalActiveSeconds = 60; // 1 Minute bei aktivem Alarm
+
+            MobileBaseUrl = string.Empty;
         }
     }
 }
