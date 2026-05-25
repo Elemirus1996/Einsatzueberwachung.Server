@@ -43,24 +43,44 @@
 @code {
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+    private bool _wasOpen;
+    private string? _lastAnchorId;
 
     protected override async Task OnParametersSetAsync()
     {
-        if (IsOpen)
+        if (!IsOpen)
         {
-            await ScrollToCurrentPageAsync();
+            _wasOpen = false;
+            _lastAnchorId = null;
+            return;
         }
+
+        var anchorId = GetCurrentAnchorId();
+        var drawerJustOpened = !_wasOpen;
+        var pageChanged = !string.Equals(_lastAnchorId, anchorId, StringComparison.Ordinal);
+
+        if (drawerJustOpened || pageChanged)
+        {
+            await ScrollToSectionAsync(anchorId);
+            _lastAnchorId = anchorId;
+        }
+
+        _wasOpen = true;
     }
 
-    private async Task ScrollToCurrentPageAsync()
+    private string GetCurrentAnchorId()
     {
         var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
         if (string.IsNullOrEmpty(path))
             path = "/";
 
-        var anchorId = path == "/"
+        return path == "/"
             ? "hilfe-home"
             : "hilfe-" + path.TrimStart('/').Replace("/", "-");
+    }
+
+    private async Task ScrollToSectionAsync(string anchorId)
+    {
 
         try
         {

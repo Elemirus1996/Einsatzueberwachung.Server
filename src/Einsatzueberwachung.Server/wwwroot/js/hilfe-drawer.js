@@ -3,7 +3,10 @@ window.hilfeDrawer = {
         const body = document.getElementById('hilfeDrawerBody');
         const el = document.getElementById(id);
         if (body && el) {
-            body.scrollTo({ top: el.offsetTop - 8, behavior: 'smooth' });
+            const bodyRect = body.getBoundingClientRect();
+            const elementRect = el.getBoundingClientRect();
+            const targetTop = Math.max(0, body.scrollTop + (elementRect.top - bodyRect.top) - 8);
+            body.scrollTo({ top: targetTop, behavior: 'smooth' });
         }
     }
 };
