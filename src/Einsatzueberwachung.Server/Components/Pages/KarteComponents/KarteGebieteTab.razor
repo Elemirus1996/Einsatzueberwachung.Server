@@ -40,6 +40,12 @@
                     <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnZoomToArea.InvokeAsync(area)" title="Zoomen">
                         <i class="bi bi-zoom-in"></i>
                     </button>
+                    @if (!string.IsNullOrEmpty(area.AssignedTeamId))
+                    {
+                        <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnNavigateToTeam.InvokeAsync(area.AssignedTeamId)" title="Zum Team im Monitor">
+                            <i class="bi bi-people"></i>
+                        </button>
+                    }
                     <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnEdit.InvokeAsync(area)" title="Bearbeiten">
                         <i class="bi bi-pencil"></i>
                     </button>
@@ -70,4 +76,5 @@ else
     [Parameter] public EventCallback<SearchArea> OnEdit { get; set; }
     [Parameter] public EventCallback<SearchArea> OnDownloadGpx { get; set; }
     [Parameter] public EventCallback<SearchArea> OnDelete { get; set; }
+    [Parameter] public EventCallback<string> OnNavigateToTeam { get; set; }
 }

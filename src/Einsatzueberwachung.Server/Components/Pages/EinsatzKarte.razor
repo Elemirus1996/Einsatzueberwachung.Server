@@ -89,7 +89,8 @@
                                          OnZoomToArea="ZoomToArea"
                                          OnEdit="EditSearchArea"
                                          OnDownloadGpx="DownloadGpx"
-                                         OnDelete="DeleteSearchArea" />
+                                         OnDelete="DeleteSearchArea"
+                                         OnNavigateToTeam="NavigateToTeamInMonitor" />
                     }
 
                     @if (_activeSidebarTab == "gps")
@@ -106,7 +107,8 @@
                                   OnZoomToCollar="ZoomToCollarAsync"
                                   OnZoomToTrack="ZoomToCompletedTrackAsync"
                                   OnToggleTrackVisibility="HandleToggleTrackVisibility"
-                                  OnGpxImported="HandleGpxImportedAsync" />
+                                  OnGpxImported="HandleGpxImportedAsync"
+                                  OnNavigateToTeam="NavigateToTeamInMonitor" />
                     }
 
                     @if (_activeSidebarTab == "handy")
@@ -116,7 +118,8 @@
                                        PhoneTrackHistories="EinsatzService.GetAllPhoneTrackHistories()"
                                        PhoneLayerVisible="_phoneLayerVisible"
                                        OnZoomToTeam="ZoomToPhoneTeamAsync"
-                                       OnTogglePhoneLayer="TogglePhoneLayer" />
+                                       OnTogglePhoneLayer="TogglePhoneLayer"
+                                       OnNavigateToTeam="NavigateToTeamInMonitor" />
                     }
 
                     @if (_activeSidebarTab == "points")

@@ -419,7 +419,87 @@ main:has(.map-page-layout) {
     text-align: center;
 }
 
-/* Suchgebiet Items */
+/* ========================================
+   Shared Sidebar Card Item
+   ======================================== */
+
+.sidebar-card-item {
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 5px;
+    padding: 0.4rem 0.55rem;
+    margin-bottom: 0.3rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sidebar-card-item:hover {
+    border-color: var(--theme-primary-border);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--theme-primary) 15%, transparent);
+    background: var(--ui-surface-2);
+}
+
+.sidebar-card-item:focus-visible {
+    outline: 2px solid var(--theme-primary, #3b82f6);
+    outline-offset: 2px;
+}
+
+.sidebar-card-item .card-header-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.sidebar-card-item .card-header-row .card-icon {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+}
+
+.sidebar-card-item .card-header-row .card-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-card-item .card-info-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+    margin-bottom: 0.2rem;
+}
+
+.sidebar-card-item .card-info-row small {
+    display: block;
+}
+
+.sidebar-card-item .card-actions {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: flex-end;
+}
+
+.sidebar-card-item .card-actions .btn-xs {
+    padding: 0;
+    font-size: 0.7rem;
+    height: 20px;
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.sidebar-card-item .card-actions .btn-xs:hover {
+    opacity: 1;
+}
+
+/* Suchgebiet Items (extends sidebar-card-item) */
 .search-area-item {
     background: var(--ui-surface);
     border: 1px solid var(--ui-border);
@@ -771,6 +851,20 @@ main:has(.map-page-layout) {
     border-color: var(--ui-blue);
 }
 
+
+[data-bs-theme="dark"] .sidebar-card-item:hover {
+    background: rgba(74, 168, 255, 0.08);
+    border-color: var(--ui-blue);
+    box-shadow: 0 2px 6px rgba(74, 168, 255, 0.15);
+}
+
+[data-bs-theme="dark"] .sidebar-card-item .card-title {
+    color: var(--ui-text);
+}
+
+[data-bs-theme="dark"] .sidebar-card-item .card-info-row small {
+    color: var(--ui-muted);
+}
 
 [data-bs-theme="dark"] .search-area-item:hover {
     background: rgba(74, 168, 255, 0.08);

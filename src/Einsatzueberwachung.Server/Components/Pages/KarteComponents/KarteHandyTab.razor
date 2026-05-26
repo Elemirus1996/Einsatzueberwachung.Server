@@ -36,35 +36,49 @@
             var histCount = history?.Count ?? 0;
             var histDist = history != null ? ComputeDistance(history) : 0.0;
 
-            <button type="button"
-                    class="collar-item"
-                    @onclick="() => OnZoomToTeam.InvokeAsync(teamId)"
-                    title="Zum Standort springen">
-                <div class="collar-head-row">
-                    <span class="collar-name">
-                        <i class="bi bi-person-fill" style="color: @GetTeamPhoneColor(teamId);"></i>
-                        @teamName
-                    </span>
-                    @if (loc?.Accuracy.HasValue == true)
-                    {
-                        <span class="collar-team text-muted" style="font-size:0.7rem;">&#177;@((int)loc.Accuracy!.Value) m</span>
-                    }
+            <div class="sidebar-card-item"
+                 role="button"
+                 tabindex="0"
+                 title="Zum Standort springen"
+                 @onkeydown='async e => { if (e.Key == "Enter" || e.Key == " ") await OnZoomToTeam.InvokeAsync(teamId); }'
+                 @onclick="() => OnZoomToTeam.InvokeAsync(teamId)">
+                <div class="card-header-row">
+                    <i class="bi bi-person-fill card-icon" style="color: @GetTeamPhoneColor(teamId);"></i>
+                    <span class="card-title">@teamName</span>
                 </div>
-                <div class="collar-status-line d-flex justify-content-between align-items-center">
+                <div class="card-info-row">
                     @if (loc != null)
                     {
-                        <span class="collar-status-pill text-muted">Letztes Update: @FormatAge(loc.Timestamp)</span>
+                        <small>Letztes Update: @FormatAge(loc.Timestamp)</small>
                     }
                     else
                     {
-                        <span class="collar-status-pill text-muted">Keine Live-Position</span>
+                        <small class="text-muted">Keine Live-Position</small>
+                    }
+                    @if (loc?.Accuracy.HasValue == true)
+                    {
+                        <small class="text-muted">&#177;@((int)loc.Accuracy!.Value) m</small>
                     }
                     @if (histCount > 0)
                     {
-                        <span class="collar-status-pill text-muted">@FormatDistance(histDist) &middot; @histCount Pkt.</span>
+                        <small class="text-muted">@FormatDistance(histDist) &middot; @histCount Pkt.</small>
                     }
                 </div>
-            </button>
+                <div class="card-actions">
+                    <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnZoomToTeam.InvokeAsync(teamId)" title="Zum Standort zoomen">
+                        <i class="bi bi-zoom-in"></i>
+                    </button>
+                    <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnNavigateToTeam.InvokeAsync(teamId)" title="Zum Team im Monitor">
+                        <i class="bi bi-people"></i>
+                    </button>
+                    <button class="btn btn-xs btn-link @(PhoneLayerVisible ? "" : "opacity-50")"
+                            @onclick:stopPropagation="true"
+                            @onclick="OnTogglePhoneLayer"
+                            title="@(PhoneLayerVisible ? "Handy-Layer ausblenden" : "Handy-Layer einblenden")">
+                        <i class="bi @(PhoneLayerVisible ? "bi-eye" : "bi-eye-slash")"></i>
+                    </button>
+                </div>
+            </div>
         }
     }
     else
@@ -82,6 +96,7 @@
     [Parameter] public bool PhoneLayerVisible { get; set; }
     [Parameter] public EventCallback<string> OnZoomToTeam { get; set; }
     [Parameter] public EventCallback OnTogglePhoneLayer { get; set; }
+    [Parameter] public EventCallback<string> OnNavigateToTeam { get; set; }
 
     private PeriodicTimer? _ageRefreshTimer;
     private CancellationTokenSource? _timerCts;

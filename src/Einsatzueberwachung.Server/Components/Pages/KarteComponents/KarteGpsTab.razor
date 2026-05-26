@@ -37,39 +37,49 @@
         @foreach (var collar in Collars)
         {
             CollarLastLocations.TryGetValue(collar.Id, out var lastLoc);
-            <button type="button"
-                    class="collar-item"
-                    @onclick="() => OnZoomToCollar.InvokeAsync(collar)"
-                    title="Zum Live-Punkt springen">
-                <div class="collar-head-row">
-                    <span class="collar-name">
-                        <i class="bi bi-geo-alt-fill" style="color: @GetCollarColorFn(collar.Id);"></i>
-                        @collar.CollarName [@collar.Id]
-                    </span>
+            <div class="sidebar-card-item"
+                 role="button"
+                 tabindex="0"
+                 title="Zum Live-Punkt springen"
+                 @onkeydown='async e => { if (e.Key == "Enter" || e.Key == " ") await OnZoomToCollar.InvokeAsync(collar); }'
+                 @onclick="() => OnZoomToCollar.InvokeAsync(collar)">
+                <div class="card-header-row">
+                    <i class="bi bi-geo-alt-fill card-icon" style="color: @GetCollarColorFn(collar.Id);"></i>
+                    <span class="card-title">@collar.CollarName [@collar.Id]</span>
+                </div>
+                <div class="card-info-row">
                     @if (collar.IsAssigned)
                     {
                         var liveTeam = Teams.FirstOrDefault(t => t.TeamId == collar.AssignedTeamId);
-                        <span class="collar-team text-primary">@(liveTeam?.TeamName ?? "?")</span>
+                        <small class="text-primary">@(liveTeam?.TeamName ?? "?")</small>
                     }
                     else
                     {
-                        <span class="collar-team text-muted">Nicht zugewiesen</span>
+                        <small class="text-muted">Nicht zugewiesen</small>
                     }
-                </div>
-                <div class="collar-status-line d-flex justify-content-between align-items-center">
                     @if (lastLoc != null)
                     {
                         var (icon, color) = GetBatteryDisplay(lastLoc.BatteryLevel);
-                        <span class="collar-status-pill"><i class="bi @icon @color me-1"></i>Akku</span>
-                        <span class="collar-status-pill text-muted">Letztes Update: @FormatAge(lastLoc.Timestamp)</span>
+                        <small><i class="bi @icon @color me-1"></i>Akku</small>
+                        <small class="text-muted">Update: @FormatAge(lastLoc.Timestamp)</small>
                     }
                     else
                     {
-                        <span class="collar-status-pill text-muted"><i class="bi bi-battery me-1"></i>Akku: -</span>
-                        <span class="collar-status-pill text-muted">Letztes Update: keine Daten</span>
+                        <small class="text-muted">Keine Daten</small>
                     }
                 </div>
-            </button>
+                <div class="card-actions">
+                    <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnZoomToCollar.InvokeAsync(collar)" title="Zoomen">
+                        <i class="bi bi-zoom-in"></i>
+                    </button>
+                    @if (collar.IsAssigned)
+                    {
+                        <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnNavigateToTeam.InvokeAsync(collar.AssignedTeamId!)" title="Zum Team im Monitor">
+                            <i class="bi bi-people"></i>
+                        </button>
+                    }
+                </div>
+            </div>
         }
     }
     else
@@ -112,42 +122,50 @@
                 @foreach (var snap in search.Tracks)
                 {
                     var isVisible = !CompletedTrackVisibility.TryGetValue(snap.Id, out var sv) || sv;
-                    <div class="snapshot-item ms-2">
-                            <div class="snapshot-summary"
-                                role="button"
-                                tabindex="0"
-                                @onclick="() => OnZoomToTrack.InvokeAsync(snap.Id)"
-                                @onkeydown='async e => { if (e.Key == "Enter" || e.Key == " ") await OnZoomToTrack.InvokeAsync(snap.Id); }'
-                                title="Auf Karte anzeigen">
-                            <span class="snapshot-color-bar" style="background:@snap.Color"></span>
-                            <div class="snapshot-meta">
-                                <div class="snapshot-sub">
-                                    @if (snap.TrackType == TrackType.HumanTrack)
-                                    {
-                                        <span class="badge bg-info text-dark badge-xs me-1" title="Mensch-Laufweg"><i class="bi bi-person-walking"></i></span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-primary badge-xs me-1" title="Halsband-Track"><i class="bi bi-broadcast"></i></span>
-                                    }
-                                    @snap.DisplayLabel
-                                </div>
-                                <div class="snapshot-sub">@snap.FormattedDuration · @snap.FormattedDistance · @snap.Points.Count Pkt.</div>
-                            </div>
-                            <div class="snapshot-controls">
-                                <button class="btn btn-xs @(isVisible ? "btn-outline-secondary" : "btn-outline-secondary opacity-50")"
-                                        title="@(isVisible ? "Auf Karte ausblenden" : "Auf Karte einblenden")"
-                                        @onclick:stopPropagation="true"
-                                        @onclick="() => OnToggleTrackVisibility.InvokeAsync((snap.Id, !isVisible))">
-                                    <i class="bi @(isVisible ? "bi-eye" : "bi-eye-slash")"></i>
+                    <div class="sidebar-card-item"
+                         role="button"
+                         tabindex="0"
+                         title="Auf Karte anzeigen"
+                         @onkeydown='async e => { if (e.Key == "Enter" || e.Key == " ") await OnZoomToTrack.InvokeAsync(snap.Id); }'
+                         @onclick="() => OnZoomToTrack.InvokeAsync(snap.Id)">
+                        <div class="card-header-row">
+                            @if (snap.TrackType == TrackType.HumanTrack)
+                            {
+                                <i class="bi bi-person-walking card-icon" style="color: @snap.Color;" title="Mensch-Laufweg"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-broadcast card-icon" style="color: @snap.Color;" title="Halsband-Track"></i>
+                            }
+                            <span class="card-title">@snap.DisplayLabel</span>
+                        </div>
+                        <div class="card-info-row">
+                            <small>@snap.FormattedDuration</small>
+                            <small>@snap.FormattedDistance</small>
+                            <small class="text-muted">@snap.Points.Count Pkt.</small>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnZoomToTrack.InvokeAsync(snap.Id)" title="Zoomen">
+                                <i class="bi bi-zoom-in"></i>
+                            </button>
+                            @if (!string.IsNullOrEmpty(snap.TeamId))
+                            {
+                                <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnNavigateToTeam.InvokeAsync(snap.TeamId)" title="Zum Team im Monitor">
+                                    <i class="bi bi-people"></i>
                                 </button>
-                                <button class="btn btn-xs btn-outline-secondary"
-                                        title="Details anzeigen"
-                                        @onclick:stopPropagation="true"
-                                        @onclick="() => OpenDetailPopup(snap)">
-                                    <i class="bi bi-info-circle"></i>
-                                </button>
-                            </div>
+                            }
+                            <button class="btn btn-xs btn-link @(isVisible ? "" : "opacity-50")"
+                                    title="@(isVisible ? "Auf Karte ausblenden" : "Auf Karte einblenden")"
+                                    @onclick:stopPropagation="true"
+                                    @onclick="() => OnToggleTrackVisibility.InvokeAsync((snap.Id, !isVisible))">
+                                <i class="bi @(isVisible ? "bi-eye" : "bi-eye-slash")"></i>
+                            </button>
+                            <button class="btn btn-xs btn-link"
+                                    title="Details anzeigen"
+                                    @onclick:stopPropagation="true"
+                                    @onclick="() => OpenDetailPopup(snap)">
+                                <i class="bi bi-info-circle"></i>
+                            </button>
                         </div>
                     </div>
                 }
@@ -566,6 +584,7 @@
     [Parameter] public EventCallback<string> OnZoomToTrack { get; set; }
     [Parameter] public EventCallback<(string Id, bool Visible)> OnToggleTrackVisibility { get; set; }
     [Parameter] public EventCallback<GpxImportRequest> OnGpxImported { get; set; }
+    [Parameter] public EventCallback<string> OnNavigateToTeam { get; set; }
     [Parameter] public Dictionary<string, CollarLocation> CollarLastLocations { get; set; } = new();
 
     /// <summary>Datenpaket, das beim Bestätigen des Import-Dialogs gesendet wird.</summary>

@@ -605,6 +605,11 @@ public partial class EinsatzKarte
         Navigation.NavigateTo("/einsatz-monitor");
     }
 
+    private void NavigateToTeamInMonitor(string teamId)
+    {
+        Navigation.NavigateTo($"/einsatz-monitor?scrollToTeam={teamId}");
+    }
+
     private async Task SetElwPosition()
     {
         try

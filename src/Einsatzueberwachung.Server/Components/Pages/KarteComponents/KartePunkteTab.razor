@@ -114,26 +114,34 @@
         <div class="marker-list">
             @foreach (var marker in Markers.OrderByDescending(m => m.CreatedAt))
             {
-                <div class="marker-list-item">
-                    <button type="button" class="marker-list-info" @onclick="() => ZoomToMarker(marker)" title="Zum Punkt zoomen">
-                        <span class="marker-list-label">
-                            <i class="bi bi-pin-map-fill" style="color: @marker.Color;"></i>
-                            @(string.IsNullOrEmpty(marker.Label) ? $"Punkt {marker.FormattedTimestamp}" : marker.Label)
-                        </span>
-                        <span class="marker-list-coords text-muted">@marker.FormattedLatLng</span>
+                <div class="sidebar-card-item"
+                     role="button"
+                     tabindex="0"
+                     title="Zum Punkt zoomen"
+                     @onkeydown='async e => { if (e.Key == "Enter" || e.Key == " ") await ZoomToMarker(marker); }'
+                     @onclick="() => ZoomToMarker(marker)">
+                    <div class="card-header-row">
+                        <i class="bi bi-pin-map-fill card-icon" style="color: @marker.Color;"></i>
+                        <span class="card-title">@(string.IsNullOrEmpty(marker.Label) ? $"Punkt {marker.FormattedTimestamp}" : marker.Label)</span>
+                    </div>
+                    <div class="card-info-row">
+                        <small class="text-muted">@marker.FormattedLatLng</small>
                         @if (!string.IsNullOrEmpty(marker.FormattedUtm))
                         {
-                            <span class="marker-list-coords text-muted">@marker.FormattedUtm</span>
+                            <small class="text-muted">@marker.FormattedUtm</small>
                         }
-                    </button>
-                    <div class="marker-list-actions">
-                        <button class="btn btn-xs btn-link p-0" @onclick="() => StartEditMarker(marker)" title="Bearbeiten">
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => ZoomToMarker(marker)" title="Zoomen">
+                            <i class="bi bi-zoom-in"></i>
+                        </button>
+                        <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => StartEditMarker(marker)" title="Bearbeiten">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-xs btn-link p-0" @onclick="() => DownloadMarkerGpx(marker)" title="GPX">
+                        <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => DownloadMarkerGpx(marker)" title="GPX">
                             <i class="bi bi-download"></i>
                         </button>
-                        <button class="btn btn-xs btn-link text-secondary p-0" @onclick="() => RemoveMarker(marker)" title="Entfernen">
+                        <button class="btn btn-xs btn-link text-secondary" @onclick:stopPropagation="true" @onclick="() => RemoveMarker(marker)" title="Entfernen">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
