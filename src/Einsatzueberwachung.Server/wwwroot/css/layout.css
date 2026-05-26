@@ -495,6 +495,15 @@ main,
     gap: 0.45rem;
 }
 
+.mission-topbar-page-slot {
+    min-width: 0;
+    justify-self: stretch;
+}
+
+.mission-topbar-page-slot.is-empty {
+    display: none;
+}
+
 .mission-status-strip {
     display: flex;
     align-items: center;
@@ -686,6 +695,11 @@ main,
     .mission-topbar-actions {
         grid-column: 2;
         justify-self: end;
+    }
+
+    .mission-topbar-page-slot {
+        grid-column: 1 / -1;
+        order: 3;
     }
 
     .mission-topbar-clock {

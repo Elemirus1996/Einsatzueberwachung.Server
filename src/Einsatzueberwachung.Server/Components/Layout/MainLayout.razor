@@ -70,6 +70,10 @@
                 }
             </div>
 
+            <div class="mission-topbar-page-slot @(MissionTopbar.Content is null ? "is-empty" : "")">
+                @MissionTopbar.Content
+            </div>
+
             <div class="mission-topbar-clock" aria-live="polite">
                 @if (EinsatzService.CurrentEinsatz.AlarmierungsZeit.HasValue)
                     {

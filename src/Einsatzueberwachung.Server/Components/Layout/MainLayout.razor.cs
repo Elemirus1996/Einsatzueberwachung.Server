@@ -16,6 +16,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
     [Inject] private TrainerNotificationService TrainerNotifications { get; set; } = default!;
     [Inject] private IWarningService WarningService { get; set; } = default!;
     [Inject] private ITimeService TimeService { get; set; } = default!;
+    [Inject] private MissionTopbarService MissionTopbar { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
@@ -34,7 +35,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
     private bool _szenarioMenuOpen;
     private TimeSpan? _missionDuration;
     private System.Threading.Timer? _missionDurationTimer;
-
     private WarningEntry? _lastWarning;
 
     private bool HasActiveEinsatz =>
@@ -58,6 +58,12 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         EinsatzService.DogPauseStarted += OnDogPauseStarted;
         TrainerNotifications.ExerciseEnded += OnExerciseEnded;
         WarningService.WarningAdded += OnWarningAdded;
+        MissionTopbar.Changed += OnMissionTopbarChanged;
+    }
+
+    private void OnMissionTopbarChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void OnWarningAdded(WarningEntry warning)
@@ -358,6 +364,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         EinsatzService.DogPauseStarted -= OnDogPauseStarted;
         TrainerNotifications.ExerciseEnded -= OnExerciseEnded;
         WarningService.WarningAdded -= OnWarningAdded;
+        MissionTopbar.Changed -= OnMissionTopbarChanged;
         _missionDurationTimer?.Dispose();
 
         try

@@ -3,6 +3,11 @@
 <div class="sidebar-content-header">
     <span class="small fw-semibold text-muted"><i class="bi bi-crosshair me-1"></i>Punkte</span>
     <div class="d-flex gap-1 align-items-center">
+        <button class="btn btn-xs btn-outline-secondary"
+                @onclick="() => OnSetElwPosition.InvokeAsync()"
+                title="@(HasElwPosition ? "ELW verschieben" : "ELW setzen")">
+            <i class="bi bi-geo-fill">ELW</i>
+        </button>
         @if (Markers.Any())
         {
             <button class="btn btn-xs btn-link p-0" @onclick="DownloadAllMarkersGpx" title="Alle als GPX exportieren">
@@ -216,4 +221,3 @@
         </div>
     </div>
 }
-

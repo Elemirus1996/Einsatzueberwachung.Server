@@ -1,4 +1,4 @@
-﻿@page "/einsatz/karte"
+@page "/einsatz/karte"
 @page "/einsatz-karte"
 @using Einsatzueberwachung.Domain.Interfaces
 @using Einsatzueberwachung.Server.Components.Pages.KarteComponents
@@ -9,52 +9,6 @@
 <PageTitle>Karte | Einsatzüberwachung</PageTitle>
 
 <div class="map-page-layout">
-    <!-- Header -->
-    <header class="map-header">
-        <div class="header-left">
-            <h1><i class="bi bi-map-fill"></i> Karte</h1>
-        </div>
-        
-        <div class="header-center">
-            <div class="input-group input-group-sm">
-                <input type="text" 
-                       class="form-control" 
-                       @bind="_addressSearch" 
-                       @bind:event="oninput"
-                       placeholder="Adresse suchen..." 
-                       aria-label="Adresse suchen" />
-                <button class="btn btn-primary" @onclick="SearchAddress" aria-label="Adresse suchen">
-                    <i class="bi bi-search"></i>
-                </button>
-            </div>
-        </div>
-        
-        <div class="header-right">
-            <button class="btn btn-sm theme-accent-btn btn-elw" @onclick="SetElwPosition" 
-                    title="@(_hasElwPosition ? "ELW verschieben" : "ELW setzen")">
-                <i class="bi bi-geo-fill"></i> @(_hasElwPosition ? "ELW verschieben" : "ELW setzen")
-            </button>
-            <button class="btn btn-sm btn-secondary"
-                    @onclick="ToggleMarkerPanel"
-                    title="Koordinaten-Marker">
-                <i class="bi bi-crosshair"></i> Punkte
-            </button>
-            <button class="btn btn-sm btn-secondary" @onclick="() => _showKarteDialog = true" title="Einsatzkarte drucken">
-                <i class="bi bi-printer" aria-hidden="true"></i>
-            </button>
-            <button class="btn btn-sm @(_trackingVisible ? "btn-success" : "btn-outline-secondary")"
-                    @onclick="ToggleTrackingLayer"
-                    title="@(_trackingVisible ? "GPS-Layer ausblenden" : "GPS-Layer einblenden")">
-                <i class="bi bi-broadcast"></i> GPS
-            </button>
-            <button class="btn btn-sm @(_phoneLayerVisible ? "btn-success" : "btn-outline-secondary")"
-                    @onclick="TogglePhoneLayer"
-                    title="@(_phoneLayerVisible ? "Handy-GPS ausblenden" : "Handy-GPS einblenden")">
-                <i class="bi bi-phone"></i> Handy
-            </button>
-        </div>
-    </header>
-
     @if (!string.IsNullOrWhiteSpace(_searchMessage))
     {
         <div class="search-message">
@@ -169,8 +123,10 @@
                     {
                         <KartePunkteTab @ref="_punkteTab"
                                         Markers="_mapMarkers"
+                                        HasElwPosition="_hasElwPosition"
                                         ClickToPlaceActive="_clickToPlaceActive"
                                         CoordInputMode="_coordInputMode"
+                                        OnSetElwPosition="SetElwPosition"
                                         CoordInputModeChanged="OnCoordInputModeChanged"
                                         OnActivateClickToPlace="ActivateClickToPlaceMode"
                                         OnDeactivateClickToPlace="DeactivateClickToPlaceMode"
@@ -185,17 +141,126 @@
             <!-- Karte -->
             <div id="einsatzMap" class="map-wrapper"></div>
 
+            <div class="map-floating-controls">
+                <div class="map-control-panel">
+                    <button class="map-control-trigger" type="button" @onclick="ToggleMapContentMenu">
+                        <span class="map-control-trigger-label">
+                            <i class="bi bi-layers"></i>
+                            <span>Anzeige</span>
+                        </span>
+                        <span class="map-control-trigger-value">@MapContentSummary</span>
+                        <i class="bi @(_mapContentMenuExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                    </button>
+
+                    @if (_mapContentMenuExpanded)
+                    {
+                        <div class="map-control-body">
+                            <label class="map-control-check">
+                                <input type="checkbox" checked="@_searchAreasVisible" @onchange="() => ToggleSearchAreasVisibility()" />
+                                <span><i class="bi bi-geo-alt"></i> Suchgebiete</span>
+                            </label>
+                            <label class="map-control-check">
+                                <input type="checkbox" checked="@_pointMarkersVisible" @onchange="() => TogglePointMarkersVisibility()" />
+                                <span><i class="bi bi-crosshair"></i> Punkte</span>
+                            </label>
+                            <label class="map-control-check">
+                                <input type="checkbox" checked="@_trackingVisible" @onchange="() => ToggleTrackingLayer()" />
+                                <span><i class="bi bi-broadcast"></i> GPS</span>
+                            </label>
+                            <label class="map-control-check">
+                                <input type="checkbox" checked="@_phoneLayerVisible" @onchange="() => TogglePhoneLayer()" />
+                                <span><i class="bi bi-phone"></i> Handy</span>
+                            </label>
+                        </div>
+                    }
+                </div>
+
+                <div class="map-control-panel">
+                    <button class="map-control-trigger" type="button" @onclick="ToggleTileMenu">
+                        <span class="map-control-trigger-label">
+                            <i class="bi bi-map"></i>
+                            <span>Kartentyp</span>
+                        </span>
+                        <span class="map-control-trigger-value">@SelectedMapLayerLabel</span>
+                        <i class="bi @(_mapTileMenuExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                    </button>
+
+                    @if (_mapTileMenuExpanded)
+                    {
+                        <div class="map-control-body">
+                            <label class="map-control-radio">
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "streets")" @onchange='() => ChangeMapBaseLayerAsync("streets")' />
+                                <span>Straßenkarte</span>
+                            </label>
+                            <label class="map-control-radio">
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "satellite")" @onchange='() => ChangeMapBaseLayerAsync("satellite")' />
+                                <span>Satellit (Esri)</span>
+                            </label>
+                            <label class="map-control-radio">
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "satelliteGoogle")" @onchange='() => ChangeMapBaseLayerAsync("satelliteGoogle")' />
+                                <span>Satellit (Google)</span>
+                            </label>
+                            <label class="map-control-radio">
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "hybrid")" @onchange='() => ChangeMapBaseLayerAsync("hybrid")' />
+                                <span>Hybrid (Google)</span>
+                            </label>
+                            <label class="map-control-radio">
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "topo")" @onchange='() => ChangeMapBaseLayerAsync("topo")' />
+                                <span>Topografisch</span>
+                            </label>
+                        </div>
+                    }
+                </div>
+
+                <div class="map-control-panel">
+                    <button class="map-control-trigger" type="button" @onclick="ToggleGridMenu">
+                        <span class="map-control-trigger-label">
+                            <i class="bi bi-grid-3x3"></i>
+                            <span>Koordinaten-Gitter</span>
+                        </span>
+                        <span class="map-control-trigger-value">@SelectedGridLayerLabel</span>
+                        <i class="bi @(_mapGridMenuExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                    </button>
+
+                    @if (_mapGridMenuExpanded)
+                    {
+                        <div class="map-control-body">
+                            <label class="map-control-radio">
+                                <input type="radio" name="mapGridLayer" checked="@(_gridLayerType == "none")" @onchange='() => ChangeGridLayerAsync("none")' />
+                                <span>Ohne</span>
+                            </label>
+                            <label class="map-control-radio">
+                                <input type="radio" name="mapGridLayer" checked="@(_gridLayerType == "utm")" @onchange='() => ChangeGridLayerAsync("utm")' />
+                                <span>UTM</span>
+                            </label>
+                            <label class="map-control-radio">
+                                <input type="radio" name="mapGridLayer" checked="@(_gridLayerType == "latlon")" @onchange='() => ChangeGridLayerAsync("latlon")' />
+                                <span>Lat/Lon (dezimal)</span>
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <button class="map-floating-action map-floating-action-print"
+                    type="button"
+                    @onclick="() => _showKarteDialog = true"
+                    title="Einsatzkarte drucken">
+                <i class="bi bi-printer" aria-hidden="true"></i>
+                <span>Drucken</span>
+            </button>
+
             @* ── Embed-Toolbar (nur sichtbar bei ?embed=true mit passenden controls=...) ── *@
             <div class="map-embed-toolbar map-embed-tiles" aria-label="Kartentyp">
-                <button class="map-embed-btn @(_karteTileType == "streets" ? "map-embed-btn-on" : "")"
+                <button class="map-embed-btn @(_mapBaseLayerType == "streets" ? "map-embed-btn-on" : "")"
                         @onclick='() => SetEmbedTileType("streets")' title="Straßenkarte">
                     <i class="bi bi-map"></i>
                 </button>
-                <button class="map-embed-btn @(_karteTileType == "satellite" ? "map-embed-btn-on" : "")"
+                <button class="map-embed-btn @(_mapBaseLayerType == "satellite" ? "map-embed-btn-on" : "")"
                         @onclick='() => SetEmbedTileType("satellite")' title="Satellit">
                     <i class="bi bi-globe-europe-africa"></i>
                 </button>
-                <button class="map-embed-btn @(_karteTileType == "topo" ? "map-embed-btn-on" : "")"
+                <button class="map-embed-btn @(_mapBaseLayerType == "topo" ? "map-embed-btn-on" : "")"
                         @onclick='() => SetEmbedTileType("topo")' title="Topografisch">
                     <i class="bi bi-triangle"></i>
                 </button>

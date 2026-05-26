@@ -1,0 +1,38 @@
+<form class="map-topbar-search" @onsubmit="HandleSubmit" @onsubmit:preventDefault="true">
+    <div class="input-group input-group-sm map-topbar-search-input-group">
+        <input type="text"
+               class="form-control"
+               value="@_searchText"
+               @oninput="HandleInput"
+               placeholder="Ort oder Adresse suchen"
+               aria-label="Kartensuche" />
+        <button class="btn btn-primary" type="submit" aria-label="Kartensuche ausführen">
+            <i class="bi bi-pin-map"></i>
+        </button>
+    </div>
+</form>
+
+@code {
+    [Parameter] public string SearchText { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SearchTextChanged { get; set; }
+    [Parameter] public EventCallback OnSearch { get; set; }
+
+    private string _searchText = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        _searchText = SearchText ?? string.Empty;
+    }
+
+    private async Task HandleInput(ChangeEventArgs args)
+    {
+        _searchText = args.Value?.ToString() ?? string.Empty;
+        await SearchTextChanged.InvokeAsync(_searchText);
+    }
+
+    private async Task HandleSubmit()
+    {
+        await SearchTextChanged.InvokeAsync(_searchText);
+        await OnSearch.InvokeAsync();
+    }
+}

@@ -264,6 +264,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ToastService>();
         services.AddSingleton<IWarningService, WarningService>();
         services.AddSingleton<IHomeNotesService, HomeNotesService>();
+        services.AddScoped<MissionTopbarService>();
         services.AddScoped<BrowserPreferencesService>();
         services.AddScoped<IRadioService, RadioService>();
 

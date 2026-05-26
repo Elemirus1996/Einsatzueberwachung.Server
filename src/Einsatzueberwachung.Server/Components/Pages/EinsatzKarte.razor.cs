@@ -3,6 +3,7 @@ using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Domain.Services;
 using Einsatzueberwachung.Server.Components.Pages.KarteComponents;
+using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -17,6 +18,7 @@ public partial class EinsatzKarte
     [Inject] IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] NavigationManager Navigation { get; set; } = default!;
     [Inject] ILogger<EinsatzKarte> Logger { get; set; } = default!;
+    [Inject] MissionTopbarService MissionTopbar { get; set; } = default!;
 
     [SupplyParameterFromQuery(Name = "embed")]
     private bool _embedMode { get; set; }
@@ -39,6 +41,8 @@ public partial class EinsatzKarte
     private bool _showDialog = false;
     private bool _showKarteDialog = false;
     private string _karteTileType = "streets";
+    private string _mapBaseLayerType = "streets";
+    private string _gridLayerType = "none";
     private string _karteTeamFilter = "";
     private SearchArea _currentArea = new();
     private SearchArea? _editingArea = null;
@@ -82,6 +86,8 @@ public partial class EinsatzKarte
     private List<Collar> _collars = new();
     private bool _trackingVisible = false;
     private bool _phoneLayerVisible = false;
+    private bool _searchAreasVisible = true;
+    private bool _pointMarkersVisible = true;
     private Dictionary<string, string> _oobWarnings = new();
     private Dictionary<string, CollarLocation> _collarLastLocations = new();
 
@@ -111,9 +117,30 @@ public partial class EinsatzKarte
 
     // Zeichenmodus (Suchgebiete)
     private bool _drawingActive = false;
+    private bool _mapTileMenuExpanded;
+    private bool _mapGridMenuExpanded;
+    private bool _mapContentMenuExpanded = true;
 
     // Referenz auf KartePunkteTab für JSInvokable-Callbacks
     private KartePunkteTab? _punkteTab;
+
+    private string SelectedMapLayerLabel => _mapBaseLayerType switch
+    {
+        "satellite" => "Satellit (Esri)",
+        "satelliteGoogle" => "Satellit (Google)",
+        "hybrid" => "Hybrid (Google)",
+        "topo" => "Topografisch",
+        _ => "Straßenkarte"
+    };
+
+    private string SelectedGridLayerLabel => _gridLayerType switch
+    {
+        "utm" => "UTM",
+        "latlon" => "Lat/Lon",
+        _ => "Ohne"
+    };
+
+    private string MapContentSummary => $"{(_searchAreasVisible ? 1 : 0) + (_pointMarkersVisible ? 1 : 0) + (_trackingVisible ? 1 : 0) + (_phoneLayerVisible ? 1 : 0)}/4 aktiv";
 
     protected override async Task OnInitializedAsync()
     {
@@ -154,6 +181,8 @@ public partial class EinsatzKarte
             _mapCenterLat = elw.Latitude;
             _mapCenterLng = elw.Longitude;
         }
+
+        ConfigureMissionTopbarContent();
     }
 
     protected override void OnParametersSet()
@@ -798,9 +827,86 @@ public partial class EinsatzKarte
 
     private async Task SetEmbedTileType(string type)
     {
-        _karteTileType = type;
+        _mapBaseLayerType = type;
         try { await JSRuntime.InvokeVoidAsync("LeafletMap.changeBaseLayer", "einsatzMap", type); }
         catch (Exception ex) { Logger.LogWarning(ex, "changeBaseLayer fehlgeschlagen"); }
+    }
+
+    private Task OnTopbarSearchTextChanged(string value)
+    {
+        _addressSearch = value;
+        return Task.CompletedTask;
+    }
+
+    private void ConfigureMissionTopbarContent()
+    {
+        MissionTopbar.SetContent(this, builder =>
+        {
+            builder.OpenComponent<KarteTopbarSearch>(0);
+            builder.AddAttribute(1, nameof(KarteTopbarSearch.SearchText), _addressSearch);
+            builder.AddAttribute(2, nameof(KarteTopbarSearch.SearchTextChanged), EventCallback.Factory.Create<string>(this, OnTopbarSearchTextChanged));
+            builder.AddAttribute(3, nameof(KarteTopbarSearch.OnSearch), EventCallback.Factory.Create(this, SearchAddress));
+            builder.CloseComponent();
+        });
+    }
+
+    private async Task ChangeMapBaseLayerAsync(string type)
+    {
+        await SetEmbedTileType(type);
+    }
+
+    private async Task ChangeGridLayerAsync(string type)
+    {
+        _gridLayerType = type;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("LeafletMap.changeGridLayer", "einsatzMap", type);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "changeGridLayer fehlgeschlagen");
+        }
+    }
+
+    private async Task ToggleSearchAreasVisibility()
+    {
+        _searchAreasVisible = !_searchAreasVisible;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("LeafletMap.toggleSearchAreas", "einsatzMap", _searchAreasVisible);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "toggleSearchAreas fehlgeschlagen");
+        }
+    }
+
+    private async Task TogglePointMarkersVisibility()
+    {
+        _pointMarkersVisible = !_pointMarkersVisible;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("LeafletMap.toggleCoordinateMarkers", "einsatzMap", _pointMarkersVisible);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "toggleCoordinateMarkers fehlgeschlagen");
+        }
+    }
+
+    private void ToggleTileMenu()
+    {
+        _mapTileMenuExpanded = !_mapTileMenuExpanded;
+    }
+
+    private void ToggleGridMenu()
+    {
+        _mapGridMenuExpanded = !_mapGridMenuExpanded;
+    }
+
+    private void ToggleMapContentMenu()
+    {
+        _mapContentMenuExpanded = !_mapContentMenuExpanded;
     }
 
     private async Task RecenterMap()
@@ -1333,6 +1439,7 @@ public partial class EinsatzKarte
     {
         try
         {
+            MissionTopbar.ClearContent(this);
             CollarTrackingService.CollarLocationReceived -= OnCollarLocationReceived;
             CollarTrackingService.OutOfBoundsDetected -= OnOutOfBoundsDetected;
             CollarTrackingService.CollarHistoryCleared -= OnCollarHistoryCleared;

@@ -15,8 +15,10 @@ public partial class KartePunkteTab
     private const double CoordinateEpsilon = 0.0000001;
 
     [Parameter, EditorRequired] public List<MapMarker> Markers { get; set; } = new();
+    [Parameter] public bool HasElwPosition { get; set; }
     [Parameter] public bool ClickToPlaceActive { get; set; }
     [Parameter] public string CoordInputMode { get; set; } = "click";
+    [Parameter] public EventCallback OnSetElwPosition { get; set; }
     [Parameter] public EventCallback<string> CoordInputModeChanged { get; set; }
     [Parameter] public EventCallback OnActivateClickToPlace { get; set; }
     [Parameter] public EventCallback OnDeactivateClickToPlace { get; set; }
