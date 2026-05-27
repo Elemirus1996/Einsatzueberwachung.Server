@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @using Einsatzueberwachung.Domain.Models
 @using Einsatzueberwachung.Domain.Models.Enums
 
@@ -76,13 +76,16 @@
 
             <div class="mission-topbar-clock" aria-live="polite">
                 @if (EinsatzService.CurrentEinsatz.AlarmierungsZeit.HasValue)
-                    {
-                        <span id="live-duration">
-                            <i class="bi bi-clock-history"></i>@GetMissionDurationDisplay()
-                        </span>
-                    }
-                <span id="live-time">00:00:00</span>
-                <span id="live-date">01.01.2000</span>
+                {
+                    <span id="live-duration" class="mission-topbar-duration">
+                        <i class="bi bi-clock-history text-warning"></i>
+                        <span>@GetMissionDurationDisplay()</span>
+                    </span>
+                }
+                <div class="mission-topbar-time-block">
+                    <span id="live-time" class="time-display">00:00:00</span>
+                    <span id="live-date" class="date-display">01.01.2000</span>
+                </div>
             </div>
 
             <div class="mission-topbar-actions">

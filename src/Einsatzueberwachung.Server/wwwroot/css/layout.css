@@ -475,12 +475,51 @@ main,
 .mission-topbar-clock {
     justify-self: end;
     display: flex;
+    align-items: center;
     gap: 1.2rem;
     font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
     font-variant-numeric: tabular-nums;
-    font-weight: 700;
     color: var(--ui-text);
     letter-spacing: 0.05em;
+}
+
+.mission-topbar-duration {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--ui-topbar-border);
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--ui-text);
+}
+
+.mission-topbar-duration i {
+    font-size: 1rem;
+    opacity: 0.85;
+}
+
+.mission-topbar-time-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    line-height: 1.15;
+    text-align: right;
+}
+
+.mission-topbar-time-block .time-display {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ui-text);
+}
+
+.mission-topbar-time-block .date-display {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--ui-muted);
 }
 
 /* Grüner Bottom-Glow wenn Einsatz aktiv */
