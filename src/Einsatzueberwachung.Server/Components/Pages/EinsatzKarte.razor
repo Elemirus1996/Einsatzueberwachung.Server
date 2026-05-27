@@ -191,24 +191,24 @@
                     @if (_mapTileMenuExpanded)
                     {
                         <div class="map-control-body">
-                            <label class="map-control-radio">
-                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "streets")" @onchange='() => ChangeMapBaseLayerAsync("streets")' />
+                            <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("streets")' >
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "streets")" />
                                 <span>Straßenkarte</span>
                             </label>
-                            <label class="map-control-radio">
-                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "satellite")" @onchange='() => ChangeMapBaseLayerAsync("satellite")' />
+                            <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("satellite")' >
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "satellite")" />
                                 <span>Satellit (Esri)</span>
                             </label>
-                            <label class="map-control-radio">
-                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "satelliteGoogle")" @onchange='() => ChangeMapBaseLayerAsync("satelliteGoogle")' />
+                            <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("satelliteGoogle")' >
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "satelliteGoogle")" />
                                 <span>Satellit (Google)</span>
                             </label>
-                            <label class="map-control-radio">
-                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "hybrid")" @onchange='() => ChangeMapBaseLayerAsync("hybrid")' />
+                            <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("hybrid")' >
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "hybrid")" />
                                 <span>Hybrid (Google)</span>
                             </label>
-                            <label class="map-control-radio">
-                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "topo")" @onchange='() => ChangeMapBaseLayerAsync("topo")' />
+                            <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("topo")' >
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "topo")" />
                                 <span>Topografisch</span>
                             </label>
                         </div>
@@ -228,16 +228,16 @@
                     @if (_mapGridMenuExpanded)
                     {
                         <div class="map-control-body">
-                            <label class="map-control-radio">
-                                <input type="radio" name="mapGridLayer" checked="@(_gridLayerType == "none")" @onchange='() => ChangeGridLayerAsync("none")' />
+                            <label class="map-control-radio" @onclick='() => ChangeGridLayerAsync("none")' >
+                                <input type="radio" name="mapGridLayer" checked="@(_gridLayerType == "none")" />
                                 <span>Ohne</span>
                             </label>
-                            <label class="map-control-radio">
-                                <input type="radio" name="mapGridLayer" checked="@(_gridLayerType == "utm")" @onchange='() => ChangeGridLayerAsync("utm")' />
+                            <label class="map-control-radio" @onclick='() => ChangeGridLayerAsync("utm")' >
+                                <input type="radio" name="mapGridLayer" checked="@(_gridLayerType == "utm")" />
                                 <span>UTM</span>
                             </label>
-                            <label class="map-control-radio">
-                                <input type="radio" name="mapGridLayer" checked="@(_gridLayerType == "latlon")" @onchange='() => ChangeGridLayerAsync("latlon")' />
+                            <label class="map-control-radio" @onclick='() => ChangeGridLayerAsync("latlon")' >
+                                <input type="radio" name="mapGridLayer" checked="@(_gridLayerType == "latlon")" />
                                 <span>Lat/Lon (dezimal)</span>
                             </label>
                         </div>
@@ -247,7 +247,7 @@
 
             <button class="map-floating-action map-floating-action-print"
                     type="button"
-                    @onclick="() => _showKarteDialog = true"
+                    @onclick="OpenPrintDialogAsync"
                     title="Einsatzkarte drucken">
                 <i class="bi bi-printer" aria-hidden="true"></i>
                 <span>Drucken</span>
@@ -337,49 +337,222 @@
 {
     <div class="modal-backdrop show"></div>
     <div class="modal show d-block" tabindex="-1">
-        <div class="modal-dialog modal-sm">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Einsatzkarte drucken</h5>
                     <button type="button" class="btn-close" @onclick="() => _showKarteDialog = false"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Kartentyp</label>
-                        <div class="d-grid gap-1">
-                            <label class="border rounded px-3 py-2 @(_karteTileType == "streets" ? "border-warning bg-warning bg-opacity-10" : "") cursor-pointer">
-                                <input type="radio" name="karteMapType" class="me-2" value="streets"
-                                       checked="@(_karteTileType == "streets")"
-                                       @onchange='() => _karteTileType = "streets"' />
-                                <i class="bi bi-map me-1"></i>Straßenkarte
-                            </label>
-                            <label class="border rounded px-3 py-2 @(_karteTileType == "satellite" ? "border-warning bg-warning bg-opacity-10" : "") cursor-pointer">
-                                <input type="radio" name="karteMapType" class="me-2" value="satellite"
-                                       checked="@(_karteTileType == "satellite")"
-                                       @onchange='() => _karteTileType = "satellite"' />
-                                <i class="bi bi-globe me-1"></i>Satellit
-                            </label>
-                            <label class="border rounded px-3 py-2 @(_karteTileType == "topo" ? "border-warning bg-warning bg-opacity-10" : "") cursor-pointer">
-                                <input type="radio" name="karteMapType" class="me-2" value="topo"
-                                       checked="@(_karteTileType == "topo")"
-                                       @onchange='() => _karteTileType = "topo"' />
-                                <i class="bi bi-bar-chart-steps me-1"></i>Topografisch
-                            </label>
-                        </div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label fw-bold">Team</label>
-                        <select class="form-select form-select-sm" @bind="_karteTeamFilter">
-                            <option value="">Alle Teams</option>
-                            @foreach (var team in _teams.Where(t => !string.IsNullOrWhiteSpace(t.TeamName)).OrderBy(t => t.TeamName))
-                            {
-                                <option value="@team.TeamId">@team.TeamName</option>
-                            }
-                        </select>
-                        @if (!string.IsNullOrWhiteSpace(_karteTeamFilter))
-                        {
-                            <small class="text-muted">Nur Suchgebiete dieses Teams werden gedruckt.</small>
+                <div class="modal-body p-3 print-dialog-inputs">
+                    <style>
+                        .print-dialog-inputs .form-check-input {
+                            min-width: 16px !important;
+                            min-height: 16px !important;
+                            width: 16px !important;
+                            height: 16px !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            cursor: pointer;
+                            flex-shrink: 0;
                         }
+                        
+                        .print-dialog-inputs .form-check {
+                            min-height: auto;
+                            padding: 0;
+                            margin: 0;
+                        }
+
+                        .print-dialog-inputs .align-items-start .form-check-input {
+                            margin-top: 3px !important;
+                        }
+
+                        .print-dialog-inputs .extra-small {
+                            font-size: 0.72rem;
+                            line-height: 1.1;
+                        }
+                    </style>
+                    <div class="mb-3 d-flex justify-content-between align-items-center bg-dark bg-opacity-25 p-2 rounded border border-secondary border-opacity-30">
+                        <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Passen Sie den Ausschnitt und die Details für den Export an.</span>
+                        <button class="btn btn-outline-warning btn-sm" @onclick="SyncPrintDialogFromMap">
+                            <i class="bi bi-arrow-repeat me-1"></i>Kartenansicht übernehmen
+                        </button>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <!-- Linke Spalte: Ausschnitt, Team & Sichtbarkeit -->
+                        <div class="col-md-6 d-flex flex-column gap-3">
+                            <div>
+                                <label class="form-label fw-bold mb-2"><i class="bi bi-zoom-in me-1 text-warning"></i>1. Kartenausschnitt / Zoom</label>
+                                <div class="d-flex flex-column gap-2 ms-1">
+                                    <div class="form-check d-flex align-items-start">
+                                        <input class="form-check-input" type="radio" name="karteZoomMode" id="zoomModeAll" value="all"
+                                               checked="@(_karteZoomMode == "all")"
+                                               @onchange='() => _karteZoomMode = "all"' />
+                                        <label class="form-check-label ms-2 cursor-pointer" for="zoomModeAll">
+                                            <strong class="d-block text-white small">Alles anzeigen</strong>
+                                            <span class="text-muted extra-small">Gebiete, Tracks & Punkte im Bild</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check d-flex align-items-start @(string.IsNullOrWhiteSpace(_karteTeamFilter) ? "opacity-50" : "")">
+                                        <input class="form-check-input" type="radio" name="karteZoomMode" id="zoomModeTeam" value="team"
+                                               disabled="@(string.IsNullOrWhiteSpace(_karteTeamFilter))"
+                                               checked="@(_karteZoomMode == "team")"
+                                               @onchange='() => _karteZoomMode = "team"' />
+                                        <label class="form-check-label ms-2 cursor-pointer" for="zoomModeTeam">
+                                            <strong class="d-block text-white small">Team-Inhalt fokussieren</strong>
+                                            <span class="text-muted extra-small">Nur Gebiete/Tracks des gewählten Teams</span>
+                                        </label>
+                                    </div>
+
+                                    <div class="form-check d-flex align-items-start">
+                                        <input class="form-check-input" type="radio" name="karteZoomMode" id="zoomModeViewport" value="viewport"
+                                               checked="@(_karteZoomMode == "viewport")"
+                                               @onchange='() => _karteZoomMode = "viewport"' />
+                                        <label class="form-check-label ms-2 cursor-pointer" for="zoomModeViewport">
+                                            <strong class="d-block text-white small">Aktueller Live-Ausschnitt</strong>
+                                            <span class="text-muted extra-small">Identisch mit der Live-Kartenansicht</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="form-label fw-bold mb-1 small">Gewähltes Team</label>
+                                <select class="form-select form-select-sm bg-dark text-white border-secondary border-opacity-50" value="@_karteTeamFilter" @onchange="HandleTeamFilterChanged">
+                                    <option value="">Alle Teams</option>
+                                    @foreach (var team in _teams.Where(t => !string.IsNullOrWhiteSpace(t.TeamName)).OrderBy(t => t.TeamName))
+                                    {
+                                        <option value="@team.TeamId">@team.TeamName</option>
+                                    }
+                                </select>
+                                @if (string.IsNullOrWhiteSpace(_karteTeamFilter) && _karteZoomMode == "team")
+                                {
+                                    <span class="text-danger mt-1 d-block" style="font-size: 0.72rem;"><i class="bi bi-exclamation-triangle me-1"></i>Bitte wählen Sie ein Team aus.</span>
+                                }
+                            </div>
+
+                            <div>
+                                <label class="form-label fw-bold mb-2"><i class="bi bi-eye me-1 text-warning"></i>2. Anzeige-Details</label>
+                                <div class="row g-2 ms-1">
+                                    <div class="col-6">
+                                        <div class="form-check d-flex align-items-center">
+                                            <input class="form-check-input" type="checkbox" id="chkSearchAreas" checked="@_karteShowSearchAreas"
+                                                   @onchange="() => _karteShowSearchAreas = !_karteShowSearchAreas" />
+                                            <label class="form-check-label ms-2 cursor-pointer small text-white" for="chkSearchAreas">
+                                                Suchgebiete
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check d-flex align-items-center">
+                                            <input class="form-check-input" type="checkbox" id="chkPoints" checked="@_karteShowPoints"
+                                                   @onchange="() => _karteShowPoints = !_karteShowPoints" />
+                                            <label class="form-check-label ms-2 cursor-pointer small text-white" for="chkPoints">
+                                                Punkte
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check d-flex align-items-center">
+                                            <input class="form-check-input" type="checkbox" id="chkGps" checked="@_karteShowGps"
+                                                   @onchange="() => _karteShowGps = !_karteShowGps" />
+                                            <label class="form-check-label ms-2 cursor-pointer small text-white" for="chkGps">
+                                                GPS-Tracks
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check d-flex align-items-center">
+                                            <input class="form-check-input" type="checkbox" id="chkPhone" checked="@_karteShowPhone"
+                                                   @onchange="() => _karteShowPhone = !_karteShowPhone" />
+                                            <label class="form-check-label ms-2 cursor-pointer small text-white" for="chkPhone">
+                                                Handy-Tracks
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rechte Spalte: Kartentyp & Gitter -->
+                        <div class="col-md-6 d-flex flex-column gap-3">
+                            <div>
+                                <label class="form-label fw-bold mb-2"><i class="bi bi-map me-1 text-warning"></i>3. Kartentyp</label>
+                                <div class="d-flex flex-column gap-2 ms-1">
+                                    <div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input" type="radio" name="karteMapType" id="tileStreets" value="streets"
+                                               checked="@(_karteTileType == "streets")"
+                                               @onchange='() => _karteTileType = "streets"' />
+                                        <label class="form-check-label ms-2 cursor-pointer small d-flex align-items-center text-white" for="tileStreets">
+                                            <i class="bi bi-map me-2 text-muted"></i>Straßenkarte
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input" type="radio" name="karteMapType" id="tileSatellite" value="satellite"
+                                               checked="@(_karteTileType == "satellite")"
+                                               @onchange='() => _karteTileType = "satellite"' />
+                                        <label class="form-check-label ms-2 cursor-pointer small d-flex align-items-center text-white" for="tileSatellite">
+                                            <i class="bi bi-globe me-2 text-muted"></i>Satellit (Esri)
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input" type="radio" name="karteMapType" id="tileSatelliteGoogle" value="satelliteGoogle"
+                                               checked="@(_karteTileType == "satelliteGoogle")"
+                                               @onchange='() => _karteTileType = "satelliteGoogle"' />
+                                        <label class="form-check-label ms-2 cursor-pointer small d-flex align-items-center text-white" for="tileSatelliteGoogle">
+                                            <i class="bi bi-globe me-2 text-muted"></i>Satellit (Google)
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input" type="radio" name="karteMapType" id="tileHybrid" value="hybrid"
+                                               checked="@(_karteTileType == "hybrid")"
+                                               @onchange='() => _karteTileType = "hybrid"' />
+                                        <label class="form-check-label ms-2 cursor-pointer small d-flex align-items-center text-white" for="tileHybrid">
+                                            <i class="bi bi-globe2 me-2 text-muted"></i>Hybrid (Google)
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input" type="radio" name="karteMapType" id="tileTopo" value="topo"
+                                               checked="@(_karteTileType == "topo")"
+                                               @onchange='() => _karteTileType = "topo"' />
+                                        <label class="form-check-label ms-2 cursor-pointer small d-flex align-items-center text-white" for="tileTopo">
+                                            <i class="bi bi-bar-chart-steps me-2 text-muted"></i>Topografisch
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="form-label fw-bold mb-2"><i class="bi bi-grid-3x3 me-1 text-warning"></i>4. Koordinaten-Gitter</label>
+                                <div class="d-flex flex-column gap-2 ms-1">
+                                    <div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input" type="radio" name="karteGridType" id="gridNone" value="none"
+                                               checked="@(_karteGridType == "none")"
+                                               @onchange='() => _karteGridType = "none"' />
+                                        <label class="form-check-label ms-2 cursor-pointer small d-flex align-items-center text-white" for="gridNone">
+                                            <i class="bi bi-slash-circle me-2 text-muted"></i>Ohne Gitter
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input" type="radio" name="karteGridType" id="gridUtm" value="utm"
+                                               checked="@(_karteGridType == "utm")"
+                                               @onchange='() => _karteGridType = "utm"' />
+                                        <label class="form-check-label ms-2 cursor-pointer small d-flex align-items-center text-white" for="gridUtm">
+                                            <i class="bi bi-grid me-2 text-muted"></i>UTM-Gitter
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input" type="radio" name="karteGridType" id="gridLatLon" value="latlon"
+                                               checked="@(_karteGridType == "latlon")"
+                                               @onchange='() => _karteGridType = "latlon"' />
+                                        <label class="form-check-label ms-2 cursor-pointer small d-flex align-items-center text-white" for="gridLatLon">
+                                            <i class="bi bi-grid-3x3 me-2 text-muted"></i>Breitengrad / Längengrad
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

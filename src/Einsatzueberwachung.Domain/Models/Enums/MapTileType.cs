@@ -4,5 +4,7 @@ public enum MapTileType
 {
     Streets,
     Satellite,
-    Topographic
+    Topographic,
+    SatelliteGoogle,
+    Hybrid
 }

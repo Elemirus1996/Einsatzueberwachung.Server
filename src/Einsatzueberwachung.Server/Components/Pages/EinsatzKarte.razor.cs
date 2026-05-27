@@ -40,10 +40,19 @@ public partial class EinsatzKarte
     private List<Team> _teams = new();
     private bool _showDialog = false;
     private bool _showKarteDialog = false;
+    private string _karteZoomMode = "all";
+    private double? _liveMapCenterLat;
+    private double? _liveMapCenterLng;
+    private int? _liveMapZoom;
     private string _karteTileType = "streets";
+    private string _karteGridType = "none";
     private string _mapBaseLayerType = "streets";
     private string _gridLayerType = "none";
     private string _karteTeamFilter = "";
+    private bool _karteShowSearchAreas = true;
+    private bool _karteShowPoints = true;
+    private bool _karteShowGps = false;
+    private bool _karteShowPhone = false;
     private SearchArea _currentArea = new();
     private SearchArea? _editingArea = null;
     private string _selectedTeamId = "";
@@ -651,7 +660,54 @@ public partial class EinsatzKarte
     private string BuildKarteUrl()
     {
         var teamParam = string.IsNullOrWhiteSpace(_karteTeamFilter) ? "" : $"&teamId={Uri.EscapeDataString(_karteTeamFilter)}";
-        return $"/downloads/einsatz-karte.pdf?mapType={_karteTileType}{teamParam}";
+        var showAreas = _karteShowSearchAreas ? "" : "&showSearchAreas=false";
+        var showPoints = _karteShowPoints ? "" : "&showPoints=false";
+        var showGps = _karteShowGps ? "&showGps=true" : "";
+        var showPhone = _karteShowPhone ? "&showPhone=true" : "";
+        var gridType = _karteGridType != "none" ? $"&gridType={_karteGridType}" : "";
+        var zoomMode = $"&zoomMode={_karteZoomMode}";
+        var viewportParams = "";
+        if (_karteZoomMode == "viewport" && _liveMapCenterLat.HasValue && _liveMapCenterLng.HasValue && _liveMapZoom.HasValue)
+        {
+            viewportParams = $"&centerLat={_liveMapCenterLat.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}&centerLng={_liveMapCenterLng.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}&zoom={_liveMapZoom.Value}";
+        }
+        return $"/downloads/einsatz-karte.pdf?mapType={_karteTileType}{teamParam}{showAreas}{showPoints}{showGps}{showPhone}{gridType}{zoomMode}{viewportParams}";
+    }
+
+    private async Task OpenPrintDialogAsync()
+    {
+        try
+        {
+            var viewport = await JSRuntime.InvokeAsync<MapViewport>("LeafletMap.getMapViewport", "einsatzMap");
+            _liveMapCenterLat = viewport.Lat;
+            _liveMapCenterLng = viewport.Lng;
+            _liveMapZoom = viewport.Zoom;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Fehler beim Abrufen des Viewports");
+        }
+        _showKarteDialog = true;
+    }
+
+    private void SyncPrintDialogFromMap()
+    {
+        _karteTileType = _mapBaseLayerType;
+        _karteGridType = _gridLayerType;
+        _karteShowSearchAreas = _searchAreasVisible;
+        _karteShowPoints = _pointMarkersVisible;
+        _karteShowGps = _trackingVisible;
+        _karteShowPhone = _phoneLayerVisible;
+        _karteZoomMode = "viewport";
+    }
+
+    private void HandleTeamFilterChanged(ChangeEventArgs e)
+    {
+        _karteTeamFilter = e.Value?.ToString() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(_karteTeamFilter) && _karteZoomMode == "team")
+        {
+            _karteZoomMode = "all";
+        }
     }
 
     // Draw-Modi aktivieren
@@ -902,16 +958,31 @@ public partial class EinsatzKarte
     private void ToggleTileMenu()
     {
         _mapTileMenuExpanded = !_mapTileMenuExpanded;
+        if (_mapTileMenuExpanded)
+        {
+            _mapGridMenuExpanded = false;
+            _mapContentMenuExpanded = false;
+        }
     }
 
     private void ToggleGridMenu()
     {
         _mapGridMenuExpanded = !_mapGridMenuExpanded;
+        if (_mapGridMenuExpanded)
+        {
+            _mapTileMenuExpanded = false;
+            _mapContentMenuExpanded = false;
+        }
     }
 
     private void ToggleMapContentMenu()
     {
         _mapContentMenuExpanded = !_mapContentMenuExpanded;
+        if (_mapContentMenuExpanded)
+        {
+            _mapTileMenuExpanded = false;
+            _mapGridMenuExpanded = false;
+        }
     }
 
     private async Task RecenterMap()
@@ -1476,5 +1547,13 @@ public partial class EinsatzKarte
     {
         public double Lat { get; set; }
         public double Lng { get; set; }
+    }
+
+    // Helper-Klasse für Map-Viewport
+    private class MapViewport
+    {
+        public double Lat { get; set; }
+        public double Lng { get; set; }
+        public int Zoom { get; set; }
     }
 }

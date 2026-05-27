@@ -595,6 +595,9 @@ main:has(.map-page-layout) {
     gap: 0.6rem;
     align-items: flex-end;
     pointer-events: none;
+    max-height: calc(100% - 5rem);
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .map-control-panel,

@@ -44,6 +44,16 @@ namespace Einsatzueberwachung.Domain.Interfaces
             List<Team> teams,
             MapTileType tileType = MapTileType.Streets,
             string? filterTeamId = null);
+
+        /// <summary>
+        /// Exportiert eine Einsatzkarte als PDF mit erweiterten Optionen für Layer-Sichtbarkeit.
+        /// </summary>
+        Task<byte[]> ExportEinsatzKarteToPdfBytesAsync(
+            EinsatzData einsatzData,
+            List<Team> teams,
+            MapPrintOptions options,
+            List<TeamTrackSnapshot>? gpsTracks = null,
+            Dictionary<string, List<TeamPhoneLocation>>? phoneTrackHistories = null);
     }
 
     public class PdfExportResult

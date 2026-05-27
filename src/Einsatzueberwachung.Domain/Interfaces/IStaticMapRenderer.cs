@@ -39,4 +39,18 @@ public interface IStaticMapRenderer
         MapTileType tileType = MapTileType.Streets,
         int width = 1500,
         int height = 1060);
+
+    /// <summary>
+    /// Rendert eine Planungskarte mit erweiterten Layer-Optionen (Marker, GPS-Tracks, Handy-Tracks).
+    /// </summary>
+    Task<byte[]?> RenderSearchAreaMapAsync(
+        List<SearchArea> searchAreas,
+        (double Latitude, double Longitude)? elwPosition,
+        MapPrintOptions options,
+        List<MapMarker>? markers = null,
+        List<TeamTrackSnapshot>? gpsTracks = null,
+        Dictionary<string, List<TeamPhoneLocation>>? phoneTrackHistories = null,
+        List<Team>? teams = null,
+        int width = 1500,
+        int height = 1060);
 }

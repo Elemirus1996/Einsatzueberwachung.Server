@@ -15,6 +15,18 @@ public sealed partial class OsmStaticMapRenderer
             256,
             "© Esri, Maxar, Earthstar Geographics"),
 
+        MapTileType.SatelliteGoogle => new(
+            ["https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+             "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"],
+            256,
+            "© Google"),
+
+        MapTileType.Hybrid => new(
+            ["https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+             "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"],
+            256,
+            "© Google"),
+
         MapTileType.Topographic => new(
             [
                 "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",

@@ -1,4 +1,4 @@
-﻿// Leaflet Map Interop fuer Einsatzueberwachung
+// Leaflet Map Interop fuer Einsatzueberwachung
 // Ermoeglicht das Zeichnen und Verwalten von Suchgebieten auf einer interaktiven Karte
 // Debug-Flag - setze auf false fuer Production
 const DEBUG = false;
@@ -551,6 +551,25 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         } catch (err) {
             error('Fehler beim Abrufen der Kartenmitte:', err);
             return { lat: 0, lng: 0 };
+        }
+    },
+    
+    // Gibt das aktuelle Viewport (Mitte + Zoom) zurueck
+    getMapViewport: function(mapId) {
+        try {
+            const mapData = this.maps[mapId];
+            if (!mapData) return { lat: 0, lng: 0, zoom: 13 };
+            
+            const center = mapData.map.getCenter();
+            const zoom = mapData.map.getZoom();
+            return {
+                lat: center.lat,
+                lng: center.lng,
+                zoom: zoom
+            };
+        } catch (err) {
+            error('Fehler beim Abrufen des Viewports:', err);
+            return { lat: 0, lng: 0, zoom: 13 };
         }
     },
     

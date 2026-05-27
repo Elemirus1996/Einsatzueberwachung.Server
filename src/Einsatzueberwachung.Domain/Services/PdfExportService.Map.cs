@@ -193,6 +193,86 @@ namespace Einsatzueberwachung.Domain.Services
             });
         }
 
+        public async Task<byte[]> ExportEinsatzKarteToPdfBytesAsync(
+            EinsatzData einsatzData,
+            List<Team> teams,
+            MapPrintOptions options,
+            List<TeamTrackSnapshot>? gpsTracks = null,
+            Dictionary<string, List<TeamPhoneLocation>>? phoneTrackHistories = null)
+        {
+            var staffelInfo = await ResolveStaffelInfoAsync(einsatzData);
+
+            var allAreas = einsatzData.SearchAreas ?? new List<SearchArea>();
+            var filteredAreas = string.IsNullOrWhiteSpace(options.FilterTeamId)
+                ? allAreas
+                : allAreas.Where(a => a.AssignedTeamId == options.FilterTeamId ||
+                    (!string.IsNullOrWhiteSpace(a.AssignedTeamName) &&
+                     teams.Any(t => t.TeamId == options.FilterTeamId &&
+                                    string.Equals(t.TeamName, a.AssignedTeamName, StringComparison.OrdinalIgnoreCase))))
+                          .ToList();
+
+            var filteredTeams = string.IsNullOrWhiteSpace(options.FilterTeamId)
+                ? teams
+                : teams.Where(t => t.TeamId == options.FilterTeamId).ToList();
+
+            var markers = options.ShowPointMarkers ? (einsatzData.MapMarkers ?? new List<MapMarker>()) : null;
+
+            byte[]? mapBytes = null;
+            if (_mapRenderer != null)
+            {
+                mapBytes = await _mapRenderer.RenderSearchAreaMapAsync(
+                    filteredAreas, einsatzData.ElwPosition, options,
+                    markers, gpsTracks, phoneTrackHistories, teams);
+            }
+
+            var capturedMapBytes = mapBytes;
+            return await Task.Run(() =>
+            {
+                using var stream = new MemoryStream();
+                Document.Create(container =>
+                {
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4.Landscape());
+                        page.MarginTop(4, Unit.Millimetre);
+                        page.MarginBottom(6, Unit.Millimetre);
+                        page.MarginHorizontal(10, Unit.Millimetre);
+                        page.PageColor(Colors.White);
+
+                        page.Header().PaddingBottom(3)
+                            .Element(c => ComposeKarteHeader(c, einsatzData, staffelInfo));
+
+                        page.Content().Element(c =>
+                        {
+                            if (capturedMapBytes != null)
+                            {
+                                c.Image(capturedMapBytes).FitArea();
+                            }
+                            else
+                            {
+                                c.Background(Colors.Grey.Lighten3)
+                                 .AlignCenter().AlignMiddle()
+                                 .Text("Keine Suchgebiete oder ELW-Position vorhanden")
+                                 .FontSize(14).FontColor(Colors.Grey.Darken2);
+                            }
+                        });
+                    });
+
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4.Landscape());
+                        page.Margin(12, Unit.Millimetre);
+                        page.PageColor(Colors.White);
+                        page.DefaultTextStyle(x => x.FontSize(10));
+
+                        page.Content().Element(c => ComposeKarteListe(c, einsatzData, filteredAreas, filteredTeams));
+                    });
+                }).GeneratePdf(stream);
+
+                return stream.ToArray();
+            });
+        }
+
         private static void ComposeKarteHeader(IContainer container, EinsatzData einsatzData, StaffelInfo staffelInfo)
         {
             container.Background("#2C3E50").Padding(6).Row(row =>
