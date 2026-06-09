@@ -3,8 +3,8 @@
 
 <PageTitle>Einsatz-Archiv</PageTitle>
 
-<div class="container py-4 archive-page">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4 page-headline-row">
+<div class="container py-4">
+    <div class="page-headline-row mb-4">
         <div>
             <h1 class="mb-1"><i class="bi bi-archive me-2"></i>Einsatz-Archiv</h1>
             <p class="text-muted mb-0">Vergangene Einsaetze und Uebungen</p>
@@ -14,7 +14,7 @@
         </div>
     </div>
 
-    <div class="card archive-filter-card mb-3">
+    <div class="card filter-card mb-3">
         <div class="card-header fw-semibold">
             <i class="bi bi-funnel me-2"></i>Filter
         </div>
@@ -50,23 +50,23 @@
     {
         <div class="row g-3 mb-3">
             <div class="col-6 col-md-3">
-                <div class="card archive-stat-card"><div class="card-body"><div class="text-muted small">Gesamt</div><div class="archive-stat-value">@_stats.GesamtAnzahl</div></div></div>
+                <div class="card stat-display-card"><div class="card-body"><div class="text-muted small">Gesamt</div><div class="stat-display-value">@_stats.GesamtAnzahl</div></div></div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="card archive-stat-card"><div class="card-body"><div class="text-muted small">Einsaetze</div><div class="archive-stat-value">@_stats.AnzahlEinsaetze</div></div></div>
+                <div class="card stat-display-card"><div class="card-body"><div class="text-muted small">Einsaetze</div><div class="stat-display-value">@_stats.AnzahlEinsaetze</div></div></div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="card archive-stat-card"><div class="card-body"><div class="text-muted small">Uebungen</div><div class="archive-stat-value">@_stats.AnzahlUebungen</div></div></div>
+                <div class="card stat-display-card"><div class="card-body"><div class="text-muted small">Uebungen</div><div class="stat-display-value">@_stats.AnzahlUebungen</div></div></div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="card archive-stat-card"><div class="card-body"><div class="text-muted small">Dauer (avg)</div><div class="archive-stat-value">@_stats.DurchschnittlicheDauer.ToString(@"hh\:mm")</div></div></div>
+                <div class="card stat-display-card"><div class="card-body"><div class="text-muted small">Dauer (avg)</div><div class="stat-display-value">@_stats.DurchschnittlicheDauer.ToString(@"hh\:mm")</div></div></div>
             </div>
         </div>
 
         @if (_stats.EinsaetzeProJahr.Count > 0 || _stats.EinsaetzeProMonat.Count > 0)
         {
             <div class="card border-0 shadow-sm mb-3">
-                <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
+                <div class="card-header card-header-toolbar">
                     <span class="fw-semibold"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Verlauf</span>
                     <div class="btn-group btn-group-sm" role="group">
                         <button class="btn @(_trendView == "monat" ? "btn-primary" : "btn-outline-primary")"
@@ -88,17 +88,17 @@
                     }
                     else
                     {
-                        <div class="d-flex align-items-end gap-1" style="height: 100px; overflow-x: auto;">
+                        <div class="d-flex align-items-end gap-1 archive-chart-wrap">
                             @foreach (var kv in trendData)
                             {
                                 var heightPct = maxVal > 0 ? (int)(kv.Value * 100.0 / maxVal) : 0;
                                 var label = _trendView == "jahr" ? kv.Key : kv.Key.Length >= 7 ? kv.Key[2..7] : kv.Key;
-                                <div class="d-flex flex-column align-items-center" style="min-width: 32px; flex: 1 0 32px; max-width: 60px;">
-                                    <span class="text-muted" style="font-size: 0.65rem;">@kv.Value</span>
+                                <div class="d-flex flex-column align-items-center archive-bar-col">
+                                    <span class="text-muted archive-bar-label-sm">@kv.Value</span>
                                     <div class="bg-primary rounded-top w-100"
                                          style="height: @(heightPct)px; transition: height 0.3s; min-height: 2px;"
                                          title="@kv.Key: @kv.Value"></div>
-                                    <span class="text-muted text-truncate w-100 text-center" style="font-size: 0.6rem;">@label</span>
+                                    <span class="text-muted text-truncate w-100 text-center archive-bar-val-sm">@label</span>
                                 </div>
                             }
                         </div>
@@ -161,7 +161,7 @@
                                 <button class="btn btn-sm btn-outline-success" @onclick="() => NavigateToExport(item.Id)" title="Als .einsatz-export.json herunterladen">
                                     <i class="bi bi-download me-1"></i>Exportieren
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => PromptDelete(item)">Loeschen</button>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => PromptDelete(item)">Loeschen</button>
                             </td>
                         </tr>
                     }
@@ -171,8 +171,8 @@
 
         @if (_selected is not null)
         {
-            <div class="card mt-3 archive-details-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card mt-3 filter-card">
+                <div class="card-header">
                     <strong>Archivdetails: @_selected.EinsatzNummer</strong>
                     <div class="d-flex gap-2 flex-wrap">
                         <button class="btn btn-sm btn-outline-success"
@@ -324,7 +324,7 @@
                                     </div>
                                     @if (!merge.IsReverted)
                                     {
-                                        <button class="btn btn-outline-danger btn-sm"
+                                        <button class="btn btn-outline-secondary btn-sm"
                                                 @onclick="() => RevertArchivedMergeAsync(_selected.Id, merge.MergeId)"
                                                 disabled="@_revertingMergeId.Contains(merge.MergeId)">
                                             @if (_revertingMergeId.Contains(merge.MergeId))
@@ -376,8 +376,8 @@
                     </table>
                     @if (_archiveTrackPopup.Points.Count > 0)
                     {
-                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--bs-border-color); border-radius: 4px;">
-                            <table class="table table-sm mb-0" style="font-size: 0.72rem;">
+                        <div class="archive-track-points-wrap">
+                            <table class="table table-sm mb-0 archive-track-points-table">
                                 <thead>
                                     <tr><th>#</th><th>Zeit</th><th>Lat</th><th>Lng</th></tr>
                                 </thead>
@@ -425,7 +425,7 @@
                 </div>
                 <div class="modal-modern-footer">
                     <button class="btn btn-outline-secondary" @onclick="CancelDelete">Abbrechen</button>
-                    <button class="btn btn-danger" @onclick="ConfirmDeleteAsync">Endgueltig loeschen</button>
+                    <button class="btn btn-primary" @onclick="ConfirmDeleteAsync">Endgueltig loeschen</button>
                 </div>
             </div>
         </div>

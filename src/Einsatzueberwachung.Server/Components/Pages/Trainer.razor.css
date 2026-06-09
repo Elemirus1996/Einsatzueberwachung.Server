@@ -1,0 +1,385 @@
+/* ========================================
+   Trainer — scoped styles
+   ======================================== */
+
+.trainer-access-card .btn,
+.trainer-access-card .form-control {
+    min-height: 48px;
+}
+
+.trainer-shell {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--theme-primary) 24%, transparent) 0%, transparent 38%),
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--theme-secondary) 72%, #0b1b2b 28%) 0%,
+            color-mix(in srgb, var(--theme-primary) 32%, #0f2233 68%) 100%);
+    color: color-mix(in srgb, var(--ui-text, #f3f6f9) 92%, #ffffff 8%);
+}
+
+.trainer-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--theme-primary) 26%, rgba(255, 255, 255, 0.16));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.trainer-kicker {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: color-mix(in srgb, var(--ui-text, #f3f6f9) 72%, transparent);
+}
+
+.trainer-main {
+    padding: 1rem;
+}
+
+.trainer-dashboard {
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.trainer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+}
+
+.trainer-card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 18px 40px color-mix(in srgb, var(--theme-primary) 18%, rgba(5, 10, 16, 0.28));
+}
+
+.trainer-card .card-body {
+    padding: 1rem;
+}
+
+.trainer-login-card {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.trainer-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+
+.trainer-kpi {
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--theme-primary) 10%, var(--ui-surface, #eff7fb));
+    padding: 0.7rem;
+}
+
+.trainer-kpi-label {
+    display: block;
+    color: color-mix(in srgb, var(--theme-secondary) 60%, var(--ui-text, #4a6072));
+    font-size: 0.82rem;
+}
+
+.trainer-kpi strong {
+    font-size: 1.35rem;
+}
+
+.trainer-log-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-height: 320px;
+    overflow: auto;
+}
+
+.trainer-log-list li {
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--theme-primary) 6%, var(--ui-surface, #f5f8fb));
+    padding: 0.5rem 0.65rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.trainer-log-time {
+    font-weight: 700;
+    color: color-mix(in srgb, var(--theme-secondary) 62%, var(--ui-text, #3d5569));
+}
+
+.trainer-log-text {
+    flex: 1;
+}
+
+.trainer-suggestion-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+}
+
+.trainer-suggestion {
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--theme-primary) 26%, transparent);
+    background: color-mix(in srgb, var(--theme-primary) 5%, var(--ui-surface, #f7fcff));
+    padding: 0.8rem;
+}
+
+.trainer-briefing {
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--theme-primary) 26%, transparent);
+    background: color-mix(in srgb, var(--theme-primary) 5%, var(--ui-surface, #f7fcff));
+    padding: 0.8rem;
+}
+
+.trainer-main .btn,
+.trainer-main .form-control,
+.trainer-main .form-select,
+.trainer-main textarea {
+    min-height: 48px;
+}
+
+.trainer-main textarea {
+    min-height: 120px;
+}
+
+/* ── Trainer Tab-Navigation ─────────────────────────────── */
+.trainer-tabs {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 2px solid color-mix(in srgb, var(--theme-primary) 22%, transparent);
+    padding-bottom: 0;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--ui-surface, #ffffff) 96%, transparent),
+        color-mix(in srgb, var(--theme-primary) 6%, var(--ui-surface, #ffffff)));
+    backdrop-filter: blur(8px);
+}
+
+.trainer-tab {
+    padding: 0.75rem 1.4rem;
+    min-height: 52px;
+    border: none;
+    background: transparent;
+    color: color-mix(in srgb, var(--theme-secondary) 58%, var(--ui-muted, #6c7b8b));
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    position: relative;
+    bottom: -2px;
+    border-bottom: 2px solid transparent;
+}
+
+.trainer-tab:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-primary) 8%, transparent);
+    color: color-mix(in srgb, var(--theme-primary) 82%, var(--ui-text, #085d84));
+}
+
+.trainer-tab.active {
+    color: color-mix(in srgb, var(--theme-primary) 86%, var(--ui-text, #085d84));
+    border-bottom: 2px solid color-mix(in srgb, var(--theme-primary) 88%, transparent);
+    background: color-mix(in srgb, var(--theme-primary) 10%, transparent);
+}
+
+.trainer-tab:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.trainer-tab-badge {
+    color: var(--success-color);
+    font-size: 0.75rem;
+    margin-left: 4px;
+    animation: blink-dot 1.4s infinite;
+}
+
+@keyframes blink-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+
+.trainer-comm-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 340px;
+    overflow: auto;
+}
+
+.trainer-comm-list li {
+    border: 1px solid color-mix(in srgb, var(--theme-primary) 18%, transparent);
+    background: color-mix(in srgb, var(--theme-primary) 4%, var(--ui-surface, #f8fbff));
+    border-radius: 12px;
+    padding: 0.5rem 0.6rem;
+}
+
+.trainer-team-reaction-box {
+    background: color-mix(in srgb, var(--warning-color) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--warning-color) 38%, transparent);
+    border-radius: 12px;
+    padding: 0.55rem;
+}
+
+.trainer-log-list {
+    max-height: 480px;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (min-width: 992px) {
+    .trainer-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .trainer-suggestion-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .trainer-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* iPad/PWA (768px–1366px) */
+@media (min-width: 768px) and (max-width: 1366px) {
+    .trainer-main {
+        padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom)) 1rem;
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+    }
+
+    .trainer-card .card-body {
+        padding: 1.1rem;
+    }
+
+    .trainer-main .btn,
+    .trainer-main .form-control,
+    .trainer-main .form-select,
+    .trainer-main textarea,
+    .trainer-tab {
+        min-height: 52px;
+        font-size: 1rem;
+    }
+
+    .trainer-tabs {
+        margin-top: -0.2rem;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .trainer-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .trainer-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .trainer-suggestion-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .trainer-tab {
+        padding: 0.75rem 0.9rem;
+        font-size: 0.92rem;
+    }
+
+    .trainer-comm-list {
+        max-height: 280px;
+    }
+
+    .trainer-log-list {
+        max-height: 380px;
+    }
+}
+
+/* ── Dark mode ──────────────────────────────────────────── */
+[data-bs-theme="dark"] .trainer-card {
+    background: #1f2530;
+    color: #edf2f6;
+}
+
+[data-bs-theme="dark"] .trainer-kpi,
+[data-bs-theme="dark"] .trainer-log-list li,
+[data-bs-theme="dark"] .trainer-suggestion,
+[data-bs-theme="dark"] .trainer-briefing {
+    background: #2a3441;
+    color: #edf2f6;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-bs-theme="dark"] .trainer-kpi-label,
+[data-bs-theme="dark"] .trainer-log-time {
+    color: #b8c6d3;
+}
+
+[data-bs-theme="dark"] .trainer-tabs {
+    border-bottom-color: color-mix(in srgb, var(--theme-primary) 24%, rgba(255, 255, 255, 0.12));
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--ui-surface, #1f2530) 94%, transparent),
+        color-mix(in srgb, var(--theme-primary) 10%, var(--ui-surface, #1f2530)));
+}
+
+[data-bs-theme="dark"] .trainer-tab {
+    color: color-mix(in srgb, var(--theme-secondary) 60%, var(--ui-muted, #9ab0c4));
+}
+
+[data-bs-theme="dark"] .trainer-tab:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-primary) 14%, transparent);
+    color: color-mix(in srgb, var(--theme-primary) 82%, #d6ecff);
+}
+
+[data-bs-theme="dark"] .trainer-tab.active {
+    color: color-mix(in srgb, var(--theme-primary) 84%, #d6ecff);
+    border-bottom-color: color-mix(in srgb, var(--theme-primary) 82%, transparent);
+    background: color-mix(in srgb, var(--theme-primary) 16%, transparent);
+}
+
+[data-bs-theme="dark"] .trainer-comm-list li {
+    border-color: color-mix(in srgb, var(--theme-primary) 22%, rgba(255, 255, 255, 0.12));
+    background: color-mix(in srgb, var(--theme-primary) 10%, #2a3441);
+}
+
+[data-bs-theme="dark"] .trainer-team-reaction-box {
+    background: color-mix(in srgb, var(--warning-color) 16%, transparent);
+    border-color: color-mix(in srgb, var(--warning-color) 34%, transparent);
+}
+
+/* ── Intensity overrides ────────────────────────────────── */
+[data-intensity="dezent"] .trainer-card {
+    box-shadow: none;
+}
+
+[data-intensity="dezent"] .trainer-shell {
+    background:
+        radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--theme-primary) 10%, transparent) 0%, transparent 38%),
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--theme-secondary) 52%, #0b1b2b 48%) 0%,
+            color-mix(in srgb, var(--theme-primary) 18%, #0f2233 82%) 100%);
+}
+
+[data-intensity="dezent"] .trainer-tab.active {
+    background: transparent;
+}
+
+[data-intensity="lebhaft"] .trainer-card {
+    box-shadow: 0 20px 44px color-mix(in srgb, var(--theme-primary) 30%, rgba(5, 10, 16, 0.3));
+}

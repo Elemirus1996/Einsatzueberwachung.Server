@@ -1,0 +1,53 @@
+/* ========================================
+   EinsatzArchiv — scoped styles
+   ======================================== */
+
+.archive-table-wrap {
+    border: 1px solid var(--ui-tile-border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.archive-table {
+    margin-bottom: 0;
+}
+
+.archive-table thead th {
+    background: var(--ui-surface-2);
+    border-bottom: 1px solid var(--ui-tile-border);
+    color: var(--ui-text);
+}
+
+/* -- Trend-chart (bar chart) ----------------------------------------- */
+
+.archive-chart-wrap {
+    height: 100px;
+    overflow-x: auto;
+}
+
+.archive-bar-col {
+    min-width: 32px;
+    flex: 1 0 32px;
+    max-width: 60px;
+}
+
+.archive-bar-label-sm {
+    font-size: 0.65rem;
+}
+
+.archive-bar-val-sm {
+    font-size: 0.6rem;
+}
+
+/* -- Track-Punkte Popup-Tabelle ------------------------------------- */
+
+.archive-track-points-wrap {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--ui-tile-border);
+    border-radius: 4px;
+}
+
+.archive-track-points-table {
+    font-size: 0.72rem;
+}

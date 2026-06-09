@@ -256,6 +256,8 @@ public partial class Einstellungen
 
         // --- Browser-lokale Einstellungen (Theme + Sound) ---
         var prefs = BrowserPrefs.Preferences;
+        prefs.ThemePreset = NormalizeThemePreset(prefs.ThemePreset);
+        prefs.VisualIntensity = NormalizeVisualIntensity(prefs.VisualIntensity);
 
         // Scheduled-Modus: Dark/Light sofort berechnen
         if (prefs.ThemeMode == "Scheduled")
@@ -271,16 +273,18 @@ public partial class Einstellungen
         }
 
         await BrowserPrefs.SaveAsync();
+        await BrowserPrefs.SaveThemeToServerAsync();
 
         // Theme im Browser sofort anwenden
         if (prefs.ThemeMode == "Auto")
         {
+            await ApplyThemeStateAsync(prefs.IsDarkMode);
             await JS.InvokeVoidAsync("themeSync.watchSystemTheme");
         }
         else
         {
             await JS.InvokeVoidAsync("themeSync.stopWatchingSystemTheme");
-            await JS.InvokeVoidAsync("themeSync.setTheme", prefs.IsDarkMode);
+            await ApplyThemeStateAsync(prefs.IsDarkMode);
         }
 
         _status = "Einstellungen gespeichert.";
@@ -364,14 +368,177 @@ public partial class Einstellungen
         }
     }
 
-    private async Task SetDesignModeAsync(bool darkMode)
+
+    private bool _isEditingCustomTheme;
+    private Einsatzueberwachung.Domain.Models.CustomTheme? _editingCustomTheme;
+
+    private void StartNewCustomTheme()
+    {
+        _editingCustomTheme = new Einsatzueberwachung.Domain.Models.CustomTheme
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Neues Theme",
+            PrimaryColor = "#005D9E",
+            SecondaryColor = "#FFED00",
+            TertiaryColor = "#28A745",
+            QuaternaryColor = "#FFFFFF"
+        };
+        _isEditingCustomTheme = true;
+    }
+
+    private void EditCustomTheme(Einsatzueberwachung.Domain.Models.CustomTheme theme)
+    {
+        _editingCustomTheme = new Einsatzueberwachung.Domain.Models.CustomTheme
+        {
+            Id = theme.Id,
+            Name = theme.Name,
+            PrimaryColor = theme.PrimaryColor,
+            SecondaryColor = theme.SecondaryColor,
+            TertiaryColor = theme.TertiaryColor,
+            QuaternaryColor = theme.QuaternaryColor
+        };
+        _isEditingCustomTheme = true;
+    }
+
+    private void CancelEditCustomTheme()
+    {
+        _editingCustomTheme = null;
+        _isEditingCustomTheme = false;
+    }
+
+    private async Task SaveCustomThemeAsync()
+    {
+        if (_editingCustomTheme != null)
+        {
+            if (BrowserPrefs.Preferences.CustomThemes == null)
+            {
+                BrowserPrefs.Preferences.CustomThemes = new List<Einsatzueberwachung.Domain.Models.CustomTheme>();
+            }
+
+            var existing = BrowserPrefs.Preferences.CustomThemes.FirstOrDefault(t => t.Id == _editingCustomTheme.Id);
+            if (existing != null)
+            {
+                existing.Name = _editingCustomTheme.Name;
+                existing.PrimaryColor = _editingCustomTheme.PrimaryColor;
+                existing.SecondaryColor = _editingCustomTheme.SecondaryColor;
+                existing.TertiaryColor = _editingCustomTheme.TertiaryColor;
+                existing.QuaternaryColor = _editingCustomTheme.QuaternaryColor;
+            }
+            else
+            {
+                BrowserPrefs.Preferences.CustomThemes.Add(_editingCustomTheme);
+            }
+
+            if (BrowserPrefs.Preferences.ThemePreset == _editingCustomTheme.Id)
+            {
+                await SetThemePresetAsync(new ChangeEventArgs { Value = _editingCustomTheme.Id });
+            }
+            else
+            {
+                await BrowserPrefs.SaveAsync();
+                await BrowserPrefs.SaveThemeToServerAsync();
+            }
+
+            _editingCustomTheme = null;
+            _isEditingCustomTheme = false;
+        }
+    }
+
+    private async Task DeleteCustomThemeAsync(string id)
+    {
+        if (BrowserPrefs.Preferences.CustomThemes != null)
+        {
+            var theme = BrowserPrefs.Preferences.CustomThemes.FirstOrDefault(t => t.Id == id);
+            if (theme != null)
+            {
+                BrowserPrefs.Preferences.CustomThemes.Remove(theme);
+
+                if (BrowserPrefs.Preferences.ThemePreset == id)
+                {
+                    await SetThemePresetAsync(new ChangeEventArgs { Value = "NRW" });
+                }
+                else
+                {
+                    await BrowserPrefs.SaveAsync();
+                    await BrowserPrefs.SaveThemeToServerAsync();
+                }
+            }
+        }
+    }
+
+private async Task SetDesignModeAsync(bool darkMode)
     {
         if (BrowserPrefs.Preferences.ThemeMode != "Manual")
             return;
 
         BrowserPrefs.Update(p => p.IsDarkMode = darkMode);
         await BrowserPrefs.SaveAsync();
-        await JS.InvokeVoidAsync("themeSync.setTheme", darkMode);
+        await BrowserPrefs.SaveThemeToServerAsync();
+        await ApplyThemeStateAsync(darkMode);
+    }
+
+    private async Task SetThemePresetAsync(ChangeEventArgs e)
+    {
+        var selected = e.Value?.ToString();
+        BrowserPrefs.Update(p => p.ThemePreset = NormalizeThemePreset(selected));
+        await BrowserPrefs.SaveAsync();
+        await BrowserPrefs.SaveThemeToServerAsync();
+        await ApplyThemeStateAsync(BrowserPrefs.Preferences.IsDarkMode);
+    }
+
+    private async Task SetVisualIntensityAsync(ChangeEventArgs e)
+    {
+        var selected = e.Value?.ToString();
+        BrowserPrefs.Update(p => p.VisualIntensity = NormalizeVisualIntensity(selected));
+        await BrowserPrefs.SaveAsync();
+        await BrowserPrefs.SaveThemeToServerAsync();
+        await ApplyThemeStateAsync(BrowserPrefs.Preferences.IsDarkMode);
+    }
+
+    private async Task ApplyThemeStateAsync(bool isDark)
+    {
+        await JS.InvokeVoidAsync("themeSync.setThemeState", new
+        {
+            isDark,
+            preset = BrowserPrefs.Preferences.ThemePreset,
+            intensity = BrowserPrefs.Preferences.VisualIntensity
+        });
+    }
+
+    private static string NormalizeThemePreset(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return ThemePresets.Nrw;
+        }
+
+        if (string.Equals(value, ThemePresets.Ruhr, StringComparison.OrdinalIgnoreCase))
+        {
+            return ThemePresets.Ruhr;
+        }
+
+        if (string.Equals(value, ThemePresets.Nrw, StringComparison.OrdinalIgnoreCase))
+        {
+            return ThemePresets.Nrw;
+        }
+
+        // Benutzerdefinierte Themes speichern ihre eigene ID als Preset-Wert.
+        return value.Trim();
+    }
+
+    private static string NormalizeVisualIntensity(string? value)
+    {
+        if (string.Equals(value, VisualIntensityLevels.Dezent, StringComparison.OrdinalIgnoreCase))
+        {
+            return VisualIntensityLevels.Dezent;
+        }
+
+        if (string.Equals(value, VisualIntensityLevels.Lebhaft, StringComparison.OrdinalIgnoreCase))
+        {
+            return VisualIntensityLevels.Lebhaft;
+        }
+
+        return VisualIntensityLevels.Ausgewogen;
     }
 
     private async Task ResetDataAsync()

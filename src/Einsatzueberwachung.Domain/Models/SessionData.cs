@@ -52,6 +52,9 @@ namespace Einsatzueberwachung.Domain.Models
         public string ThemeMode { get; set; } // "Manual", "Auto", "Scheduled"
         public TimeSpan DarkModeStartTime { get; set; }
         public TimeSpan DarkModeEndTime { get; set; }
+        public string ThemePreset { get; set; }
+        public string VisualIntensity { get; set; }
+        public List<CustomTheme> CustomThemes { get; set; }
         public int DefaultFirstWarningMinutes { get; set; }
         public int DefaultSecondWarningMinutes { get; set; }
         public string UpdateUrl { get; set; }
@@ -132,6 +135,9 @@ namespace Einsatzueberwachung.Domain.Models
             ThemeMode = "Manual";
             DarkModeStartTime = new TimeSpan(20, 0, 0); // 20:00
             DarkModeEndTime = new TimeSpan(6, 0, 0);    // 06:00
+            ThemePreset = ThemePresets.Nrw;
+            VisualIntensity = VisualIntensityLevels.Ausgewogen;
+            CustomThemes = new List<CustomTheme>();
             DefaultFirstWarningMinutes = 45;
             DefaultSecondWarningMinutes = 60;
             UpdateUrl = string.Empty;

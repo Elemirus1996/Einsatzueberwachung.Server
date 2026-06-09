@@ -26,6 +26,9 @@ public partial class EinsatzMonitor
     [SupplyParameterFromQuery(Name = "scrollTo")]
     public string? ScrollToTeamId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "openCloseMissionAt")]
+    public string? OpenCloseMissionAt { get; set; }
+
     private readonly TeamEditorModel _teamForm = new();
     private readonly Dictionary<string, string> _replyTexts = new();
     private readonly Dictionary<string, string> _replySourceIds = new();
@@ -108,13 +111,6 @@ public partial class EinsatzMonitor
     // Dashboard-Layout
     private List<DashboardPanelConfig> _currentLayout = new();
     private bool _showPanelPicker;
-    private bool _szenarioMenuOpen;
-
-    private async Task SetSzenarioAsync(Domain.Models.Enums.EinsatzSzenarioType szenario)
-    {
-        _szenarioMenuOpen = false;
-        await EinsatzService.UpdateSzenarioAsync(szenario);
-    }
     private readonly HashSet<string> _expandedTeamIds = new();
     private TeamStatusFilter _teamStatusFilter = TeamStatusFilter.All;
 
@@ -123,6 +119,7 @@ public partial class EinsatzMonitor
     private DateTime _screensaverNow;
     private string? _pendingTeamScrollId;
     private string? _lastScrolledTeamId;
+    private string? _lastCloseMissionRequestToken;
 
     private bool HasActiveEinsatz =>
         !string.IsNullOrWhiteSpace(EinsatzService.CurrentEinsatz.Einsatzort)
@@ -130,6 +127,16 @@ public partial class EinsatzMonitor
 
     protected override void OnParametersSet()
     {
+        if (!string.IsNullOrWhiteSpace(OpenCloseMissionAt)
+            && !string.Equals(OpenCloseMissionAt, _lastCloseMissionRequestToken, StringComparison.Ordinal))
+        {
+            _lastCloseMissionRequestToken = OpenCloseMissionAt;
+            if (HasActiveEinsatz)
+            {
+                OpenCloseMissionModal();
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(ScrollToTeamId)
             && IsValidEntityId(ScrollToTeamId)
             && !string.Equals(ScrollToTeamId, _lastScrolledTeamId, StringComparison.Ordinal))

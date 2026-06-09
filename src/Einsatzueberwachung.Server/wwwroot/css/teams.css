@@ -1,0 +1,822 @@
+/* ========================================
+   PAGE HEADERS
+   ======================================== */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+/* ========================================
+   TEAMS
+   ======================================== */
+
+.teams-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--info-color) 100%);
+
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+.stat-label {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.teams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.team-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s;
+}
+
+.team-card.team-active {
+    border-color: var(--success-color);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.team-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.team-header {
+    padding: 1.25rem;
+    background: rgba(0, 0, 0, 0.03);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.team-body {
+    padding: 1.25rem;
+}
+
+.team-member,
+.team-area {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    font-size: 1.05rem;
+}
+
+.member-icon,
+.area-icon {
+    font-size: 1.5rem;
+}
+
+.team-footer {
+    padding: 1rem 1.25rem;
+    background: rgba(0, 0, 0, 0.02);
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+/* ========================================
+   MONITOR — team cards
+   Zone model: [identity+timer] → [context strip] → [foot/actions] → [expand]
+   ======================================== */
+
+.teams-monitor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* ── Base card ──────────────────────────────────────────────────────────── */
+.monitor-team-card {
+    border-radius: 8px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-left: 4px solid color-mix(in srgb, var(--ui-muted) 78%, transparent);
+    padding: 0.75rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* ── Status states ──────────────────────────────────────────────────────── */
+.monitor-team-card.team-running { border-left-color: var(--success-color); }
+.monitor-team-card.team-warning { border-left-color: var(--warning-color); }
+.monitor-team-card.team-pausing { border-left-color: var(--pause-color); }
+
+.monitor-team-card.team-critical {
+    border-left-color: var(--danger-color);
+    animation: pulse-critical 2s infinite;
+}
+
+[data-intensity="lebhaft"] .monitor-team-card.team-critical {
+    background: var(--danger-soft);
+    animation: pulse-critical-lebhaft 1.2s infinite !important;
+}
+
+/* Lebhaft: running teams glow green */
+[data-intensity="lebhaft"] .monitor-team-card.team-running {
+    animation: lebhaft-running-glow 3s ease-in-out infinite;
+}
+
+
+/* ── Zone 1: Head — identity left, timer right ──────────────────────────── */
+.tc-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+/* Identity column */
+.tc-identity {
+    flex: 1;
+    min-width: 0;
+}
+
+.tc-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ui-text);
+    line-height: 1.3;
+    margin-bottom: 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Crew line: dog · handler */
+.tc-crew {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.6rem;
+    color: var(--ui-muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.tc-crew span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+}
+
+.tc-crew a { color: inherit; opacity: 0.85; }
+
+/* Timer column */
+.tc-timer {
+    flex-shrink: 0;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+}
+
+.tc-time {
+    font-size: 2.2rem;
+    font-weight: 700;
+    font-family: 'Cascadia Code', 'Fira Code', 'SF Mono', 'Consolas', monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--success-color);
+}
+.tc-time.timer-warning { color: var(--warning-color); }
+
+.tc-time.timer-critical {
+    color: var(--danger-color);
+    font-size: 2.55rem;
+}
+
+.tc-time--pausing {
+    font-size: 1.75rem;
+    font-weight: 700;
+    font-family: 'Cascadia Code', 'Fira Code', 'SF Mono', 'Consolas', monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--pause-color);
+}
+
+.tc-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    line-height: 1.6;
+}
+
+.tc-badge--critical { background: var(--danger-fill); color: var(--danger-on-fill); }
+.tc-badge--warning  { background: var(--warning-fill); color: var(--warning-on-fill); }
+.tc-badge--pause    { background: var(--pause-fill); color: var(--pause-on-fill); }
+.tc-badge--ok       { background: var(--success-fill); color: var(--success-on-fill); }
+
+.tc-pause-info {
+    font-size: 0.72rem;
+    color: var(--ui-muted);
+    margin-top: 0.1rem;
+}
+
+/* ── Zone 2: Context strip ──────────────────────────────────────────────── */
+/* Chips for search area, notes and GPS — between identity and actions */
+.tc-ctx {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.45rem;
+}
+
+.tc-ctx-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    padding: 0.22rem 0.5rem;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--ui-muted) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ui-muted) 15%, transparent);
+    color: var(--ui-muted);
+    max-width: 100%;
+}
+
+
+/* Note chip: slightly warmer tint */
+.tc-ctx-chip--note {
+    background: var(--warning-soft);
+    border-color: var(--warning-border);
+    color: var(--warning-color);
+}
+
+
+/* GPS chip: subtle green tint */
+.tc-ctx-chip--gps {
+    background: rgba(34, 197, 94, 0.07);
+    border-color: var(--success-border);
+    color: var(--success-color);
+}
+
+
+/* Clickable chips (search area + GPS collar) */
+.tc-ctx-chip--link {
+    cursor: pointer;
+    transition: filter 0.12s ease, background 0.12s ease;
+}
+
+.tc-ctx-chip--action {
+    font-family: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.tc-ctx-chip--action:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 1px;
+}
+
+.tc-ctx-chip--link:hover {
+    filter: brightness(1.08);
+    background: rgba(0, 0, 0, 0.06);
+}
+[data-bs-theme="dark"] .tc-ctx-chip--link:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* Clip long note text inside its chip */
+.tc-ctx-clip {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 22ch;
+}
+
+.tc-ctx-muted {
+    opacity: 0.7;
+}
+
+/* ── Zone 3: Footer / actions ───────────────────────────────────────────── */
+.tc-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-top: 0.55rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid var(--ui-border);
+}
+
+
+.tc-controls {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* The expand-toggle sits at the end of the footer, never wraps */
+.tc-expand-toggle {
+    flex-shrink: 0;
+}
+
+/* ── Dog conflict ───────────────────────────────────────────────────────── */
+.monitor-team-card.team-dog-blocked {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.monitor-team-card.team-dog-blocked .tc-controls .btn-primary,
+.monitor-team-card.team-dog-blocked .tc-expand-toggle {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+.team-dog-conflict-banner {
+    display: flex;
+    align-items: center;
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+[data-bs-theme="dark"] .team-dog-conflict-banner {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fde68a;
+}
+
+/* ── Zone 4: Expand panel ───────────────────────────────────────────────── */
+.tc-expand {
+    margin-top: 0.55rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+[data-bs-theme="dark"] .tc-expand {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Section label — uppercase caption before a group */
+.tc-section-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ui-muted);
+    margin-top: 0.35rem;
+    margin-bottom: 0.05rem;
+}
+
+
+/* First section-label in the expand has no top margin */
+.tc-expand > .tc-section-label:first-child { margin-top: 0; }
+
+.tc-expand-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--ui-text);
+    line-height: 1.45;
+    flex-wrap: wrap;
+}
+
+
+/* Coordinates row: slightly smaller, monospace-dominant */
+.tc-expand-row--coords { align-items: center; }
+
+.tc-coord {
+    font-size: 0.73rem;
+}
+
+.tc-coord-utm {
+    font-size: 0.73rem;
+    color: #6b7280;
+}
+
+[data-bs-theme="dark"] .tc-coord-utm { color: #9ca3af; }
+
+.tc-expand-icon {
+    color: #6b7280;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+}
+
+[data-bs-theme="dark"] .tc-expand-icon { color: #9ca3af; }
+
+.tc-icon--ok { color: var(--success-color) !important; }
+
+.tc-expand-muted {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+[data-bs-theme="dark"] .tc-expand-muted { color: #9ca3af; }
+
+.tc-expand-ts {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+.tc-expand-type {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(100, 116, 139, 0.12);
+    color: #475569;
+    padding: 0.05em 0.3em;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+[data-bs-theme="dark"] .tc-expand-type {
+    background: rgba(148, 163, 184, 0.12);
+    color: #94a3b8;
+}
+
+.tc-expand-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Teams panel header with filter chips ───────────────────────────────── */
+.dashboard-panel-header--teams {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+    align-items: center;
+}
+
+.teams-header-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+/* Extra-small button variant for panel headers */
+.btn.btn-xs {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    line-height: 1.5;
+    border-radius: 5px;
+}
+
+.btn.btn-xs .badge {
+    font-size: 0.65rem;
+    padding: 0.05em 0.3em;
+}
+
+.team-details-modal {
+    max-width: 980px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.team-details-header {
+    align-items: flex-start;
+}
+
+.team-details-body {
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+}
+
+.team-details-section {
+    border: 1px solid rgba(120, 130, 145, 0.22);
+    border-radius: 0.75rem;
+    padding: 0.8rem;
+    background: rgba(248, 249, 250, 0.6);
+}
+
+[data-bs-theme="dark"] .team-details-section {
+    background: rgba(30, 35, 41, 0.7);
+    border-color: rgba(157, 173, 189, 0.28);
+}
+
+.team-details-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.65rem;
+}
+
+.team-details-grid-two {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+}
+
+.team-details-radio-list,
+.team-member-detail-list,
+.team-map-activity-list,
+.team-track-history-list {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.team-details-radio-item,
+.team-member-detail-item,
+.team-map-activity-item,
+.team-track-history-item {
+    border: 1px solid rgba(120, 130, 145, 0.2);
+    border-radius: 0.65rem;
+    padding: 0.6rem;
+    background: rgba(255, 255, 255, 0.66);
+}
+
+[data-bs-theme="dark"] .team-details-radio-item,
+[data-bs-theme="dark"] .team-member-detail-item,
+[data-bs-theme="dark"] .team-map-activity-item,
+[data-bs-theme="dark"] .team-track-history-item {
+    background: rgba(30, 35, 41, 0.6);
+    border-color: rgba(157, 173, 189, 0.24);
+}
+
+.team-area-preview-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+}
+
+.team-area-preview {
+    width: min(240px, 100%);
+    height: 140px;
+}
+
+.team-area-preview rect {
+    fill: rgba(120, 130, 145, 0.08);
+    stroke: rgba(120, 130, 145, 0.35);
+    stroke-width: 1;
+}
+
+.team-area-preview polygon {
+    fill: rgba(26, 115, 232, 0.18);
+    stroke: rgba(26, 115, 232, 0.85);
+    stroke-width: 1.2;
+}
+
+.team-area-preview circle {
+    fill: var(--danger-color);
+    stroke: var(--danger-on-fill);
+    stroke-width: 1.2;
+}
+
+@media (max-width: 992px) {
+    .team-details-grid-two {
+        grid-template-columns: 1fr;
+    }
+
+    .team-details-modal {
+        width: min(96vw, 980px);
+    }
+}
+
+@media (max-width: 768px) {
+    .monitor-team-filter {
+        gap: 0.4rem;
+    }
+
+    .monitor-team-filter .btn {
+        flex: 1 1 calc(50% - 0.25rem);
+        min-height: 2.3rem;
+    }
+
+    .team-details-section {
+        padding: 0.65rem;
+    }
+
+    .team-details-section-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+[data-bs-theme="dark"] .team-card-bottom {
+    border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.team-card-monitor {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-left: 5px solid #e0e0e0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.team-card-monitor:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.team-card-monitor.running {
+    border-left-color: var(--success-color);
+    background: linear-gradient(to right, var(--success-soft) 0%, var(--ui-surface, #ffffff) 50%);
+}
+
+.team-card-monitor.warning {
+    border-left-color: var(--warning-color);
+    background: linear-gradient(to right, var(--warning-soft) 0%, var(--ui-surface, #ffffff) 50%);
+}
+
+.team-card-monitor.critical {
+    border-left-color: var(--danger-color);
+    background: linear-gradient(to right, var(--danger-soft) 0%, var(--ui-surface, #ffffff) 50%);
+    animation: pulse-critical 2s infinite;
+}
+
+.team-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.team-name h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+}
+
+.team-type-badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+
+}
+
+.team-type-badge.drone {
+    background: var(--info-color);
+}
+
+.team-type-badge.support {
+    background: var(--secondary-color);
+}
+
+.team-actions-quick {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon:hover {
+    background: rgba(33, 150, 243, 0.1);
+    transform: scale(1.1);
+}
+
+.btn-icon.danger:hover {
+    background: rgba(244, 67, 54, 0.1);
+}
+
+.team-card-body {
+    padding: 1.5rem;
+}
+
+.team-members {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.member-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 1rem;
+}
+
+.member-chip.area {
+    background: rgba(33, 150, 243, 0.1);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.member-icon {
+    font-size: 1.2rem;
+}
+
+.timer-section {
+    text-align: center;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.timer-display {
+    font-size: 3rem;
+    font-weight: 900;
+    font-family: 'Courier New', 'Consolas', monospace;
+    letter-spacing: 0.1em;
+    color: var(--success-color);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timer-display.warning {
+    color: var(--warning-color);
+}
+
+.timer-display.critical {
+    color: var(--danger-color);
+    animation: blink-timer 1s infinite;
+}
+
+
+.warning-badge {
+    display: inline-block;
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1rem;
+    background: var(--warning-color);
+
+}
+
+.warning-badge.critical {
+    background: var(--danger-color);
+    animation: pulse-badge 1.5s infinite;
+}
+
+.timer-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.timer-controls .btn {
+    min-height: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+

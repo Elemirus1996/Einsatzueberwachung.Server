@@ -12,6 +12,7 @@
 @inject IEinsatzService EinsatzService
 @inject ICollarTrackingService CollarTrackingService
 @inject ISettingsService SettingsService
+@inject BrowserPreferencesService BrowserPrefs
 @inject ITeamMobileTokenService TokenService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
@@ -22,7 +23,7 @@
 
 @if (!_authChecked)
 {
-    <div class="d-flex justify-content-center align-items-center" style="height:100vh;">
+    <div class="d-flex justify-content-center align-items-center team-mobile-full-height">
         <div class="spinner-border text-primary" role="status"></div>
     </div>
 }
@@ -36,11 +37,11 @@ else if (_team == null)
 }
 else
 {
-    <div style="display:flex;flex-direction:column;height:100vh;">
-        <header style="background:#0d6efd;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;">
-            <div style="flex:1;min-width:0;">
-                <div style="font-weight:600;font-size:0.95rem;line-height:1.1;">@_team.TeamName</div>
-                <div style="font-size:0.75rem;opacity:0.85;line-height:1.1;">
+    <div class="team-mobile-shell">
+        <header class="team-mobile-header">
+            <div class="team-mobile-header-main">
+                <div class="team-mobile-team-name">@_team.TeamName</div>
+                <div class="team-mobile-team-subtitle">
                     @(string.IsNullOrWhiteSpace(_team.DogName) ? "(ohne Hund)" : _team.DogName)
                     @if (_team.IsRunning) { <span class="badge bg-success ms-1">aktiv</span> }
                 </div>
@@ -51,7 +52,7 @@ else
             <button class="btn btn-sm btn-light" @onclick="CenterOnDogAsync" title="Auf Hund zentrieren">
                 <i class="bi bi-geo-alt-fill"></i>
             </button>
-            <form method="post" action="/api/team-mobile/logout" style="margin:0;">
+            <form method="post" action="/api/team-mobile/logout" class="team-mobile-logout-form">
                 <button class="btn btn-sm btn-outline-light" type="submit" title="Abmelden">
                     <i class="bi bi-box-arrow-right"></i>
                 </button>
@@ -60,13 +61,13 @@ else
 
         @if (_pushMessages.Count > 0)
         {
-            <div style="background:#fff3cd;border-bottom:1px solid #ffe69c;padding:8px 12px;">
+            <div class="team-mobile-message-strip">
                 @foreach (var m in _pushMessages.TakeLast(3))
                 {
-                    <div class="d-flex align-items-start gap-2" style="font-size:0.85rem;">
+                    <div class="d-flex align-items-start gap-2 team-mobile-message-row">
                         <i class="bi bi-megaphone-fill text-warning"></i>
                         <div class="flex-grow-1">
-                            <div class="text-muted small" style="line-height:1;">EL @m.Time.ToString("HH:mm")</div>
+                            <div class="text-muted small team-mobile-message-time">EL @m.Time.ToString("HH:mm")</div>
                             <div>@m.Text</div>
                         </div>
                         <button class="btn-close btn-close-sm" @onclick="() => DismissMessage(m)" aria-label="OK"></button>
@@ -77,7 +78,7 @@ else
 
         @if (_infoPanelOpen)
         {
-            <div style="background:#f8f9fa;border-bottom:1px solid #dee2e6;padding:10px 14px;font-size:0.85rem;">
+            <div class="team-mobile-info-panel">
                 <div class="row g-2">
                     <div class="col-12 col-sm-6"><strong>Hundefuehrer:</strong> @(string.IsNullOrWhiteSpace(_team.HundefuehrerName) ? "—" : _team.HundefuehrerName)</div>
                     <div class="col-12 col-sm-6"><strong>Helfer:</strong> @(string.IsNullOrWhiteSpace(_team.HelferNamesJoined) ? "—" : _team.HelferNamesJoined)</div>
@@ -89,8 +90,7 @@ else
 
         @if (_mapInitDone && !_phoneGpsActive && !_einsatzEnded)
         {
-            <div class="d-flex align-items-center gap-2 px-3 py-2 @GetGpsBannerCssClass()"
-                 style="border-bottom:1px solid var(--bs-border-color);font-size:0.82rem;">
+              <div class="d-flex align-items-center gap-2 px-3 py-2 team-mobile-gps-banner @GetGpsBannerCssClass()">
                 @if (_requestingGps)
                 {
                     <span class="spinner-border spinner-border-sm text-secondary" aria-hidden="true"></span>
@@ -131,11 +131,11 @@ else
             </div>
         }
 
-        <div id="team-mobile-map" style="flex:1;width:100%;min-height:300px;background:#e9ecef;"></div>
+        <div id="team-mobile-map" class="team-mobile-map"></div>
 
         @if (!_einsatzEnded)
         {
-            <div style="background:#fff;border-top:1px solid #dee2e6;padding:6px 8px;display:flex;gap:6px;flex-wrap:wrap;">
+            <div class="team-mobile-status-actions">
                 <button class="btn btn-sm btn-outline-primary flex-grow-1" disabled="@_statusSending" @onclick='() => SendStatusAsync("im Suchgebiet eingetroffen")'>
                     <i class="bi bi-bounding-box me-1"></i>Im Gebiet
                 </button>
@@ -151,7 +151,7 @@ else
             </div>
         }
 
-        <footer style="background:#fff;border-top:1px solid #dee2e6;padding:6px 12px;font-size:0.75rem;display:flex;gap:12px;flex-wrap:wrap;">
+        <footer class="team-mobile-footer">
             <div>
                 <i class="bi bi-broadcast @(string.IsNullOrWhiteSpace(_team.CollarId) ? "text-muted" : "text-success")"></i>
                 @(string.IsNullOrWhiteSpace(_team.CollarId) ? "kein GPS" : (_lastUpdate.HasValue ? $"GPS: {(_now - _lastUpdate.Value).TotalSeconds:0}s" : "warte auf GPS"))
@@ -159,7 +159,7 @@ else
             <div>
                 @if (_requestingGps)
                 {
-                    <span class="spinner-border spinner-border-sm text-secondary" style="width:0.8rem;height:0.8rem;" aria-hidden="true"></span>
+                    <span class="spinner-border spinner-border-sm text-secondary team-mobile-footer-spinner" aria-hidden="true"></span>
                     <span>GPS wird angefragt…</span>
                 }
                 else if (_phoneGpsActive)
@@ -276,6 +276,22 @@ else
     {
         if (_mapInitDone || _team == null) return;
         _mapInitDone = true;
+
+        try
+        {
+            await BrowserPrefs.LoadAsync();
+            await JS.InvokeVoidAsync("themeSync.setThemeState", new
+            {
+                isDark = BrowserPrefs.Preferences.IsDarkMode,
+                preset = BrowserPrefs.Preferences.ThemePreset,
+                intensity = BrowserPrefs.Preferences.VisualIntensity
+            });
+        }
+        catch
+        {
+            Console.Error.WriteLine("team-mobile theme apply failed.");
+            // tolerant — mobile team page continues with bootstrap fallback theme
+        }
 
         try
         {

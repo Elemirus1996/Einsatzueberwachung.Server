@@ -1,0 +1,287 @@
+.theme-accent-btn {
+    border: 1px solid var(--theme-tertiary-border);
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-primary) var(--theme-button-fill), var(--ui-surface, #ffffff)) 0%,
+        color-mix(in srgb, var(--theme-tertiary) 22%, var(--ui-surface, #ffffff)) 100%);
+    color: var(--theme-on-accent);
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 2px 10px var(--theme-tertiary-shadow);
+}
+
+.theme-accent-btn:hover {
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-primary) 100%, var(--ui-surface, #ffffff)) 0%,
+        color-mix(in srgb, var(--theme-tertiary) 58%, var(--ui-surface, #ffffff)) 100%);
+    color: var(--theme-on-accent);
+}
+
+[data-intensity="dezent"] .theme-accent-btn {
+    color: var(--theme-primary-text);
+    background: var(--theme-primary-soft);
+    box-shadow: none;
+}
+
+.theme-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    border: 1px solid var(--theme-primary-border);
+    border-left: 4px solid var(--theme-primary);
+    background: color-mix(in srgb, var(--theme-primary) var(--theme-alert-fill), var(--ui-surface, #ffffff));
+    border-radius: 8px;
+    padding: 0.75rem 0.9rem;
+}
+
+.theme-alert i {
+    margin-top: 0.1rem;
+    color: var(--theme-primary-text);
+}
+
+.theme-alert strong {
+    display: block;
+    color: var(--ui-text, #1f2937);
+}
+
+.theme-alert .theme-alert-text {
+    color: var(--ui-muted, #617083);
+    font-size: 0.82rem;
+}
+
+.theme-alert-success {
+    border-color: var(--theme-alert-success-border);
+    border-left-color: var(--success-color);
+    background: var(--theme-alert-success);
+}
+
+[data-intensity="dezent"] .theme-alert {
+    background: transparent;
+    border-color: var(--theme-primary-border);
+}
+
+/* Cards */
+.card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: rgba(0, 0, 0, 0.03);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    padding: 1.25rem;
+    font-weight: 600;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Modern Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1040;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay-dismiss {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.modal-overlay-dismiss:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: -2px;
+}
+
+
+.modal-modern {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    z-index: 1050;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+.modal-modern,
+.global-warning-popup {
+    position: relative;
+    z-index: 1;
+}
+
+
+.modal-modern-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    background: var(--ui-card-header-bg);
+    border-bottom: 1px solid var(--ui-card-header-border);
+    color: var(--ui-card-header-text);
+}
+
+.modal-modern-header h3 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.btn-close-modern {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-close-modern:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.modal-modern-body {
+    background: var(--ui-surface);
+    color: var(--ui-text);
+    padding: 2rem;
+    max-height: calc(90vh - 200px);
+    overflow-y: auto;
+}
+
+.modal-modern .form-label {
+    color: var(--ui-text);
+}
+
+.modal-modern .form-check-label {
+    color: var(--ui-text);
+}
+
+.modal-modern .form-check-input {
+    background-color: var(--ui-form-bg);
+    border-color: var(--ui-form-border);
+}
+
+.modal-modern .form-check-input:checked {
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary-border);
+}
+
+.form-group-modern {
+    margin-bottom: 1.5rem;
+}
+
+.form-group-modern label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #333;
+    font-size: 1.05rem;
+}
+
+.input-modern {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    font-size: 1.05rem;
+    transition: all 0.2s;
+    background: white;
+}
+
+.input-modern:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.1);
+}
+
+.btn-group-modern {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.btn-group-modern button {
+    padding: 0.875rem;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    background: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.btn-group-modern button:hover {
+    background: rgba(33, 150, 243, 0.05);
+    border-color: var(--primary-color);
+}
+
+.btn-group-modern button.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.modal-modern-footer {
+    display: flex;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--ui-card-header-border);
+    background: var(--ui-card-header-bg);
+    padding: 1rem 2rem 1.25rem;
+}
+
+.modal-modern-footer .btn {
+    flex: 1;
+}
+
+.card {
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--theme-border-radius, 10px);
+}
+
+/* Lebhaft: colored top accent border on cards */
+[data-intensity="lebhaft"] .card {
+    border-top: 3px solid var(--theme-primary-border);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--ui-card-header-bg);
+    border-bottom: 1px solid var(--ui-card-header-border);
+    color: var(--ui-card-header-text);
+}
+

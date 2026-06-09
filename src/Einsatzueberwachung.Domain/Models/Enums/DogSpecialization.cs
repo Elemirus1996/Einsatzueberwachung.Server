@@ -56,21 +56,21 @@ namespace Einsatzueberwachung.Domain.Models.Enums
         public static string GetColorHex(this DogSpecialization spec)
         {
             if (spec.HasFlag(DogSpecialization.Flaechensuche))
-                return "#2196F3";
+                return "var(--info-color)";
             if (spec.HasFlag(DogSpecialization.Truemmersuche))
-                return "#FF9800";
+                return "var(--warning-color)";
             if (spec.HasFlag(DogSpecialization.Mantrailing))
-                return "#4CAF50";
+                return "var(--success-color)";
             if (spec.HasFlag(DogSpecialization.Wasserortung))
-                return "#00BCD4";
+                return "var(--theme-primary)";
             if (spec.HasFlag(DogSpecialization.Lawinensuche))
-                return "#9C27B0";
+                return "var(--theme-secondary)";
             if (spec.HasFlag(DogSpecialization.Gelaendesuche))
-                return "#8BC34A";
+                return "var(--success-color)";
             if (spec.HasFlag(DogSpecialization.Leichensuche))
-                return "#795548";
+                return "var(--ui-muted)";
             if (spec.HasFlag(DogSpecialization.InAusbildung))
-                return "#FFC107";
+                return "var(--warning-color)";
             
             return "#9E9E9E";
         }

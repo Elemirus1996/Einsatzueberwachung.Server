@@ -15,7 +15,7 @@
     var mobileUrl = Navigation.BaseUri.TrimEnd('/') + ":5001";
 }
 
-<div class="container py-4" style="max-width:540px;">
+<div class="container py-4 mobile-dashboard-shell">
     <h1 class="h4 mb-1"><i class="bi bi-phone me-2 text-primary"></i>Mobile Dashboard</h1>
     <p class="text-muted mb-4">Kurzuebersicht fuer mobile Einsatzkraefte - vollstaendige App ueber QR-Code erreichbar.</p>
 
@@ -50,7 +50,7 @@
     @if (teams.Count > 0)
     {
         <div class="card border-0 shadow-sm mb-3 mobile-dashboard-card">
-            <div class="card-header bg-transparent border-0 small fw-semibold">Teams im Einsatz</div>
+            <div class="card-header card-header-toolbar small fw-semibold">Teams im Einsatz</div>
             <div class="list-group list-group-flush">
                 @foreach (var t in teams.Take(6))
                 {
@@ -58,9 +58,9 @@
                     <div class="list-group-item border-0 d-flex justify-content-between align-items-center py-2">
                         <div class="small">
                             <div class="fw-semibold">@t.TeamName</div>
-                            <div class="text-muted" style="font-size:.72rem;">@(string.IsNullOrWhiteSpace(t.SearchAreaName) ? "—" : t.SearchAreaName)</div>
+                            <div class="text-muted mobile-dashboard-subline">@(string.IsNullOrWhiteSpace(t.SearchAreaName) ? "—" : t.SearchAreaName)</div>
                         </div>
-                        <span class="@css" style="font-family:monospace;font-size:.82rem;">@t.ElapsedTime.ToString(@"hh\:mm\:ss")</span>
+                        <span class="@css mobile-dashboard-timer">@t.ElapsedTime.ToString(@"hh\:mm\:ss")</span>
                     </div>
                 }
                 @if (teams.Count > 6)

@@ -21,11 +21,6 @@
     background: transparent;
 }
 
-/* Caret icon inside szenario badge */
-.monitor-caret-icon {
-    font-size: 9px;
-}
-
 /* Wrapper div around the panel picker button */
 .monitor-panel-picker-wrapper {
     position: relative;
@@ -81,4 +76,65 @@
 .modal-modern-header--warning {
     background: var(--bs-warning);
     color: #212529;
+}
+
+/* ── Screensaver ───────────────────────────────────────── */
+.monitor-screensaver {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 2rem;
+    padding: 3rem 1rem;
+    min-height: 70vh;
+}
+
+.monitor-screensaver-logo img {
+    max-height: 180px;
+    max-width: 400px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 24px rgba(0,0,0,.25));
+}
+
+.monitor-screensaver-time {
+    font-size: 5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--bs-body-color);
+    text-align: center;
+}
+
+.monitor-screensaver-date {
+    font-size: 1.5rem;
+    text-align: center;
+    color: var(--bs-secondary-color, #6c757d);
+    margin-top: 0.25rem;
+}
+
+.monitor-screensaver-ticker-wrap {
+    width: 100%;
+    overflow: hidden;
+    border-top: 1px solid var(--bs-border-color);
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 0.5rem 0;
+    position: absolute;
+    bottom: 3rem;
+    left: 0;
+}
+
+.monitor-screensaver-ticker {
+    display: inline-block;
+    white-space: nowrap;
+    animation: screensaver-scroll 80s linear infinite;
+    font-size: 0.95rem;
+    color: var(--bs-secondary-color, #6c757d);
+    padding-left: 100%;
+}
+
+@keyframes screensaver-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-100%); }
 }

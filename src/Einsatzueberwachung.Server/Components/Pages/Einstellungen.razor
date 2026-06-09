@@ -450,6 +450,98 @@
                         }
                     </div>
 
+                    <div class="cfg-grid cfg-grid-2 mt-2">
+                        <div class="cfg-field">
+                            <label class="cfg-label">Farb-Theme</label>
+                                                                                    <select class="cfg-input"
+                                    value="@BrowserPrefs.Preferences.ThemePreset"
+                                    @onchange="SetThemePresetAsync">
+                                <option value="NRW">NRW</option>
+                                <option value="Ruhr">Ruhr</option>
+                                @if (BrowserPrefs.Preferences.CustomThemes != null)
+                                {
+                                    @foreach (var theme in BrowserPrefs.Preferences.CustomThemes)
+                                    {
+                                        <option value="@theme.Id">@theme.Name (Custom)</option>
+                                    }
+                                }
+                            </select>
+                            <span class="cfg-help">Basiert auf 4 Grundfarben (Primary, Secondary, Tertiary/Highlight, Quaternary).</span>
+                        </div>
+
+
+                        </div>
+
+                        <div class="cfg-field cfg-field-full">
+                            <label class="cfg-label">Benutzerdefinierte Themes</label>
+                            <div class="custom-themes-list mb-3">
+                                @if (BrowserPrefs.Preferences.CustomThemes != null && BrowserPrefs.Preferences.CustomThemes.Any())
+                                {
+                                    <ul class="list-group mb-2 cfg-theme-list">
+                                        @foreach (var theme in BrowserPrefs.Preferences.CustomThemes)
+                                        {
+                                            <li class="list-group-item">
+                                                <span>@theme.Name</span>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button type="button" class="btn btn-outline-secondary" @onclick="() => EditCustomTheme(theme)"><i class="bi bi-pencil"></i></button>
+                                                    <button type="button" class="btn btn-outline-danger" @onclick="() => DeleteCustomThemeAsync(theme.Id)"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                                @if (!_isEditingCustomTheme)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="StartNewCustomTheme"><i class="bi bi-plus-circle me-1"></i>Neues Theme erstellen</button>
+                                }
+                            </div>
+
+                            @if (_isEditingCustomTheme && _editingCustomTheme != null)
+                            {
+                                <div class="card card-body mb-3 cfg-theme-editor-card">
+                                    <h6 class="mb-3">Theme bearbeiten</h6>
+                                    <div class="mb-2">
+                                        <label class="form-label small">Name</label>
+                                        <input type="text" class="form-control form-control-sm bg-transparent" @bind="_editingCustomTheme.Name" />
+                                    </div>
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label small">Primary</label>
+                                            <input type="color" class="form-control form-control-sm form-control-color w-100 bg-transparent" @bind="_editingCustomTheme.PrimaryColor" />
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label small">Secondary</label>
+                                            <input type="color" class="form-control form-control-sm form-control-color w-100 bg-transparent" @bind="_editingCustomTheme.SecondaryColor" />
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label small">Tertiary</label>
+                                            <input type="color" class="form-control form-control-sm form-control-color w-100 bg-transparent" @bind="_editingCustomTheme.TertiaryColor" />
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <label class="form-label small">Quaternary</label>
+                                            <input type="color" class="form-control form-control-sm form-control-color w-100 bg-transparent" @bind="_editingCustomTheme.QuaternaryColor" />
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-sm btn-secondary" @onclick="CancelEditCustomTheme">Abbrechen</button>
+                                        <button type="button" class="btn btn-sm btn-primary" @onclick="SaveCustomThemeAsync">Speichern</button>
+                                    </div>
+                                </div>
+                            }
+
+                        <div class="cfg-field">
+                            <label class="cfg-label">Visuelle Intensität</label>
+                            <select class="cfg-input"
+                                    value="@BrowserPrefs.Preferences.VisualIntensity"
+                                    @onchange="SetVisualIntensityAsync">
+                                <option value="Dezent">Dezent</option>
+                                <option value="Ausgewogen">Ausgewogen</option>
+                                <option value="Lebhaft">Lebhaft</option>
+                            </select>
+                            <span class="cfg-help">Steuert Flächen, Kontrast und Akzentstärke in der gesamten UI.</span>
+                        </div>
+                    </div>
+
                     @if (BrowserPrefs.Preferences.ThemeMode == "Scheduled")
                     {
                         <div class="cfg-grid cfg-grid-2 mt-2">
@@ -468,6 +560,97 @@
                             <div class="cfg-help">Z.B. Dunkel ab 20:00, Hell ab 06:00 (über Mitternacht möglich).</div>
                         </div>
                     }
+                </div>
+
+                <div class="cfg-section theme-preview-surface">
+                    <h3 class="cfg-sub-header"><i class="bi bi-bezier2 me-1"></i>Theme-Vorschau</h3>
+                    <p class="cfg-help mb-2">Beispiel-Elemente reagieren sofort auf Theme und Intensität.</p>
+
+                    <div class="theme-preview-grid">
+                        <div class="theme-preview-col">
+                            <div class="d-flex gap-2 flex-wrap mb-2">
+                                <span class="badge text-bg-primary">Primär</span>
+                                <span class="badge text-bg-success">Aktiv</span>
+                                <span class="badge text-bg-warning">Warnung</span>
+                                <span class="badge text-bg-danger">Kritisch</span>
+                                <span class="badge text-bg-info">Info</span>
+                                <span class="badge text-bg-secondary">Sekundär</span>
+                            </div>
+
+                            <div class="theme-preview-nav-mock">
+                                <div class="theme-preview-nav-link">
+                                    <i class="bi bi-house me-2"></i>Startseite
+                                </div>
+                                <div class="theme-preview-nav-link active">
+                                    <i class="bi bi-map me-2"></i>Einsatzkarte
+                                </div>
+                                <div class="theme-preview-nav-link">
+                                    <i class="bi bi-people me-2"></i>Teams
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="theme-preview-col">
+                            <div class="theme-alert theme-alert-success mb-2" role="status">
+                                <i class="bi bi-check-circle-fill"></i>
+                                <div>
+                                    <strong>Statusmeldung</strong>
+                                    <div class="theme-alert-text">Im Modus Dezent nur mit Akzent-Rand, in Lebhaft flächiger hervorgehoben.</div>
+                                </div>
+                            </div>
+
+                            <div class="card p-3">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge text-bg-success">Team 1</span>
+                                    <strong class="small">Beispiel-Karte</strong>
+                                </div>
+                                <div class="text-muted small">Cards reagieren auf Border-Radius und Schatten.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Button-Showcase -->
+                    <div class="theme-preview-btn-section">
+                        <div class="theme-preview-btn-group">
+                            <span class="theme-preview-btn-label">Gefüllt</span>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn theme-accent-btn btn-sm"><i class="bi bi-stars me-1"></i>Akzent</button>
+                                <button type="button" class="btn btn-primary btn-sm">Primär</button>
+                                <button type="button" class="btn btn-secondary btn-sm">Sekundär</button>
+                                <button type="button" class="btn btn-success btn-sm">Erfolg</button>
+                                <button type="button" class="btn btn-danger btn-sm">Gefahr</button>
+                                <button type="button" class="btn btn-warning btn-sm">Warnung</button>
+                                <button type="button" class="btn btn-info btn-sm">Info</button>
+                            </div>
+                        </div>
+
+                        <div class="theme-preview-btn-group">
+                            <span class="theme-preview-btn-label">Outline</span>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm">Primär</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm">Sekundär</button>
+                                <button type="button" class="btn btn-outline-success btn-sm">Erfolg</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm">Gefahr</button>
+                                <button type="button" class="btn btn-outline-warning btn-sm">Warnung</button>
+                                <button type="button" class="btn btn-outline-info btn-sm">Info</button>
+                            </div>
+                        </div>
+
+                        <div class="theme-preview-btn-group">
+                            <span class="theme-preview-btn-label">Größen &amp; Varianten</span>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="button" class="btn btn-primary btn-sm">Klein</button>
+                                <button type="button" class="btn btn-primary">Normal</button>
+                                <button type="button" class="btn btn-primary btn-lg">Groß</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                <button type="button" class="btn btn-link btn-sm">Link-Button</button>
+                                <button type="button" class="btn btn-primary btn-sm" disabled>Deaktiviert</button>
+                                <button type="button" class="btn btn-secondary btn-sm">Sekundär</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             }
 
@@ -623,7 +806,7 @@
                 </div>
 
                 <div class="d-flex justify-content-end mt-2">
-                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="ResetAllShortcuts">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ResetAllShortcuts">
                         <i class="bi bi-arrow-counterclockwise me-1"></i>Alle zurücksetzen
                     </button>
                 </div>

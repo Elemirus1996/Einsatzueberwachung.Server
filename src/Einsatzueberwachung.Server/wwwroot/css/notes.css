@@ -1,0 +1,354 @@
+/* ========================================
+   NOTES
+   ======================================== */
+
+.notes-list {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.note-entry {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.note-entry.note-type-teamwarning {
+    border-left-color: var(--warning-color);
+    background: var(--warning-soft);
+}
+
+.note-entry.note-type-einsatzupdate {
+    border-left-color: var(--info-color);
+    background: rgba(0, 188, 212, 0.05);
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.note-time {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+.note-icon {
+    font-size: 1.2rem;
+}
+
+.note-content {
+    font-size: 1.05rem;
+}
+
+/* Notes Section */
+.notes-section {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.note-input-card {
+    background: rgba(33, 150, 243, 0.05);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.note-input {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    resize: vertical;
+    transition: all 0.2s;
+}
+
+.note-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.notes-list {
+    max-height: 700px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.note-card {
+    background: rgba(0, 0, 0, 0.02);
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--primary-color);
+    transition: all 0.2s;
+}
+
+.note-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateX(3px);
+}
+
+.note-card.has-replies {
+    box-shadow: inset 0 0 0 1px rgba(13, 110, 253, 0.25);
+}
+
+.note-card.note-type-teamstart,
+.note-card.note-type-teamstop,
+.note-card.note-type-teamreset {
+    border-left-color: var(--info-color);
+    background: var(--info-soft);
+}
+
+.note-card.note-type-teamwarning {
+    border-left-color: var(--warning-color);
+    background: var(--warning-soft);
+}
+
+.note-card.note-type-einsatzupdate {
+    border-left-color: var(--success-color);
+    background: var(--success-soft);
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.note-time {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.note-icon {
+    font-size: 1.3rem;
+}
+
+.note-content {
+    font-size: 1.05rem;
+    line-height: 1.5;
+}
+
+.note-team {
+    color: var(--primary-color);
+    margin-right: 0.5rem;
+}
+
+/* ---- Notizen: Expander-Trigger ---- */
+.note-expander-trigger {
+    text-align: left;
+    font-size: 0.875rem;
+    opacity: 0.85;
+}
+.note-expander-trigger:hover {
+    opacity: 1;
+}
+
+/* ---- Notizen: Team-Auswahl als Chips ---- */
+.note-source-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.note-source-chip {
+    min-height: 40px;
+    padding: 0.35rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-body-color);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    cursor: pointer;
+}
+
+.note-source-chip:hover {
+    background: var(--bs-secondary-bg);
+    border-color: var(--primary-color);
+}
+
+.note-source-chip.active {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(33, 150, 243, 0.35);
+}
+
+/* ---- Reset-Button: visuell von Start/Stopp getrennt ---- */
+.btn-team-reset {
+    background: transparent !important;
+    border-color: color-mix(in srgb, var(--ui-text) 20%, transparent) !important;
+    color: color-mix(in srgb, var(--ui-text) 55%, transparent) !important;
+    font-size: 0.9rem !important;
+    padding: 8px 14px !important;
+}
+
+.btn-team-reset:hover,
+.btn-team-reset:focus {
+    background: rgba(244, 67, 54, 0.08) !important;
+    border-color: var(--danger-color) !important;
+    color: var(--danger-color) !important;
+}
+
+
+
+/* ── @-Mention textarea component ─────────────────────────────────────── */
+
+.mention-container {
+    position: relative;
+}
+
+.mention-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-primary) 14%, rgba(0, 0, 0, 0.15));
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 2px;
+}
+
+.mention-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.1s;
+}
+
+.mention-item-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mention-item-subtitle {
+    font-size: 0.77rem;
+    color: var(--ui-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 10rem;
+    flex-shrink: 0;
+}
+
+.mention-item:hover,
+.mention-item.active {
+    background: color-mix(in srgb, var(--theme-primary) 10%, transparent);
+    outline: none;
+}
+
+.mention-item.active {
+    background: color-mix(in srgb, var(--theme-primary) 18%, transparent);
+}
+
+.mention-type-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+}
+
+.mention-type-team {
+    background: color-mix(in srgb, var(--success-color) 16%, transparent);
+    color: var(--success-color);
+}
+
+.mention-type-person {
+    background: color-mix(in srgb, var(--theme-primary) 14%, transparent);
+    color: color-mix(in srgb, var(--theme-primary) 88%, var(--ui-text, #0d6efd));
+}
+
+.mention-type-hund {
+    background: color-mix(in srgb, var(--warning-color) 16%, transparent);
+    color: color-mix(in srgb, var(--warning-color) 92%, var(--ui-text, #e65100));
+}
+
+/* Inline mention badge rendered inside note text */
+.mention-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    background: rgba(108, 117, 125, 0.12);
+    color: var(--ui-muted);
+    border-radius: 0.25rem;
+    padding: 0.05rem 0.35rem;
+    font-size: 0.88em;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Typed badge modifiers — match the dropdown's color scheme per category */
+.mention-badge.mention-badge-team {
+    background: color-mix(in srgb, var(--success-color) 14%, transparent);
+    color: var(--success-color);
+}
+
+.mention-badge.mention-badge-person {
+    background: color-mix(in srgb, var(--theme-primary) 12%, transparent);
+    color: color-mix(in srgb, var(--theme-primary) 88%, var(--ui-text, #0d6efd));
+}
+
+.mention-badge.mention-badge-hund {
+    background: color-mix(in srgb, var(--warning-color) 14%, transparent);
+    color: color-mix(in srgb, var(--warning-color) 92%, var(--ui-text, #e65100));
+}
+
+/* Dark mode overrides */
+
+
+
+
+
+
+
+
+
+
+
+
+/* Clickable mention badge (generated as <a>) */
+a.mention-badge-link {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+a.mention-badge-link:hover {
+    filter: brightness(1.15);
+    text-decoration: none;
+}
+
+/* Table row highlight when navigated from a mention */
+.mention-highlight-row {
+    background-color: color-mix(in srgb, var(--theme-primary) 7%, transparent) !important;
+}
+
+
+/* Temporary scroll-into-view pulse for team cards and table rows */

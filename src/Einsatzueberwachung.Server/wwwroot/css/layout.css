@@ -1,0 +1,709 @@
+html, body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    height: 100%;
+}
+
+/* ========================================
+   SIDEBAR & LAYOUT - WICHTIG!
+   ======================================== */
+
+.page {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.sidebar {
+    background-color: #0d1f3c;
+    width: 250px;
+    min-width: 250px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 100;
+    flex-shrink: 0;
+    transition: width 0.3s ease, min-width 0.3s ease;
+}
+
+/* Sidebar Text (theme-aware via --ui-text) */
+.sidebar,
+.sidebar * {
+    color: var(--ui-text) !important;
+    opacity: 1 !important;
+}
+
+.sidebar .nav-section-header {
+    color: color-mix(in srgb, var(--ui-text) 85%, transparent) !important;
+}
+
+.sidebar .nav-link,
+.sidebar .nav-item .nav-link,
+.sidebar a.nav-link,
+.sidebar .nav-item a {
+    color: var(--ui-text) !important;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link:focus,
+.sidebar .nav-item .nav-link:hover,
+.sidebar .nav-item .nav-link:focus {
+    background-color: color-mix(in srgb, var(--ui-text) 12%, transparent);
+    color: var(--ui-text) !important;
+}
+
+/* Aktiver Nav-Eintrag: deutlicher Linksrand + heller Hintergrund */
+.sidebar .nav-link.active,
+.sidebar .nav-item .nav-link.active {
+    background-color: color-mix(in srgb, var(--ui-text) 18%, transparent) !important;
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--ui-text) 75%, transparent);
+    font-weight: 600;
+}
+
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    min-width: 0;
+}
+
+/* ========================================
+   SIDEBAR COLLAPSED STATE
+   ======================================== */
+
+.page.sidebar-collapsed .sidebar {
+    width: 60px;
+    min-width: 60px;
+}
+
+/* Nav wrapper in sidebar */
+.sidebar .nav-wrapper {
+    width: 100%;
+    transition: width 0.3s ease;
+}
+
+.page.sidebar-collapsed .nav-wrapper {
+    width: 60px;
+}
+
+/* Brand text - hide when collapsed */
+.page.sidebar-collapsed .brand-text {
+    opacity: 0;
+    width: 0;
+    display: none;
+}
+
+/* Nav text - hide when collapsed */
+.page.sidebar-collapsed .nav-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    display: none;
+}
+
+/* Section headers - hide when collapsed */
+.page.sidebar-collapsed .nav-section-header {
+    opacity: 0;
+    height: 0;
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+/* Nav items - center icons when collapsed */
+.page.sidebar-collapsed .nav-item {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: 60px;
+    overflow: hidden;
+}
+
+.page.sidebar-collapsed .nav-item .nav-link {
+    justify-content: center;
+    padding: 0.5rem 0;
+    width: 100%;
+    max-width: 60px;
+}
+
+.page.sidebar-collapsed .nav-icon {
+    margin-right: 0;
+}
+
+.page.sidebar-collapsed .nav-icon i {
+    font-size: 1.2rem;
+    margin-right: 0;
+}
+
+/* Top row adjustments for collapsed */
+.page.sidebar-collapsed .top-row.navbar {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+}
+
+.page.sidebar-collapsed .top-row .container-fluid {
+    justify-content: center;
+    padding: 0;
+}
+
+.page.sidebar-collapsed .btn-sidebar-toggle {
+    margin-left: 0;
+}
+
+.page.sidebar-collapsed .navbar-brand {
+    justify-content: center;
+    margin: 0;
+    font-size: 0;
+}
+
+.page.sidebar-collapsed .navbar-brand i {
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+/* Toggle Icon rotates when collapsed */
+.page.sidebar-collapsed .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+/* Toggle Button Styles */
+.btn-sidebar-toggle {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.btn-sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
+
+.btn-sidebar-toggle i {
+    font-size: 0.9rem;
+    color: white !important;
+}
+
+/* Mobile: Sidebar oben */
+@media (max-width: 640px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative !important;
+    }
+    
+    main {
+        margin: 0;
+        width: 100%;
+    }
+    
+    /* Disable collapsed state on mobile */
+    .page.sidebar-collapsed .sidebar {
+        width: 100%;
+    }
+    
+    .page.sidebar-collapsed .brand-text,
+    .page.sidebar-collapsed .nav-text {
+        opacity: 1;
+        width: auto;
+        display: inline;
+    }
+    
+    .page.sidebar-collapsed .nav-section-header {
+        opacity: 1;
+        height: auto;
+        padding: 0.75rem 1rem !important;
+    }
+    
+    .btn-sidebar-toggle {
+        display: none;
+    }
+}
+
+/* ========================================
+   Dark Mode — Semantic Adjustments Only
+   Structural theming: --ui-* token system (above).
+   Bootstrap 5.3 data-bs-theme="dark" handles native components.
+   This block covers only what neither system reaches.
+   ======================================== */
+
+/* Signal colors lighten in dark mode for contrast on dark surfaces */
+
+/* Dark Mode Global Styles */
+[data-bs-theme="dark"] body {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+[data-bs-theme="dark"] .page {
+    background-color: #121212;
+}
+
+[data-bs-theme="dark"] .sidebar {
+    background-color: #13132a;
+    /* Scrollbar — browsers don't inherit Bootstrap dark mode */
+    [data-bs-theme="dark"] ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    [data-bs-theme="dark"] ::-webkit-scrollbar-track {
+        background: var(--ui-bg);
+    }
+
+    [data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+        background: var(--ui-border);
+        border-radius: 4px;
+    }
+
+    [data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+        background: var(--ui-muted);
+    }
+
+    [data-bs-theme="dark"] {
+        scrollbar-color: var(--ui-border) var(--ui-bg);
+        scrollbar-width: thin;
+    }
+
+    /* Secondary badge — Bootstrap default is too dark on dark surfaces */
+    [data-bs-theme="dark"] .badge.text-bg-secondary,
+    [data-bs-theme="dark"] .badge.bg-secondary {
+        background-color: #484848 !important;
+        color: #e0e0e0 !important;
+    }
+
+    /* Dropdown hover — subtle theme-aware tint */
+    [data-bs-theme="dark"] .dropdown-item:hover {
+        background-color: color-mix(in srgb, var(--theme-primary) 10%, transparent);
+    }
+
+    /* Team card state gradients — semantic colors update automatically in dark mode */
+    [data-bs-theme="dark"] .team-card-monitor.running {
+        background: linear-gradient(to right, rgba(129, 199, 132, 0.1) 0%, var(--ui-surface) 50%);
+    }
+
+    [data-bs-theme="dark"] .team-card-monitor.warning {
+        background: linear-gradient(to right, rgba(255, 183, 77, 0.1) 0%, var(--ui-surface) 50%);
+    }
+
+    [data-bs-theme="dark"] .team-card-monitor.critical {
+        background: linear-gradient(to right, rgba(229, 115, 115, 0.30) 0%, var(--ui-surface) 50%);
+    }
+
+    /* Monitor header on dark surface — follows theme preset */
+    [data-bs-theme="dark"] .monitor-header {
+        background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 85%, #0d1522) 0%, color-mix(in srgb, var(--theme-primary) 60%, #05080f) 100%);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Note type chips */
+    [data-bs-theme="dark"] .note-card.note-type-teamstart,
+    [data-bs-theme="dark"] .note-card.note-type-teamstop,
+    [data-bs-theme="dark"] .note-card.note-type-teamreset {
+        background-color: color-mix(in srgb, var(--info-color) 10%, transparent);
+    }
+
+    [data-bs-theme="dark"] .note-card.note-type-teamwarning {
+        background-color: color-mix(in srgb, var(--warning-color) 14%, transparent);
+    }
+
+    [data-bs-theme="dark"] .note-card.note-type-einsatzupdate {
+        background-color: color-mix(in srgb, var(--success-color) 10%, transparent);
+    }
+
+    /* Note input prompt */
+    [data-bs-theme="dark"] .note-input-card {
+        background-color: color-mix(in srgb, var(--theme-primary) 8%, transparent);
+    }
+
+    /* Member chips */
+    [data-bs-theme="dark"] .member-chip {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    [data-bs-theme="dark"] .member-chip.area {
+        background-color: color-mix(in srgb, var(--info-color) 14%, transparent);
+    }
+
+    /* Action cards — visual type indicators (Home page) */
+    [data-bs-theme="dark"] .action-card {
+        background-color: var(--ui-surface-2);
+        border-width: 3px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-bs-theme="dark"] .action-card.card-primary {
+        border-color: var(--theme-primary-border);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 70%, var(--ui-surface)) 0%, color-mix(in srgb, var(--theme-primary) 50%, var(--ui-surface)) 100%);
+    }
+
+    [data-bs-theme="dark"] .action-card.card-primary:hover {
+        border-color: var(--theme-primary);
+        box-shadow: 0 16px 32px color-mix(in srgb, var(--theme-primary) 30%, transparent);
+    }
+
+    [data-bs-theme="dark"] .action-card.card-success {
+        border-color: var(--success-border);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--success-color) 70%, var(--ui-surface)) 0%, color-mix(in srgb, var(--success-color) 50%, var(--ui-surface)) 100%);
+    }
+
+    [data-bs-theme="dark"] .action-card.card-success:hover {
+        border-color: var(--success-color);
+        box-shadow: 0 16px 32px color-mix(in srgb, var(--success-color) 30%, transparent);
+    }
+
+    [data-bs-theme="dark"] .action-card.card-info {
+        border-color: var(--info-border);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--info-color) 70%, var(--ui-surface)) 0%, color-mix(in srgb, var(--info-color) 50%, var(--ui-surface)) 100%);
+    }
+
+    [data-bs-theme="dark"] .action-card.card-info:hover {
+        border-color: var(--info-color);
+        box-shadow: 0 16px 32px color-mix(in srgb, var(--info-color) 30%, transparent);
+    }
+
+    [data-bs-theme="dark"] .action-card.card-secondary {
+        border-color: var(--ui-border);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--ui-muted) 40%, var(--ui-surface)) 0%, color-mix(in srgb, var(--ui-muted) 20%, var(--ui-surface)) 100%);
+    }
+
+    [data-bs-theme="dark"] .action-card.card-secondary:hover {
+        border-color: var(--ui-muted);
+        box-shadow: 0 16px 32px color-mix(in srgb, var(--ui-muted) 30%, transparent);
+    }
+
+    /* Stat and hero sections — follow theme preset */
+    [data-bs-theme="dark"] .stat-card,
+    [data-bs-theme="dark"] .hero-section {
+        background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 70%, #1a2036) 0%, color-mix(in srgb, var(--theme-primary) 50%, #0d1522) 100%);
+    }
+
+    /* Feature box subtle inset */
+    [data-bs-theme="dark"] .feature-box {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Teams / timer sections — near-invisible fill to group content */
+    [data-bs-theme="dark"] .teams-section,
+    [data-bs-theme="dark"] .timer-section {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+
+    transform: scale(1.05);
+}
+
+.btn-theme-toggle i {
+    font-size: 1.2rem;
+}
+
+/* Theme-Modus-Label im Topbar (Auto/Plan) */
+.topbar-theme-mode-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    opacity: 0.75;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+/* Navigation Top Row Flex Layout */
+.navbar .container-fluid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+html,
+body,
+.page,
+main,
+.content {
+    background: var(--ui-bg);
+    color: var(--ui-text);
+}
+
+.app-content {
+    padding: 1.2rem 1rem 2.5rem;
+}
+
+
+.mission-topbar {
+    min-height: 52px;
+    background: var(--ui-topbar-bg);
+    border-bottom: 1px solid var(--ui-topbar-border);
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    column-gap: 0.75rem;
+    padding: 0 0.9rem;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+}
+
+.mission-topbar-close {
+    justify-self: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--ui-topbar-btn-border);
+    background: var(--ui-topbar-btn-bg);
+    color: var(--ui-topbar-btn-text);
+}
+
+.mission-topbar-clock {
+    justify-self: end;
+    display: flex;
+    gap: 1.2rem;
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--ui-text);
+    letter-spacing: 0.05em;
+}
+
+/* Grüner Bottom-Glow wenn Einsatz aktiv */
+.mission-topbar.mission-active {
+    border-bottom-color: rgba(76, 175, 80, 0.6) !important;
+    box-shadow: 0 2px 10px rgba(76, 175, 80, 0.12);
+}
+
+.mission-topbar-actions {
+    justify-self: end;
+    display: flex;
+    gap: 0.45rem;
+}
+
+.mission-status-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.mission-status-location {
+    color: var(--ui-muted);
+    font-size: 0.88rem;
+    max-width: 360px;
+
+    .mission-last-warning {
+        cursor: pointer;
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.75rem;
+    }
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.global-warning-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.global-warning-overlay-dismiss {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.global-warning-overlay-dismiss:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: -2px;
+}
+
+.global-warning-popup {
+    width: min(560px, 100%);
+    background: var(--ui-surface);
+    border: 1px solid var(--danger-border);
+    border-radius: 12px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+
+.global-warning-header {
+    background: rgba(220, 53, 69, 0.15);
+    border-bottom: 1px solid rgba(220, 53, 69, 0.35);
+    color: var(--ui-heading-text);
+    padding: 0.85rem 1rem;
+}
+
+.global-warning-header--success {
+    background: color-mix(in srgb, var(--success-color) 28%, var(--ui-surface));
+    border-bottom-color: color-mix(in srgb, var(--success-color) 40%, var(--ui-border));
+}
+
+.global-warning-body {
+    padding: 1rem;
+}
+
+.global-warning-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.85rem 1rem 1rem;
+}
+
+.sidebar {
+    background: var(--ui-sidebar-bg) !important;
+    border-right: 1px solid var(--ui-sidebar-border);
+}
+
+/* Dezent: completely flat sidebar, no gradient, minimal border
+   !important required because the base .sidebar rule above also uses it. */
+[data-intensity="dezent"] .sidebar {
+    border-right-color: color-mix(in srgb, var(--ui-sidebar-text) 12%, transparent) !important;
+}
+
+/* Lebhaft: theme-colored gradient bleeds into the top of the sidebar
+   !important required because the base .sidebar rule above also uses it. */
+[data-intensity="lebhaft"] .sidebar {
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--theme-tertiary) 18%, var(--ui-sidebar-bg)) 0%,
+        var(--ui-sidebar-bg) 60%
+    ) !important;
+    border-right: 2px solid color-mix(in srgb, var(--theme-tertiary) 55%, transparent) !important;
+}
+
+.top-row.navbar {
+    background: var(--ui-sidebar-bg);
+    border-bottom: 1px solid var(--ui-sidebar-border);
+    padding: 0.8rem 0.6rem;
+}
+
+/* Dezent: barely-visible separator, no shadow */
+[data-intensity="dezent"] .top-row.navbar {
+    border-bottom-color: color-mix(in srgb, var(--ui-sidebar-border) 70%, transparent);
+    box-shadow: none;
+}
+
+/* Lebhaft: strong theme-colored bottom line + glow shadow */
+[data-intensity="lebhaft"] .top-row.navbar {
+    border-bottom: 2px solid color-mix(in srgb, var(--theme-primary) 70%, transparent);
+    box-shadow: 0 3px 12px color-mix(in srgb, var(--theme-primary) 28%, rgba(0, 0, 0, 0.25));
+}
+
+.nav-brand-row {
+    gap: 0.5rem;
+}
+
+.navbar-brand {
+    gap: 0.45rem;
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.brand-icon {
+    color: color-mix(in srgb, var(--theme-tertiary) 60%, var(--ui-sidebar-text) 40%);
+}
+
+.nav-section-header {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: color-mix(in srgb, var(--ui-sidebar-text) 55%, transparent) !important;
+    opacity: 0.92;
+    margin-top: 0.55rem;
+}
+
+.nav-link {
+    border-radius: 0.45rem;
+    margin: 0.1rem 0;
+}
+
+.nav-link.active {
+    background: var(--ui-nav-active-bg);
+    color: var(--ui-nav-active-text) !important;
+    box-shadow: inset 3px 0 0 var(--theme-tertiary);
+}
+
+/* Dezent: minimal active indicator — just a thin neutral stripe, no fill.
+   !important overrides the base .nav-link.active background above.
+   Opacity values mirror the surrounding sidebar convention (0.08/0.18/0.75). */
+[data-intensity="dezent"] .nav-link.active {
+    background: color-mix(in srgb, var(--ui-sidebar-text) 8%, transparent) !important;
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--ui-sidebar-text) 35%, transparent);
+    font-weight: 500;
+}
+
+/* Lebhaft: filled active link with glowing left border
+   !important overrides the base .nav-link.active background above. */
+[data-intensity="lebhaft"] .nav-link.active {
+    background: color-mix(in srgb, var(--theme-tertiary) 28%, var(--ui-nav-active-bg)) !important;
+    box-shadow: inset 3px 0 0 var(--theme-tertiary), 0 0 8px color-mix(in srgb, var(--theme-tertiary) 30%, transparent);
+}
+
+.nav-icon i {
+    color: color-mix(in srgb, var(--ui-sidebar-text) 84%, transparent);
+}
+
+@media (max-width: 768px) {
+    .mission-topbar {
+        grid-template-columns: auto 1fr;
+        gap: 0.45rem;
+    }
+
+    .mission-topbar-actions {
+        grid-column: 2;
+        justify-self: end;
+    }
+
+    .mission-topbar-clock {
+        grid-column: 2;
+        justify-self: start;
+    }
+
+    .mission-status-strip {
+        grid-column: 1 / -1;
+        padding-bottom: 0.4rem;
+    }
+
+    .mission-status-location {
+        max-width: 220px;
+    }
+
+    .mission-topbar-clock {
+        gap: 0.6rem;
+        font-size: 0.88rem;
+    }
+}

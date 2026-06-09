@@ -1,0 +1,21 @@
+/* ========================================
+   MobileDashboard — scoped styles
+   ======================================== */
+
+.mobile-dashboard-card {
+    border: 1px solid var(--ui-tile-border);
+    background: var(--ui-tile-bg);
+}
+
+.mobile-dashboard-shell {
+    max-width: 540px;
+}
+
+.mobile-dashboard-subline {
+    font-size: 0.72rem;
+}
+
+.mobile-dashboard-timer {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+}

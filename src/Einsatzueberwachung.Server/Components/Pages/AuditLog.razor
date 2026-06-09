@@ -5,7 +5,7 @@
 <PageTitle>Audit-Log</PageTitle>
 
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4 page-headline-row">
+    <div class="page-headline-row mb-4">
         <div>
             <h1 class="h3 mb-1"><i class="bi bi-journal-text me-2"></i>Audit-Log</h1>
             <p class="text-muted mb-0">Protokoll aller Änderungen im laufenden Einsatz</p>
@@ -14,7 +14,7 @@
             <button class="btn btn-outline-secondary btn-sm" @onclick="Refresh">
                 <i class="bi bi-arrow-clockwise me-1"></i>Aktualisieren
             </button>
-            <button class="btn btn-outline-danger btn-sm" @onclick="ConfirmClear">
+            <button class="btn btn-outline-secondary btn-sm" @onclick="ConfirmClear">
                 <i class="bi bi-trash me-1"></i>Löschen
             </button>
         </div>
@@ -95,7 +95,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary btn-sm" @onclick="() => _showClearConfirm = false">Abbrechen</button>
-                    <button class="btn btn-danger btn-sm" @onclick="ClearLog">Löschen</button>
+                    <button class="btn btn-primary btn-sm" @onclick="ClearLog">Löschen</button>
                 </div>
             </div>
         </div>

@@ -1,0 +1,494 @@
+/* Touch-optimierte Buttons - WCAG 2.1 Standard (min 44x44px) */
+.btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+    touch-action: manipulation;
+    /* Verhindert doppeltes Tippen */
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+.btn-lg {
+    min-height: 56px;
+    min-width: 56px;
+    padding: 16px 32px;
+    font-size: 1.25rem;
+}
+
+.btn-sm {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 16px;
+    font-size: 0.95rem;
+}
+
+/* Icon-Only Buttons */
+.btn-icon,
+.btn-close {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Form-Elemente touch-optimiert */
+.form-control,
+.form-select {
+    min-height: 44px;
+    font-size: 1.1rem;
+    padding: 12px 16px;
+    border-radius: 8px;
+    touch-action: manipulation;
+}
+
+.form-control-lg,
+.form-select-lg {
+    min-height: 56px;
+    font-size: 1.25rem;
+    padding: 16px 20px;
+}
+
+/* Checkboxen und Radio Buttons */
+input[type="checkbox"],
+input[type="radio"] {
+    min-width: 24px;
+    min-height: 24px;
+    cursor: pointer;
+}
+
+/* Touch-freundliche Links — nur Button-Links und Nav-Links, keine Inline-Text-Links */
+a.btn,
+a.nav-link,
+a.navbar-brand,
+a.list-group-item {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Mobile Spacing für bessere Touch-Bereiche */
+@media (max-width: 768px) {
+    .btn {
+        margin: 4px;
+    }
+    
+    .form-control,
+    .form-select {
+        margin-bottom: 12px;
+    }
+}
+
+.form-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.form-check-input {
+    width: 1.5em;
+    height: 1.5em;
+    margin-top: 0.15em;
+}
+
+.text-muted,
+.form-text,
+small {
+    color: var(--ui-muted) !important;
+}
+
+.form-control,
+.form-select,
+.input-group-text,
+textarea {
+    background: var(--ui-form-bg);
+    border: 1px solid var(--ui-form-border);
+    color: var(--ui-form-text);
+}
+
+.form-control:focus,
+.form-select:focus,
+textarea:focus {
+    background: var(--ui-form-focus-bg);
+    border-color: var(--ui-form-focus-border);
+    color: var(--ui-form-text);
+    box-shadow: 0 0 0 0.2rem rgba(74, 168, 255, 0.2);
+}
+
+.table,
+.table td,
+.table th {
+    color: var(--ui-text);
+    border-color: var(--ui-table-border);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-accent-bg: var(--ui-table-striped-bg);
+}
+
+.btn {
+    border-radius: 0.55rem;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: color-mix(in srgb, var(--theme-primary) var(--theme-button-fill), var(--ui-surface, #ffffff));
+    border-color: var(--theme-primary-border);
+    color: var(--theme-on-accent);
+    font-weight: 600;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background: color-mix(in srgb, var(--theme-primary) 100%, var(--ui-surface, #ffffff));
+    border-color: color-mix(in srgb, var(--theme-primary) 85%, var(--ui-border, #d5deea));
+    color: var(--theme-on-accent);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--theme-primary) 20%, transparent);
+}
+
+.btn-secondary {
+    background: color-mix(in srgb, var(--secondary-color) var(--theme-button-fill), var(--ui-surface, #ffffff));
+    border-color: color-mix(in srgb, var(--secondary-color) var(--theme-intensity-border), var(--ui-border, #d5deea));
+    /* text uses ui-text directly — prevents low contrast when bg is heavily tinted */
+    color: var(--ui-text, #1f2937);
+}
+
+[data-intensity="lebhaft"] .btn-secondary {
+    /* solid secondary bg in lebhaft mode → needs on-accent contrast */
+    color: var(--theme-on-accent);
+}
+
+.btn-success {
+    background: var(--success-fill);
+    border-color: var(--success-border);
+    color: var(--success-on-fill);
+}
+
+.btn-success:hover,
+.btn-success:focus {
+    background: color-mix(in srgb, var(--signal-success-hue) 100%, var(--ui-surface, #ffffff));
+    border-color: color-mix(in srgb, var(--signal-success-hue) 88%, var(--ui-border, #d5deea));
+    color: var(--success-on-fill);
+    box-shadow: 0 0 0 0.2rem var(--success-shadow);
+}
+
+.btn-info {
+    background: var(--info-fill);
+    border-color: var(--info-border);
+}
+
+.btn-info:hover,
+.btn-info:focus {
+    background: color-mix(in srgb, var(--signal-info-hue) 100%, var(--ui-surface, #ffffff));
+    border-color: color-mix(in srgb, var(--signal-info-hue) 88%, var(--ui-border, #d5deea));
+
+    box-shadow: 0 0 0 0.2rem var(--info-shadow);
+}
+
+.btn-warning {
+    background: var(--warning-fill);
+    border-color: var(--warning-border);
+    color: var(--warning-on-fill);
+}
+
+.btn-warning:hover,
+.btn-warning:focus {
+    background: color-mix(in srgb, var(--signal-warning-hue) 100%, var(--ui-surface, #ffffff));
+    border-color: color-mix(in srgb, var(--signal-warning-hue) 88%, var(--ui-border, #d5deea));
+    color: var(--warning-on-fill);
+    box-shadow: 0 0 0 0.2rem var(--warning-shadow);
+}
+
+.btn-danger {
+    background: var(--danger-fill);
+    border-color: var(--danger-border);
+    color: var(--danger-on-fill);
+}
+
+.btn-danger:hover,
+.btn-danger:focus {
+    background: color-mix(in srgb, var(--signal-danger-hue) 100%, var(--ui-surface, #ffffff));
+    border-color: color-mix(in srgb, var(--signal-danger-hue) 88%, var(--ui-border, #d5deea));
+    color: var(--danger-on-fill);
+    box-shadow: 0 0 0 0.2rem var(--danger-shadow);
+}
+
+[data-intensity="dezent"] .btn-primary,
+[data-intensity="dezent"] .btn-success,
+[data-intensity="dezent"] .btn-info,
+[data-intensity="dezent"] .btn-warning {
+    background: transparent;
+    box-shadow: none;
+}
+
+[data-intensity="dezent"] .btn-primary {
+    color: var(--theme-primary-text);
+    border-color: var(--theme-primary-border);
+}
+
+[data-intensity="dezent"] .btn-success {
+    color: var(--success-color);
+    border-color: var(--success-border);
+}
+
+[data-intensity="dezent"] .btn-info {
+    color: var(--info-color);
+    border-color: var(--info-border);
+}
+
+[data-intensity="dezent"] .btn-warning {
+    color: var(--warning-color);
+    border-color: var(--warning-border);
+}
+
+[data-intensity="dezent"] .btn-primary:hover,
+[data-intensity="dezent"] .btn-primary:focus {
+    background: color-mix(in srgb, var(--theme-primary) 6%, transparent);
+    color: var(--theme-primary-text);
+}
+
+[data-intensity="dezent"] .btn-success:hover,
+[data-intensity="dezent"] .btn-success:focus {
+    background: var(--success-soft);
+    color: var(--success-color);
+}
+
+[data-intensity="dezent"] .btn-info:hover,
+[data-intensity="dezent"] .btn-info:focus {
+    background: var(--info-soft);
+    color: var(--info-color);
+}
+
+[data-intensity="dezent"] .btn-warning:hover,
+[data-intensity="dezent"] .btn-warning:focus {
+    background: var(--warning-soft);
+    color: var(--warning-color);
+}
+
+/* Lebhaft: buttons glow with a coloured box-shadow on hover */
+[data-intensity="lebhaft"] .btn-primary,
+[data-intensity="lebhaft"] .btn-success,
+[data-intensity="lebhaft"] .btn-info,
+[data-intensity="lebhaft"] .btn-warning {
+    box-shadow: 0 2px 10px var(--theme-primary-shadow);
+}
+
+[data-intensity="lebhaft"] .btn-primary:hover,
+[data-intensity="lebhaft"] .btn-primary:focus {
+    box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--theme-primary) 40%, transparent);
+}
+
+[data-intensity="lebhaft"] .btn-success:hover,
+[data-intensity="lebhaft"] .btn-success:focus {
+    box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--signal-success-hue) 40%, transparent);
+}
+
+[data-intensity="lebhaft"] .btn-info:hover,
+[data-intensity="lebhaft"] .btn-info:focus {
+    box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--signal-info-hue) 40%, transparent);
+}
+
+[data-intensity="lebhaft"] .btn-warning:hover,
+[data-intensity="lebhaft"] .btn-warning:focus {
+    box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--signal-warning-hue) 40%, transparent);
+}
+
+.btn-outline-secondary,
+.btn-outline-primary,
+.btn-outline-success,
+.btn-outline-info,
+.btn-outline-warning,
+.btn-outline-dark,
+.btn-outline-danger {
+    border-width: 1px;
+}
+
+/* btn-outline-primary follows theme preset, not Bootstrap's hardcoded blue */
+.btn-outline-primary {
+    --bs-btn-color: var(--theme-primary);
+    --bs-btn-border-color: var(--theme-primary-border);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--theme-primary) 10%, transparent);
+    --bs-btn-hover-border-color: var(--theme-primary);
+    --bs-btn-hover-color: var(--theme-primary);
+    --bs-btn-active-bg: color-mix(in srgb, var(--theme-primary) 16%, transparent);
+    --bs-btn-active-border-color: var(--theme-primary);
+    --bs-btn-active-color: var(--theme-primary);
+    --bs-btn-focus-shadow-rgb: 0, 0, 0; /* overridden by box-shadow below */
+}
+
+.btn-outline-primary:focus-visible,
+.btn-outline-secondary {
+    background: transparent;
+    color: color-mix(in srgb, var(--secondary-color) var(--theme-intensity-text), var(--ui-text, #1f2937));
+    border-color: color-mix(in srgb, var(--secondary-color) var(--theme-intensity-border), var(--ui-border, #d5deea));
+}
+.btn-outline-secondary:hover {
+    background: color-mix(in srgb, var(--secondary-color) 10%, transparent);
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+.btn-outline-primary:focus {
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--theme-primary) 22%, transparent);
+}
+
+.btn-outline-success {
+    --bs-btn-color: var(--success-color);
+    --bs-btn-border-color: var(--success-border);
+    --bs-btn-hover-bg: var(--success-soft);
+    --bs-btn-hover-border-color: var(--success-color);
+    --bs-btn-hover-color: var(--success-color);
+    --bs-btn-active-bg: color-mix(in srgb, var(--signal-success-hue) 14%, transparent);
+    --bs-btn-active-border-color: var(--success-color);
+    --bs-btn-active-color: var(--success-color);
+}
+
+.btn-outline-info {
+    --bs-btn-color: var(--info-color);
+    --bs-btn-border-color: var(--info-border);
+    --bs-btn-hover-bg: var(--info-soft);
+    --bs-btn-hover-border-color: var(--info-color);
+    --bs-btn-hover-color: var(--info-color);
+    --bs-btn-active-bg: color-mix(in srgb, var(--signal-info-hue) 14%, transparent);
+    --bs-btn-active-border-color: var(--info-color);
+    --bs-btn-active-color: var(--info-color);
+}
+
+.btn-outline-warning {
+    --bs-btn-color: var(--warning-color);
+    --bs-btn-border-color: var(--warning-border);
+    --bs-btn-hover-bg: var(--warning-soft);
+    --bs-btn-hover-border-color: var(--warning-color);
+    --bs-btn-hover-color: var(--warning-color);
+    --bs-btn-active-bg: color-mix(in srgb, var(--signal-warning-hue) 14%, transparent);
+    --bs-btn-active-border-color: var(--warning-color);
+    --bs-btn-active-color: var(--warning-color);
+}
+
+.btn-outline-danger {
+    --bs-btn-color: var(--danger-color);
+    --bs-btn-border-color: var(--danger-border);
+    --bs-btn-hover-bg: var(--danger-soft);
+    --bs-btn-hover-border-color: var(--danger-color);
+    --bs-btn-hover-color: var(--danger-color);
+    --bs-btn-active-bg: color-mix(in srgb, var(--signal-danger-hue) 14%, transparent);
+    --bs-btn-active-border-color: var(--danger-color);
+    --bs-btn-active-color: var(--danger-color);
+}
+
+.badge {
+    border-radius: 999px;
+}
+
+.badge.text-bg-success,
+.badge.text-bg-info,
+.badge.text-bg-warning,
+.badge.text-bg-danger {
+    border: 1px solid transparent;
+}
+
+[data-intensity="dezent"] .badge.text-bg-success {
+    background: transparent !important;
+    color: color-mix(in srgb, var(--success-color) 90%, var(--ui-text, #1f2937)) !important;
+    border-color: color-mix(in srgb, var(--success-color) 44%, var(--ui-border, #d5deea)) !important;
+}
+
+[data-intensity="dezent"] .badge.text-bg-info {
+    background: transparent !important;
+    color: color-mix(in srgb, var(--info-color) 92%, var(--ui-text, #1f2937)) !important;
+    border-color: color-mix(in srgb, var(--info-color) 42%, var(--ui-border, #d5deea)) !important;
+}
+
+[data-intensity="dezent"] .badge.text-bg-warning {
+    background: transparent !important;
+    color: color-mix(in srgb, var(--warning-color) 94%, var(--ui-text, #1f2937)) !important;
+    border-color: color-mix(in srgb, var(--warning-color) 48%, var(--ui-border, #d5deea)) !important;
+}
+
+[data-intensity="dezent"] .tc-badge--critical { background: transparent; color: var(--danger-color); border: 1px solid var(--danger-border); }
+[data-intensity="dezent"] .tc-badge--warning  { background: transparent; color: var(--warning-color); border: 1px solid var(--warning-border); }
+[data-intensity="dezent"] .tc-badge--pause    { background: transparent; color: var(--pause-color); border: 1px solid var(--pause-border); }
+[data-intensity="dezent"] .tc-badge--ok       { background: transparent; color: var(--success-color); border: 1px solid var(--success-border); }
+
+[data-intensity="dezent"] .badge.text-bg-danger {
+    background: transparent !important;
+    color: color-mix(in srgb, var(--danger-color) 94%, var(--ui-text, #1f2937)) !important;
+    border-color: color-mix(in srgb, var(--danger-color) 48%, var(--ui-border, #d5deea)) !important;
+}
+
+/* Lebhaft: badges get a bold coloured border that pops */
+[data-intensity="lebhaft"] .badge.text-bg-success {
+    border-color: var(--success-color) !important;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--signal-success-hue) 40%, transparent);
+}
+
+[data-intensity="lebhaft"] .badge.text-bg-info {
+    border-color: var(--info-color) !important;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--signal-info-hue) 40%, transparent);
+}
+
+[data-intensity="lebhaft"] .badge.text-bg-warning {
+    border-color: var(--warning-color) !important;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--signal-warning-hue) 40%, transparent);
+}
+
+[data-intensity="lebhaft"] .badge.text-bg-danger {
+    border-color: var(--danger-color) !important;
+    box-shadow: 0 0 8px color-mix(in srgb, var(--signal-danger-hue) 50%, transparent);
+}
+
+.alert {
+    border-left-width: 4px;
+}
+
+.alert-success {
+    border-color: var(--theme-alert-success-border);
+    border-left-color: var(--success-color);
+    background: var(--theme-alert-success);
+}
+
+.alert-info {
+    border-color: var(--theme-alert-info-border);
+    border-left-color: var(--info-color);
+    background: var(--theme-alert-info);
+}
+
+.alert-warning {
+    border-color: var(--theme-alert-warning-border);
+    border-left-color: var(--warning-color);
+    background: var(--theme-alert-warning);
+}
+
+.alert-danger {
+    border-color: var(--theme-alert-danger-border);
+    border-left-color: var(--danger-color);
+    background: var(--theme-alert-danger);
+}
+
+[data-intensity="dezent"] .alert-success,
+[data-intensity="dezent"] .alert-info,
+[data-intensity="dezent"] .alert-warning,
+[data-intensity="dezent"] .alert-danger {
+    background: transparent;
+}
+
+/* Lebhaft: alerts are fully saturated and cast a soft coloured shadow */
+[data-intensity="lebhaft"] .alert-success {
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--signal-success-hue) 30%, transparent);
+}
+
+[data-intensity="lebhaft"] .alert-info {
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--signal-info-hue) 30%, transparent);
+}
+
+[data-intensity="lebhaft"] .alert-warning {
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--signal-warning-hue) 30%, transparent);
+}
+
+[data-intensity="lebhaft"] .alert-danger {
+    box-shadow: 0 2px 14px color-mix(in srgb, var(--signal-danger-hue) 40%, transparent);
+}
+

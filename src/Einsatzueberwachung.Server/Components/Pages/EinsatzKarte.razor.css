@@ -32,14 +32,14 @@
 }
 
 .sidebar-vtab:hover {
-    background: var(--bs-secondary-bg, #e9ecef);
+    background: color-mix(in srgb, var(--theme-primary) 8%, var(--bs-secondary-bg, #e9ecef));
     color: var(--bs-body-color);
 }
 
 .sidebar-vtab.active {
-    background: var(--bs-primary);
-    color: #fff;
-    border-color: var(--bs-primary);
+    background: color-mix(in srgb, var(--theme-primary) var(--theme-button-fill), var(--bs-body-bg, #fff));
+    color: var(--theme-on-accent, #fff);
+    border-color: color-mix(in srgb, var(--theme-primary) var(--theme-intensity-border), var(--bs-border-color, #dee2e6));
 }
 
 .sidebar-vtab i {
@@ -82,8 +82,13 @@
 }
 
 .vtab-collapse:hover {
-    background: var(--bs-secondary-bg, #e9ecef);
+    background: color-mix(in srgb, var(--theme-primary) 8%, var(--bs-secondary-bg, #e9ecef));
     color: var(--bs-body-color);
+}
+
+[data-intensity="dezent"] .sidebar-vtab.active {
+    background: transparent;
+    color: color-mix(in srgb, var(--theme-primary) 88%, var(--bs-body-color));
 }
 
 /* ========================================

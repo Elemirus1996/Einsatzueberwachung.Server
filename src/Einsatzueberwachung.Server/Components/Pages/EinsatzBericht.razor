@@ -7,8 +7,8 @@
 
 <PageTitle>Einsatzbericht</PageTitle>
 
-<div class="container py-4 report-page">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+<div class="container py-4">
+    <div class="page-headline-row mb-3">
         <div>
             <h1 class="mb-1"><i class="bi bi-file-earmark-text me-2"></i>Einsatzbericht</h1>
             <p class="text-muted mb-0">Zusammenfassung und Export</p>
@@ -25,17 +25,17 @@
 
     <div class="row g-3 mb-3">
         <div class="col-12 col-md-4">
-            <div class="card report-stat-card"><div class="card-body"><div class="small text-muted">Einsatzort</div><div class="fw-semibold">@EinsatzService.CurrentEinsatz.Einsatzort</div></div></div>
+            <div class="card stat-display-card"><div class="card-body"><div class="small text-muted">Einsatzort</div><div class="fw-semibold">@EinsatzService.CurrentEinsatz.Einsatzort</div></div></div>
         </div>
         <div class="col-12 col-md-4">
-            <div class="card report-stat-card"><div class="card-body"><div class="small text-muted">Teams</div><div class="fw-semibold">@EinsatzService.Teams.Count</div></div></div>
+            <div class="card stat-display-card"><div class="card-body"><div class="small text-muted">Teams</div><div class="fw-semibold">@EinsatzService.Teams.Count</div></div></div>
         </div>
         <div class="col-12 col-md-4">
-            <div class="card report-stat-card"><div class="card-body"><div class="small text-muted">Notizen/Funk</div><div class="fw-semibold">@EinsatzService.GlobalNotes.Count</div></div></div>
+            <div class="card stat-display-card"><div class="card-body"><div class="small text-muted">Notizen/Funk</div><div class="fw-semibold">@EinsatzService.GlobalNotes.Count</div></div></div>
         </div>
     </div>
 
-    <div class="card mb-3 report-form-card">
+    <div class="card mb-3 filter-card">
         <div class="card-header fw-semibold">
             <i class="bi bi-journal-check me-2"></i>Abschlussdaten
         </div>

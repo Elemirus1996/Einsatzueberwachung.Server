@@ -1,0 +1,111 @@
+/* ========================================
+   TeamMobile — scoped styles
+   ======================================== */
+
+.team-mobile-full-height {
+    height: 100vh;
+}
+
+.team-mobile-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.team-mobile-header {
+    background: color-mix(in srgb, var(--theme-primary) var(--theme-button-fill), var(--ui-surface, #ffffff));
+    color: var(--theme-on-accent);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.team-mobile-header-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.team-mobile-team-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.1;
+}
+
+.team-mobile-team-subtitle {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    line-height: 1.1;
+}
+
+.team-mobile-logout-form {
+    margin: 0;
+}
+
+.team-mobile-message-strip {
+    background: var(--theme-alert-warning);
+    border-bottom: 1px solid var(--theme-alert-warning-border);
+    padding: 8px 12px;
+}
+
+.team-mobile-message-row {
+    font-size: 0.85rem;
+}
+
+.team-mobile-message-time {
+    line-height: 1;
+}
+
+.team-mobile-info-panel {
+    background: color-mix(in srgb, var(--theme-primary) 4%, var(--ui-surface-2, #f8f9fa));
+    border-bottom: 1px solid var(--ui-border, #dee2e6);
+    padding: 10px 14px;
+    font-size: 0.85rem;
+}
+
+.team-mobile-gps-banner {
+    border-bottom: 1px solid var(--bs-border-color);
+    font-size: 0.82rem;
+}
+
+.team-mobile-map {
+    flex: 1;
+    width: 100%;
+    min-height: 300px;
+    background: color-mix(in srgb, var(--theme-primary) 5%, var(--ui-surface-2, #e9ecef));
+}
+
+.team-mobile-status-actions {
+    background: var(--ui-surface, #fff);
+    border-top: 1px solid var(--ui-border, #dee2e6);
+    padding: 6px 8px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.team-mobile-footer {
+    background: var(--ui-surface, #fff);
+    border-top: 1px solid var(--ui-border, #dee2e6);
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.team-mobile-footer-spinner {
+    width: 0.8rem;
+    height: 0.8rem;
+}
+
+[data-intensity="dezent"] .team-mobile-header {
+    background: transparent;
+    color: color-mix(in srgb, var(--theme-primary) 86%, var(--ui-text, #1f2937));
+    border-bottom: 1px solid var(--theme-primary-border);
+}
+
+[data-intensity="dezent"] .team-mobile-message-strip,
+[data-intensity="dezent"] .team-mobile-info-panel {
+    background: transparent;
+}

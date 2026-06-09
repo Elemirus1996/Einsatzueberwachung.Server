@@ -1,0 +1,626 @@
+/* ========================================
+   LEAFLET MAP STYLES
+   ======================================== */
+
+#einsatzMap {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.map-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.leaflet-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.leaflet-popup-content {
+    margin: 12px;
+    font-size: 1.05rem;
+}
+
+/* Leaflet Draw Toolbar - Alle Buttons verstecken (wir verwenden externe Buttons) */
+.leaflet-draw-toolbar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Draw Actions Toolbar während des Zeichnens (Finish, Delete last point, Cancel) */
+.leaflet-draw-actions {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Draw Control Styles (unsichtbar, nur intern) */
+.leaflet-draw-toolbar a {
+    background-color: white;
+    border-radius: 4px;
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
+}
+
+.leaflet-draw-toolbar a:hover {
+    background-color: #f0f0f0;
+}
+
+/* ========================================
+   MAP PAGE LAYOUT - Sauberes 2-Spalten Design
+   ======================================== */
+
+/* Embed-Modus: Karte ohne Sidebar/Topbar (iframe im EL-Dashboard) */
+body.map-embed-mode .sidebar { display: none !important; }
+body.map-embed-mode .mission-topbar { display: none !important; }
+body.map-embed-mode .page { height: 100vh; }
+
+/* Embed-Modus: Karte als reine Anzeige — Header und Tools-Sidebar ausblenden,
+   Map-Container darf den ganzen iframe füllen. Zoom/Pan bleiben (für Inspektion). */
+body.map-embed-mode .map-header { display: none !important; }
+body.map-embed-mode .map-sidebar { display: none !important; }
+body.map-embed-mode .map-page-layout { height: 100vh !important; }
+body.map-embed-mode .map-content { height: 100% !important; }
+body.map-embed-mode .map-main { width: 100% !important; flex: 1 1 auto !important; position: relative; }
+
+/* Eingebaute Leaflet-Layer-Auswahl in Embed verstecken — wir liefern eigene Toolbar */
+body.map-embed-mode .leaflet-control-layers { display: none !important; }
+
+/* ── Embed-Toolbar (kompakte Funktisch-Steuerung) ─────────────────
+   Standardmäßig komplett unsichtbar. Sichtbar nur bei body.map-embed-mode
+   UND passender embed-controls-*-Klasse. */
+.map-embed-toolbar { display: none; }
+
+body.map-embed-mode.embed-controls-tiles      .map-embed-tiles    { display: flex; }
+body.map-embed-mode.embed-controls-gps-collar .map-embed-gps,
+body.map-embed-mode.embed-controls-gps-phone  .map-embed-gps      { display: flex; }
+body.map-embed-mode.embed-controls-recenter   .map-embed-recenter { display: inline-flex; }
+
+body.map-embed-mode .map-embed-btn-collar,
+body.map-embed-mode .map-embed-btn-phone { display: none; }
+body.map-embed-mode.embed-controls-gps-collar .map-embed-btn-collar { display: inline-flex; }
+body.map-embed-mode.embed-controls-gps-phone  .map-embed-btn-phone  { display: inline-flex; }
+
+.map-embed-tiles {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 401;
+    flex-direction: column;
+    gap: 2px;
+    background: #14181f;
+    border: 1px solid rgba(232, 220, 195, 0.18);
+    border-radius: 4px;
+    padding: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.map-embed-gps {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 401;
+    flex-direction: row;
+    gap: 2px;
+    background: #14181f;
+    border: 1px solid rgba(232, 220, 195, 0.18);
+    border-radius: 4px;
+    padding: 2px;
+}
+
+.map-embed-recenter {
+    position: absolute !important;
+    bottom: 16px;
+    right: 16px;
+    z-index: 401;
+    width: 44px;
+    height: 44px;
+    background: #14181f;
+    border: 1px solid rgba(232, 220, 195, 0.20);
+    border-radius: 4px;
+    color: #e6dfcc;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+.map-embed-recenter:active { background: #1d232c; transform: translateY(1px); }
+.map-embed-recenter i { font-size: 18px; }
+
+.map-embed-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: rgba(230, 223, 204, 0.65);
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 6px 8px;
+    border-radius: 2px;
+    min-width: 36px;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.map-embed-btn i { font-size: 16px; }
+.map-embed-btn-label { font-size: 10px; }
+
+.map-embed-btn:active {
+    background: rgba(232, 220, 195, 0.10);
+    color: #e6dfcc;
+}
+
+.map-embed-btn-on {
+    background: color-mix(in srgb, var(--success-color) 18%, transparent);
+    color: var(--success-color);
+    border-color: color-mix(in srgb, var(--success-color) 50%, transparent);
+}
+
+.map-embed-btn-on i { color: var(--success-color); }
+
+/* Wenn die Karteseite aktiv ist: main darf nicht scrollen und app-content hat kein Padding */
+main:has(.map-page-layout) {
+    overflow: hidden;
+}
+
+.app-content:has(.map-page-layout) {
+    padding: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.map-page-layout {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Header: Top Bar */
+.map-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--ui-surface);
+    border-bottom: 1px solid var(--ui-border);
+    flex-shrink: 0;
+    position: relative;
+}
+
+.map-header .header-left {
+    flex-shrink: 0;
+    min-width: 120px;
+}
+
+.map-header h1 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.map-header .header-center {
+    flex: 1;
+    min-width: 200px;
+    max-width: 400px;
+}
+
+/* Bootstrap sets position:relative + z-index:2 on .input-group .btn.
+   Override here so the search button doesn't stack above page dialogs. */
+.map-header .input-group .btn {
+    z-index: auto;
+}
+
+.map-header .header-right {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    margin-left: auto;
+}
+
+.search-message {
+    padding: 0.5rem 1.5rem;
+    background: var(--ui-info-msg-bg);
+    border-bottom: 1px solid var(--ui-info-msg-border);
+    font-size: 0.9rem;
+    color: var(--ui-info-msg-text);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.search-message-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: #0c5460;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+.search-message-close:hover {
+    opacity: 1;
+}
+
+/* Main Content: Sidebar + Map */
+.map-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+    z-index: 1;
+}
+
+/* Sidebar */
+.map-sidebar {
+    width: 320px;
+    border-right: 1px solid var(--ui-border);
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    background: var(--ui-bg);
+    flex-shrink: 0;
+    transition: width 0.25s ease;
+}
+
+/* Minimierte Sidebar – nur der vtab-strip (44px) bleibt sichtbar */
+.map-sidebar.minimized {
+    width: 44px;
+}
+
+.sidebar-mini-item .color-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.mini-area-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 90px;
+    line-height: 1.2;
+}
+
+.sidebar-mini-empty {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 1.5rem;
+    color: var(--ui-muted);
+    font-size: 1.2rem;
+}
+
+.map-sidebar .sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.map-sidebar .sidebar-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.map-sidebar .sidebar-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-circle {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.btn-circle:hover {
+    transform: scale(1.1);
+}
+
+.map-sidebar .sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.map-sidebar .sidebar-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    text-align: center;
+}
+
+/* Suchgebiet Items */
+.search-area-item {
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.search-area-item:hover {
+    border-color: var(--theme-primary-border);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--theme-primary) 15%, transparent);
+    background: var(--ui-surface-2);
+}
+
+.search-area-item .area-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.search-area-item .color-box {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.search-area-item .area-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-area-item .area-info {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.search-area-item .area-info small {
+    display: block;
+}
+
+.search-area-item .area-actions {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: flex-end;
+}
+
+.search-area-item .btn-xs {
+    padding: 0;
+    font-size: 0.75rem;
+    height: 24px;
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.search-area-item .btn-xs:hover {
+    opacity: 1;
+}
+
+/* Main Map Area */
+.map-main {
+    flex: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+    z-index: 10;
+    margin-left: 0 !important;
+    width: 100% !important;
+}
+
+.map-wrapper {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    z-index: 10;
+}
+
+/* ELW Button - wider for better readability */
+.btn-elw {
+    min-width: 50px;
+}
+
+/* Live-Flächen-Anzeige: Leaflet-Tooltip, zentriert im Polygon */
+.leaflet-tooltip.live-area-tooltip {
+    background: rgba(20, 20, 30, 0.88);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 5px 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    white-space: nowrap;
+    pointer-events: none;
+}
+.leaflet-tooltip.live-area-tooltip::before {
+    display: none;
+}
+
+/* Polygon-Bearbeitungsmodus Overlay */
+.polygon-edit-overlay {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: rgba(20, 20, 30, 0.92);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    max-width: 90vw;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.polygon-edit-hint {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    white-space: normal;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .map-sidebar {
+        width: 250px;
+    }
+}
+
+@media (max-width: 768px) {
+    .map-sidebar {
+        width: 200px;
+    }
+
+    .map-sidebar.minimized {
+        width: 120px;
+    }
+    
+    .map-header {
+        padding: 0.5rem 1rem;
+        gap: 0.5rem;
+    }
+    
+    .map-header h1 {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .map-content {
+        flex-direction: column;
+    }
+    
+    .map-sidebar {
+        width: 100%;
+        height: 150px;
+        border-right: none;
+        border-bottom: 1px solid var(--ui-border);
+    }
+}
+
+
+/* Marker Cluster */
+.marker-cluster-small {
+    background-color: color-mix(in srgb, var(--signal-info-hue) 60%, transparent);
+}
+
+.marker-cluster-medium {
+    background-color: color-mix(in srgb, var(--signal-warning-hue) 60%, transparent);
+}
+
+.marker-cluster-large {
+    background-color: color-mix(in srgb, var(--signal-danger-hue) 60%, transparent);
+}
+
+/* ========================================
+   DARK MODE – Karteseite UI
+   ======================================== */
+
+
+
+
+[data-bs-theme="dark"] .map-sidebar .sidebar-header {
+    background: var(--ui-surface);
+    border-bottom-color: var(--ui-border);
+    color: var(--ui-text);
+}
+
+[data-bs-theme="dark"] .map-sidebar .sidebar-header h3 {
+    color: var(--ui-text);
+}
+
+[data-bs-theme="dark"] .map-sidebar .sidebar-empty {
+    color: var(--ui-muted);
+}
+
+
+[data-bs-theme="dark"] .sidebar-mini-item {
+    background: var(--ui-surface);
+    border-color: var(--ui-border);
+    color: var(--ui-text);
+}
+
+[data-bs-theme="dark"] .sidebar-mini-item:hover {
+    background: rgba(74, 168, 255, 0.08);
+    border-color: var(--ui-blue);
+}
+
+
+[data-bs-theme="dark"] .search-area-item:hover {
+    background: rgba(74, 168, 255, 0.08);
+    border-color: var(--ui-blue);
+    box-shadow: 0 2px 6px rgba(74, 168, 255, 0.15);
+}
+
+[data-bs-theme="dark"] .search-area-item .area-name {
+    color: var(--ui-text);
+}
+
+[data-bs-theme="dark"] .search-area-item .area-info small {
+    color: var(--ui-muted);
+}
+
+
+

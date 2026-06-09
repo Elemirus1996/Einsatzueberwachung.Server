@@ -15,7 +15,7 @@
     }
     else
     {
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+        <div class="page-headline-row mb-3">
             <div>
                 <h1 class="mb-0"><i class="bi bi-bricks me-2"></i>Trümmer-Lagekarte</h1>
                 <p class="text-muted mb-0 small">Drohnenfoto vom Trümmerfeld hochladen und Suchgebiete einzeichnen — pixel-basiert, ohne GPS.</p>
@@ -58,7 +58,7 @@
                                         <strong>@(string.IsNullOrWhiteSpace(k.Title) ? "Karte" : k.Title)</strong><br />
                                         <small class="@(isActive ? "" : "text-muted")">@k.ImageWidthPx × @k.ImageHeightPx px · @k.UploadedAt.ToString("dd.MM. HH:mm")</small>
                                     </span>
-                                    <button class="btn btn-sm btn-outline-danger ms-2" type="button"
+                                    <button class="btn btn-sm btn-outline-secondary ms-2" type="button"
                                             @onclick:stopPropagation="true"
                                             @onclick="() => DeleteKarteAsync(k.Id)" title="Löschen">
                                         <i class="bi bi-trash"></i>
@@ -115,7 +115,7 @@
                                                                value="@a.Color"
                                                                @onchange="e => UpdateAreaColor(a, e.Value?.ToString())" />
                                                     </div>
-                                                    <button class="btn btn-sm btn-outline-danger ms-2" type="button"
+                                                    <button class="btn btn-sm btn-outline-secondary ms-2" type="button"
                                                             @onclick="() => DeleteAreaAsync(a.Id)" title="Löschen">
                                                         <i class="bi bi-trash"></i>
                                                     </button>

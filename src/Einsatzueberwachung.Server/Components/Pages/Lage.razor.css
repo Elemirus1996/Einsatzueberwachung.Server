@@ -1,15 +1,15 @@
 /* Tokens fuer den Lagebildschirm — bewusst eigener Token-Satz, der sich vom EL-Look abhebt. */
 .lage-page {
-    --lage-bg: #0e1418;
-    --lage-surface: #131a20;
-    --lage-surface-strong: #182027;
-    --lage-ink: #e6eef2;
-    --lage-ink-muted: rgba(230, 238, 242, 0.55);
-    --lage-ink-dim: rgba(230, 238, 242, 0.35);
-    --lage-line: rgba(255, 255, 255, 0.08);
-    --lage-line-strong: rgba(255, 255, 255, 0.16);
-    --lage-live: #3aa9c9;
-    --lage-warn: #d99a3b;
+    --lage-bg: color-mix(in srgb, var(--theme-secondary) 58%, #0e1418 42%);
+    --lage-surface: color-mix(in srgb, var(--theme-secondary) 46%, #131a20 54%);
+    --lage-surface-strong: color-mix(in srgb, var(--theme-secondary) 42%, #182027 58%);
+    --lage-ink: color-mix(in srgb, var(--ui-text, #e6eef2) 88%, #f7fbff 12%);
+    --lage-ink-muted: color-mix(in srgb, var(--lage-ink) 55%, transparent);
+    --lage-ink-dim: color-mix(in srgb, var(--lage-ink) 35%, transparent);
+    --lage-line: color-mix(in srgb, var(--lage-ink) 10%, transparent);
+    --lage-line-strong: color-mix(in srgb, var(--lage-ink) 18%, transparent);
+    --lage-live: color-mix(in srgb, var(--theme-primary) 72%, #3aa9c9 28%);
+    --lage-warn: color-mix(in srgb, var(--warning-color) 86%, #d99a3b 14%);
 
     position: fixed;
     inset: 0;
@@ -30,7 +30,7 @@
     align-items: center;
     gap: 12px;
     padding: 0 16px;
-    background: rgba(0, 0, 0, 0.35);
+    background: color-mix(in srgb, var(--lage-bg) 82%, #000 18%);
     border-bottom: 1px solid var(--lage-line);
     font-size: 12px;
     font-weight: 500;
@@ -70,14 +70,14 @@
     height: 6px;
     border-radius: 50%;
     background: var(--lage-live);
-    box-shadow: 0 0 0 0 rgba(58, 169, 201, 0.55);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--lage-live) 55%, transparent);
     animation: lage-pulse 1.8s ease-out infinite;
 }
 
 @keyframes lage-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(58, 169, 201, 0.55); }
-    70% { box-shadow: 0 0 0 8px rgba(58, 169, 201, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(58, 169, 201, 0); }
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--lage-live) 55%, transparent); }
+    70% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--lage-live) 0%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--lage-live) 0%, transparent); }
 }
 
 /* === Grid: links (Info + Karte) | rechts (Streams) === */
@@ -186,7 +186,16 @@
 /* === Streams (rechte Spalte) === */
 .lage-streams {
     min-height: 0;
-    background: #050709;
+    background: color-mix(in srgb, var(--lage-bg) 74%, #050709 26%);
     overflow: hidden;
     display: flex;
+}
+
+[data-intensity="dezent"] .lage-page {
+    --lage-line: color-mix(in srgb, var(--lage-ink) 7%, transparent);
+    --lage-line-strong: color-mix(in srgb, var(--lage-ink) 13%, transparent);
+}
+
+[data-intensity="dezent"] .lage-band-dot {
+    animation: none;
 }

@@ -19,14 +19,14 @@
         </div>
     </div>
 
-    <div class="stammdaten-toolbar d-flex flex-wrap gap-2 mb-4 align-items-center">
+    <div class="page-toolbar mb-4">
         <a class="btn btn-outline-primary" href="@GetDownloadUrl("/downloads/stammdaten.xlsx")">
             <i class="bi bi-file-earmark-excel me-1"></i>Exportieren
         </a>
         <a class="btn btn-outline-secondary" href="@GetDownloadUrl("/downloads/stammdaten-template.xlsx")">
             <i class="bi bi-download me-1"></i>Vorlage
         </a>
-        <div class="stammdaten-import-picker">
+        <div class="import-picker">
             <InputFile OnChange="HandleImportAsync" accept=".xlsx" disabled="@_isImporting" />
         </div>
         <button class="btn btn-outline-secondary" @onclick="RefreshAsync" disabled="@_isImporting">
@@ -34,7 +34,7 @@
         </button>
     </div>
 
-    <div class="stammdaten-tabs mb-3">
+    <div class="content-tabs mb-3">
         <button class="btn @GetTabButtonClass("personal")" @onclick='() => SetActiveTab("personal")'>Personal</button>
         <button class="btn @GetTabButtonClass("dogs")" @onclick='() => SetActiveTab("dogs")'>Hunde</button>
         <button class="btn @GetTabButtonClass("drones")" @onclick='() => SetActiveTab("drones")'>Drohnen</button>
@@ -70,7 +70,7 @@
                             <div class="mb-3">
                                 <label class="form-label">
                                     Divera Benutzer-ID
-                                    <span class="badge bg-info text-dark ms-1" style="font-size:0.7em;">optional</span>
+                                    <span class="badge bg-info text-dark ms-1 badge-opt">optional</span>
                                 </label>
                                 <InputNumber class="form-control" @bind-Value="_personalDraft.DiveraUserId" placeholder="z.B. 681743" />
                                 <div class="form-text">Die numerische Divera-ID (sichtbar in der App unter Profil oder in Alarm-R&#252;ckmeldungen als #ID).</div>
@@ -129,7 +129,7 @@
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
                                                         <button class="btn btn-outline-primary" @onclick="() => EditPersonal(person.Id)">Bearbeiten</button>
-                                                        <button class="btn btn-outline-danger" @onclick="() => DeletePersonalAsync(person.Id)">Loeschen</button>
+                                                        <button class="btn btn-outline-secondary" @onclick="() => DeletePersonalAsync(person.Id)">Loeschen</button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -171,7 +171,7 @@
 
                                 <div class="col-12 col-md-6">
                                     <label class="form-label">Hundeführer</label>
-                                    <div class="border rounded p-2" style="max-height:160px;overflow-y:auto">
+                                    <div class="border rounded p-2 stammdaten-scroll-list">
                                         @if (!_personal.Any())
                                         {
                                             <span class="text-muted small">Kein Personal vorhanden</span>
@@ -247,7 +247,7 @@
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
                                                         <button class="btn btn-outline-primary" @onclick="() => EditDog(dog.Id)">Bearbeiten</button>
-                                                        <button class="btn btn-outline-danger" @onclick="() => DeleteDogAsync(dog.Id)">Loeschen</button>
+                                                        <button class="btn btn-outline-secondary" @onclick="() => DeleteDogAsync(dog.Id)">Loeschen</button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -354,7 +354,7 @@
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
                                                         <button class="btn btn-outline-primary" @onclick="() => EditDrone(drone.Id)">Bearbeiten</button>
-                                                        <button class="btn btn-outline-danger" @onclick="() => DeleteDroneAsync(drone.Id)">Loeschen</button>
+                                                        <button class="btn btn-outline-secondary" @onclick="() => DeleteDroneAsync(drone.Id)">Loeschen</button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -418,7 +418,7 @@
                                             <td class="text-end">
                                                 <div class="btn-group btn-group-sm">
                                                     <button class="btn btn-outline-primary" @onclick="() => EditChecklistTemplate(tmpl.Id)">Bearbeiten</button>
-                                                    <button class="btn btn-outline-danger" @onclick="() => DeleteChecklistTemplateAsync(tmpl.Id)">Löschen</button>
+                                                    <button class="btn btn-outline-secondary" @onclick="() => DeleteChecklistTemplateAsync(tmpl.Id)">Löschen</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -517,7 +517,7 @@
                                                             @onclick="() => MoveChecklistItem(idx, 1)" title="Runter">
                                                         <i class="bi bi-arrow-down"></i>
                                                     </button>
-                                                    <button class="btn btn-outline-danger" type="button" @onclick="() => RemoveChecklistItem(idx)" title="Entfernen">
+                                                    <button class="btn btn-outline-secondary" type="button" @onclick="() => RemoveChecklistItem(idx)" title="Entfernen">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </div>
@@ -567,7 +567,7 @@
                     <div class="mb-3">
                         <label class="form-label">
                             Divera Benutzer-ID
-                            <span class="badge bg-info text-dark ms-1" style="font-size:0.7em;">optional</span>
+                            <span class="badge bg-info text-dark ms-1 badge-opt">optional</span>
                         </label>
                         <InputNumber class="form-control" @bind-Value="_personalDraft.DiveraUserId" placeholder="z.B. 681743" />
                         <div class="form-text">Die numerische Divera-ID (sichtbar in der App unter Profil oder in Alarm-R&#252;ckmeldungen als #ID).</div>
@@ -621,7 +621,7 @@
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label">Hundeführer</label>
-                            <div class="border rounded p-2" style="max-height:160px;overflow-y:auto">
+                            <div class="border rounded p-2 stammdaten-scroll-list">
                                 @if (!_personal.Any())
                                 {
                                     <span class="text-muted small">Kein Personal vorhanden</span>

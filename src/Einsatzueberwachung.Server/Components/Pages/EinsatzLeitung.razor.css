@@ -42,14 +42,14 @@
     --einsatz-aktiv-glow: rgba(45, 122, 77, 0.14);
     --belastung-1:        #b8821a;  /* Tagesreflex-Gelb (Warnstufe 1) */
     --belastung-1-glow:   rgba(184, 130, 26, 0.16);
-    --belastung-2:        #a8332a;  /* Streifenrot (Warnstufe 2) */
-    --belastung-2-glow:   rgba(168, 51, 42, 0.14);
-    --bereit:             #9c7340;  /* Kupfer */
-    --bereit-glow:        rgba(156, 115, 64, 0.13);
+    --belastung-2:        color-mix(in srgb, var(--theme-primary) 86%, #7f1f19);  /* Streifenrot (Warnstufe 2) */
+    --belastung-2-glow:   color-mix(in srgb, var(--theme-primary) var(--theme-intensity-soft), transparent);
+    --bereit:             color-mix(in srgb, var(--theme-secondary) 76%, #7a6a58);  /* Kupfer */
+    --bereit-glow:        color-mix(in srgb, var(--theme-secondary) var(--theme-intensity-soft), transparent);
     --pause-grau:         #5a6470;
     --pause-grau-glow:    rgba(90, 100, 112, 0.13);
-    --funk-aktion:        #1e3a5f;  /* Petrol / BOS-Blau */
-    --funk-aktion-glow:   rgba(30, 58, 95, 0.13);
+    --funk-aktion:        color-mix(in srgb, var(--theme-primary) 72%, #16304d);  /* Theme-Aktion */
+    --funk-aktion-glow:   color-mix(in srgb, var(--theme-primary) var(--theme-intensity-soft), transparent);
     --kreide:             #c8a850;  /* Kreidegelb (Notiz/Mitschrift) */
 
     /* Typografie — JetBrains Mono dominiert, Sans nur für Fließtext */
@@ -94,14 +94,14 @@
     --einsatz-aktiv-glow: rgba(93, 200, 138, 0.14);
     --belastung-1:        #e0b73d;
     --belastung-1-glow:   rgba(224, 183, 61, 0.18);
-    --belastung-2:        #d04a3d;
-    --belastung-2-glow:   rgba(208, 74, 61, 0.18);
-    --bereit:             #c4a06a;
-    --bereit-glow:        rgba(196, 160, 106, 0.14);
+    --belastung-2:        color-mix(in srgb, var(--theme-primary) 88%, #ea8e84);
+    --belastung-2-glow:   color-mix(in srgb, var(--theme-primary) calc(var(--theme-intensity-soft) + 2%), transparent);
+    --bereit:             color-mix(in srgb, var(--theme-secondary) 82%, #d9c4a3);
+    --bereit-glow:        color-mix(in srgb, var(--theme-secondary) calc(var(--theme-intensity-soft) + 2%), transparent);
     --pause-grau:         #788292;
     --pause-grau-glow:    rgba(120, 130, 146, 0.14);
-    --funk-aktion:        #4a8fde;
-    --funk-aktion-glow:   rgba(74, 143, 222, 0.18);
+    --funk-aktion:        color-mix(in srgb, var(--theme-primary) 88%, #9bc3f1);
+    --funk-aktion-glow:   color-mix(in srgb, var(--theme-primary) calc(var(--theme-intensity-soft) + 3%), transparent);
     --kreide:             #e0d29a;
 }
 
@@ -1191,11 +1191,23 @@
 .el-btn:active { background: var(--funk-aktion-glow); border-color: var(--funk-aktion); color: var(--funk-aktion); }
 
 .el-btn-primary {
-    background: var(--funk-aktion);
-    border-color: var(--funk-aktion);
+    background: color-mix(in srgb, var(--funk-aktion) var(--theme-button-fill), var(--funk-platte));
+    border-color: color-mix(in srgb, var(--funk-aktion) var(--theme-intensity-border), var(--funk-bezel-stark));
     color: #fff;
 }
-.el-btn-primary:active { background: var(--funk-aktion); opacity: 0.85; color: #fff; }
+.el-btn-primary:active { background: color-mix(in srgb, var(--funk-aktion) 94%, var(--funk-platte)); opacity: 0.85; color: #fff; }
+
+[data-intensity="dezent"] .el-btn-primary {
+    background: transparent;
+    color: var(--funk-aktion);
+    border-color: color-mix(in srgb, var(--funk-aktion) 44%, var(--funk-bezel-stark));
+}
+
+[data-intensity="dezent"] .el-btn-primary:active {
+    background: color-mix(in srgb, var(--funk-aktion) 8%, transparent);
+    color: var(--funk-aktion);
+    opacity: 1;
+}
 
 .el-btn-ghost {
     background: var(--funk-platte-tief);
@@ -1692,6 +1704,17 @@
 
 .el-alert-success { color: var(--einsatz-aktiv); background: var(--einsatz-aktiv-glow); }
 .el-alert-danger  { color: var(--belastung-2);  background: var(--belastung-2-glow); }
+
+[data-intensity="dezent"] .el-alert-success,
+[data-intensity="dezent"] .el-alert-danger {
+    background: transparent;
+}
+
+[data-intensity="lebhaft"] .el-alert-success,
+[data-intensity="lebhaft"] .el-alert-danger {
+    border-color: currentColor;
+    background: color-mix(in srgb, currentColor 22%, transparent);
+}
 
 /* Mention-Input Override (::deep) */
 ::deep .el-mention-input {

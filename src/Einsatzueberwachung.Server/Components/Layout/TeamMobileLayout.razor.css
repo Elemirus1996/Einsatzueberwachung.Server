@@ -1,0 +1,5 @@
+.team-mobile-layout-shell {
+    width: 100vw;
+    min-height: 100vh;
+    background: var(--ui-surface-2, #f8f9fa);
+}

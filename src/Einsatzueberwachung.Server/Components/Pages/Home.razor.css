@@ -1,0 +1,300 @@
+/* ============================================================
+   Home — Startseite
+   Standard-Design, konsistent mit dem Rest der App.
+   Nutzt --ui-* und Bootstrap-Tokens.
+   ============================================================ */
+
+/* -- Layout ------------------------------------------------- */
+
+.home-wrapper {
+    min-height: calc(100dvh - 52px - 4.7rem);
+    display: flex;
+    flex-direction: column;
+}
+
+/* -- Staffel-Logo ------------------------------------------- */
+
+.home-logo {
+    max-width: clamp(180px, 22vw, 320px);
+    max-height: clamp(120px, 20vh, 260px);
+    object-fit: contain;
+}
+
+/* -- Uhr ---------------------------------------------------- */
+
+.home-clock {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: clamp(2.6rem, 5.5vw, 4.6rem);
+    font-weight: 500;
+    letter-spacing: .04em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text);
+}
+
+.home-clock-seconds {
+    color: var(--ui-muted);
+    font-weight: 400;
+}
+
+.home-clock-date {
+    font-size: .95rem;
+    color: var(--ui-muted);
+    letter-spacing: .01em;
+}
+
+/* -- Status-Band -------------------------------------------- */
+
+.home-status-band {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .5rem 1.1rem;
+    border-radius: 999px;
+    font-size: .9rem;
+    font-weight: 500;
+    border: 1px solid;
+    transition: background .25s ease, border-color .25s ease;
+}
+
+.home-status-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: currentColor;
+    animation: home-pulse-slow 3.6s ease-in-out infinite;
+}
+
+.home-status-band.is-calm {
+    color: var(--success-color);
+    border-color: var(--success-border, var(--success-color));
+    background: var(--bs-success-bg-subtle, rgba(25, 135, 84, .1));
+}
+
+.home-status-band.is-active {
+    color: var(--primary-color);
+    border-color: var(--bs-primary-border-subtle, var(--primary-color));
+    background: var(--bs-primary-bg-subtle, rgba(13, 110, 253, .1));
+    font-weight: 600;
+}
+
+.home-status-band.is-alarm {
+    color: #fff;
+    border-color: var(--danger-color);
+    background: var(--danger-color);
+    font-weight: 600;
+    animation: home-alarm-band-pulse 1.6s ease-in-out infinite;
+}
+
+.home-status-band.is-alarm .home-status-pulse {
+    background: #fff;
+    animation: home-pulse-fast 1.2s ease-in-out infinite;
+}
+
+/* -- Alarm-Button-Animation --------------------------------- */
+
+.home-action-btn--alarm {
+    animation: home-alarm-btn-pulse 1.5s ease-in-out infinite;
+}
+
+/* -- intensity: dezent → Animationen deaktivieren ----------- */
+
+[data-intensity="dezent"] .home-status-band.is-alarm,
+[data-intensity="dezent"] .home-action-btn--alarm {
+    animation: none;
+}
+
+/* -- intensity: lebhaft → stärkerer Puls -------------------- */
+
+[data-intensity="lebhaft"] .home-status-band.is-alarm,
+[data-intensity="lebhaft"] .home-action-btn--alarm {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, .44);
+    animation: home-alarm-btn-pulse 1s ease-in-out infinite;
+    border-width: 2px;
+}
+
+/* -- Note-Liste (Bereitschaft) ------------------------------ */
+
+.home-note-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.home-note-item {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    padding: .55rem 0;
+    border-bottom: 1px solid var(--ui-tile-border);
+}
+
+.home-note-item:last-child { border-bottom: none; }
+
+.home-note-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+}
+
+.home-note-text {
+    font-size: .87rem;
+    color: var(--ui-text);
+    line-height: 1.35;
+    word-wrap: break-word;
+}
+
+.home-note-meta {
+    font-size: .68rem;
+    color: var(--ui-muted);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .02em;
+}
+
+.home-note-del {
+    background: transparent;
+    border: none;
+    color: var(--ui-muted);
+    padding: .15rem .35rem;
+    border-radius: .3rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color .12s ease, background .12s ease;
+    flex-shrink: 0;
+}
+
+.home-note-del:hover {
+    color: var(--danger-color);
+    background: var(--bs-danger-bg-subtle, rgba(220, 53, 69, .1));
+}
+
+/* -- Timeline (Letzte Lagen) -------------------------------- */
+
+.home-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+
+.home-timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: .85rem;
+    bottom: .85rem;
+    width: 1px;
+    background: var(--ui-tile-border);
+}
+
+.home-timeline-item {
+    position: relative;
+    padding: .5rem 0 .5rem 1.4rem;
+}
+
+.home-timeline-dot {
+    position: absolute;
+    left: 0;
+    top: .9rem;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--ui-surface);
+    border: 2px solid var(--ui-muted);
+}
+
+.home-timeline-item.is-einsatz .home-timeline-dot {
+    border-color: var(--danger-color);
+    background: var(--bs-danger-bg-subtle, rgba(220, 53, 69, .15));
+}
+
+.home-timeline-item.is-uebung .home-timeline-dot {
+    border-color: var(--primary-color);
+    background: var(--bs-primary-bg-subtle, rgba(13, 110, 253, .1));
+}
+
+.home-timeline-title {
+    font-size: .9rem;
+    font-weight: 500;
+    color: var(--ui-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-timeline-meta {
+    font-size: .7rem;
+    color: var(--ui-muted);
+    margin-top: .12rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* -- Bilanz ------------------------------------------------- */
+
+.home-bilanz {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.home-bilanz-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: .55rem 0;
+    border-bottom: 1px solid var(--ui-tile-border);
+}
+
+.home-bilanz-row:last-child { border-bottom: none; }
+
+.home-bilanz-row dt {
+    margin: 0;
+    font-size: .78rem;
+    color: var(--ui-muted);
+    font-weight: 400;
+}
+
+.home-bilanz-row dd {
+    margin: 0;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--ui-tile-strong-text, var(--ui-text));
+    font-variant-numeric: tabular-nums;
+}
+
+/* -- Keyframes ---------------------------------------------- */
+
+@keyframes home-pulse-slow {
+    0%, 100% { transform: scale(1);    opacity: .85; }
+    50%      { transform: scale(1.25); opacity: 1; }
+}
+
+@keyframes home-pulse-fast {
+    0%, 100% { transform: scale(1);   opacity: .9; }
+    50%      { transform: scale(1.4); opacity: 1; }
+}
+
+@keyframes home-alarm-band-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, .5); }
+    50%      { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+}
+
+@keyframes home-alarm-btn-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, .55); }
+    50%      { box-shadow: 0 0 0 14px rgba(220, 53, 69, 0); }
+}
+
+/* -- Mobile ------------------------------------------------- */
+
+@media (max-width: 767px) {
+    .home-wrapper { min-height: auto; }
+}

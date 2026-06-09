@@ -509,7 +509,7 @@ else
                                             <td>
                                                 @if (!ev.IsFired)
                                                 {
-                                                    <button class="btn btn-sm btn-outline-danger" type="button"
+                                                    <button class="btn btn-sm btn-outline-secondary" type="button"
                                                             @onclick="@(() => RemoveScheduledEventAsync(ev.Id))" disabled="@_busy">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
@@ -580,7 +580,7 @@ else
                         <label class="form-label small">Abschluss-Kommentar / Trainer-Feedback</label>
                         <textarea class="form-control form-control-sm mb-2" rows="4" @bind="_endSummary"
                                   placeholder="z.B. Alle Lernziele erreicht. Team Alpha zeigte gute Kommunikation, EL hat Ressourcenplanung optimierungswuerdig..."></textarea>
-                        <button class="btn btn-danger w-100" type="button" @onclick="ShowEndExerciseConfirm" disabled="@_busy">
+                        <button class="btn btn-primary w-100" type="button" @onclick="ShowEndExerciseConfirm" disabled="@_busy">
                             <i class="bi bi-flag-fill me-1"></i>Uebung beenden und archivieren
                         </button>
                     }
@@ -653,7 +653,7 @@ else
                 <textarea class="form-control" rows="3" @bind="_endSummary" placeholder="z.B. Uebung erfolgreich, alle Lernziele erreicht..."></textarea>
             </div>
             <div class="global-warning-footer d-flex gap-2">
-                <button class="btn btn-danger" type="button" @onclick="ConfirmEndExerciseAsync" disabled="@_busy">
+                <button class="btn btn-primary" type="button" @onclick="ConfirmEndExerciseAsync" disabled="@_busy">
                     <i class="bi bi-flag-fill me-1"></i>Uebung beenden
                 </button>
                 <button class="btn btn-secondary" type="button" @onclick="CancelEndExercise">Abbrechen</button>

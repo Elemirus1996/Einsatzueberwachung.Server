@@ -33,11 +33,11 @@ namespace Einsatzueberwachung.Domain.Models.Enums
 
         public static string GetColorHex(this EinsatzSzenarioType szenario) => szenario switch
         {
-            EinsatzSzenarioType.Mantrailer => "#4CAF50",
-            EinsatzSzenarioType.Flaeche => "#2196F3",
-            EinsatzSzenarioType.Truemmer => "#FF9800",
-            EinsatzSzenarioType.Sonstige => "#9E9E9E",
-            _ => "#9E9E9E"
+            EinsatzSzenarioType.Mantrailer => "var(--success-color)",
+            EinsatzSzenarioType.Flaeche => "var(--info-color)",
+            EinsatzSzenarioType.Truemmer => "var(--warning-color)",
+            EinsatzSzenarioType.Sonstige => "var(--ui-muted)",
+            _ => "var(--ui-muted)"
         };
 
         public static string GetDescription(this EinsatzSzenarioType szenario) => szenario switch

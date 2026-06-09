@@ -30,16 +30,16 @@
         </div>
         
         <div class="header-right">
-            <button class="btn btn-sm btn-outline-info btn-elw" @onclick="SetElwPosition" 
+            <button class="btn btn-sm theme-accent-btn btn-elw" @onclick="SetElwPosition" 
                     title="@(_hasElwPosition ? "ELW verschieben" : "ELW setzen")">
                 <i class="bi bi-geo-fill"></i> @(_hasElwPosition ? "ELW verschieben" : "ELW setzen")
             </button>
-            <button class="btn btn-sm btn-outline-info"
+            <button class="btn btn-sm btn-secondary"
                     @onclick="ToggleMarkerPanel"
                     title="Koordinaten-Marker">
                 <i class="bi bi-crosshair"></i> Punkte
             </button>
-            <button class="btn btn-sm btn-outline-warning" @onclick="() => _showKarteDialog = true" title="Einsatzkarte drucken">
+            <button class="btn btn-sm btn-secondary" @onclick="() => _showKarteDialog = true" title="Einsatzkarte drucken">
                 <i class="bi bi-printer" aria-hidden="true"></i>
             </button>
             <button class="btn btn-sm @(_trackingVisible ? "btn-success" : "btn-outline-secondary")"
@@ -47,7 +47,7 @@
                     title="@(_trackingVisible ? "GPS-Layer ausblenden" : "GPS-Layer einblenden")">
                 <i class="bi bi-broadcast"></i> GPS
             </button>
-            <button class="btn btn-sm @(_phoneLayerVisible ? "btn-info" : "btn-outline-secondary")"
+            <button class="btn btn-sm @(_phoneLayerVisible ? "btn-success" : "btn-outline-secondary")"
                     @onclick="TogglePhoneLayer"
                     title="@(_phoneLayerVisible ? "Handy-GPS ausblenden" : "Handy-GPS einblenden")">
                 <i class="bi bi-phone"></i> Handy
@@ -249,7 +249,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-trash me-2 text-danger"></i>Suchgebiet löschen</h5>
+                    <h5 class="modal-title"><i class="bi bi-trash me-2"></i>Suchgebiet löschen</h5>
                     <button type="button" class="btn-close" @onclick="() => _deleteCandidate = null"></button>
                 </div>
                 <div class="modal-body">
@@ -258,7 +258,7 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @onclick="() => _deleteCandidate = null">Abbrechen</button>
-                    <button class="btn btn-danger" @onclick="ConfirmDeleteSearchAreaAsync">Löschen</button>
+                    <button class="btn btn-primary" @onclick="ConfirmDeleteSearchAreaAsync">Löschen</button>
                 </div>
             </div>
         </div>

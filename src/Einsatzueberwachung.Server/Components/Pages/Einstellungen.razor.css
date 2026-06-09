@@ -603,6 +603,85 @@
     align-self: flex-start;
 }
 
+/* ---------- Theme Preview ------------------------------------------ */
+
+::deep .theme-preview-surface {
+    background: color-mix(in srgb, var(--theme-primary) 6%, var(--ui-surface));
+    border-color: color-mix(in srgb, var(--theme-primary) 24%, var(--ui-border));
+}
+
+::deep .theme-preview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem;
+    align-items: start;
+}
+
+::deep .theme-preview-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* Mock navigation strip for the preview */
+::deep .theme-preview-nav-mock {
+    background: var(--ui-sidebar-bg, #0d1f3c);
+    border-radius: var(--theme-border-radius, 8px);
+    padding: 0.4rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+::deep .theme-preview-nav-link {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: 0.45rem;
+    color: rgba(255, 255, 255, 0.75);
+    cursor: default;
+    display: flex;
+    align-items: center;
+}
+
+::deep .theme-preview-nav-link.active {
+    background: var(--ui-nav-active-bg);
+    color: var(--ui-nav-active-text, #ffffff) !important;
+    box-shadow: inset 3px 0 0 var(--theme-primary);
+    font-weight: 600;
+}
+
+@media (max-width: 980px) {
+    ::deep .theme-preview-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------- Theme Preview – Button Showcase ------------------------ */
+
+::deep .theme-preview-btn-section {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--ui-border);
+}
+
+::deep .theme-preview-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+::deep .theme-preview-btn-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ui-muted);
+}
+
 /* ---------- System Info Grid (definition list) --------------------- */
 
 ::deep .cfg-info-grid {
@@ -734,4 +813,28 @@
     border-color: var(--bs-primary);
     box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
     background-color: var(--bs-primary-bg-subtle, #cfe2ff);
+}
+
+/* ---------- Custom Theme Editor ------------------------------------ */
+
+::deep .cfg-field-full {
+    grid-column: 1 / -1;
+}
+
+::deep .cfg-theme-list {
+    max-width: 500px;
+}
+
+::deep .cfg-theme-list .list-group-item {
+    border-color: var(--ui-border);
+    background: transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+::deep .cfg-theme-editor-card {
+    max-width: 600px;
+    background: var(--surface-color, var(--ui-surface-2));
+    border-color: var(--ui-border);
 }

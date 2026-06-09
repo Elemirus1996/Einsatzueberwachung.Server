@@ -1,0 +1,883 @@
+/* ========================================
+   MODERN MONITOR STYLES
+   ======================================== */
+
+.monitor-container {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+/* Classic 2-column monitor layout (original style) */
+.monitor-container-classic {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.monitor-header {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 90%, #0a1628) 0%, color-mix(in srgb, var(--theme-primary) 72%, #050d1c) 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-primary) 28%, transparent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+}
+
+.einsatz-info-card {
+    flex: 1;
+    min-width: 300px;
+}
+
+.einsatz-badge {
+    margin-bottom: 1rem;
+}
+
+.badge-einsatz {
+    background: rgba(244, 67, 54, 0.9);
+    padding: 0.5rem 1.5rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: inline-block;
+    animation: pulse-badge 2s infinite;
+}
+
+
+.badge-uebung {
+    background: var(--signal-warning-hue);
+    color: var(--theme-on-accent);
+    padding: 0.5rem 1.5rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: inline-block;
+}
+
+.einsatz-info-card h1 {
+    font-size: 2.5rem;
+    margin: 0.5rem 0;
+    font-weight: 700;
+}
+
+.einsatz-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin-top: 1rem;
+    font-size: 1.1rem;
+}
+
+.einsatz-meta span {
+    opacity: 0.95;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.monitor-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+}
+
+/* Section Headers */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.section-header h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+/* Teams Section */
+.teams-section {
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 16px;
+    padding: 2rem;
+}
+
+.teams-monitor-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+
+/* Custom Marker Styles */
+.custom-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 50%;
+    border: 3px solid var(--info-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    font-size: 1.5rem;
+}
+
+.custom-marker.einsatzort {
+    border-color: var(--danger-color);
+    background: var(--danger-fill);
+    color: var(--danger-on-fill);
+
+}
+
+.custom-marker.team {
+    border-color: var(--success-color);
+    background: var(--success-fill);
+    color: var(--success-on-fill);
+
+}
+
+.settings-page .card-header,
+.monitor-page .card-header {
+    background: var(--ui-card-header-bg);
+    border-bottom: 1px solid var(--ui-card-header-border);
+}
+
+.monitor-stat-card {
+    background: var(--ui-tile-bg);
+    border: 1px solid var(--ui-tile-border);
+    border-radius: 10px;
+    padding: 0.85rem 0.95rem;
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.monitor-stat-warning {
+    border-color: var(--ui-warning-accent);
+    box-shadow: inset 0 0 0 1px var(--ui-warning-shadow);
+}
+
+.monitor-stat-label {
+    color: var(--ui-tile-muted-text);
+    font-size: 0.86rem;
+}
+
+.monitor-stat-value {
+    color: var(--ui-tile-strong-text);
+    font-size: 1.5rem;
+    line-height: 1.1;
+    font-weight: 700;
+    margin-top: 0.2rem;
+}
+
+.monitor-quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--ui-tile-border);
+    min-width: 150px;
+}
+
+.monitor-quick-actions .btn {
+    border-radius: 0;
+    border: 0;
+    border-bottom: 1px solid var(--ui-separator-strong);
+    justify-content: center;
+    min-height: 44px;
+    font-weight: 600;
+}
+
+.monitor-quick-actions .btn:last-child {
+    border-bottom: 0;
+}
+
+.monitor-page .card {
+    border-color: var(--ui-tile-border);
+}
+
+.monitor-page .table > :not(caption) > * > * {
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+}
+
+.modal-close-mission {
+    width: min(920px, 95vw);
+}
+
+.modal-close-mission-header {
+    background: linear-gradient(135deg, #8d1e2b 0%, #bf2434 100%);
+    color: #fef6f7;
+    border-bottom-color: rgba(255, 255, 255, 0.18);
+}
+
+.modal-close-mission .border.rounded {
+    background: var(--ui-tile-bg);
+    border-color: var(--ui-tile-border) !important;
+}
+
+.modal-close-mission .text-muted {
+    color: var(--ui-muted) !important;
+}
+
+.modal-close-mission .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #fff;
+}
+
+.modal-close-mission .btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.6);
+    color: #fff;
+}
+
+.monitor-checklist-scroll {
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.monitor-weather-card {
+    border-color: var(--ui-tile-border);
+}
+
+.monitor-weather-metric {
+    background: var(--ui-tile-bg);
+    border: 1px solid var(--ui-tile-border);
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    height: 100%;
+}
+
+.monitor-weather-value {
+    color: var(--ui-tile-strong-text);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.monitor-weather-label {
+    color: var(--ui-tile-muted-text);
+    font-size: 0.82rem;
+    margin-top: 0.15rem;
+}
+
+.monitor-weather-forecast {
+    border-top: 1px solid var(--ui-row-border);
+    padding-top: 0.85rem;
+}
+
+.monitor-weather-forecast-title {
+    color: var(--ui-tile-muted-text);
+    font-size: 0.85rem;
+    margin-bottom: 0.45rem;
+    font-weight: 600;
+}
+
+.monitor-weather-forecast-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.45rem;
+}
+
+.monitor-weather-forecast-item {
+    background: var(--ui-tile-bg);
+    border: 1px solid var(--ui-tile-border);
+    border-radius: 9px;
+    padding: 0.45rem 0.5rem;
+}
+
+.monitor-weather-forecast-item.forecast-warning {
+    border-color: var(--ui-warning-accent);
+    box-shadow: inset 0 0 0 1px var(--ui-warning-shadow);
+}
+
+.monitor-weather-forecast-item.forecast-critical {
+    border-color: var(--danger-border);
+    box-shadow: inset 0 0 0 1px var(--danger-shadow);
+}
+
+.monitor-weather-forecast-item .forecast-time {
+    font-size: 0.82rem;
+    color: var(--ui-tile-muted-text);
+    margin-bottom: 0.1rem;
+}
+
+.monitor-weather-forecast-item .forecast-temp {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ui-tile-strong-text);
+}
+
+.monitor-weather-forecast-item .forecast-rain,
+.monitor-weather-forecast-item .forecast-wind {
+    font-size: 0.78rem;
+    color: var(--ui-tile-muted-text);
+}
+
+@media (max-width: 992px) {
+    .monitor-quick-actions {
+        width: 100%;
+        flex-direction: row;
+        min-width: 0;
+    }
+
+    .monitor-quick-actions .btn {
+        flex: 1;
+        border-bottom: 0;
+        border-right: 1px solid var(--ui-separator-strong);
+    }
+
+    .monitor-quick-actions .btn:last-child {
+        border-right: 0;
+    }
+
+    .monitor-weather-forecast-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 576px) {
+    .monitor-weather-forecast-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.page-headline-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--ui-page-headline-border);
+    padding-bottom: 0.8rem;
+}
+
+/* ========================================
+   DASHBOARD-LAYOUT (EinsatzMonitor)
+   ======================================== */
+
+/* Wenn Monitor-Page aktiv: kein Scroll/Padding in der übergeordneten Kette */
+main:has(.monitor-dashboard-wrapper) {
+    overflow: hidden;
+}
+main:has(.monitor-dashboard-wrapper) .app-content {
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.monitor-dashboard-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Sticky Kopfzeile */
+.monitor-dash-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bs-body-bg);
+    border-bottom: none;
+    box-shadow: 0 1px 8px color-mix(in srgb, var(--theme-primary) 12%, rgba(0, 0, 0, 0.1));
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.monitor-dash-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.monitor-dash-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* CSS-Grid 12-spaltig */
+.monitor-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-auto-flow: dense;
+    gap: 1.25rem;
+    padding: 0.75rem;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--theme-primary) 4%, var(--bs-secondary-bg));
+}
+
+/* ── Panel-Positionen (relative Breiten) ────────────────────────── */
+
+/* Zeile 1: Info (3) | Vermissten (3) | Wetter (3) */
+[data-panel-id="einsatz-info"] { grid-column: span 3; grid-row: 1; }
+[data-panel-id="vermissten"]   { grid-column: span 3; grid-row: 1; }
+[data-panel-id="wetter"]       { grid-column: span 3; grid-row: 1; }
+
+/* Notizen: rechte Spalte, überspannt beide Zeilen */
+[data-panel-id="notizen"]      { grid-column: span 3; grid-row: span 2; }
+
+/* Zeile 2: Teams (default 9 Sp.) | Suchgebiete (3 Sp.) */
+[data-panel-id="teams"]        { grid-column: span 9; grid-row: 2; }
+[data-panel-id="suchgebiete"]  { grid-column: span 3; grid-row: 2; }
+
+/* Suchgebiete sichtbar: Teams auf 6 Spalten */
+.monitor-dashboard-grid:has([data-panel-id="suchgebiete"]) [data-panel-id="teams"] {
+    grid-column: span 6;
+}
+
+/* Notizen ausgeblendet: Zeile-1-Panels auf 4 Spalten, Teams/Suchgebiete auf volle Breite */
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="einsatz-info"] { grid-column: span 4; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="vermissten"]   { grid-column: span 4; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="wetter"]       { grid-column: span 4; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="teams"]        { grid-column: span 12; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"]  { grid-column: span 4; }
+
+/* Suchgebiete + kein Notizen: Teams 8 Sp., Suchgebiete 4 Sp. */
+.monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="teams"] {
+    grid-column: span 8;
+}
+.monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
+    grid-column: span 4;
+}
+
+/* Panel-Wrapper & Panel */
+.dashboard-panel-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+.dashboard-panel {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--bs-border-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: var(--bs-body-bg);
+    height: 100%;
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--theme-primary) 8%, rgba(0, 0, 0, 0.07));
+    transition: box-shadow 0.15s ease;
+}
+.dashboard-panel:hover {
+    box-shadow: 0 3px 14px color-mix(in srgb, var(--theme-primary) 16%, rgba(0, 0, 0, 0.13));
+}
+
+[data-intensity="dezent"] .dashboard-panel {
+    box-shadow: none;
+    border-top-width: 0;
+    border-top-color: transparent;
+}
+
+[data-intensity="dezent"] .dashboard-panel:hover {
+    box-shadow: 0 1px 6px color-mix(in srgb, var(--theme-primary) 8%, transparent);
+}
+
+[data-intensity="lebhaft"] .dashboard-panel {
+    border-top-width: 4px;
+    box-shadow: 0 4px 18px color-mix(in srgb, var(--theme-primary) 22%, rgba(0, 0, 0, 0.13));
+}
+
+.dashboard-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    background: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.dashboard-panel-title {
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bs-secondary-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    white-space: nowrap;
+}
+
+.dashboard-panel-body {
+    padding: 0.75rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Ausgeblendetes Panel (wird nicht gerendert, nur im Dropdown-Picker sichtbar) */
+
+/* Wetter-Panel */
+.wetter-panel-content {
+    font-size: 0.9rem;
+}
+
+/* Vorhersage-Leiste */
+.forecast-strip {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.forecast-item {
+    text-align: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--bs-tertiary-bg);
+    min-width: 3.2rem;
+}
+
+.forecast-critical {
+    background: var(--bs-danger-bg-subtle);
+    color: var(--bs-danger-text-emphasis);
+}
+
+.forecast-warning {
+    background: var(--bs-warning-bg-subtle);
+    color: var(--bs-warning-text-emphasis);
+}
+
+/* Team-Notizen Badge */
+.team-notes-badge {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--bs-warning-bg-subtle);
+    border-left: 3px solid var(--bs-warning);
+    border-radius: 0 0.25rem 0.25rem 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    max-height: 3.5rem;
+    overflow: hidden;
+}
+
+/* Suchgebiete-Panel */
+.suchgebiete-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.suchgebiet-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+}
+
+.suchgebiet-row.suchgebiet-done {
+    opacity: 0.55;
+    text-decoration: line-through;
+}
+
+.suchgebiet-color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,.4);
+    box-shadow: 0 0 0 1px rgba(0,0,0,.15);
+}
+
+.suchgebiet-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.suchgebiet-team {
+    flex-shrink: 0;
+}
+
+/* Responsive: Tablet 768–1199 px → 6-Spalten-Grid */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .monitor-dashboard-grid {
+        grid-template-columns: repeat(6, 1fr);
+        grid-template-rows: auto auto 1fr auto;
+        gap: 0.75rem;
+    }
+
+    /* Zeile 1: Info (2) | Vermissten (2) | Wetter (2) */
+    [data-panel-id="einsatz-info"] { grid-column: span 2 !important; grid-row: 1; }
+    [data-panel-id="vermissten"]   { grid-column: span 2 !important; grid-row: 1; }
+    [data-panel-id="wetter"]       { grid-column: span 2 !important; grid-row: 2; }
+    /* Notizen: eigene Zeile unten, kein Row-Span */
+    [data-panel-id="notizen"]      { grid-column: span 6 !important; grid-row: 5; }
+
+    /* Teams + Suchgebiete */
+    [data-panel-id="teams"]       { grid-column: span 6 !important; grid-row: 3; }
+    [data-panel-id="suchgebiete"] { grid-column: span 6 !important; grid-row: 4; }
+
+    /* Desktop-:has()-Regeln für Tablet aufheben */
+    .monitor-dashboard-grid:has([data-panel-id="suchgebiete"]) [data-panel-id="teams"],
+    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="teams"],
+    .monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="teams"] {
+        grid-column: 1 / 7 !important;
+    }
+    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="einsatz-info"],
+    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="vermissten"] {
+        grid-column: revert;
+    }
+    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="wetter"],
+    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"],
+    .monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
+        grid-column: 1 / 7 !important;
+    }
+}
+
+/* Responsive: Smartphone < 768 px → 1-spaltig, scrollbar */
+@media (max-width: 767px) {
+    .monitor-dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: none;
+        grid-auto-rows: auto;
+        overflow-y: auto;
+    }
+
+    [data-panel-id="einsatz-info"],
+    [data-panel-id="vermissten"],
+    [data-panel-id="wetter"],
+    [data-panel-id="teams"],
+    [data-panel-id="suchgebiete"],
+    [data-panel-id="notizen"] {
+        grid-column: 1 / 2 !important;
+        grid-row: auto !important;
+    }
+}
+
+/* ---- Einsatzdauer im Monitor-Header ---- */
+.einsatz-dauer-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--bs-body-color);
+    gap: 0.25rem;
+}
+
+/* Szenario-Dropdown im EinsatzMonitor-Header */
+.monitor-szenario-wrap {
+    position: relative;
+    display: inline-block;
+}
+.monitor-szenario-btn {
+    cursor: pointer;
+    background: color-mix(in srgb, var(--monitor-szenario-color, var(--theme-primary)) 78%, var(--theme-secondary) 22%);
+    color: var(--theme-on-accent);
+}
+.monitor-szenario-btn:hover,
+.monitor-szenario-btn:focus {
+    filter: saturate(1.06) brightness(1.05);
+}
+.monitor-szenario-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1049;
+    background: transparent;
+}
+.monitor-szenario-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 1050;
+    min-width: 220px;
+    margin: 0;
+    padding: 4px 0;
+    list-style: none;
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.monitor-szenario-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 12px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    color: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+.monitor-szenario-item:hover,
+.monitor-szenario-item:focus {
+    background: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.05));
+}
+.monitor-szenario-item.active {
+    background: color-mix(in srgb, var(--theme-primary) 20%, var(--ui-surface));
+    font-weight: 600;
+}
+.monitor-szenario-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.monitor-action-btn {
+    border-width: 1px;
+    border-style: solid;
+}
+
+.monitor-action-btn--map {
+    background: color-mix(in srgb, var(--theme-secondary) var(--theme-button-fill), var(--ui-surface));
+    border-color: color-mix(in srgb, var(--theme-secondary) 45%, var(--ui-border));
+    color: color-mix(in srgb, var(--theme-secondary) 80%, var(--ui-text));
+}
+
+.monitor-action-btn--team-mobile {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--theme-secondary) 48%, var(--ui-border));
+    color: color-mix(in srgb, var(--theme-secondary) 84%, var(--ui-text));
+}
+
+.monitor-action-btn--push {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--theme-secondary) 52%, var(--ui-border));
+    color: color-mix(in srgb, var(--theme-secondary) 86%, var(--ui-text));
+}
+
+.monitor-action-btn--stop {
+    background: color-mix(in srgb, var(--theme-primary) var(--theme-button-fill), var(--ui-surface));
+    border-color: var(--theme-primary-border);
+    color: var(--theme-on-accent);
+}
+
+.monitor-action-btn--accent-solid {
+    background: var(--monitor-action-btn-bg, transparent);
+    border-color: var(--monitor-action-btn-border, var(--ui-border));
+    color: var(--monitor-action-btn-text, var(--ui-text));
+    box-shadow: var(--monitor-action-btn-shadow, none);
+}
+
+.monitor-action-btn--accent-solid:hover,
+.monitor-action-btn--accent-solid:focus-visible {
+    background: var(--monitor-action-btn-bg-hover, var(--monitor-action-btn-bg, transparent));
+    border-color: var(--monitor-action-btn-border-hover, var(--monitor-action-btn-border, var(--ui-border)));
+    color: var(--monitor-action-btn-text-hover, var(--monitor-action-btn-text, var(--ui-text)));
+    box-shadow: var(--monitor-action-btn-shadow-hover, var(--monitor-action-btn-shadow, none));
+}
+
+.monitor-action-btn--accent-success {
+    --monitor-action-btn-bg: color-mix(in srgb, var(--theme-secondary) var(--theme-button-fill), var(--ui-surface));
+    --monitor-action-btn-border: color-mix(in srgb, var(--theme-secondary) var(--theme-intensity-border), var(--ui-border));
+    --monitor-action-btn-text: color-mix(in srgb, var(--theme-secondary) var(--theme-intensity-text), var(--ui-text));
+    --monitor-action-btn-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--theme-secondary) var(--theme-intensity-shadow), transparent);
+    --monitor-action-btn-bg-hover: color-mix(in srgb, var(--theme-secondary) 100%, var(--ui-surface));
+    --monitor-action-btn-border-hover: var(--theme-secondary);
+    --monitor-action-btn-text-hover: color-mix(in srgb, var(--theme-secondary) var(--theme-intensity-text), var(--ui-text));
+    --monitor-action-btn-shadow-hover: 0 0 0 0.2rem color-mix(in srgb, var(--theme-secondary) 28%, transparent);
+}
+
+.monitor-action-btn:hover,
+.monitor-action-btn:focus-visible {
+    filter: saturate(1.08);
+}
+
+[data-intensity="dezent"] .monitor-action-btn--map,
+[data-intensity="dezent"] .monitor-action-btn--stop,
+[data-intensity="dezent"] .monitor-action-btn--team-mobile {
+    background: transparent;
+    color: var(--ui-text);
+}
+
+[data-intensity="dezent"] .monitor-action-btn--accent-solid {
+    background: transparent;
+    box-shadow: none;
+    --monitor-action-btn-shadow: none;
+    --monitor-action-btn-shadow-hover: none;
+}
+
+[data-intensity="lebhaft"] .monitor-action-btn--accent-solid {
+    background: var(--monitor-action-btn-bg, transparent);
+    box-shadow: var(--monitor-action-btn-shadow, none);
+}
+
+/* Multi-Vermisste Panel-Tabs (Dashboard) */
+.vermissten-panel-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.vermissten-panel-tab {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    line-height: 1;
+}
+.vermissten-panel-tab:hover {
+    background: var(--bs-tertiary-bg, rgba(0,0,0,.04));
+}
+.vermissten-panel-tab.active {
+    background: var(--theme-primary);
+    border-color: var(--theme-primary-border);
+    color: var(--theme-on-accent);
+    color: #fff;
+}
+.vermissten-panel-tab-add {
+    border-style: dashed;
+    color: var(--bs-secondary-color, #6c757d);
+}
+
+[data-intensity="dezent"] .monitor-szenario-btn {
+    background: transparent;
+    color: var(--monitor-szenario-color, var(--ui-text));
+}
+
+[data-intensity="dezent"] .monitor-action-btn--push,
+[data-intensity="dezent"] .monitor-action-btn--accent-solid.monitor-action-btn--accent-success {
+    background: transparent;
+}.theme-preview-surface {
+    border-color: var(--theme-secondary, var(--ui-border)) !important;
+}

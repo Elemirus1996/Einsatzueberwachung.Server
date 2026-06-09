@@ -135,7 +135,7 @@
                                 </div>
                                 @if (!merge.IsReverted)
                                 {
-                                    <button class="btn btn-outline-danger btn-sm flex-shrink-0"
+                                    <button class="btn btn-outline-secondary btn-sm flex-shrink-0"
                                             @onclick="() => RevertHistoryMergeAsync(merge.MergeId)"
                                             disabled="@_revertingHistoryIds.Contains(merge.MergeId)">
                                         @if (_revertingHistoryIds.Contains(merge.MergeId))
@@ -352,7 +352,7 @@
             @if (_currentStep == MergeWizardStep.MasterDataResolution && _session != null)
             {
                 <div class="card">
-                    <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                    <div class="card-header fw-semibold">
                         <span><i class="bi bi-people me-2"></i>Schritt 2 — Stammdaten zuordnen</span>
                         <span class="badge @(_session.AllMasterDataResolved ? "bg-success" : "bg-warning text-dark")">
                             @_session.ResolvedMasterDataCount / @_session.TotalMasterDataCount zugeordnet
@@ -744,7 +744,7 @@
                                     <i class="bi bi-info-circle me-1"></i>
                                     Diese Zusammenführung kann vollständig rückgängig gemacht werden.
                                 </span>
-                                <button class="btn btn-outline-danger btn-sm"
+                                <button class="btn btn-outline-secondary btn-sm"
                                         @onclick="RevertCurrentMergeAsync"
                                         disabled="@_isLoading">
                                     <i class="bi bi-arrow-counterclockwise me-1"></i>Rückgängig
@@ -857,7 +857,7 @@
             @if (_newEinsatzStep == 2 && _newEinsatzMergeSession != null)
             {
                 <div class="card">
-                    <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                    <div class="card-header fw-semibold">
                         <span><i class="bi bi-people me-2"></i>Schritt 2 — Stammdaten zuordnen</span>
                         <span class="badge @(_newEinsatzMergeSession.AllMasterDataResolved ? "bg-success" : "bg-warning text-dark")">
                             @_newEinsatzMergeSession.ResolvedMasterDataCount / @_newEinsatzMergeSession.TotalMasterDataCount zugeordnet
@@ -1121,7 +1121,7 @@
 
                     @* ── Teams auswählen ── *@
                     <div class="card mb-3">
-                        <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                        <div class="card-header fw-semibold">
                             <div>
                                 <span class="badge bg-primary rounded-circle me-2">2</span>
                                 Teams auswählen
@@ -1437,101 +1437,3 @@
 </div>
 
 
-<style>
-    .merge-stepper {
-        flex-wrap: wrap;
-    }
-
-    .merge-step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-width: 40px;
-    }
-
-    .merge-step-circle {
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 0.9rem;
-        background: var(--bs-secondary-bg);
-        border: 2px solid var(--bs-border-color);
-        color: var(--bs-secondary-color);
-        transition: all 0.2s;
-    }
-
-    .merge-step-label {
-        font-size: 0.7rem;
-        color: var(--bs-secondary-color);
-        margin-top: 4px;
-        text-align: center;
-        max-width: 80px;
-    }
-
-    .merge-step.active .merge-step-circle {
-        background: var(--bs-primary);
-        border-color: var(--bs-primary);
-        color: white;
-    }
-
-    .merge-step.active .merge-step-label {
-        color: var(--bs-primary);
-        font-weight: 600;
-    }
-
-    .merge-step.completed .merge-step-circle {
-        background: var(--bs-success);
-        border-color: var(--bs-success);
-        color: white;
-    }
-
-    .merge-step-connector {
-        flex: 1;
-        height: 2px;
-        background: var(--bs-border-color);
-        margin: 0 4px;
-        align-self: flex-start;
-        margin-top: 16px;
-    }
-
-    .merge-step-connector.completed {
-        background: var(--bs-success);
-    }
-
-    .merge-item-card {
-        border-left: 4px solid var(--bs-border-color);
-        transition: border-color 0.15s;
-    }
-
-    .import-mode-card {
-        cursor: pointer;
-        transition: transform 0.1s, box-shadow 0.1s;
-    }
-
-    .import-mode-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-    }
-
-    .merge-item-card.resolved-link { border-left-color: var(--bs-success); }
-    .merge-item-card.resolved-create { border-left-color: var(--bs-primary); }
-    .merge-item-card.resolved-skip { border-left-color: var(--bs-secondary); }
-
-    .candidate-option {
-        cursor: pointer;
-        transition: background 0.1s;
-    }
-
-    .candidate-option:hover {
-        background: var(--bs-tertiary-bg);
-    }
-
-    .candidate-option.selected {
-        background: var(--bs-primary-bg-subtle);
-        border-color: var(--bs-primary) !important;
-    }
-</style>

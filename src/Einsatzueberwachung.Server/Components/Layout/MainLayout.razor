@@ -1,5 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @using Einsatzueberwachung.Domain.Models
+@using Einsatzueberwachung.Domain.Models.Enums
 
 <div class="page @(_sidebarCollapsed ? "sidebar-collapsed" : string.Empty)">
     <div class="sidebar">
@@ -8,13 +9,6 @@
 
     <main>
         <div class="mission-topbar @(HasActiveEinsatz ? "mission-active" : "")">
-            <button class="mission-topbar-close"
-                    type="button"
-                    title="@(HasActiveEinsatz ? "Zur Startseite (Einsatz läuft weiter)" : "Zur Startseite")"
-                    @onclick="GoHome">
-                <i class="bi bi-house-door"></i>
-            </button>
-
             <div class="mission-status-strip" aria-live="polite">
                 @if (HasActiveEinsatz)
                 {
@@ -24,6 +18,42 @@
                         <span class="badge text-bg-warning">In Pause: @PausingTeamsCount</span>
                     }
                     <span class="badge text-bg-secondary">Bereit: @ReadyTeamsCount</span>
+
+                    <div class="monitor-szenario-wrap">
+                        <button class="badge monitor-szenario-btn"
+                                type="button"
+                                style="--monitor-szenario-color:@EinsatzService.CurrentEinsatz.Szenario.GetColorHex();"
+                                title="Szenario wechseln (auf Anweisung der EL)"
+                                @onclick="() => _szenarioMenuOpen = !_szenarioMenuOpen">
+                            <i class="bi bi-diagram-3 me-1"></i>@EinsatzService.CurrentEinsatz.Szenario.GetDisplayName()
+                            <i class="bi bi-caret-down-fill ms-1"></i>
+                        </button>
+
+                        @if (_szenarioMenuOpen)
+                        {
+                            <button type="button"
+                                    class="monitor-szenario-backdrop"
+                                    @onclick="() => _szenarioMenuOpen = false"
+                                    aria-label="Szenario-Menü schließen"></button>
+                            <ul class="monitor-szenario-menu">
+                                @foreach (var sz in new[] { EinsatzSzenarioType.Mantrailer, EinsatzSzenarioType.Flaeche, EinsatzSzenarioType.Truemmer, EinsatzSzenarioType.Sonstige })
+                                {
+                                    <li>
+                                        <button class="monitor-szenario-item @(EinsatzService.CurrentEinsatz.Szenario == sz ? "active" : "")"
+                                                type="button"
+                                                @onclick="() => SetSzenarioAsync(sz)">
+                                            <span class="monitor-szenario-dot" style="background:@sz.GetColorHex();"></span>
+                                            <span>@sz.GetDisplayName()</span>
+                                        </button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+
+                    
+
+
                     <span class="mission-status-location">@EinsatzService.CurrentEinsatz.Einsatzort</span>
                 }
                 else
@@ -41,11 +71,27 @@
             </div>
 
             <div class="mission-topbar-clock" aria-live="polite">
+                @if (EinsatzService.CurrentEinsatz.AlarmierungsZeit.HasValue)
+                    {
+                        <span id="live-duration">
+                            <i class="bi bi-clock-history"></i>@GetMissionDurationDisplay()
+                        </span>
+                    }
                 <span id="live-time">00:00:00</span>
                 <span id="live-date">01.01.2000</span>
             </div>
 
             <div class="mission-topbar-actions">
+                @if (HasActiveEinsatz)
+                {
+                    <button class="btn btn-sm btn-primary"
+                            type="button"
+                            title="Einsatz beenden"
+                            @onclick="OpenCloseMissionFromTopbar">
+                        <i class="bi bi-stop-circle me-1"></i>Beenden
+                    </button>
+                }
+
                 <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
                         type="button"
                         title="@(BrowserPrefs.Preferences.ThemeMode == "Auto" ? "Theme: Automatisch (Systemmodus) — in Einstellungen ändern" : BrowserPrefs.Preferences.ThemeMode == "Scheduled" ? "Theme: Zeitsteuerung aktiv — in Einstellungen ändern" : (_isDarkMode ? "Dark Mode deaktivieren" : "Dark Mode aktivieren"))"
@@ -116,7 +162,7 @@
                 @onclick="DismissExerciseEndedPopup"
                 aria-label="Hinweis schließen"></button>
         <div class="global-warning-popup" @onclick:stopPropagation="true">
-            <div class="global-warning-header" style="background: var(--bs-success, #198754);">
+            <div class="global-warning-header global-warning-header--success">
                 <h4 class="mb-0"><i class="bi bi-flag-fill me-2"></i>Übung beendet</h4>
             </div>
             <div class="global-warning-body">

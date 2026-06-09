@@ -11,7 +11,7 @@
 <PageTitle>Warnzentrum</PageTitle>
 
 <div class="container-fluid py-3">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="page-headline-row mb-3">
         <h4 class="mb-0">
             <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Warnzentrum
         </h4>
@@ -22,7 +22,7 @@
                     title="Warningsregeln konfigurieren">
                 <i class="bi bi-sliders me-1"></i>Regeln
             </button>
-            <button class="btn btn-sm btn-outline-danger" @onclick="ClearAll" title="Alle Warnungen löschen">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearAll" title="Alle Warnungen löschen">
                 <i class="bi bi-trash me-1"></i>Alle löschen
             </button>
         </div>
@@ -31,7 +31,7 @@
     @if (_showRulesPanel)
     {
         <div class="card mb-3 border-secondary">
-            <div class="card-header d-flex align-items-center justify-content-between">
+            <div class="card-header">
                 <span><i class="bi bi-sliders me-2"></i><strong>Warnungsregeln konfigurieren</strong></span>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleRulesPanel">
                     <i class="bi bi-x-lg"></i>

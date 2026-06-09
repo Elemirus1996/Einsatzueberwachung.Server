@@ -1,5 +1,6 @@
 ﻿using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
+using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Server.Services;
 using Einsatzueberwachung.Server.Training;
 using Microsoft.AspNetCore.Components;
@@ -30,6 +31,9 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
     private bool _showExerciseEndedPopup;
     private string _exerciseEndedName = string.Empty;
     private string _exerciseEndedSummary = string.Empty;
+    private bool _szenarioMenuOpen;
+    private TimeSpan? _missionDuration;
+    private System.Threading.Timer? _missionDurationTimer;
 
     private WarningEntry? _lastWarning;
 
@@ -109,7 +113,12 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         _sidebarCollapsed = await JS.InvokeAsync<bool>("layoutTools.getSidebarCollapsed");
         _dotNetRef = DotNetObjectReference.Create(this);
 
-        await JS.InvokeVoidAsync("themeSync.init", _dotNetRef, _isDarkMode);
+        await JS.InvokeVoidAsync(
+            "themeSync.init",
+            _dotNetRef,
+            _isDarkMode,
+            BrowserPrefs.Preferences.ThemePreset,
+            BrowserPrefs.Preferences.VisualIntensity);
 
         if (BrowserPrefs.Preferences.ThemeMode == "Auto")
         {
@@ -121,11 +130,15 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         }
 
         await JS.InvokeVoidAsync("initializeClock");
+        RefreshMissionDuration();
+        StartMissionDurationTimer();
         StateHasChanged();
     }
 
     private void OnEinsatzStateChanged()
     {
+        _szenarioMenuOpen = false;
+        RefreshMissionDuration();
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -203,6 +216,43 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         });
     }
 
+    private async Task SetSzenarioAsync(EinsatzSzenarioType szenario)
+    {
+        _szenarioMenuOpen = false;
+        await EinsatzService.UpdateSzenarioAsync(szenario);
+    }
+
+    private void StartMissionDurationTimer()
+    {
+        _missionDurationTimer?.Dispose();
+        _missionDurationTimer = new System.Threading.Timer(
+            _ => _ = InvokeAsync(() =>
+            {
+                RefreshMissionDuration();
+                StateHasChanged();
+            }),
+            null,
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(1));
+    }
+
+    private void RefreshMissionDuration()
+    {
+        if (!HasActiveEinsatz || !EinsatzService.CurrentEinsatz.AlarmierungsZeit.HasValue)
+        {
+            _missionDuration = null;
+            return;
+        }
+
+        var duration = TimeService.Now - EinsatzService.CurrentEinsatz.AlarmierungsZeit.Value;
+        _missionDuration = duration < TimeSpan.Zero ? TimeSpan.Zero : duration;
+    }
+
+    private string GetMissionDurationDisplay()
+    {
+        return (_missionDuration ?? EinsatzService.CurrentEinsatz.Dauer)?.ToString(@"hh\:mm\:ss") ?? "--:--:--";
+    }
+
     private async Task DismissCriticalWarningAsync()
     {
         _showCriticalWarningPopup = false;
@@ -221,7 +271,12 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
     private async Task ApplyPersistedThemeAsync()
     {
         _isDarkMode = BrowserPrefs.Preferences.IsDarkMode;
-        await JS.InvokeVoidAsync("themeSync.setTheme", _isDarkMode);
+        await JS.InvokeVoidAsync("themeSync.setThemeState", new
+        {
+            isDark = _isDarkMode,
+            preset = BrowserPrefs.Preferences.ThemePreset,
+            intensity = BrowserPrefs.Preferences.VisualIntensity
+        });
     }
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -256,6 +311,12 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         Navigation.NavigateTo("/");
     }
 
+    private void OpenCloseMissionFromTopbar()
+    {
+        var token = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Navigation.NavigateTo($"/einsatz-monitor?openCloseMissionAt={token}");
+    }
+
     private async Task ToggleThemeAsync()
     {
         if (BrowserPrefs.Preferences.ThemeMode != "Manual")
@@ -264,7 +325,13 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         _isDarkMode = !_isDarkMode;
         BrowserPrefs.Update(p => p.IsDarkMode = _isDarkMode);
         await BrowserPrefs.SaveAsync();
-        await JS.InvokeVoidAsync("themeSync.setTheme", _isDarkMode);
+        await BrowserPrefs.SaveThemeToServerAsync();
+        await JS.InvokeVoidAsync("themeSync.setThemeState", new
+        {
+            isDark = _isDarkMode,
+            preset = BrowserPrefs.Preferences.ThemePreset,
+            intensity = BrowserPrefs.Preferences.VisualIntensity
+        });
     }
 
     private async Task ToggleFullscreenAsync()
@@ -291,6 +358,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         EinsatzService.DogPauseStarted -= OnDogPauseStarted;
         TrainerNotifications.ExerciseEnded -= OnExerciseEnded;
         WarningService.WarningAdded -= OnWarningAdded;
+        _missionDurationTimer?.Dispose();
 
         try
         {

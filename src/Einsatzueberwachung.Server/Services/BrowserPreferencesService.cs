@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
@@ -6,10 +8,9 @@ using Microsoft.JSInterop;
 namespace Einsatzueberwachung.Server.Services;
 
 /// <summary>
-/// Scoped-Service: speichert Theme- und Sound-Einstellungen im localStorage
-/// des jeweiligen Browsers. Jeder Browser-Tab hat eine eigene Instanz und
-/// damit eigene Darstellungseinstellungen — die gemeinsamen Einsatzdaten
-/// (Singleton-Services) sind davon nicht betroffen.
+/// Scoped-Service: verwaltet Browser-Preferences.
+/// Theme-Einstellungen kommen serverseitig aus AppSettings und gelten global.
+/// Browser-lokale Werte (z.B. Sound/Shortcuts) bleiben im localStorage.
 /// </summary>
 public sealed class BrowserPreferencesService
 {
@@ -47,18 +48,20 @@ public sealed class BrowserPreferencesService
         {
             var json = await _js.InvokeAsync<string?>("localStorage.getItem", LocalStorageKey);
 
-            // Mark loaded only after JS succeeded
-            _loaded = true;
-
             if (!string.IsNullOrWhiteSpace(json))
             {
                 _prefs = JsonSerializer.Deserialize<BrowserPreferences>(json, JsonOpts)
                          ?? new BrowserPreferences();
-                return;
+            }
+            else
+            {
+                // Erster Aufruf: Migration aus bestehenden AppSettings
+                await MigrateFromAppSettingsAsync();
             }
 
-            // Erster Aufruf: Migration aus bestehenden AppSettings
-            await MigrateFromAppSettingsAsync();
+            await ApplyServerThemeAsync();
+            NormalizeThemeValues();
+            _loaded = true;
         }
         catch
         {
@@ -72,6 +75,32 @@ public sealed class BrowserPreferencesService
         _loaded = true;
         var json = JsonSerializer.Serialize(_prefs, JsonOpts);
         await _js.InvokeVoidAsync("localStorage.setItem", LocalStorageKey, json);
+    }
+
+    /// <summary>Speichert nur Theme-relevante Werte zentral in AppSettings.</summary>
+    public async Task SaveThemeToServerAsync()
+    {
+        NormalizeThemeValues();
+
+        var app = await _settingsService.GetAppSettingsAsync();
+        app.ThemeMode = _prefs.ThemeMode;
+        app.IsDarkMode = _prefs.IsDarkMode;
+
+        if (TimeSpan.TryParse(_prefs.DarkModeStartTime, out var start))
+        {
+            app.DarkModeStartTime = start;
+        }
+
+        if (TimeSpan.TryParse(_prefs.DarkModeEndTime, out var end))
+        {
+            app.DarkModeEndTime = end;
+        }
+
+        app.ThemePreset = _prefs.ThemePreset;
+        app.VisualIntensity = _prefs.VisualIntensity;
+        app.CustomThemes = _prefs.CustomThemes?.ToList() ?? new List<CustomTheme>();
+
+        await _settingsService.SaveAppSettingsAsync(app);
     }
 
     /// <summary>Ändert Felder der Preferences ohne sofort zu speichern.</summary>
@@ -99,6 +128,9 @@ public sealed class BrowserPreferencesService
                 IsDarkMode             = app.IsDarkMode,
                 DarkModeStartTime      = app.DarkModeStartTime.ToString(@"hh\:mm"),
                 DarkModeEndTime        = app.DarkModeEndTime.ToString(@"hh\:mm"),
+                ThemePreset            = string.IsNullOrWhiteSpace(app.ThemePreset) ? ThemePresets.Nrw : app.ThemePreset,
+                VisualIntensity        = string.IsNullOrWhiteSpace(app.VisualIntensity) ? VisualIntensityLevels.Ausgewogen : app.VisualIntensity,
+                CustomThemes           = app.CustomThemes?.ToList() ?? new List<CustomTheme>(),
                 SoundAlertsEnabled     = app.SoundAlertsEnabled,
                 SoundVolume            = app.SoundVolume > 0 ? app.SoundVolume : 70,
                 FirstWarningSound      = string.IsNullOrWhiteSpace(app.FirstWarningSound) ? "beep" : app.FirstWarningSound,
@@ -109,10 +141,72 @@ public sealed class BrowserPreferencesService
                 RepeatWarningIntervalSeconds = app.RepeatWarningIntervalSeconds > 0
                                              ? app.RepeatWarningIntervalSeconds : 30,
             };
+
+            NormalizeThemeValues();
         }
         catch
         {
             _prefs = new BrowserPreferences();
         }
+    }
+
+    private async Task ApplyServerThemeAsync()
+    {
+        var app = await _settingsService.GetAppSettingsAsync();
+
+        _prefs.ThemeMode = string.IsNullOrWhiteSpace(app.ThemeMode) ? "Manual" : app.ThemeMode;
+        _prefs.IsDarkMode = app.IsDarkMode;
+        _prefs.DarkModeStartTime = app.DarkModeStartTime.ToString(@"hh\:mm");
+        _prefs.DarkModeEndTime = app.DarkModeEndTime.ToString(@"hh\:mm");
+        _prefs.ThemePreset = string.IsNullOrWhiteSpace(app.ThemePreset) ? ThemePresets.Nrw : app.ThemePreset;
+        _prefs.VisualIntensity = string.IsNullOrWhiteSpace(app.VisualIntensity) ? VisualIntensityLevels.Ausgewogen : app.VisualIntensity;
+        _prefs.CustomThemes = app.CustomThemes?.ToList() ?? new List<CustomTheme>();
+    }
+
+    private void NormalizeThemeValues()
+    {
+        _prefs.ThemePreset = NormalizePreset(_prefs.ThemePreset);
+        _prefs.VisualIntensity = NormalizeIntensity(_prefs.VisualIntensity);
+    }
+
+    private static string NormalizePreset(string? preset)
+    {
+        if (string.IsNullOrWhiteSpace(preset))
+        {
+            return ThemePresets.Nrw;
+        }
+
+        if (preset.Equals(ThemePresets.Ruhr, StringComparison.OrdinalIgnoreCase))
+        {
+            return ThemePresets.Ruhr;
+        }
+
+        if (preset.Equals(ThemePresets.Nrw, StringComparison.OrdinalIgnoreCase))
+        {
+            return ThemePresets.Nrw;
+        }
+
+        // Benutzerdefinierte Themes werden über ihre gespeicherte Theme-ID geladen.
+        return preset.Trim();
+    }
+
+    private static string NormalizeIntensity(string? intensity)
+    {
+        if (string.IsNullOrWhiteSpace(intensity))
+        {
+            return VisualIntensityLevels.Ausgewogen;
+        }
+
+        if (intensity.Equals(VisualIntensityLevels.Dezent, StringComparison.OrdinalIgnoreCase))
+        {
+            return VisualIntensityLevels.Dezent;
+        }
+
+        if (intensity.Equals(VisualIntensityLevels.Lebhaft, StringComparison.OrdinalIgnoreCase))
+        {
+            return VisualIntensityLevels.Lebhaft;
+        }
+
+        return VisualIntensityLevels.Ausgewogen;
     }
 }

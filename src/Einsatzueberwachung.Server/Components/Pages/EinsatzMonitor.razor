@@ -12,47 +12,11 @@
     {
     <header class="monitor-dash-header">
         <div class="monitor-dash-title">
-            <span class="badge @(EinsatzService.CurrentEinsatz.IstEinsatz ? "bg-danger" : "bg-warning text-dark") me-2 fs-6">
-                @EinsatzService.CurrentEinsatz.EinsatzTyp
-            </span>
-            <div class="monitor-szenario-wrap me-2">
-                <button class="badge fs-6 monitor-szenario-btn"
-                        type="button"
-                        style="background-color:@EinsatzService.CurrentEinsatz.Szenario.GetColorHex(); color:#fff; border:none;"
-                        title="Szenario wechseln (auf Anweisung der EL)"
-                        @onclick="() => _szenarioMenuOpen = !_szenarioMenuOpen">
-                    <i class="bi bi-diagram-3 me-1"></i>@EinsatzService.CurrentEinsatz.Szenario.GetDisplayName()
-                    <i class="bi bi-caret-down-fill ms-1 monitor-caret-icon"></i>
-                </button>
-                @if (_szenarioMenuOpen)
-                {
-                    <div class="monitor-szenario-backdrop" @onclick="() => _szenarioMenuOpen = false"></div>
-                    <ul class="monitor-szenario-menu">
-                        @foreach (var sz in new[] { EinsatzSzenarioType.Mantrailer, EinsatzSzenarioType.Flaeche, EinsatzSzenarioType.Truemmer, EinsatzSzenarioType.Sonstige })
-                        {
-                            <li>
-                                <button class="monitor-szenario-item @(EinsatzService.CurrentEinsatz.Szenario == sz ? "active" : "")"
-                                        type="button"
-                                        @onclick="() => SetSzenarioAsync(sz)">
-                                    <span class="monitor-szenario-dot" style="background:@sz.GetColorHex();"></span>
-                                    <span>@sz.GetDisplayName()</span>
-                                </button>
-                            </li>
-                        }
-                    </ul>
-                }
-            </div>
-            <strong>@EinsatzService.CurrentEinsatz.Einsatzort</strong>
-            @if (_einsatzdauerFromHeader.HasValue)
-            {
-                <span class="ms-3 einsatz-dauer-badge">
-                    <i class="bi bi-clock-history"></i>@GetEinsatzdauerDisplay()
-                </span>
-            }
+            <span class="text-muted small fw-semibold">Einsatz-Monitor</span>
         </div>
         <div class="monitor-dash-actions">
             <div class="monitor-panel-picker-wrapper">
-                <button class="btn btn-outline-secondary btn-sm" type="button"
+                <button class="btn btn-secondary btn-sm" type="button"
                         @onclick="() => _showPanelPicker = !_showPanelPicker">
                     <i class="bi bi-layout-three-columns me-1"></i>Panels
                 </button>
@@ -81,12 +45,7 @@
             <button class="btn btn-outline-success btn-sm" type="button" @onclick="OpenTeamMobileModalAsync" title="QR-Code fuer Team-Smartphones">
                 <i class="bi bi-qr-code me-1"></i>Team-Mobile
             </button>
-            <button class="btn btn-outline-warning btn-sm" type="button" @onclick="OpenTeamMessageModal" title="Nachricht an ein Team-Smartphone">
-                <i class="bi bi-megaphone me-1"></i>Push
-            </button>
-            <button class="btn btn-danger btn-sm" type="button" @onclick="OpenCloseMissionModal">
-                <i class="bi bi-stop-circle me-1"></i>Beenden
-            </button>
+            
         </div>
     </header>
     }
@@ -169,7 +128,7 @@
                                    title="In neuem Fenster öffnen (Multi-Monitor)">
                                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                 </a>
-                                <button class="btn btn-sm btn-primary" @onclick="OpenNewTeamModal">
+                                <button class="btn btn-sm theme-accent-btn" @onclick="OpenNewTeamModal">
                                     <i class="bi bi-plus-circle me-1"></i>Team anlegen
                                 </button>
                             </div>
@@ -304,9 +263,12 @@
                                     break;
 
                                 case KnownPanels.Notizen:
+                                    <button class="btn btn-outline-secondary btn-sm me-2" type="button" @onclick="OpenTeamMessageModal" title="Nachricht an ein Team-Smartphone">
+                                        <i class="bi bi-megaphone me-1"></i>Push
+                                    </button>
                                     @if (!_isNoteFormExpanded)
                                     {
-                                        <button class="btn btn-outline-primary w-100 mb-3 note-expander-trigger"
+                                        <button class="btn btn-primary note-expander-trigger"
                                                 @onclick="OpenNoteFormAsync">
                                             <i class="bi bi-pencil-fill me-2"></i>Notiz / Funk hinzufügen...
                                         </button>
@@ -860,7 +822,7 @@
             </div>
             <div class="modal-modern-footer">
                 <button class="btn btn-outline-secondary" @onclick="CloseCloseMissionModal" disabled="@_closingMission">Abbrechen</button>
-                <button class="btn btn-danger" @onclick="ConfirmCloseMissionAsync" disabled="@_closingMission">
+                <button class="btn btn-primary" @onclick="ConfirmCloseMissionAsync" disabled="@_closingMission">
                     @(_closingMission ? "Wird abgeschlossen..." : "Einsatz beenden & archivieren")
                 </button>
             </div>
@@ -920,7 +882,7 @@
                 </div>
                 <div class="modal-modern-footer">
                     <button class="btn btn-outline-secondary" @onclick="ClosePauseResetModal">Abbrechen</button>
-                    <button class="btn btn-danger" @onclick="ConfirmResetTeamAsync">
+                    <button class="btn btn-primary" @onclick="ConfirmResetTeamAsync">
                         <i class="bi bi-exclamation-triangle-fill me-1"></i>Trotzdem zurücksetzen
                     </button>
                 </div>
@@ -1482,64 +1444,3 @@
     </div>
 }
 
-<style>
-    .monitor-screensaver {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-        gap: 2rem;
-        padding: 3rem 1rem;
-        min-height: 70vh;
-    }
-
-    .monitor-screensaver-logo img {
-        max-height: 180px;
-        max-width: 400px;
-        object-fit: contain;
-        filter: drop-shadow(0 4px 24px rgba(0,0,0,.25));
-    }
-
-    .monitor-screensaver-time {
-        font-size: 5rem;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        line-height: 1;
-        font-variant-numeric: tabular-nums;
-        color: var(--bs-body-color);
-        text-align: center;
-    }
-
-    .monitor-screensaver-date {
-        font-size: 1.5rem;
-        text-align: center;
-        color: var(--bs-secondary-color, #6c757d);
-        margin-top: 0.25rem;
-    }
-
-    .monitor-screensaver-ticker-wrap {
-        width: 100%;
-        overflow: hidden;
-        border-top: 1px solid var(--bs-border-color);
-        border-bottom: 1px solid var(--bs-border-color);
-        padding: 0.5rem 0;
-        position: absolute;
-        bottom: 3rem;
-        left: 0;
-    }
-
-    .monitor-screensaver-ticker {
-        display: inline-block;
-        white-space: nowrap;
-        animation: screensaver-scroll 80s linear infinite;
-        font-size: 0.95rem;
-        color: var(--bs-secondary-color, #6c757d);
-        padding-left: 100%;
-    }
-
-    @@keyframes screensaver-scroll {
-        from { transform: translateX(0); }
-        to   { transform: translateX(-100%); }
-    }
-</style>
