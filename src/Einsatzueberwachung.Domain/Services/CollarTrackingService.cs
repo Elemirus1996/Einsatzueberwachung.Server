@@ -148,7 +148,11 @@ namespace Einsatzueberwachung.Domain.Services
 
         public IReadOnlyList<Collar> GetAvailableCollars()
         {
-            return _collars.Values.Where(c => !c.IsAssigned).ToList().AsReadOnly();
+            // Auch Halsbänder mit verwaister Zuweisung (Team existiert nicht mehr) als verfügbar anbieten
+            return _collars.Values
+                .Where(c => !c.IsAssigned ||
+                            (c.AssignedTeamId != null && !_einsatzService.Teams.Any(t => t.TeamId == c.AssignedTeamId)))
+                .ToList().AsReadOnly();
         }
 
         public IReadOnlyList<CollarLocation> GetLocationHistory(string collarId)

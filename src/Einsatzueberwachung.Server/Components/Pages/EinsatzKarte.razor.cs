@@ -1168,6 +1168,13 @@ public partial class EinsatzKarte
         await JSRuntime.InvokeVoidAsync("CollarTracking.zoomToCollar", "einsatzMap", collar.Id);
     }
 
+    private async Task UnassignCollarAsync(string collarId)
+    {
+        await CollarTrackingService.UnassignCollarAsync(collarId);
+        _collars = CollarTrackingService.Collars.ToList();
+        await InvokeAsync(StateHasChanged);
+    }
+
     private async Task ZoomToPhoneTeamAsync(string teamId)
     {
         // Layer einblenden falls noch nicht aktiv

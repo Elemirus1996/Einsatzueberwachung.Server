@@ -51,7 +51,19 @@
                     @if (collar.IsAssigned)
                     {
                         var liveTeam = Teams.FirstOrDefault(t => t.TeamId == collar.AssignedTeamId);
-                        <small class="text-primary">@(liveTeam?.TeamName ?? "?")</small>
+                        @if (liveTeam != null)
+                        {
+                            <span class="collar-team text-primary">@liveTeam.TeamName</span>
+                        }
+                        else
+                        {
+                            <button class="btn btn-xs btn-outline-danger ms-1"
+                                    title="Verwaiste Zuweisung aufheben"
+                                    @onclick:stopPropagation="true"
+                                    @onclick="() => OnUnassignCollar.InvokeAsync(collar.Id)">
+                                <i class="bi bi-x-circle me-1"></i>Freigeben
+                            </button>
+                        }
                     }
                     else
                     {
@@ -581,6 +593,7 @@
     [Parameter] public string? ExpandedSnapshotId { get; set; }
     [Parameter, EditorRequired] public Func<string, string> GetCollarColorFn { get; set; } = _ => "#007bff";
     [Parameter] public EventCallback<Collar> OnZoomToCollar { get; set; }
+    [Parameter] public EventCallback<string> OnUnassignCollar { get; set; }
     [Parameter] public EventCallback<string> OnZoomToTrack { get; set; }
     [Parameter] public EventCallback<(string Id, bool Visible)> OnToggleTrackVisibility { get; set; }
     [Parameter] public EventCallback<GpxImportRequest> OnGpxImported { get; set; }

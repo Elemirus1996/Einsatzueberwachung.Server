@@ -172,7 +172,7 @@ namespace Einsatzueberwachung.LiveTracking
             string baseStr = $"Tracked Entity: ID/Status=0x{IdentifierStatus:X8}, Lon={LongitudeDegrees:F6}�, Lat={LatitudeDegrees:F6}�";
             try
             {
-                UtmCoordinate utm = CoordinateTranformer.ToUtm(LatitudeDegrees, LongitudeDegrees);
+                UtmCoordinate utm = CoordinateTranformer.ToUtm(LongitudeDegrees, LatitudeDegrees);
                 return $"{baseStr}\n    UTM: {utm}";
             }
             catch { return $"{baseStr}\n    UTM: (Conversion Error/Out of Range)"; }
@@ -290,7 +290,7 @@ namespace Einsatzueberwachung.LiveTracking
             {
                 try
                 {
-                    UtmCoordinate utm = CoordinateTranformer.ToUtm(LatitudeDegrees, LongitudeDegrees);
+                    UtmCoordinate utm = CoordinateTranformer.ToUtm(LongitudeDegrees, LatitudeDegrees);
                     utmString = utm.ToString();
                 }
                 catch (Exception ex)

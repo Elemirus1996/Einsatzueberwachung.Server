@@ -61,7 +61,7 @@ namespace Einsatzueberwachung.LiveTracking.Models
 
             try
             {
-                UtmString = CoordinateTranformer.ToUtm(data.LatitudeDegrees, data.LongitudeDegrees).ToString();
+                UtmString = CoordinateTranformer.ToUtm(data.LongitudeDegrees, data.LatitudeDegrees).ToString();
             }
             catch
             {
