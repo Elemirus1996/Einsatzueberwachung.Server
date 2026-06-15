@@ -35,36 +35,6 @@
                     </div>
                     <div class="mb-2">@MentionTextarea.RenderWithMentions(note.Text)</div>
 
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        @if (note.IsEdited)
-                        {
-                            <span class="badge bg-info">Bearbeitet</span>
-                        }
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleHistoryAsync(note.Id)">Historie</button>
-                    </div>
-
-                    @if (IsHistoryVisible(note.Id))
-                    {
-                        var historyEntries = GetHistoryEntries(note.Id);
-                        if (historyEntries.Count == 0)
-                        {
-                            <div class="small text-muted mb-2">Keine Historie vorhanden.</div>
-                        }
-                        else
-                        {
-                            <div class="small border rounded p-2 mb-2 popout-history-box">
-                                @foreach (var history in historyEntries)
-                                {
-                                    <div class="mb-1">
-                                        <div class="text-muted">@history.FormattedChangedAt - @history.ChangedBy</div>
-                                        <div><strong>Alt:</strong> @history.OldText</div>
-                                        <div><strong>Neu:</strong> @history.NewText</div>
-                                    </div>
-                                }
-                            </div>
-                        }
-                    }
-
                     @if (note.Replies.Count > 0)
                     {
                         @foreach (var reply in note.Replies.OrderBy(r => r.Timestamp))
@@ -93,8 +63,6 @@
     private string _filter = "alle";
     private List<GlobalNotesEntry> _notes = new();
     private readonly Dictionary<string, string> _replyTexts = new();
-    private readonly Dictionary<string, bool> _historyVisible = new();
-    private readonly Dictionary<string, List<GlobalNotesHistory>> _historyCache = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -148,27 +116,6 @@
 
         _replyTexts[noteId] = string.Empty;
         await RefreshAsync();
-    }
-
-    private async Task ToggleHistoryAsync(string noteId)
-    {
-        var show = !_historyVisible.TryGetValue(noteId, out var visible) || !visible;
-        _historyVisible[noteId] = show;
-
-        if (show)
-        {
-            _historyCache[noteId] = await EinsatzService.GetNoteHistoryAsync(noteId);
-        }
-    }
-
-    private bool IsHistoryVisible(string noteId)
-    {
-        return _historyVisible.TryGetValue(noteId, out var value) && value;
-    }
-
-    private List<GlobalNotesHistory> GetHistoryEntries(string noteId)
-    {
-        return _historyCache.TryGetValue(noteId, out var entries) ? entries : new List<GlobalNotesHistory>();
     }
 
     private string GetReplyText(string noteId)

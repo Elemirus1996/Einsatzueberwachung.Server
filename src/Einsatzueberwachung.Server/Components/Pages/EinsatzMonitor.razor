@@ -135,7 +135,10 @@
                         }
                         else if (panel.PanelId == KnownPanels.Notizen)
                         {
-                            <div class="ms-auto">
+                            <div class="ms-auto d-flex align-items-center gap-1">
+                                <button class="btn btn-sm btn-link text-muted p-1" type="button" @onclick="OpenTeamMessageModal" title="Nachricht an ein Team-Smartphone">
+                                    <i class="bi bi-megaphone" aria-hidden="true"></i>
+                                </button>
                                 <a class="btn btn-sm btn-outline-secondary"
                                    href="/popout-notes"
                                    target="_blank"
@@ -263,74 +266,67 @@
                                     break;
 
                                 case KnownPanels.Notizen:
-                                    <button class="btn btn-outline-secondary btn-sm me-2" type="button" @onclick="OpenTeamMessageModal" title="Nachricht an ein Team-Smartphone">
-                                        <i class="bi bi-megaphone me-1"></i>Push
-                                    </button>
-                                    @if (!_isNoteFormExpanded)
-                                    {
-                                        <button class="btn btn-primary note-expander-trigger"
-                                                @onclick="OpenNoteFormAsync">
-                                            <i class="bi bi-pencil-fill me-2"></i>Notiz / Funk hinzufügen...
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <div id="note-expander-form" class="note-input-section mb-3">
-                                            <div class="mb-2">
-                                                <label class="form-label fw-bold">Team/Quelle *</label>
-                                                <div class="note-source-chips">
-                                                    @foreach (var team in EinsatzService.Teams.OrderBy(t => t.TeamName))
-                                                    {
-                                                        <button type="button"
-                                                                class="btn btn-sm note-source-chip @(_newNoteSourceId == team.TeamId ? "active" : "")"
-                                                                @onclick="() => _newNoteSourceId = team.TeamId">
-                                                            @team.TeamName
-                                                        </button>
-                                                    }
-                                                    <button type="button"
-                                                            class="btn btn-sm note-source-chip @(_newNoteSourceId == "einsatzleitung" ? "active" : "")"
-                                                            @onclick='() => _newNoteSourceId = "einsatzleitung"'>
-                                                        <i class="bi bi-shield-fill me-1"></i>EL
+                                    <div id="note-expander-form" class="note-input-section mb-3">
+                                        <div class="mb-2 d-flex flex-wrap align-items-center gap-1">
+                                            <span class="note-source-label">Quelle:</span>
+                                            @foreach (var team in EinsatzService.Teams.OrderBy(t => t.TeamName))
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm note-source-chip @(_newNoteSourceId == team.TeamId ? "active" : "")"
+                                                        @onclick="() => _newNoteSourceId = team.TeamId">
+                                                    @team.TeamName
+                                                </button>
+                                            }
+                                            <button type="button"
+                                                    class="btn btn-sm note-source-chip @(_newNoteSourceId == "einsatzleitung" ? "active" : "")"
+                                                    @onclick='() => _newNoteSourceId = "einsatzleitung"'>
+                                                <i class="bi bi-shield-fill me-1"></i>EL
+                                            </button>
+                                        </div>
+                                        <div class="mb-2 d-flex gap-2 align-items-center">
+                                            <select class="form-select" @bind="_newNoteType">
+                                                <option value="Notiz">Notiz</option>
+                                                <option value="Funk">Funk</option>
+                                            </select>
+                                            @if (_quickNoteTemplates.Count > 0)
+                                            {
+                                                <div class="monitor-panel-picker-wrapper flex-shrink-0">
+                                                    <button class="btn btn-outline-success" type="button"
+                                                            @onclick="() => _showQuickNoteDropdown = !_showQuickNoteDropdown"
+                                                            title="Schnell-Notiz">
+                                                        <i class="bi bi-lightning-fill"></i>
                                                     </button>
+                                                    @if (_showQuickNoteDropdown)
+                                                    {
+                                                        <div class="panel-picker-dropdown">
+                                                            @foreach (var quickTemplate in _quickNoteTemplates)
+                                                            {
+                                                                <button class="btn btn-sm w-100 text-start mb-1"
+                                                                        @onclick="() => { _ = AddQuickNoteAsync(quickTemplate); _showQuickNoteDropdown = false; }"
+                                                                        @onclick:stopPropagation="true">
+                                                                    @quickTemplate
+                                                                </button>
+                                                            }
+                                                        </div>
+                                                        <button type="button"
+                                                                class="panel-picker-backdrop"
+                                                                @onclick="() => _showQuickNoteDropdown = false"
+                                                                aria-label="Schließen"></button>
+                                                    }
                                                 </div>
-                                            </div>
-                                            <div class="mb-2">
-                                                <label class="form-label">Typ</label>
-                                                <select class="form-select" @bind="_newNoteType">
-                                                    <option value="Notiz">Notiz</option>
-                                                    <option value="Funk">Funk</option>
-                                                </select>
-                                            </div>
-                                            <MentionTextarea @bind-Value="_newNoteText"
-                                                             Mentions="@GetNoteMentions()"
-                                                             Rows="3"
-                                                             Placeholder="Neuer Funkspruch oder Notiz..."
-                                                             AdditionalClass="mb-2" />
-                                            <div class="d-flex gap-2">
-                                                <button class="btn btn-primary flex-grow-1"
-                                                        @onclick="AddGlobalNoteAsync"
-                                                        disabled="@(string.IsNullOrWhiteSpace(_newNoteText) || string.IsNullOrWhiteSpace(_newNoteSourceId))">
-                                                    <i class="bi bi-send-fill"></i> Hinzufügen
-                                                </button>
-                                                <button class="btn btn-outline-secondary" @onclick="CloseNoteForm">
-                                                    Abbrechen
-                                                </button>
-                                            </div>
+                                            }
                                         </div>
-                                    }
-
-                                    @if (_quickNoteTemplates.Count > 0)
-                                    {
-                                        <div class="mb-3">
-                                            <div class="small text-muted mb-2">Schnell-Notiz (mit Zeitstempel)</div>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                @foreach (var quickTemplate in _quickNoteTemplates)
-                                                {
-                                                    <button class="btn btn-sm btn-outline-success" @onclick="() => AddQuickNoteAsync(quickTemplate)">@quickTemplate</button>
-                                                }
-                                            </div>
-                                        </div>
-                                    }
+                                        <MentionTextarea @bind-Value="_newNoteText"
+                                                         Mentions="@GetNoteMentions()"
+                                                         Rows="3"
+                                                         Placeholder="Neuer Funkspruch oder Notiz..."
+                                                         AdditionalClass="mb-2" />
+                                        <button class="btn btn-primary w-100"
+                                                @onclick="AddGlobalNoteAsync"
+                                                disabled="@(string.IsNullOrWhiteSpace(_newNoteText) || string.IsNullOrWhiteSpace(_newNoteSourceId))">
+                                            <i class="bi bi-send-fill"></i> Hinzufügen
+                                        </button>
+                                    </div>
 
                                     <div class="notes-list">
                                         @if (EinsatzService.GlobalNotes.Count == 0)
@@ -346,54 +342,34 @@
                                                         <strong>@(string.IsNullOrWhiteSpace(note.SourceTeamName) ? "System" : note.SourceTeamName)</strong>
                                                         <span class="text-muted">@note.FormattedTimestamp</span>
                                                     </div>
-                                                    <div class="mb-2">@MentionTextarea.RenderWithMentions(note.Text)</div>
-
-                                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                                        @if (note.IsEdited)
-                                                        {
-                                                            <span class="badge bg-info">Bearbeitet</span>
-                                                        }
-                                                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleHistoryAsync(note.Id)">Historie</button>
+                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                                        <div>@MentionTextarea.RenderWithMentions(note.Text)</div>
+                                                        <button class="btn btn-sm btn-link p-0 ms-2 text-muted flex-shrink-0" @onclick="() => ToggleReplyForm(note.Id)" title="Antworten">
+                                                            <i class="bi bi-reply-fill"></i>
+                                                        </button>
                                                     </div>
 
-                                                    @if (IsHistoryVisible(note.Id))
+                                                    @if (IsReplyFormVisible(note.Id))
                                                     {
-                                                        var historyEntries = GetHistoryEntries(note.Id);
-                                                        if (historyEntries.Count == 0)
-                                                        {
-                                                            <div class="small text-muted mb-2">Keine Historie vorhanden.</div>
-                                                        }
-                                                        else
-                                                        {
-                                                            <div class="small border rounded p-2 mb-2 bg-light-subtle">
-                                                                @foreach (var history in historyEntries)
+                                                        <div class="d-flex gap-2 mb-2">
+                                                            <select class="form-select form-select-sm monitor-source-select"
+                                                                    value="@GetReplySourceId(note.Id)"
+                                                                    @onchange="e => SetReplySourceId(note.Id, e.Value?.ToString())">
+                                                                <option value="einsatzleitung">Einsatzleitung</option>
+                                                                @foreach (var team in EinsatzService.Teams.OrderBy(team => team.TeamName))
                                                                 {
-                                                                    <div class="mb-1">
-                                                                        <div class="text-muted">@history.FormattedChangedAt · @history.ChangedBy</div>
-                                                                        <div><strong>Alt:</strong> @history.OldText</div>
-                                                                        <div><strong>Neu:</strong> @history.NewText</div>
-                                                                    </div>
+                                                                    <option value="@team.TeamId">@team.TeamName</option>
                                                                 }
-                                                            </div>
-                                                        }
+                                                            </select>
+                                                            <input class="form-control form-control-sm"
+                                                                   placeholder="Antwort"
+                                                                   value="@GetReplyText(note.Id)"
+                                                                   @oninput="e => SetReplyText(note.Id, e.Value?.ToString())" />
+                                                            <button class="btn btn-sm btn-primary" @onclick="() => AddReplyAsync(note.Id)">
+                                                                <i class="bi bi-send-fill"></i>
+                                                            </button>
+                                                        </div>
                                                     }
-
-                                                    <div class="d-flex gap-2 mb-2">
-                                                        <select class="form-select form-select-sm monitor-source-select"
-                                                                value="@GetReplySourceId(note.Id)"
-                                                                @onchange="e => SetReplySourceId(note.Id, e.Value?.ToString())">
-                                                            <option value="einsatzleitung">Einsatzleitung</option>
-                                                            @foreach (var team in EinsatzService.Teams.OrderBy(team => team.TeamName))
-                                                            {
-                                                                <option value="@team.TeamId">@team.TeamName</option>
-                                                            }
-                                                        </select>
-                                                        <input class="form-control form-control-sm"
-                                                               placeholder="Antwort"
-                                                               value="@GetReplyText(note.Id)"
-                                                               @oninput="e => SetReplyText(note.Id, e.Value?.ToString())" />
-                                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => AddReplyAsync(note.Id)">Antworten</button>
-                                                    </div>
 
                                                     @if (note.Replies.Count > 0)
                                                     {
