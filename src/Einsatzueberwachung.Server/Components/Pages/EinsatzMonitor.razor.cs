@@ -110,6 +110,7 @@ public partial class EinsatzMonitor
     // Dashboard-Layout
     private List<DashboardPanelConfig> _currentLayout = new();
     private bool _showPanelPicker;
+    private bool _showShortcutHelp;
     private readonly HashSet<string> _expandedTeamIds = new();
     private TeamStatusFilter _teamStatusFilter = TeamStatusFilter.All;
 
@@ -1665,6 +1666,20 @@ public partial class EinsatzMonitor
     {
         var isVisible = _replyVisible.TryGetValue(noteId, out var v) && v;
         _replyVisible[noteId] = !isVisible;
+    }
+
+    private void CancelReplyForm(string noteId)
+    {
+        _replyVisible[noteId] = false;
+        _replyTexts[noteId] = string.Empty;
+    }
+
+    private void HandleReplyKeyDown(string noteId, KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            CancelReplyForm(noteId);
+        }
     }
 
     private bool IsReplyFormVisible(string noteId)

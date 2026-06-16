@@ -497,6 +497,77 @@
     align-items: center;
 }
 
+/* Segmented status filter — one neutral container, active segment lifted.
+   Replaces five separately-colored buttons so the filter row stops competing
+   with the team status colors below it. Status colour survives as a quiet dot
+   (second channel) alongside the always-present text label. */
+.teams-filter-segmented {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 2px;
+    padding: 2px;
+    background: var(--ui-surface-2);
+    border: 1px solid var(--ui-border);
+    border-radius: 7px;
+}
+
+.teams-filter-seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border: 0;
+    background: transparent;
+    color: var(--ui-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 5px;
+    min-height: 30px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.teams-filter-seg:hover {
+    color: var(--ui-text);
+}
+
+.teams-filter-seg.active {
+    background: var(--ui-surface);
+    color: var(--ui-text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+[data-intensity="dezent"] .teams-filter-seg.active {
+    box-shadow: inset 0 0 0 1px var(--ui-border);
+}
+
+.teams-filter-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.teams-filter-dot--running { background: var(--success-color); }
+.teams-filter-dot--pausing { background: var(--warning-color); }
+.teams-filter-dot--ready { background: var(--ui-muted); }
+.teams-filter-dot--critical { background: var(--danger-color); }
+
+.teams-filter-count {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.05em 0.4em;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ui-muted) 18%, transparent);
+    color: var(--ui-text);
+}
+
+.teams-filter-seg.active .teams-filter-count {
+    background: color-mix(in srgb, var(--theme-primary) 18%, transparent);
+}
+
 /* Extra-small button variant for panel headers */
 .btn.btn-xs {
     font-size: 0.7rem;

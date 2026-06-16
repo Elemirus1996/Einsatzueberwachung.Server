@@ -45,7 +45,29 @@
             <button class="btn btn-outline-success btn-sm" type="button" @onclick="OpenTeamMobileModalAsync" title="QR-Code fuer Team-Smartphones">
                 <i class="bi bi-qr-code me-1"></i>Team-Mobile
             </button>
-            
+            <div class="monitor-panel-picker-wrapper mon-anchor-help">
+                <button class="btn btn-outline-secondary btn-sm" type="button"
+                        @onclick="() => _showShortcutHelp = !_showShortcutHelp"
+                        title="Tastaturkürzel" aria-label="Tastaturkürzel anzeigen">
+                    <i class="bi bi-question-lg" aria-hidden="true"></i>
+                </button>
+                @if (_showShortcutHelp)
+                {
+                    <div class="panel-picker-dropdown shortcut-help-dropdown">
+                        <div class="shortcut-help-title">Tastaturkürzel</div>
+                        <dl class="shortcut-help-list">
+                            <dt><kbd>Strg</kbd>+<kbd>H</kbd></dt><dd>Startseite</dd>
+                            <dt><kbd>Strg</kbd>+<kbd>N</kbd></dt><dd>Einsatz-Monitor</dd>
+                            <dt><kbd>Strg</kbd>+<kbd>M</kbd></dt><dd>Karte</dd>
+                            <dt><kbd>Strg</kbd>+<kbd>T</kbd></dt><dd>Einsatz starten</dd>
+                        </dl>
+                    </div>
+                    <button type="button"
+                            class="panel-picker-backdrop"
+                            @onclick="() => _showShortcutHelp = false"
+                            aria-label="Tastaturkürzel schließen"></button>
+                }
+            </div>
         </div>
     </header>
     }
@@ -92,31 +114,36 @@
                         {
                             @if (EinsatzService.Teams.Count > 0)
                             {
-                                <div class="teams-header-filters" role="group" aria-label="Teamstatus Filter">
+                                <div class="teams-filter-segmented" role="group" aria-label="Teamstatus Filter">
                                     <button type="button"
-                                            class="btn btn-xs @(_teamStatusFilter == TeamStatusFilter.All ? "btn-primary" : "btn-outline-primary")"
+                                            class="teams-filter-seg @(_teamStatusFilter == TeamStatusFilter.All ? "active" : "")"
+                                            aria-pressed="@(_teamStatusFilter == TeamStatusFilter.All)"
                                             @onclick="() => SetTeamStatusFilter(TeamStatusFilter.All)">
-                                        Alle <span class="badge text-bg-light ms-1">@GetTeamCountForFilter(TeamStatusFilter.All)</span>
+                                        Alle <span class="teams-filter-count">@GetTeamCountForFilter(TeamStatusFilter.All)</span>
                                     </button>
                                     <button type="button"
-                                            class="btn btn-xs @(_teamStatusFilter == TeamStatusFilter.Running ? "btn-success" : "btn-outline-success")"
+                                            class="teams-filter-seg @(_teamStatusFilter == TeamStatusFilter.Running ? "active" : "")"
+                                            aria-pressed="@(_teamStatusFilter == TeamStatusFilter.Running)"
                                             @onclick="() => SetTeamStatusFilter(TeamStatusFilter.Running)">
-                                        Aktiv <span class="badge text-bg-light ms-1">@GetTeamCountForFilter(TeamStatusFilter.Running)</span>
+                                        <span class="teams-filter-dot teams-filter-dot--running" aria-hidden="true"></span>Aktiv <span class="teams-filter-count">@GetTeamCountForFilter(TeamStatusFilter.Running)</span>
                                     </button>
                                     <button type="button"
-                                            class="btn btn-xs @(_teamStatusFilter == TeamStatusFilter.Pausing ? "btn-warning text-dark" : "btn-outline-warning")"
+                                            class="teams-filter-seg @(_teamStatusFilter == TeamStatusFilter.Pausing ? "active" : "")"
+                                            aria-pressed="@(_teamStatusFilter == TeamStatusFilter.Pausing)"
                                             @onclick="() => SetTeamStatusFilter(TeamStatusFilter.Pausing)">
-                                        Pause <span class="badge text-bg-light ms-1">@GetTeamCountForFilter(TeamStatusFilter.Pausing)</span>
+                                        <span class="teams-filter-dot teams-filter-dot--pausing" aria-hidden="true"></span>Pause <span class="teams-filter-count">@GetTeamCountForFilter(TeamStatusFilter.Pausing)</span>
                                     </button>
                                     <button type="button"
-                                            class="btn btn-xs @(_teamStatusFilter == TeamStatusFilter.Ready ? "btn-secondary" : "btn-outline-secondary")"
+                                            class="teams-filter-seg @(_teamStatusFilter == TeamStatusFilter.Ready ? "active" : "")"
+                                            aria-pressed="@(_teamStatusFilter == TeamStatusFilter.Ready)"
                                             @onclick="() => SetTeamStatusFilter(TeamStatusFilter.Ready)">
-                                        Bereit <span class="badge text-bg-light ms-1">@GetTeamCountForFilter(TeamStatusFilter.Ready)</span>
+                                        <span class="teams-filter-dot teams-filter-dot--ready" aria-hidden="true"></span>Bereit <span class="teams-filter-count">@GetTeamCountForFilter(TeamStatusFilter.Ready)</span>
                                     </button>
                                     <button type="button"
-                                            class="btn btn-xs @(_teamStatusFilter == TeamStatusFilter.Critical ? "btn-danger" : "btn-outline-danger")"
+                                            class="teams-filter-seg @(_teamStatusFilter == TeamStatusFilter.Critical ? "active" : "")"
+                                            aria-pressed="@(_teamStatusFilter == TeamStatusFilter.Critical)"
                                             @onclick="() => SetTeamStatusFilter(TeamStatusFilter.Critical)">
-                                        Kritisch <span class="badge text-bg-light ms-1">@GetTeamCountForFilter(TeamStatusFilter.Critical)</span>
+                                        <span class="teams-filter-dot teams-filter-dot--critical" aria-hidden="true"></span>Kritisch <span class="teams-filter-count">@GetTeamCountForFilter(TeamStatusFilter.Critical)</span>
                                     </button>
                                 </div>
                             }
@@ -366,9 +393,13 @@
                                                             <input class="form-control form-control-sm"
                                                                    placeholder="Antwort"
                                                                    value="@GetReplyText(note.Id)"
-                                                                   @oninput="e => SetReplyText(note.Id, e.Value?.ToString())" />
-                                                            <button class="btn btn-sm btn-primary" @onclick="() => AddReplyAsync(note.Id)">
+                                                                   @oninput="e => SetReplyText(note.Id, e.Value?.ToString())"
+                                                                   @onkeydown="e => HandleReplyKeyDown(note.Id, e)" />
+                                                            <button class="btn btn-sm btn-primary" @onclick="() => AddReplyAsync(note.Id)" title="Senden" aria-label="Antwort senden">
                                                                 <i class="bi bi-send-fill"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => CancelReplyForm(note.Id)" title="Abbrechen" aria-label="Antwort abbrechen">
+                                                                <i class="bi bi-x-lg"></i>
                                                             </button>
                                                         </div>
                                                     }

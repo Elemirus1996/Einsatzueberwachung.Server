@@ -236,13 +236,13 @@
 
 .modal-close-mission .btn-outline-light {
     border-color: rgba(255, 255, 255, 0.4);
-    color: #fff;
+    color: var(--danger-on-fill);
 }
 
 .modal-close-mission .btn-outline-light:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.6);
-    color: #fff;
+    color: var(--danger-on-fill);
 }
 
 .monitor-checklist-scroll {
@@ -523,10 +523,9 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
 .dashboard-panel-title {
     font-weight: 600;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--ui-muted);
+    font-size: 0.9rem;
+    letter-spacing: 0.005em;
+    color: var(--ui-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -538,6 +537,52 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     padding: 0.75rem;
     overflow-y: auto;
     flex: 1;
+}
+
+/* Keyboard-shortcut legend (header help popover) */
+.shortcut-help-dropdown {
+    min-width: 230px;
+}
+
+.shortcut-help-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ui-muted);
+    margin-bottom: 0.4rem;
+}
+
+.shortcut-help-list {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.3rem 0.75rem;
+    margin: 0;
+    align-items: center;
+}
+
+.shortcut-help-list dt {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    font-weight: 400;
+}
+
+.shortcut-help-list dd {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ui-text);
+}
+
+.shortcut-help-list kbd {
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.1rem 0.35rem;
+    background: var(--ui-surface-2);
+    border: 1px solid var(--ui-border);
+    border-radius: 4px;
+    color: var(--ui-text);
+    line-height: 1;
 }
 
 /* Ausgeblendetes Panel (wird nicht gerendert, nur im Dropdown-Picker sichtbar) */
@@ -884,7 +929,6 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     background: var(--theme-primary);
     border-color: var(--theme-primary-border);
     color: var(--theme-on-accent);
-    color: #fff;
 }
 .vermissten-panel-tab-add {
     border-style: dashed;

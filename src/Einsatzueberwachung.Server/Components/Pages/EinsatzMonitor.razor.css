@@ -33,6 +33,16 @@
         left: anchor(left);
         right: auto;
     }
+
+    .mon-anchor-help > .btn { anchor-name: --picker-help; }
+
+    .mon-anchor-help .panel-picker-dropdown {
+        position: fixed;
+        position-anchor: --picker-help;
+        top: anchor(bottom);
+        right: anchor(right);
+        inset-inline-start: auto;
+    }
 }
 
 .panel-picker-backdrop {
