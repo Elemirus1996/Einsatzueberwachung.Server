@@ -485,62 +485,70 @@
 
 /* ── Teams panel header with filter chips ───────────────────────────────── */
 .dashboard-panel-header--teams {
-    flex-wrap: wrap;
-    row-gap: 0.35rem;
+    flex-wrap: nowrap;
     align-items: center;
 }
 
-.teams-header-filters {
+/* Single funnel button collapses the five status segments into a dropdown so
+   the Teams header stops competing with the team status colours below it. */
+.teams-filter-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.teams-filter-trigger.is-filtered {
+    border-color: var(--theme-primary);
+    color: var(--ui-text);
+}
+
+.teams-filter-trigger-label {
+    font-weight: 600;
+}
+
+.teams-filter-dropdown {
+    min-width: 190px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    align-items: center;
-}
-
-/* Segmented status filter — one neutral container, active segment lifted.
-   Replaces five separately-colored buttons so the filter row stops competing
-   with the team status colors below it. Status colour survives as a quiet dot
-   (second channel) alongside the always-present text label. */
-.teams-filter-segmented {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: stretch;
+    flex-direction: column;
     gap: 2px;
-    padding: 2px;
-    background: var(--ui-surface-2);
-    border: 1px solid var(--ui-border);
-    border-radius: 7px;
 }
 
-.teams-filter-seg {
-    display: inline-flex;
+.teams-filter-option {
+    display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.5rem;
+    width: 100%;
     border: 0;
     background: transparent;
-    color: var(--ui-muted);
-    font-size: 0.72rem;
-    font-weight: 600;
-    padding: 0.2rem 0.55rem;
+    color: var(--ui-text);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.4rem 0.5rem;
     border-radius: 5px;
-    min-height: 30px;
     cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.12s ease, color 0.12s ease;
+    text-align: left;
+    transition: background 0.12s ease;
 }
 
-.teams-filter-seg:hover {
-    color: var(--ui-text);
+.teams-filter-option:hover {
+    background: var(--ui-surface-2);
 }
 
-.teams-filter-seg.active {
-    background: var(--ui-surface);
-    color: var(--ui-text);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+.teams-filter-option.active {
+    background: color-mix(in srgb, var(--theme-primary) 14%, transparent);
+    font-weight: 600;
 }
 
-[data-intensity="dezent"] .teams-filter-seg.active {
-    box-shadow: inset 0 0 0 1px var(--ui-border);
+.teams-filter-option-icon {
+    width: 14px;
+    text-align: center;
+    color: var(--ui-muted);
+    flex-shrink: 0;
+}
+
+.teams-filter-option-label {
+    flex: 1;
 }
 
 .teams-filter-dot {
@@ -564,7 +572,7 @@
     color: var(--ui-text);
 }
 
-.teams-filter-seg.active .teams-filter-count {
+.teams-filter-option.active .teams-filter-count {
     background: color-mix(in srgb, var(--theme-primary) 18%, transparent);
 }
 

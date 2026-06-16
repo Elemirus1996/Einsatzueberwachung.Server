@@ -15,16 +15,7 @@
    toggle button and lift it to fixed so it escapes the scrollable/clipped
    panel body (e.g. the Schnell-Notiz picker inside the Notizen panel). */
 @supports (anchor-name: --a) {
-    .mon-anchor-panels > .btn { anchor-name: --picker-panels; }
     .mon-anchor-quicknote > .btn { anchor-name: --picker-quicknote; }
-
-    .mon-anchor-panels .panel-picker-dropdown {
-        position: fixed;
-        position-anchor: --picker-panels;
-        top: anchor(bottom);
-        right: anchor(right);
-        inset-inline-start: auto;
-    }
 
     .mon-anchor-quicknote .panel-picker-dropdown {
         position: fixed;
@@ -34,14 +25,14 @@
         right: auto;
     }
 
-    .mon-anchor-help > .btn { anchor-name: --picker-help; }
+    .mon-anchor-teamfilter > .btn { anchor-name: --picker-teamfilter; }
 
-    .mon-anchor-help .panel-picker-dropdown {
+    .mon-anchor-teamfilter .panel-picker-dropdown {
         position: fixed;
-        position-anchor: --picker-help;
+        position-anchor: --picker-teamfilter;
         top: anchor(bottom);
-        right: anchor(right);
-        inset-inline-start: auto;
+        left: anchor(left);
+        right: auto;
     }
 }
 

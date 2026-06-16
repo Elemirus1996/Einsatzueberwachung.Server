@@ -392,37 +392,6 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     overflow: hidden;
 }
 
-/* Sticky Kopfzeile */
-.monitor-dash-header {
-    position: sticky;
-    top: 0;
-    z-index: var(--z-sticky, 1020);
-    background: var(--ui-surface);
-    border-bottom: none;
-    box-shadow: 0 1px 8px color-mix(in srgb, var(--theme-primary) 12%, rgba(0, 0, 0, 0.1));
-    padding: 0.5rem 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-}
-
-.monitor-dash-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.monitor-dash-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
 /* CSS-Grid 12-spaltig */
 .monitor-dashboard-grid {
     display: grid;
@@ -514,6 +483,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-height: 2.75rem;
     padding: 0.4rem 0.75rem;
     background: var(--ui-card-header-bg);
     border-bottom: 1px solid var(--ui-card-header-border);
@@ -537,52 +507,6 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     padding: 0.75rem;
     overflow-y: auto;
     flex: 1;
-}
-
-/* Keyboard-shortcut legend (header help popover) */
-.shortcut-help-dropdown {
-    min-width: 230px;
-}
-
-.shortcut-help-title {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--ui-muted);
-    margin-bottom: 0.4rem;
-}
-
-.shortcut-help-list {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.3rem 0.75rem;
-    margin: 0;
-    align-items: center;
-}
-
-.shortcut-help-list dt {
-    display: flex;
-    align-items: center;
-    gap: 0.15rem;
-    font-weight: 400;
-}
-
-.shortcut-help-list dd {
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--ui-text);
-}
-
-.shortcut-help-list kbd {
-    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
-    font-size: 0.72rem;
-    padding: 0.1rem 0.35rem;
-    background: var(--ui-surface-2);
-    border: 1px solid var(--ui-border);
-    border-radius: 4px;
-    color: var(--ui-text);
-    line-height: 1;
 }
 
 /* Ausgeblendetes Panel (wird nicht gerendert, nur im Dropdown-Picker sichtbar) */

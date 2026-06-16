@@ -51,3 +51,31 @@
 .hilfe-klickpfade-list li {
     margin-bottom: 0.15rem;
 }
+
+.hilfe-shortcuts-list {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.3rem 0.75rem;
+    align-items: center;
+    margin: 0;
+}
+
+.hilfe-shortcuts-list dt {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.hilfe-shortcuts-list dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--bs-body-color);
+}
+
+.hilfe-shortcuts-list kbd {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.4rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.25rem;
+    color: var(--bs-emphasis-color);
+}

@@ -14,6 +14,15 @@
         <button type="button" class="btn-close" @onclick="OnClose" aria-label="Schließen"></button>
     </div>
     <div class="offcanvas-body" id="hilfeDrawerBody">
+        <div class="hilfe-section hilfe-shortcuts">
+            <h6 class="hilfe-section-title">Tastaturkürzel</h6>
+            <dl class="hilfe-shortcuts-list">
+                <dt><kbd>Strg</kbd>+<kbd>H</kbd></dt><dd>Startseite</dd>
+                <dt><kbd>Strg</kbd>+<kbd>N</kbd></dt><dd>Einsatz-Monitor</dd>
+                <dt><kbd>Strg</kbd>+<kbd>M</kbd></dt><dd>Karte</dd>
+                <dt><kbd>Strg</kbd>+<kbd>T</kbd></dt><dd>Einsatz starten</dd>
+            </dl>
+        </div>
         @foreach (var (route, entry) in HilfeContent.Eintraege)
         {
             var anchorId = "hilfe-" + route.TrimStart('/').Replace("/", "-");
