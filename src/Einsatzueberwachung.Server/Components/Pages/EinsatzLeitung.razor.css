@@ -233,9 +233,9 @@
     margin: 0;
     padding: 4px 0;
     list-style: none;
-    background: var(--bs-body-bg, #fff);
-    color: var(--bs-body-color, #212529);
-    border: 1px solid var(--bs-border-color, rgba(0,0,0,.15));
+    background: var(--funk-platte);
+    color: var(--funk-inschrift);
+    border: 1px solid var(--funk-bezel);
     border-radius: 6px;
     box-shadow: 0 6px 18px rgba(0,0,0,.18);
 }
@@ -255,10 +255,10 @@
 }
 .el-szenario-item:hover,
 .el-szenario-item:focus {
-    background: var(--bs-tertiary-bg, rgba(0,0,0,.05));
+    background: var(--funk-platte-tief);
 }
 .el-szenario-item.active {
-    background: var(--bs-primary-bg-subtle, rgba(13,110,253,.12));
+    background: var(--funk-aktion-glow);
     font-weight: 600;
 }
 
@@ -278,7 +278,7 @@
     gap: 12px;
     flex-wrap: wrap;
     padding: 8px 0 12px;
-    border-bottom: 1px solid var(--bs-border-color);
+    border-bottom: 1px solid var(--funk-bezel);
     margin-bottom: 16px;
 }
 .el-vermissten-tabs {
@@ -292,20 +292,20 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    border: 1px solid var(--bs-border-color);
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
+    border: 1px solid var(--funk-bezel);
+    background: var(--funk-platte);
+    color: var(--funk-inschrift);
     border-radius: 999px;
     font-size: 13px;
     cursor: pointer;
 }
 .el-vermissten-tab:hover {
-    background: var(--bs-tertiary-bg, rgba(0,0,0,.04));
+    background: var(--funk-platte-tief);
 }
 .el-vermissten-tab-active {
-    background: var(--bs-primary-bg-subtle, rgba(13,110,253,.12));
-    border-color: var(--bs-primary, #0d6efd);
-    color: var(--bs-primary, #0d6efd);
+    background: var(--funk-aktion-glow);
+    border-color: var(--funk-aktion);
+    color: var(--funk-aktion);
     font-weight: 600;
 }
 .el-vermissten-tab-num {
@@ -315,13 +315,13 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: rgba(0,0,0,0.08);
+    background: var(--funk-bezel-soft);
     font-size: 11px;
     font-weight: 700;
 }
 .el-vermissten-tab-active .el-vermissten-tab-num {
-    background: var(--bs-primary, #0d6efd);
-    color: #fff;
+    background: var(--funk-aktion);
+    color: var(--funk-on-anthrazit);
 }
 .el-vermissten-actions {
     display: flex;
@@ -329,14 +329,14 @@
     align-items: center;
 }
 .el-vermissten-hint {
-    color: var(--bs-secondary-color, #6c757d);
+    color: var(--funk-randnotiz);
     font-size: 12px;
     display: inline-flex;
     align-items: center;
     gap: 4px;
 }
 .el-btn-danger {
-    color: var(--bs-danger, #dc3545) !important;
+    color: var(--belastung-2) !important;
 }
 
 .el-header-sub {
