@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-16T00:00:00Z",
+  "title": "Design System: Einsatzüberwachung",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Einsatz Brand Slot (NRW Red)",
+        "canonical": "#A72920",
+        "note": "Operator-themable seed. Default = NRW red; Ruhr preset = #005D9E; custom themes override at runtime.",
+        "tonalRamp": ["#240806", "#451010", "#661a16", "#8a231d", "#a72920", "#c85f57", "#e29f99", "#f6dcd8"]
+      },
+      "primary-ruhr": {
+        "role": "primary",
+        "displayName": "Ruhr Blue (preset alt)",
+        "canonical": "#005D9E",
+        "tonalRamp": ["#021a2c", "#04304f", "#054674", "#055a93", "#005d9e", "#3a86c4", "#7db4dd", "#c2dcf0"]
+      },
+      "secondary": {
+        "role": "neutral",
+        "displayName": "Brand Graphite",
+        "canonical": "#404040",
+        "tonalRamp": ["#0d0d0d", "#1a1a1a", "#262626", "#333333", "#404040", "#6b6b6b", "#a3a3a3", "#dcdcdc"]
+      },
+      "signal-red": {
+        "role": "secondary",
+        "displayName": "Signal Red (fixed anchor)",
+        "canonical": "#E3000F",
+        "note": "Fixed across presets. Drives the accent gradient and the hue-mix for all danger/alarm signals.",
+        "tonalRamp": ["#2e0103", "#560206", "#7e030a", "#a8040d", "#e3000f", "#f0484f", "#f78d91", "#fcd0d2"]
+      },
+      "signal-green": {
+        "role": "tertiary",
+        "displayName": "Signal Green (pause/idle anchor)",
+        "canonical": "#5BB969",
+        "tonalRamp": ["#0f2614", "#1c4524", "#2a6536", "#3a8748", "#5bb969", "#7fc98a", "#a9dcb0", "#d6efda"]
+      },
+      "heading": {
+        "role": "neutral",
+        "displayName": "Heading Blue",
+        "canonical": "#163253",
+        "note": "Headings and links read blue, deliberately separate from the brand slot.",
+        "tonalRamp": ["#0a1626", "#11233b", "#163253", "#1f456f", "#2c5d92", "#5784b6", "#94b3d6", "#cfdef0"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1f2937",
+        "tonalRamp": ["#0b0f15", "#141b25", "#1f2937", "#33404f", "#4d5d6f", "#8593a3", "#b7c1cd", "#e4e9ef"]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#f5f7fb",
+        "tonalRamp": ["#05070c", "#0d1018", "#161b24", "#2a323f", "#4a566a", "#8893a6", "#c2cad6", "#f5f7fb"]
+      }
+    },
+    "typographyMeta": {
+      "heading": { "displayName": "Heading", "purpose": "Page and section titles (h1, weight 700, Heading Blue)." },
+      "body": { "displayName": "Body", "purpose": "Default reading text, 16px / 1.6, system sans. Cap prose 65–75ch." },
+      "label": { "displayName": "Label", "purpose": "Form labels and control captions, weight 600." },
+      "data": { "displayName": "Data / Mono", "purpose": "JetBrains Mono for times, coordinates, IDs, and the radio log only." }
+    },
+    "shadows": [
+      { "name": "card-ambient", "value": "0 2px 8px rgba(0,0,0,0.08)", "purpose": "Resting card/panel elevation. Suppressed entirely in the 'dezent' intensity." },
+      { "name": "modal-lift", "value": "0 20px 60px rgba(0,0,0,0.3)", "purpose": "Dialog elevation above a blur(4px) backdrop." },
+      { "name": "active-glow", "value": "0 6px 24px var(--theme-primary-shadow)", "purpose": "'lebhaft'-only emphasis; running/alarm pulse." },
+      { "name": "focus-ring", "value": "0 0 0 0.2rem color-mix(in srgb, var(--theme-primary) 20%, transparent)", "purpose": "Keyboard/hover focus ring on primary controls." }
+    ],
+    "motion": [
+      { "name": "transition-standard", "value": "all 0.2s ease", "purpose": "Default state transition ('ausgewogen'). 0.15s in 'lebhaft'; none in 'dezent'." },
+      { "name": "blink-timer", "value": "blink-timer (opacity 1↔0.7, stepped)", "purpose": "Critical-timer attention blink. Needs a reduced-motion equivalent." },
+      { "name": "pulse-critical", "value": "pulse-critical (brand-tinted box-shadow swell)", "purpose": "Out-of-area / critical state pulse on the map and panels." },
+      { "name": "slideUp", "value": "slideUp 0.3s ease (translate + fade)", "purpose": "Modal entrance." },
+      { "name": "mention-pulse", "value": "mention-pulse 2.5s ease-out (expanding ring)", "purpose": "Scroll-to-mention highlight in notes/radio." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "768px", "note": "max-width: touch spacing, sidebar collapse, mobile field views." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default primary action; brand-filled, theme- and intensity-aware, ≥44px touch target.",
+      "html": "<button class=\"ds-btn-primary\"><i class=\"bi bi-play-fill\" aria-hidden=\"true\"></i> Team starten</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 12px 24px; border: 1px solid var(--theme-primary-border, #8a231d); border-radius: 0.55rem; background: color-mix(in srgb, var(--theme-primary, #A72920) 76%, var(--ui-surface, #ffffff)); color: var(--theme-on-accent, #ffffff); font: 600 1rem 'Segoe UI', sans-serif; cursor: pointer; transition: all 0.2s ease; } .ds-btn-primary:hover, .ds-btn-primary:focus-visible { background: var(--theme-primary, #A72920); box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--theme-primary, #A72920) 20%, transparent); outline: none; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Neutral secondary action; ink text kept off the accent so tinted fills stay legible.",
+      "html": "<button class=\"ds-btn-secondary\">Abbrechen</button>",
+      "css": ".ds-btn-secondary { min-height: 44px; padding: 12px 24px; border: 1px solid var(--ui-border, #d5deea); border-radius: 0.55rem; background: color-mix(in srgb, var(--secondary-color, #404040) 12%, var(--ui-surface, #ffffff)); color: var(--ui-text, #1f2937); font: 600 1rem 'Segoe UI', sans-serif; cursor: pointer; transition: all 0.2s ease; } .ds-btn-secondary:hover, .ds-btn-secondary:focus-visible { background: color-mix(in srgb, var(--secondary-color, #404040) 20%, var(--ui-surface, #ffffff)); outline: none; }"
+    },
+    {
+      "name": "Theme Accent Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Signature expressive control: a primary→signal-red gradient with a tinted shadow. Flattens to a soft tint in 'dezent'.",
+      "html": "<button class=\"ds-accent-btn\">Einsatz starten</button>",
+      "css": ".ds-accent-btn { min-height: 44px; padding: 12px 24px; border: 1px solid var(--theme-tertiary-border, #a8040d); border-radius: 8px; background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary, #A72920) 76%, #fff) 0%, color-mix(in srgb, var(--theme-tertiary, #E3000F) 22%, #fff) 100%); color: var(--theme-on-accent, #ffffff); font: 600 1rem 'Segoe UI', sans-serif; cursor: pointer; box-shadow: 0 2px 10px color-mix(in srgb, var(--theme-tertiary, #E3000F) 14%, transparent); transition: all 0.2s ease; } .ds-accent-btn:hover { background: linear-gradient(135deg, var(--theme-primary, #A72920) 0%, color-mix(in srgb, var(--theme-tertiary, #E3000F) 58%, #fff) 100%); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Touch-optimized field with a blue focus glow.",
+      "html": "<label class=\"ds-label\">Einsatzort<input class=\"ds-input\" type=\"text\" placeholder=\"Adresse oder Koordinaten\" /></label>",
+      "css": ".ds-label { display: block; font: 600 1rem 'Segoe UI', sans-serif; color: var(--ui-text, #1f2937); } .ds-input { display: block; width: 100%; margin-top: 8px; min-height: 44px; padding: 12px 16px; border: 1px solid var(--ui-form-border, #c6d2e4); border-radius: 8px; background: var(--ui-form-bg, #ffffff); color: var(--ui-form-text, #1f2937); font: 400 1.1rem 'Segoe UI', sans-serif; } .ds-input::placeholder { color: var(--ui-muted, #617083); } .ds-input:focus-visible { outline: none; border-color: var(--ui-form-focus-border, #4a88c7); box-shadow: 0 0 0 0.2rem rgba(74,168,255,0.2); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Resting surface container with a themed gradient header. Flat in 'dezent'.",
+      "html": "<article class=\"ds-card\"><header class=\"ds-card__header\">Team 1 — Rex</header><div class=\"ds-card__body\">Flächensuche · Abschnitt Nord</div></article>",
+      "css": ".ds-card { border: 1px solid var(--ui-border, #d5deea); border-radius: 12px; background: var(--ui-surface, #ffffff); box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; } .ds-card__header { padding: 1.25rem; border-bottom: 1px solid var(--ui-card-header-border, #d6dfeb); background: var(--ui-card-header-bg, linear-gradient(90deg, #f3f6fb 0%, #edf1f8 100%)); color: var(--ui-card-header-text, #2b3a4f); font: 600 1rem 'Segoe UI', sans-serif; } .ds-card__body { padding: 1.5rem; color: var(--ui-text, #1f2937); }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Pill status chip pairing color with an icon — never hue alone.",
+      "html": "<span class=\"ds-badge ds-badge--danger\"><i class=\"bi bi-exclamation-triangle-fill\" aria-hidden=\"true\"></i> Außerhalb Suchgebiet</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35em 0.7em; border-radius: 999px; font: 600 0.82rem 'Segoe UI', sans-serif; } .ds-badge--danger { background: color-mix(in srgb, var(--signal-danger-hue, #e12431) 92%, var(--ui-surface, #fff)); color: #ffffff; }"
+    },
+    {
+      "name": "Sidebar Nav Item (active)",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Command-rail link in active state: inset brand-tinted left bar + tinted background.",
+      "html": "<a class=\"ds-nav-item ds-nav-item--active\" href=\"#\"><i class=\"bi bi-broadcast\" aria-hidden=\"true\"></i><span>EinsatzMonitor</span></a>",
+      "css": ".ds-nav-item { display: inline-flex; align-items: center; gap: 0.6rem; min-height: 44px; padding: 0.5rem 1rem; color: var(--ui-sidebar-text, #1f2937); text-decoration: none; font: 500 1rem 'Segoe UI', sans-serif; transition: background 0.2s ease; } .ds-nav-item:hover { background: color-mix(in srgb, currentColor 12%, transparent); } .ds-nav-item--active { font-weight: 600; background: color-mix(in srgb, currentColor 18%, transparent); box-shadow: inset 3px 0 0 color-mix(in srgb, currentColor 75%, transparent); }"
+    },
+    {
+      "name": "Theme Alert",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Inline informational callout tied to the active theme.",
+      "html": "<div class=\"ds-alert\"><i class=\"bi bi-info-circle-fill\" aria-hidden=\"true\"></i><div><strong>GPS-Halsband verbunden</strong><span class=\"ds-alert__text\">Live-Position wird auf der Karte angezeigt.</span></div></div>",
+      "css": ".ds-alert { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.75rem 0.9rem; border: 1px solid var(--theme-primary-border, #8a231d); border-radius: 8px; background: color-mix(in srgb, var(--theme-primary, #A72920) 12%, var(--ui-surface, #fff)); } .ds-alert i { margin-top: 0.1rem; color: var(--theme-primary-text, #A72920); } .ds-alert strong { display: block; color: var(--ui-text, #1f2937); } .ds-alert__text { color: var(--ui-muted, #617083); font-size: 0.82rem; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Das Lagezentrum (The Situation Room)",
+    "overview": "A calm command surface. An Einsatzleiter in the ELW reads the whole operation at a glance while the interface stays composed until something genuinely demands a response. The same system folds down to a Hundeführer's phone in daylight without losing its vocabulary. The identity is not a fixed brand color — it is the architecture beneath it: operators choose a preset (NRW red, Ruhr blue) or a custom theme, and the surface re-derives from two seed colors through color-mix, on top of a three-step intensity engine (dezent / ausgewogen / lebhaft) and full light/dark theming.",
+    "keyCharacteristics": [
+      "Token-derived, not hue-fixed — operator-themable primary/secondary, fixed signal anchors.",
+      "Intensity-tunable — dezent / ausgewogen / lebhaft gate color, motion, shadow, and radius.",
+      "Glanceable — status is shape and position before it is prose.",
+      "Quiet by default — saturated color, motion, and audio are scarce escalation, not decoration.",
+      "Field-ready — ≥44px touch targets, legible outdoors, full dark mode."
+    ],
+    "rules": [
+      { "name": "The Re-Derivation Rule", "body": "Never hardcode a hex value in a component. Every color comes from a token (--theme-*, --ui-*, --signal-*). If a new element breaks when the operator switches preset, toggles dark mode, or changes intensity, it is wrong.", "section": "colors" },
+      { "name": "The Reserved-Brand Rule", "body": "The saturated brand primary appears on primary actions, current selection, and active state only — never as decoration. Headings use Heading Blue, not the brand.", "section": "colors" },
+      { "name": "The Fixed-Scale Rule", "body": "Type sizes are a fixed rem scale, never clamp()-fluid. Users work at a consistent DPI across desktop and mounted tablets.", "section": "typography" },
+      { "name": "The Mono-For-Data Rule", "body": "JetBrains Mono is for machine-readable values only (times, coords, IDs, radio traffic). Never for prose, buttons, or non-data labels.", "section": "typography" },
+      { "name": "The Intensity-Gated Depth Rule", "body": "Any new shadow or glow must be expressed through the intensity tokens so dezent stays flat and lebhaft can amplify it.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do drive every color from tokens (--theme-*, --ui-*, --signal-*) so operator presets, custom themes, dark mode, and intensity all keep working. Test a new screen under NRW + Ruhr + dark + each intensity.",
+      "Do pair every status color with a second channel — icon, shape, label, or position — so red/green-deficient users and a phone in sunlight read the same state. The Grün→Orange→Rot timer is the test case.",
+      "Do keep the saturated brand primary scarce: actions, current selection, and alarm only.",
+      "Do gate new shadows and motion behind the intensity engine so dezent stays flat and silent.",
+      "Do keep touch targets ≥44px and body/muted text ≥4.5:1, especially in the mobile field views.",
+      "Do use JetBrains Mono for data (times, coordinates, IDs, radio log) and the system sans for everything else."
+    ],
+    "donts": [
+      "Don't hardcode hex values in components or bypass the token layers; it breaks theming and dark mode.",
+      "Don't rely on color alone to convey team, dog, or timer state.",
+      "Don't use the brand red (or any seed) as decoration, or color headings with it — headings are blue.",
+      "Don't ship blinking/pulsing alerts without a prefers-reduced-motion equivalent that mirrors dezent.",
+      "Don't reach for a modal as the first answer; exhaust inline and progressive disclosure first.",
+      "Don't let it drift toward a generic Bootstrap admin template or a playful, gamified consumer app."
+    ]
+  }
+}

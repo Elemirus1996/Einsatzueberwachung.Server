@@ -260,3 +260,19 @@ Bevor du Dateien löschst oder massive Refactorings durchführst, die das ganze 
 * [2026-05-05] - **RuntimeStatePersistenceService.Subscribe/Unsubscribe**: Jedes neue Event auf `IEinsatzService`, das persistenten Zustand mutiert, MUSS in `Subscribe()` UND `Unsubscribe()` in `RuntimeStatePersistenceService` eingetragen werden — sonst setzt kein Code `_isDirty = true`, der 3-Sekunden-Timer schreibt nichts in SQLite, und die Daten gehen beim nächsten Server-Neustart verloren. Beispiel: `TrackSnapshotAdded` und `CompletedSearchUpdated` fehlten, was dazu führte, dass importierte GPX-Tracks nicht persistiert wurden.
 * [2026-05-09] - **JS-Interop `setOptions()` vor `loadHistory()`**: Wenn JS-Module (CollarTracking, PhoneTracking, teamMobileMap) konfigurierbare Darstellung (z.B. Icons) haben, muss `setOptions()` IMMER unmittelbar nach `initialize()` und VOR allen datenladeenden Aufrufen wie `loadHistory()` oder `setDogPosition()` aufgerufen werden — sonst werden bereits platzierte Marker mit dem Default-Icon erstellt.
 * [2026-05-09] - **try-catch in `OnAfterRenderAsync` sauber aufteilen**: In `TeamMobile.razor` (und ähnlichen Seiten) darf der try-catch für `init` NICHT mit `setOptions`/Settings-Aufrufen vermischt werden. Wenn `init` fehlschlägt und `return` aufgerufen wird, ist das richtig; wenn aber `setOptions` fehlschlägt, war die Karte bereits initialisiert — die Fehlermeldung "map init failed" ist dann falsch und der `return` erzeugt eine leere, funktionslose Seite. Lösung: separater (toleranter) try-catch für `setOptions`.
+
+---
+
+## 5. Design-Kontext (Impeccable)
+Für **alle UI-/Frontend-Arbeiten** sind zwei Dateien im Projekt-Root die Quelle der Wahrheit. Vor UI-Änderungen lesen:
+
+- [`PRODUCT.md`](../PRODUCT.md) — **Strategie** (Register, Nutzer, Marken-Persönlichkeit, Anti-Referenzen, Designprinzipien). Register: **product** (Werkzeug, kein Marketing).
+- [`DESIGN.md`](../DESIGN.md) — **visuelles System** im Google-Stitch-Format (Tokens, Farben, Typografie, Komponenten). Ergänzt durch den Sidecar `.impeccable/design.json`.
+
+**Kernregeln, die jede UI-Änderung beachten muss:**
+1. **Re-Derivation-Rule**: Keine Hex-Werte in Komponenten hardcoden — immer über die Token-Ebenen (`--theme-*`, `--ui-*`, `--signal-*`). Neue Screens unter **NRW + Ruhr + Dark Mode + jeder Intensität** (dezent/ausgewogen/lebhaft) testen.
+2. **Status nie nur über Farbe**: Jeder Team-/Hunde-/Timer-Zustand braucht einen zweiten Kanal (Icon/Form/Label/Position). Der Timer-Verlauf Grün→Orange→Rot ist der Testfall (Farbsehschwäche + Sonnenlicht).
+3. **Leise per Default**: Gesättigte Markenfarbe, Bewegung und Audio sind knappe Eskalation — nur für echte Aufmerksamkeitszustände, nie Dekoration. Überschriften sind blau, nicht Markenrot.
+4. **Feldtauglich**: Touch-Ziele ≥44px, Fließtext/Muted-Text ≥4.5:1, besonders in den mobilen Ansichten.
+
+Impeccable-Befehle (z. B. `/impeccable audit EinsatzMonitor`, `/impeccable critique`, `/impeccable polish`) lesen diese Dateien automatisch. Live-Mode ist für dieses Blazor-Server-Projekt nicht verfügbar (kein Vite/HMR oder statischer HTML-Entry).
