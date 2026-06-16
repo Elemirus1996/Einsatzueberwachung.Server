@@ -28,7 +28,11 @@
     --theme-secondary: #404040;
     --theme-tertiary: #E3000F;
     --theme-quaternary: #5BB969;
+    /* On-colors are recomputed at runtime from the active primary/secondary luminance
+       (theme-sync.js + App.razor bootstrap) so every preset & custom theme gets readable
+       text. These :root values are the pre-JS fallback for the default NRW palette. */
     --theme-on-accent: #ffffff;
+    --theme-on-secondary: #ffffff;
     --signal-success-hue: color-mix(in srgb, var(--theme-tertiary) 20%, #00FF00 80%);
     --signal-warning-hue: color-mix(in srgb, var(--theme-tertiary) 20%, #d97706 80%);
     --signal-danger-hue: color-mix(in srgb, var(--theme-tertiary) 20%, #e12431 80%);
@@ -106,10 +110,6 @@
     --theme-alert-info-border: color-mix(in srgb, var(--signal-info-hue) var(--theme-intensity-border), var(--ui-border, #d5deea));
     --theme-alert-warning-border: color-mix(in srgb, var(--signal-warning-hue) var(--theme-intensity-border), var(--ui-border, #d5deea));
     --theme-alert-danger-border: color-mix(in srgb, var(--signal-danger-hue) var(--theme-intensity-border), var(--ui-border, #d5deea));
-}
-
-[data-theme-preset="ruhr"] {
-    --theme-on-accent: #0f1720;
 }
 
 [data-intensity="dezent"] {

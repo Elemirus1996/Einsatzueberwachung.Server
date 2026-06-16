@@ -157,8 +157,8 @@ textarea:focus {
 }
 
 [data-intensity="lebhaft"] .btn-secondary {
-    /* solid secondary bg in lebhaft mode → needs on-accent contrast */
-    color: var(--theme-on-accent);
+    /* solid secondary bg in lebhaft mode → secondary may be light (Ruhr yellow), use its own on-color */
+    color: var(--theme-on-secondary);
 }
 
 .btn-success {

@@ -7,7 +7,8 @@ colors:
   secondary: "#404040"        # NRW neutral graphite (default).
   primary-ruhr: "#005D9E"     # Ruhr preset — blue alternative.
   secondary-ruhr: "#FFED00"   # Ruhr preset — yellow alternative.
-  on-accent: "#ffffff"        # Text on the filled brand color (#0f1720 under Ruhr).
+  on-accent: "#ffffff"        # Text on the filled PRIMARY color — recomputed at runtime from the primary's luminance (dark fill → white, light fill → #0f1720). Works for every preset & custom theme.
+  on-secondary: "#ffffff"     # Text on the filled SECONDARY color — same runtime luminance rule (Ruhr yellow → #0f1720).
   # ── Fixed signal anchors: constant across every preset ──
   signal-red: "#E3000F"       # tertiary — alarm / active-indicator anchor.
   signal-green: "#5BB969"     # quaternary — pause / idle anchor.
