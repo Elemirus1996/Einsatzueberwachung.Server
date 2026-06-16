@@ -408,37 +408,77 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
 /* ── Panel-Positionen (relative Breiten) ────────────────────────── */
 
-/* Zeile 1: Info (3) | Vermissten (3) | Wetter (3) */
+/* Notizen: feste rechte Spalte über beide Zeilen — EXPLIZIT verankert
+   (Start-Zeile UND Start-Spalte). Ohne festen Zeilenstart platziert der
+   Grid-Algorithmus das rowspan-2-Panel beim Ein-/Ausblenden anderer Panels
+   in eine andere Zeile, wodurch die übrigen Panels verrutschen und
+   unterschiedlich hoch erscheinen. */
+[data-panel-id="notizen"]      { grid-column: 10 / span 3; grid-row: 1 / span 2; }
+
+/* Komplette Info-Zeile ausgeblendet: Notizen NICHT mehr über beide Zeilen
+   spannen, sonst ragt es um die (leere) Zeile 1 + Row-Gap über Teams/Suchgebiete
+   hinaus. Stattdessen nur Zeile 2 belegen → bündig mit der Arbeitszeile. */
+.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"] {
+    grid-row: 2;
+}
+
+/* Zeile 1: Info | Vermissten | Wetter (je 3 Spalten neben Notizen) */
 [data-panel-id="einsatz-info"] { grid-column: span 3; grid-row: 1; }
 [data-panel-id="vermissten"]   { grid-column: span 3; grid-row: 1; }
 [data-panel-id="wetter"]       { grid-column: span 3; grid-row: 1; }
-
-/* Notizen: rechte Spalte, überspannt beide Zeilen */
-[data-panel-id="notizen"]      { grid-column: span 3; grid-row: span 2; }
 
 /* Zeile 2: Teams (default 9 Sp.) | Suchgebiete (3 Sp.) */
 [data-panel-id="teams"]        { grid-column: span 9; grid-row: 2; }
 [data-panel-id="suchgebiete"]  { grid-column: span 3; grid-row: 2; }
 
-/* Suchgebiete sichtbar: Teams auf 6 Spalten */
+/* Suchgebiete sichtbar: Teams auf 6 Spalten (Notizen belegt 3) */
 .monitor-dashboard-grid:has([data-panel-id="suchgebiete"]) [data-panel-id="teams"] {
     grid-column: span 6;
 }
+/* Teams ausgeblendet, Suchgebiete sichtbar: Suchgebiete füllt die Arbeitszeile */
+.monitor-dashboard-grid:not(:has([data-panel-id="teams"])) [data-panel-id="suchgebiete"] {
+    grid-column: span 9;
+}
 
-/* Notizen ausgeblendet: Zeile-1-Panels auf 4 Spalten, Teams/Suchgebiete auf volle Breite */
+/* ── Zeile-1-Lücken füllen, wenn Info-Panels ausgeblendet werden (Notizen sichtbar) ──
+   Frei sind 9 Spalten. Zwei sichtbar → 5 + 4, eins sichtbar → 9. */
+.monitor-dashboard-grid:not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 5; }
+.monitor-dashboard-grid:not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"]   { grid-column: span 4; }
+.monitor-dashboard-grid:not(:has([data-panel-id="vermissten"])) [data-panel-id="einsatz-info"] { grid-column: span 5; }
+.monitor-dashboard-grid:not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"]      { grid-column: span 4; }
+.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])) [data-panel-id="vermissten"] { grid-column: span 5; }
+.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])) [data-panel-id="wetter"]     { grid-column: span 4; }
+.monitor-dashboard-grid:not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 9; }
+.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"] { grid-column: span 9; }
+.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"] { grid-column: span 9; }
+
+/* ── Notizen ausgeblendet: volle 12 Spalten pro Zeile ── */
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="einsatz-info"] { grid-column: span 4; }
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="vermissten"]   { grid-column: span 4; }
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="wetter"]       { grid-column: span 4; }
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="teams"]        { grid-column: span 12; }
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"]  { grid-column: span 4; }
 
-/* Suchgebiete + kein Notizen: Teams 8 Sp., Suchgebiete 4 Sp. */
+/* Suchgebiete sichtbar (ohne Notizen): Teams 8 Sp., Suchgebiete 4 Sp. */
 .monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="teams"] {
     grid-column: span 8;
 }
-.monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
-    grid-column: span 4;
+/* Teams ausgeblendet (ohne Notizen): Suchgebiete volle Breite */
+.monitor-dashboard-grid:not(:has([data-panel-id="teams"])):not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
+    grid-column: span 12;
 }
+
+/* Zwei Info-Panels (ohne Notizen) → 6 + 6 */
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 6; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"]   { grid-column: span 6; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="einsatz-info"] { grid-column: span 6; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"]      { grid-column: span 6; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])) [data-panel-id="vermissten"] { grid-column: span 6; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])) [data-panel-id="wetter"]      { grid-column: span 6; }
+/* Ein Info-Panel (ohne Notizen) → volle 12 */
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 12; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"] { grid-column: span 12; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"] { grid-column: span 12; }
 
 /* Panel-Wrapper & Panel */
 .dashboard-panel-wrapper {
