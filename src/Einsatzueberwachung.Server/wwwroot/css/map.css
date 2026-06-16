@@ -8,6 +8,92 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* Lade-Skelett über der Karte, bis die ersten Kacheln geladen sind */
+.map-loading-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 650;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--ui-surface) 80%, transparent);
+    backdrop-filter: blur(2px);
+    pointer-events: none;
+}
+
+.map-loading-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 1.1rem;
+    border-radius: 10px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    color: var(--ui-text);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.map-loading-card i {
+    font-size: 1.2rem;
+    color: var(--theme-primary);
+    animation: map-loading-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes map-loading-pulse {
+    0%, 100% { opacity: 0.45; }
+    50%      { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .map-loading-card i {
+        animation: none;
+        opacity: 0.85;
+    }
+}
+
+/* Kachel-Fehlerbanner (oben mittig, manuell schließbar) */
+.map-tile-error {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 660;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    max-width: min(420px, calc(100% - 2rem));
+    padding: 0.55rem 0.65rem 0.55rem 0.85rem;
+    border-radius: 8px;
+    background: var(--ui-surface);
+    border: 1px solid var(--danger-border, #e12431);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    color: var(--ui-text);
+    font-size: 0.84rem;
+}
+
+.map-tile-error > i {
+    color: var(--danger-color, #e12431);
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.map-tile-error-close {
+    border: 0;
+    background: transparent;
+    color: var(--ui-muted);
+    font-size: 1.15rem;
+    line-height: 1;
+    padding: 0 0.15rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.map-tile-error-close:hover {
+    color: var(--ui-text);
+}
+
 .map-container {
     max-width: 1600px;
     margin: 0 auto;
@@ -84,7 +170,16 @@ body:not(.map-embed-mode) .map-main .leaflet-top.leaflet-right .leaflet-control-
 /* ── Embed-Toolbar (kompakte Funktisch-Steuerung) ─────────────────
    Standardmäßig komplett unsichtbar. Sichtbar nur bei body.map-embed-mode
    UND passender embed-controls-*-Klasse. */
-.map-embed-toolbar { display: none; }
+.map-embed-toolbar {
+    display: none;
+    /* Bewusst dunkle Funktisch-Steuerung ÜBER den Kartenkacheln (nicht App-Theme):
+       muss über hellen UND Satellitenkacheln lesbar bleiben. Palette zentralisiert. */
+    --map-embed-bg: #14181f;
+    --map-embed-bg-active: #1d232c;
+    --map-embed-fg: #e6dfcc;
+    --map-embed-fg-dim: rgba(230, 223, 204, 0.65);
+    --map-embed-border: rgba(232, 220, 195, 0.18);
+}
 
 body.map-embed-mode.embed-controls-tiles      .map-embed-tiles    { display: flex; }
 body.map-embed-mode.embed-controls-gps-collar .map-embed-gps,
@@ -103,8 +198,8 @@ body.map-embed-mode.embed-controls-gps-phone  .map-embed-btn-phone  { display: i
     z-index: 401;
     flex-direction: column;
     gap: 2px;
-    background: #14181f;
-    border: 1px solid rgba(232, 220, 195, 0.18);
+    background: var(--map-embed-bg);
+    border: 1px solid var(--map-embed-border);
     border-radius: 4px;
     padding: 2px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -117,8 +212,8 @@ body.map-embed-mode.embed-controls-gps-phone  .map-embed-btn-phone  { display: i
     z-index: 401;
     flex-direction: row;
     gap: 2px;
-    background: #14181f;
-    border: 1px solid rgba(232, 220, 195, 0.18);
+    background: var(--map-embed-bg);
+    border: 1px solid var(--map-embed-border);
     border-radius: 4px;
     padding: 2px;
 }
@@ -130,23 +225,23 @@ body.map-embed-mode.embed-controls-gps-phone  .map-embed-btn-phone  { display: i
     z-index: 401;
     width: 44px;
     height: 44px;
-    background: #14181f;
-    border: 1px solid rgba(232, 220, 195, 0.20);
+    background: var(--map-embed-bg);
+    border: 1px solid var(--map-embed-border);
     border-radius: 4px;
-    color: #e6dfcc;
+    color: var(--map-embed-fg);
     align-items: center;
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 2px 6px rgba(0,0,0,0.35);
 }
 
-.map-embed-recenter:active { background: #1d232c; transform: translateY(1px); }
+.map-embed-recenter:active { background: var(--map-embed-bg-active); transform: translateY(1px); }
 .map-embed-recenter i { font-size: 18px; }
 
 .map-embed-btn {
     background: transparent;
     border: 1px solid transparent;
-    color: rgba(230, 223, 204, 0.65);
+    color: var(--map-embed-fg-dim);
     font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
     font-size: 10px;
     font-weight: 700;
@@ -169,7 +264,7 @@ body.map-embed-mode.embed-controls-gps-phone  .map-embed-btn-phone  { display: i
 
 .map-embed-btn:active {
     background: rgba(232, 220, 195, 0.10);
-    color: #e6dfcc;
+    color: var(--map-embed-fg);
 }
 
 .map-embed-btn-on {
@@ -265,7 +360,7 @@ main:has(.map-page-layout) {
     border: none;
     font-size: 1.2rem;
     line-height: 1;
-    color: #0c5460;
+    color: var(--ui-info-msg-text);
     cursor: pointer;
     padding: 0 0.25rem;
     opacity: 0.6;
@@ -368,8 +463,8 @@ main:has(.map-page-layout) {
 
 .map-sidebar .sidebar-header {
     padding: 1rem;
-    border-bottom: 1px solid #dee2e6;
-    background: white;
+    border-bottom: 1px solid var(--ui-border);
+    background: var(--ui-surface);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -415,7 +510,7 @@ main:has(.map-page-layout) {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #6c757d;
+    color: var(--ui-muted);
     text-align: center;
 }
 
@@ -440,7 +535,7 @@ main:has(.map-page-layout) {
 }
 
 .sidebar-card-item:focus-visible {
-    outline: 2px solid var(--theme-primary, #3b82f6);
+    outline: 2px solid var(--theme-primary);
     outline-offset: 2px;
 }
 

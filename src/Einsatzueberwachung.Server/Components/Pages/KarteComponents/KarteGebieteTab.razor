@@ -1,7 +1,7 @@
 @* Suchgebiete-Tab-Panel der Karten-Sidebar *@
 
 <div class="sidebar-content-header">
-    <span class="small fw-semibold text-muted"><i class="bi bi-geo-alt-fill me-1"></i>Gebiete</span>
+    <span class="small fw-semibold"><i class="bi bi-geo-alt-fill me-1"></i>Gebiete</span>
     <button class="btn btn-xs tab-toggle-btn @(DrawingActive ? "is-active" : "btn-primary")"
             @onclick="DrawingActive ? OnCancelDraw : OnAddArea"
             title="@(DrawingActive ? "Zeichnen abbrechen" : "Neues Suchgebiet zeichnen")">
