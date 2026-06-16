@@ -19,3 +19,14 @@
     font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     font-size: 0.82rem;
 }
+
+/* Kritischer Timer: zweiter Kanal (Bewegung) neben Farbe, damit Erst- (orange)
+   und Zweit-Warnung (rot) auch bei Farbsehschwaeche unterscheidbar sind */
+.mobile-dashboard-timer.text-danger {
+    animation: mobile-timer-critical 1.1s ease-in-out infinite;
+}
+
+@keyframes mobile-timer-critical {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}

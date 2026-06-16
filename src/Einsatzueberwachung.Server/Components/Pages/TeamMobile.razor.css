@@ -109,3 +109,17 @@
 [data-intensity="dezent"] .team-mobile-info-panel {
     background: transparent;
 }
+
+/* Feldtauglichkeit: Touch-Ziele >=44px trotz btn-sm (Smartphone, Handschuhe) */
+.team-mobile-header .btn {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.team-mobile-status-actions .btn {
+    min-height: 44px;
+}
+
+.team-mobile-gps-banner .btn {
+    min-height: 40px;
+}
