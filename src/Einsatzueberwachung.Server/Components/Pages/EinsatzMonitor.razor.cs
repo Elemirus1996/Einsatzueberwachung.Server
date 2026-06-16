@@ -40,6 +40,7 @@ public partial class EinsatzMonitor
     private string _newNoteText = string.Empty;
     private string _newNoteType = "Notiz";
     private string _newNoteSourceId = "einsatzleitung";
+    private bool _showQuickNoteDropdown;
     private string? _editingTeamId;
     private string _teamFormMessage = string.Empty;
     private bool _teamFormIsError;
@@ -96,7 +97,6 @@ public partial class EinsatzMonitor
     };
 
     private List<string> _quickNoteTemplates = new();
-    private bool _showQuickNoteDropdown;
 
     private WeatherData? _monitorWeather;
     private WeatherForecast? _monitorForecast;
