@@ -32,12 +32,11 @@ public partial class EinsatzMonitor
     private readonly TeamEditorModel _teamForm = new();
     private readonly Dictionary<string, string> _replyTexts = new();
     private readonly Dictionary<string, string> _replySourceIds = new();
-    private readonly Dictionary<string, bool> _historyVisible = new();
-    private readonly Dictionary<string, List<GlobalNotesHistory>> _historyCache = new();
+    private readonly Dictionary<string, bool> _replyVisible = new();
 
     private string _newNoteText = string.Empty;
     private string _newNoteType = "Notiz";
-    private string _newNoteSourceId = string.Empty;
+    private string _newNoteSourceId = "einsatzleitung";
     private string? _editingTeamId;
     private string _teamFormMessage = string.Empty;
     private bool _teamFormIsError;
@@ -56,7 +55,6 @@ public partial class EinsatzMonitor
     private bool _wetterDetailsExpanded;
     private bool _vermisstenDetailsExpanded;
     private Guid? _vermisstenPanelSelectedId;
-    private bool _isNoteFormExpanded;
 
     // Halsband-Auswahl beim Start (falls noch kein Halsband zugewiesen)
     private bool _showCollarSelectModal;
@@ -95,6 +93,7 @@ public partial class EinsatzMonitor
     };
 
     private List<string> _quickNoteTemplates = new();
+    private bool _showQuickNoteDropdown;
 
     private WeatherData? _monitorWeather;
     private WeatherForecast? _monitorForecast;
@@ -1595,28 +1594,12 @@ public partial class EinsatzMonitor
             createdBy);
 
         _newNoteText = string.Empty;
-        _isNoteFormExpanded = false;
-    }
-
-    private async Task OpenNoteFormAsync()
-    {
-        _isNoteFormExpanded = true;
-        await InvokeAsync(StateHasChanged);
-        await JS.InvokeVoidAsync("eval", "setTimeout(()=>document.querySelector('#note-expander-form textarea')?.focus(),50)");
-    }
-
-    private void CloseNoteForm()
-    {
-        _isNoteFormExpanded = false;
-        _newNoteText = string.Empty;
     }
 
     private async Task AddQuickNoteAsync(string shortText)
     {
         if (string.IsNullOrWhiteSpace(shortText))
-        {
             return;
-        }
 
         var selectedSource = string.IsNullOrWhiteSpace(_newNoteSourceId) ? "einsatzleitung" : _newNoteSourceId;
         var (sourceId, sourceName, createdBy) = ResolveSelectedSource(selectedSource);
@@ -1629,8 +1612,6 @@ public partial class EinsatzMonitor
             "Notiz",
             GlobalNotesEntryType.Manual,
             createdBy);
-
-        _isNoteFormExpanded = false;
     }
 
     private async Task AddReplyAsync(string noteId)
@@ -1652,27 +1633,7 @@ public partial class EinsatzMonitor
             createdBy);
 
         _replyTexts[noteId] = string.Empty;
-    }
-
-    private async Task ToggleHistoryAsync(string noteId)
-    {
-        var show = !_historyVisible.TryGetValue(noteId, out var isVisible) || !isVisible;
-        _historyVisible[noteId] = show;
-
-        if (show)
-        {
-            _historyCache[noteId] = await EinsatzService.GetNoteHistoryAsync(noteId);
-        }
-    }
-
-    private bool IsHistoryVisible(string noteId)
-    {
-        return _historyVisible.TryGetValue(noteId, out var value) && value;
-    }
-
-    private List<GlobalNotesHistory> GetHistoryEntries(string noteId)
-    {
-        return _historyCache.TryGetValue(noteId, out var entries) ? entries : new List<GlobalNotesHistory>();
+        _replyVisible[noteId] = false;
     }
 
     private string GetReplyText(string noteId)
@@ -1698,6 +1659,17 @@ public partial class EinsatzMonitor
     private void SetReplySourceId(string noteId, string? sourceId)
     {
         _replySourceIds[noteId] = string.IsNullOrWhiteSpace(sourceId) ? "einsatzleitung" : sourceId;
+    }
+
+    private void ToggleReplyForm(string noteId)
+    {
+        var isVisible = _replyVisible.TryGetValue(noteId, out var v) && v;
+        _replyVisible[noteId] = !isVisible;
+    }
+
+    private bool IsReplyFormVisible(string noteId)
+    {
+        return _replyVisible.TryGetValue(noteId, out var v) && v;
     }
 
     private (string SourceId, string SourceName, string CreatedBy) ResolveSelectedSource(string sourceId)

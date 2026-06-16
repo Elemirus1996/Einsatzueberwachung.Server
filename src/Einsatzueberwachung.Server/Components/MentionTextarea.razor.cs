@@ -80,6 +80,9 @@ public partial class MentionTextarea : ComponentBase, IAsyncDisposable
             ? await JS.InvokeAsync<int>("mentionTextarea.getCaretPosition", _textareaRef)
             : text.Length;
 
+        // caretPos can be stale if the user typed quickly while the JS call was in flight
+        caretPos = Math.Clamp(caretPos, 0, text.Length);
+
         var atIdx = FindAtIndex(text, caretPos);
         if (atIdx >= 0)
         {
