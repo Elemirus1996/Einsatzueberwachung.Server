@@ -396,8 +396,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 .monitor-dash-header {
     position: sticky;
     top: 0;
-    z-index: 50;
-    background: var(--bs-body-bg);
+    z-index: var(--z-sticky, 1020);
+    background: var(--ui-surface);
     border-bottom: none;
     box-shadow: 0 1px 8px color-mix(in srgb, var(--theme-primary) 12%, rgba(0, 0, 0, 0.1));
     padding: 0.5rem 1rem;
@@ -434,7 +434,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    background: color-mix(in srgb, var(--theme-primary) 4%, var(--bs-secondary-bg));
+    background: color-mix(in srgb, var(--theme-primary) 4%, var(--ui-surface-2));
 }
 
 /* ── Panel-Positionen (relative Breiten) ────────────────────────── */
@@ -620,8 +620,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     gap: 0.6rem;
     padding: 0.4rem 0.5rem;
     border-radius: 0.25rem;
-    background: var(--bs-tertiary-bg);
-    border: 1px solid var(--bs-border-color);
+    background: var(--ui-surface-2);
+    border: 1px solid var(--ui-border);
 }
 
 .suchgebiet-row.suchgebiet-done {
@@ -709,7 +709,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     align-items: center;
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--bs-body-color);
+    color: var(--ui-text);
     gap: 0.25rem;
 }
 
@@ -730,21 +730,21 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 .monitor-szenario-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 1049;
+    z-index: var(--z-backdrop, 1049);
     background: transparent;
 }
 .monitor-szenario-menu {
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
-    z-index: 1050;
+    z-index: var(--z-dropdown, 1050);
     min-width: 220px;
     margin: 0;
     padding: 4px 0;
     list-style: none;
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    border: 1px solid var(--bs-border-color);
+    background: var(--ui-surface);
+    color: var(--ui-text);
+    border: 1px solid var(--ui-border);
     border-radius: 6px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
@@ -763,7 +763,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 .monitor-szenario-item:hover,
 .monitor-szenario-item:focus {
-    background: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.05));
+    background: var(--ui-surface-2);
 }
 .monitor-szenario-item.active {
     background: color-mix(in srgb, var(--theme-primary) 20%, var(--ui-surface));
@@ -866,9 +866,9 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    border: 1px solid var(--bs-border-color);
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
+    border: 1px solid var(--ui-border);
+    background: var(--ui-surface);
+    color: var(--ui-text);
     font-size: 12px;
     font-weight: 600;
     display: inline-flex;
@@ -878,7 +878,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     line-height: 1;
 }
 .vermissten-panel-tab:hover {
-    background: var(--bs-tertiary-bg, rgba(0,0,0,.04));
+    background: var(--ui-surface-2);
 }
 .vermissten-panel-tab.active {
     background: var(--theme-primary);
@@ -888,7 +888,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 .vermissten-panel-tab-add {
     border-style: dashed;
-    color: var(--bs-secondary-color, #6c757d);
+    color: var(--ui-muted);
 }
 
 [data-intensity="dezent"] .monitor-szenario-btn {

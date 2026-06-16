@@ -98,10 +98,6 @@
         text-align: center;
     }
 
-    .timer-display {
-        font-size: 2rem;
-    }
-
     .team-card-bottom {
         justify-content: center;
     }
@@ -223,10 +219,6 @@
     
     .header-actions .btn {
         flex: 1;
-    }
-    
-    .timer-display {
-        font-size: 2.5rem;
     }
     
     .einsatz-meta {

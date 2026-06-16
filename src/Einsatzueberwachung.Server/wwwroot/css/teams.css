@@ -777,25 +777,6 @@
     margin-bottom: 1.5rem;
 }
 
-.timer-display {
-    font-size: 3rem;
-    font-weight: 900;
-    font-family: 'JetBrains Mono', 'Courier New', 'Consolas', monospace;
-    letter-spacing: 0.1em;
-    color: var(--success-color);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.timer-display.warning {
-    color: var(--warning-color);
-}
-
-.timer-display.critical {
-    color: var(--danger-color);
-    animation: blink-timer 1s infinite;
-}
-
-
 .warning-badge {
     display: inline-block;
     margin-top: 0.75rem;

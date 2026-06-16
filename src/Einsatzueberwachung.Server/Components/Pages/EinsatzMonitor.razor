@@ -79,15 +79,15 @@
     else
     {
 
-    <div id="monitor-dashboard-grid" class="monitor-dashboard-grid">
+    <main id="monitor-dashboard-grid" class="monitor-dashboard-grid" aria-label="Einsatz-Dashboard">
         @foreach (var panel in _currentLayout.Where(p => p.IsVisible))
         {
             <div @key="panel.PanelId"
                  class="dashboard-panel-wrapper"
                  data-panel-id="@panel.PanelId">
-                <div class="dashboard-panel">
+                <section class="dashboard-panel" aria-labelledby="panel-title-@panel.PanelId">
                     <div class="dashboard-panel-header @(panel.PanelId == KnownPanels.Teams && EinsatzService.Teams.Count > 0 ? "dashboard-panel-header--teams" : "")">
-                        <h2 class="dashboard-panel-title">@PanelLabel(panel.PanelId)</h2>
+                        <h2 class="dashboard-panel-title" id="panel-title-@panel.PanelId">@PanelLabel(panel.PanelId)</h2>
                         @if (panel.PanelId == KnownPanels.Teams)
                         {
                             @if (EinsatzService.Teams.Count > 0)
@@ -627,10 +627,10 @@
                     break;
                         }
                     </div>
-                </div>
+                </section>
             </div>
         }
-    </div>
+    </main>
     }
 </div>
 
