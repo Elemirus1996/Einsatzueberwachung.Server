@@ -29,6 +29,32 @@ window.themeSync = (() => {
             t && ((t.id ?? t.Id) === preset));
     }
 
+    // WCAG relative luminance of a #rrggbb / #rgb color (0 = black, 1 = white).
+    function relativeLuminance(hex) {
+        const h = (hex ?? "").toString().replace("#", "").trim();
+        const full = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+        if (full.length < 6) {
+            return 0;
+        }
+        const channel = (start) => {
+            const c = parseInt(full.substr(start, 2), 16) / 255;
+            return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        };
+        return 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
+    }
+
+    // Pick dark or light ink for text on a filled brand color — whichever has
+    // the higher WCAG contrast. Works for any preset or custom theme.
+    function onColorFor(hex, dark = "#0f1720", light = "#ffffff") {
+        try {
+            const bg = relativeLuminance(hex);
+            const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+            return ratio(bg, relativeLuminance(dark)) > ratio(bg, relativeLuminance(light)) ? dark : light;
+        } catch (e) {
+            return light;
+        }
+    }
+
     function normalizePreset(value) {
         if (typeof value !== "string") {
             return defaultState.preset;
@@ -173,6 +199,8 @@ window.themeSync = (() => {
         }
         setStyleVariableOnThemeRoots("--primary-color", palette.primary);
         setStyleVariableOnThemeRoots("--secondary-color", palette.secondary);
+        setStyleVariableOnThemeRoots("--theme-on-accent", onColorFor(palette.primary));
+        setStyleVariableOnThemeRoots("--theme-on-secondary", onColorFor(palette.secondary));
     }
 
     function emitThemeChanged() {

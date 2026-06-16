@@ -39,7 +39,8 @@
 }
 
 .badge-einsatz {
-    background: rgba(244, 67, 54, 0.9);
+    background: var(--danger-fill);
+    color: var(--danger-on-fill);
     padding: 0.5rem 1.5rem;
     border-radius: 20px;
     font-weight: 700;
@@ -51,7 +52,7 @@
 
 .badge-uebung {
     background: var(--signal-warning-hue);
-    color: var(--theme-on-accent);
+    color: var(--warning-on-fill);
     padding: 0.5rem 1.5rem;
     border-radius: 20px;
     font-weight: 700;
@@ -219,8 +220,8 @@
 }
 
 .modal-close-mission-header {
-    background: linear-gradient(135deg, #8d1e2b 0%, #bf2434 100%);
-    color: #fef6f7;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--danger-color) 80%, #000000) 0%, var(--danger-color) 100%);
+    color: var(--danger-on-fill);
     border-bottom-color: rgba(255, 255, 255, 0.18);
 }
 
@@ -235,13 +236,13 @@
 
 .modal-close-mission .btn-outline-light {
     border-color: rgba(255, 255, 255, 0.4);
-    color: #fff;
+    color: var(--danger-on-fill);
 }
 
 .modal-close-mission .btn-outline-light:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.6);
-    color: #fff;
+    color: var(--danger-on-fill);
 }
 
 .monitor-checklist-scroll {
@@ -391,37 +392,6 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     overflow: hidden;
 }
 
-/* Sticky Kopfzeile */
-.monitor-dash-header {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: var(--bs-body-bg);
-    border-bottom: none;
-    box-shadow: 0 1px 8px color-mix(in srgb, var(--theme-primary) 12%, rgba(0, 0, 0, 0.1));
-    padding: 0.5rem 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-}
-
-.monitor-dash-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.monitor-dash-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
 /* CSS-Grid 12-spaltig */
 .monitor-dashboard-grid {
     display: grid;
@@ -433,42 +403,82 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    background: color-mix(in srgb, var(--theme-primary) 4%, var(--bs-secondary-bg));
+    background: color-mix(in srgb, var(--theme-primary) 4%, var(--ui-surface-2));
 }
 
 /* ── Panel-Positionen (relative Breiten) ────────────────────────── */
 
-/* Zeile 1: Info (3) | Vermissten (3) | Wetter (3) */
+/* Notizen: feste rechte Spalte über beide Zeilen — EXPLIZIT verankert
+   (Start-Zeile UND Start-Spalte). Ohne festen Zeilenstart platziert der
+   Grid-Algorithmus das rowspan-2-Panel beim Ein-/Ausblenden anderer Panels
+   in eine andere Zeile, wodurch die übrigen Panels verrutschen und
+   unterschiedlich hoch erscheinen. */
+[data-panel-id="notizen"]      { grid-column: 10 / span 3; grid-row: 1 / span 2; }
+
+/* Komplette Info-Zeile ausgeblendet: Notizen NICHT mehr über beide Zeilen
+   spannen, sonst ragt es um die (leere) Zeile 1 + Row-Gap über Teams/Suchgebiete
+   hinaus. Stattdessen nur Zeile 2 belegen → bündig mit der Arbeitszeile. */
+.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"] {
+    grid-row: 2;
+}
+
+/* Zeile 1: Info | Vermissten | Wetter (je 3 Spalten neben Notizen) */
 [data-panel-id="einsatz-info"] { grid-column: span 3; grid-row: 1; }
 [data-panel-id="vermissten"]   { grid-column: span 3; grid-row: 1; }
 [data-panel-id="wetter"]       { grid-column: span 3; grid-row: 1; }
-
-/* Notizen: rechte Spalte, überspannt beide Zeilen */
-[data-panel-id="notizen"]      { grid-column: span 3; grid-row: span 2; }
 
 /* Zeile 2: Teams (default 9 Sp.) | Suchgebiete (3 Sp.) */
 [data-panel-id="teams"]        { grid-column: span 9; grid-row: 2; }
 [data-panel-id="suchgebiete"]  { grid-column: span 3; grid-row: 2; }
 
-/* Suchgebiete sichtbar: Teams auf 6 Spalten */
+/* Suchgebiete sichtbar: Teams auf 6 Spalten (Notizen belegt 3) */
 .monitor-dashboard-grid:has([data-panel-id="suchgebiete"]) [data-panel-id="teams"] {
     grid-column: span 6;
 }
+/* Teams ausgeblendet, Suchgebiete sichtbar: Suchgebiete füllt die Arbeitszeile */
+.monitor-dashboard-grid:not(:has([data-panel-id="teams"])) [data-panel-id="suchgebiete"] {
+    grid-column: span 9;
+}
 
-/* Notizen ausgeblendet: Zeile-1-Panels auf 4 Spalten, Teams/Suchgebiete auf volle Breite */
+/* ── Zeile-1-Lücken füllen, wenn Info-Panels ausgeblendet werden (Notizen sichtbar) ──
+   Frei sind 9 Spalten. Zwei sichtbar → 5 + 4, eins sichtbar → 9. */
+.monitor-dashboard-grid:not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 5; }
+.monitor-dashboard-grid:not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"]   { grid-column: span 4; }
+.monitor-dashboard-grid:not(:has([data-panel-id="vermissten"])) [data-panel-id="einsatz-info"] { grid-column: span 5; }
+.monitor-dashboard-grid:not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"]      { grid-column: span 4; }
+.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])) [data-panel-id="vermissten"] { grid-column: span 5; }
+.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])) [data-panel-id="wetter"]     { grid-column: span 4; }
+.monitor-dashboard-grid:not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 9; }
+.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"] { grid-column: span 9; }
+.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"] { grid-column: span 9; }
+
+/* ── Notizen ausgeblendet: volle 12 Spalten pro Zeile ── */
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="einsatz-info"] { grid-column: span 4; }
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="vermissten"]   { grid-column: span 4; }
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="wetter"]       { grid-column: span 4; }
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="teams"]        { grid-column: span 12; }
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"]  { grid-column: span 4; }
 
-/* Suchgebiete + kein Notizen: Teams 8 Sp., Suchgebiete 4 Sp. */
+/* Suchgebiete sichtbar (ohne Notizen): Teams 8 Sp., Suchgebiete 4 Sp. */
 .monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="teams"] {
     grid-column: span 8;
 }
-.monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
-    grid-column: span 4;
+/* Teams ausgeblendet (ohne Notizen): Suchgebiete volle Breite */
+.monitor-dashboard-grid:not(:has([data-panel-id="teams"])):not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
+    grid-column: span 12;
 }
+
+/* Zwei Info-Panels (ohne Notizen) → 6 + 6 */
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 6; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"]   { grid-column: span 6; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="einsatz-info"] { grid-column: span 6; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"]      { grid-column: span 6; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])) [data-panel-id="vermissten"] { grid-column: span 6; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])) [data-panel-id="wetter"]      { grid-column: span 6; }
+/* Ein Info-Panel (ohne Notizen) → volle 12 */
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 12; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"] { grid-column: span 12; }
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"] { grid-column: span 12; }
 
 /* Panel-Wrapper & Panel */
 .dashboard-panel-wrapper {
@@ -481,11 +491,11 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 .dashboard-panel {
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--bs-border-color);
+    border: 1px solid var(--ui-border);
     border-top: 3px solid var(--primary-color);
     border-radius: 0.5rem;
     overflow: hidden;
-    background: var(--bs-body-bg);
+    background: var(--ui-surface);
     height: 100%;
     box-shadow: 0 1px 4px color-mix(in srgb, var(--theme-primary) 8%, rgba(0, 0, 0, 0.07));
     transition: box-shadow 0.15s ease;
@@ -513,24 +523,24 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-height: 2.75rem;
     padding: 0.4rem 0.75rem;
-    background: var(--bs-tertiary-bg);
-    border-bottom: 1px solid var(--bs-border-color);
+    background: var(--ui-card-header-bg);
+    border-bottom: 1px solid var(--ui-card-header-border);
     flex-shrink: 0;
     overflow: hidden;
 }
 
 .dashboard-panel-title {
     font-weight: 600;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--bs-secondary-color);
+    font-size: 0.9rem;
+    letter-spacing: 0.005em;
+    color: var(--ui-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1;
-    white-space: nowrap;
+    margin: 0;
 }
 
 .dashboard-panel-body {
@@ -557,18 +567,31 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     text-align: center;
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
-    background: var(--bs-tertiary-bg);
+    background: var(--ui-surface-2);
     min-width: 3.2rem;
 }
 
 .forecast-critical {
-    background: var(--bs-danger-bg-subtle);
-    color: var(--bs-danger-text-emphasis);
+    background: var(--danger-soft);
+    color: var(--danger-color);
+    border: 1px solid var(--danger-border);
 }
 
 .forecast-warning {
-    background: var(--bs-warning-bg-subtle);
-    color: var(--bs-warning-text-emphasis);
+    background: var(--warning-soft);
+    color: var(--warning-color);
+    border: 1px solid var(--warning-border);
+}
+
+/* Second channel for risk — never color alone. A leading marker keeps the
+   warning/critical state legible under colorblindness and bright sunlight. */
+.forecast-warning::before,
+.forecast-critical::before {
+    content: "\26A0";
+    display: block;
+    font-size: 0.7rem;
+    line-height: 1;
+    margin-bottom: 0.05rem;
 }
 
 /* Team-Notizen Badge */
@@ -577,13 +600,20 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     align-items: flex-start;
     gap: 0.25rem;
     padding: 0.25rem 0.5rem;
-    background: var(--bs-warning-bg-subtle);
-    border-left: 3px solid var(--bs-warning);
-    border-radius: 0 0.25rem 0.25rem 0;
+    background: var(--warning-soft);
+    border: 1px solid var(--warning-border);
+    border-radius: 0.25rem;
     font-size: 0.8rem;
     line-height: 1.4;
     max-height: 3.5rem;
     overflow: hidden;
+}
+
+/* Reply thread — full subtle box instead of a side stripe */
+.monitor-reply-thread {
+    border: 1px solid var(--ui-border);
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--ui-muted) 6%, transparent);
 }
 
 /* Suchgebiete-Panel */
@@ -599,8 +629,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     gap: 0.6rem;
     padding: 0.4rem 0.5rem;
     border-radius: 0.25rem;
-    background: var(--bs-tertiary-bg);
-    border: 1px solid var(--bs-border-color);
+    background: var(--ui-surface-2);
+    border: 1px solid var(--ui-border);
 }
 
 .suchgebiet-row.suchgebiet-done {
@@ -688,14 +718,19 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     align-items: center;
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--bs-body-color);
+    color: var(--ui-text);
     gap: 0.25rem;
 }
 
 /* Szenario-Dropdown im EinsatzMonitor-Header */
 .monitor-szenario-wrap {
     position: relative;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    /* Separator: status badges (readout) → szenario button (control) */
+    margin-left: 0.2rem;
+    padding-left: 0.55rem;
+    border-left: 1px solid var(--ui-topbar-border);
 }
 .monitor-szenario-btn {
     cursor: pointer;
@@ -709,21 +744,21 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 .monitor-szenario-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 1049;
+    z-index: var(--z-backdrop, 1049);
     background: transparent;
 }
 .monitor-szenario-menu {
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
-    z-index: 1050;
+    z-index: var(--z-dropdown, 1050);
     min-width: 220px;
     margin: 0;
     padding: 4px 0;
     list-style: none;
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    border: 1px solid var(--bs-border-color);
+    background: var(--ui-surface);
+    color: var(--ui-text);
+    border: 1px solid var(--ui-border);
     border-radius: 6px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
@@ -742,7 +777,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 .monitor-szenario-item:hover,
 .monitor-szenario-item:focus {
-    background: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.05));
+    background: var(--ui-surface-2);
 }
 .monitor-szenario-item.active {
     background: color-mix(in srgb, var(--theme-primary) 20%, var(--ui-surface));
@@ -845,9 +880,9 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    border: 1px solid var(--bs-border-color);
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
+    border: 1px solid var(--ui-border);
+    background: var(--ui-surface);
+    color: var(--ui-text);
     font-size: 12px;
     font-weight: 600;
     display: inline-flex;
@@ -857,17 +892,16 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     line-height: 1;
 }
 .vermissten-panel-tab:hover {
-    background: var(--bs-tertiary-bg, rgba(0,0,0,.04));
+    background: var(--ui-surface-2);
 }
 .vermissten-panel-tab.active {
     background: var(--theme-primary);
     border-color: var(--theme-primary-border);
     color: var(--theme-on-accent);
-    color: #fff;
 }
 .vermissten-panel-tab-add {
     border-style: dashed;
-    color: var(--bs-secondary-color, #6c757d);
+    color: var(--ui-muted);
 }
 
 [data-intensity="dezent"] .monitor-szenario-btn {

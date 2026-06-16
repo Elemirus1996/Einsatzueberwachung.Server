@@ -3,7 +3,7 @@
     height: calc(100vh - 220px);
     min-height: 500px;
     background: color-mix(in srgb, var(--theme-secondary) 42%, var(--ui-surface, #1f1f1f));
-    border: 1px solid var(--bs-border-color);
+    border: 1px solid var(--ui-border);
     border-radius: 6px;
 }
 

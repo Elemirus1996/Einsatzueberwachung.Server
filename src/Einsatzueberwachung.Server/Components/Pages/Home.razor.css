@@ -69,18 +69,18 @@
 .home-status-band.is-calm {
     color: var(--success-color);
     border-color: var(--success-border, var(--success-color));
-    background: var(--bs-success-bg-subtle, rgba(25, 135, 84, .1));
+    background: var(--success-soft);
 }
 
 .home-status-band.is-active {
     color: var(--primary-color);
-    border-color: var(--bs-primary-border-subtle, var(--primary-color));
-    background: var(--bs-primary-bg-subtle, rgba(13, 110, 253, .1));
+    border-color: var(--theme-primary-border);
+    background: var(--theme-primary-soft);
     font-weight: 600;
 }
 
 .home-status-band.is-alarm {
-    color: #fff;
+    color: var(--danger-on-fill);
     border-color: var(--danger-color);
     background: var(--danger-color);
     font-weight: 600;
@@ -88,7 +88,7 @@
 }
 
 .home-status-band.is-alarm .home-status-pulse {
-    background: #fff;
+    background: var(--danger-on-fill);
     animation: home-pulse-fast 1.2s ease-in-out infinite;
 }
 
@@ -109,7 +109,7 @@
 
 [data-intensity="lebhaft"] .home-status-band.is-alarm,
 [data-intensity="lebhaft"] .home-action-btn--alarm {
-    box-shadow: 0 0 0 0 rgba(220, 53, 69, .44);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger-color) 44%, transparent);
     animation: home-alarm-btn-pulse 1s ease-in-out infinite;
     border-width: 2px;
 }
@@ -173,7 +173,7 @@
 
 .home-note-del:hover {
     color: var(--danger-color);
-    background: var(--bs-danger-bg-subtle, rgba(220, 53, 69, .1));
+    background: var(--danger-soft);
 }
 
 /* -- Timeline (Letzte Lagen) -------------------------------- */
@@ -213,12 +213,12 @@
 
 .home-timeline-item.is-einsatz .home-timeline-dot {
     border-color: var(--danger-color);
-    background: var(--bs-danger-bg-subtle, rgba(220, 53, 69, .15));
+    background: var(--danger-soft);
 }
 
 .home-timeline-item.is-uebung .home-timeline-dot {
     border-color: var(--primary-color);
-    background: var(--bs-primary-bg-subtle, rgba(13, 110, 253, .1));
+    background: var(--theme-primary-soft);
 }
 
 .home-timeline-title {
@@ -284,13 +284,13 @@
 }
 
 @keyframes home-alarm-band-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, .5); }
-    50%      { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger-color) 50%, transparent); }
+    50%      { box-shadow: 0 0 0 10px transparent; }
 }
 
 @keyframes home-alarm-btn-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, .55); }
-    50%      { box-shadow: 0 0 0 14px rgba(220, 53, 69, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger-color) 55%, transparent); }
+    50%      { box-shadow: 0 0 0 14px transparent; }
 }
 
 /* -- Mobile ------------------------------------------------- */

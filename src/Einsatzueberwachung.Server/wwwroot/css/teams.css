@@ -203,7 +203,7 @@
 .tc-time {
     font-size: 2.2rem;
     font-weight: 700;
-    font-family: 'Cascadia Code', 'Fira Code', 'SF Mono', 'Consolas', monospace;
+    font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'SF Mono', 'Consolas', monospace;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     line-height: 1;
@@ -219,7 +219,7 @@
 .tc-time--pausing {
     font-size: 1.75rem;
     font-weight: 700;
-    font-family: 'Cascadia Code', 'Fira Code', 'SF Mono', 'Consolas', monospace;
+    font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'SF Mono', 'Consolas', monospace;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     line-height: 1;
@@ -485,16 +485,95 @@
 
 /* ── Teams panel header with filter chips ───────────────────────────────── */
 .dashboard-panel-header--teams {
-    flex-wrap: wrap;
-    row-gap: 0.35rem;
+    flex-wrap: nowrap;
     align-items: center;
 }
 
-.teams-header-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
+/* Single funnel button collapses the five status segments into a dropdown so
+   the Teams header stops competing with the team status colours below it. */
+.teams-filter-trigger {
+    display: inline-flex;
     align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.teams-filter-trigger.is-filtered {
+    border-color: var(--theme-primary);
+    color: var(--ui-text);
+}
+
+.teams-filter-trigger-label {
+    font-weight: 600;
+}
+
+.teams-filter-dropdown {
+    min-width: 190px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.teams-filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--ui-text);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.4rem 0.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease;
+}
+
+.teams-filter-option:hover {
+    background: var(--ui-surface-2);
+}
+
+.teams-filter-option.active {
+    background: color-mix(in srgb, var(--theme-primary) 14%, transparent);
+    font-weight: 600;
+}
+
+.teams-filter-option-icon {
+    width: 14px;
+    text-align: center;
+    color: var(--ui-muted);
+    flex-shrink: 0;
+}
+
+.teams-filter-option-label {
+    flex: 1;
+}
+
+.teams-filter-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.teams-filter-dot--running { background: var(--success-color); }
+.teams-filter-dot--pausing { background: var(--warning-color); }
+.teams-filter-dot--ready { background: var(--ui-muted); }
+.teams-filter-dot--critical { background: var(--danger-color); }
+
+.teams-filter-count {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.05em 0.4em;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ui-muted) 18%, transparent);
+    color: var(--ui-text);
+}
+
+.teams-filter-option.active .teams-filter-count {
+    background: color-mix(in srgb, var(--theme-primary) 18%, transparent);
 }
 
 /* Extra-small button variant for panel headers */
@@ -503,6 +582,10 @@
     padding: 0.1rem 0.4rem;
     line-height: 1.5;
     border-radius: 5px;
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn.btn-xs .badge {
@@ -772,25 +855,6 @@
     border-radius: 12px;
     margin-bottom: 1.5rem;
 }
-
-.timer-display {
-    font-size: 3rem;
-    font-weight: 900;
-    font-family: 'Courier New', 'Consolas', monospace;
-    letter-spacing: 0.1em;
-    color: var(--success-color);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.timer-display.warning {
-    color: var(--warning-color);
-}
-
-.timer-display.critical {
-    color: var(--danger-color);
-    animation: blink-timer 1s infinite;
-}
-
 
 .warning-badge {
     display: inline-block;

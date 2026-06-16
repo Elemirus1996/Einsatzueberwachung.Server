@@ -350,12 +350,13 @@
 
 ::deep .es-pill.is-active {
     background: var(--primary-color);
-    color: #fff;
+    color: var(--theme-on-accent);
     font-weight: 600;
 }
 
 ::deep .es-pill.is-active.is-active-danger {
     background: var(--danger-color);
+    color: var(--danger-on-fill);
 }
 
 ::deep .es-pill + .es-pill {
@@ -484,7 +485,7 @@
 
 ::deep .es-start-btn {
     background: var(--danger-color);
-    color: #fff;
+    color: var(--danger-on-fill);
     border: none;
     border-radius: 8px;
     padding: 0.85rem 1rem;
@@ -579,7 +580,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.32);
-    z-index: 1040;
+    z-index: var(--z-backdrop, 1049);
     animation: es-fade-in 0.16s ease;
 }
 
@@ -593,7 +594,7 @@
     background: var(--ui-surface);
     border-left: 1px solid var(--ui-border);
     box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
-    z-index: 1041;
+    z-index: var(--z-modal, 1055);
     display: flex;
     flex-direction: column;
     animation: es-slide-in 0.18s ease;

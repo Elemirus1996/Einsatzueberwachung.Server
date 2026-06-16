@@ -3,6 +3,8 @@ using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Domain.Models.Merge;
 using Einsatzueberwachung.Server.Components;
+using Einsatzueberwachung.Server.Components.Shared;
+using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -20,6 +22,7 @@ public partial class EinsatzMonitor
     [Inject] ITimeService TimeService { get; set; } = default!;
     [Inject] ICollarTrackingService CollarTrackingService { get; set; } = default!;
     [Inject] IDashboardLayoutService DashboardLayoutService { get; set; } = default!;
+    [Inject] MissionTopbarService MissionTopbar { get; set; } = default!;
     [Inject] IJSRuntime JS { get; set; } = default!;
     [Inject] NavigationManager Navigation { get; set; } = default!;
 
@@ -37,6 +40,7 @@ public partial class EinsatzMonitor
     private string _newNoteText = string.Empty;
     private string _newNoteType = "Notiz";
     private string _newNoteSourceId = "einsatzleitung";
+    private bool _showQuickNoteDropdown;
     private string? _editingTeamId;
     private string _teamFormMessage = string.Empty;
     private bool _teamFormIsError;
@@ -109,9 +113,9 @@ public partial class EinsatzMonitor
 
     // Dashboard-Layout
     private List<DashboardPanelConfig> _currentLayout = new();
-    private bool _showPanelPicker;
     private readonly HashSet<string> _expandedTeamIds = new();
     private TeamStatusFilter _teamStatusFilter = TeamStatusFilter.All;
+    private bool _showTeamFilter;
 
     // Screensaver (kein aktiver Einsatz)
     private System.Threading.Timer? _screensaverClockTimer;
@@ -185,6 +189,7 @@ public partial class EinsatzMonitor
         await LoadMasterDataAsync();
         LoadQuickNoteTemplates();
         _currentLayout = await DashboardLayoutService.LoadLayoutAsync(EinsatzService.CurrentEinsatz.Fuehrungsassistent);
+        UpdateMissionTopbar();
         await RefreshMonitorWeatherAsync(forceGeocoding: true);
         StartWeatherRefreshTimer();
         StartDurationRefreshTimer();
@@ -223,12 +228,32 @@ public partial class EinsatzMonitor
         EinsatzService.NoteAdded -= OnNoteAdded;
         CollarTrackingService.CollarLocationReceived -= OnCollarLocationChanged;
         CollarTrackingService.CollarHistoryCleared -= OnCollarHistoryChanged;
+        MissionTopbar.ClearContent(this);
         _weatherRefreshTimer?.Dispose();
         _durationRefreshTimer?.Dispose();
         _screensaverClockTimer?.Dispose();
     }
 
     // ===== Dashboard-Layout-Methoden =====
+
+    private void UpdateMissionTopbar()
+    {
+        if (HasActiveEinsatz)
+        {
+            MissionTopbar.SetContent(this, builder =>
+            {
+                builder.OpenComponent<MonitorPanelsMenu>(0);
+                builder.AddAttribute(1, nameof(MonitorPanelsMenu.Layout), _currentLayout);
+                builder.AddAttribute(2, nameof(MonitorPanelsMenu.OnTogglePanel),
+                    EventCallback.Factory.Create<string>(this, TogglePanelVisibleAsync));
+                builder.CloseComponent();
+            });
+        }
+        else
+        {
+            MissionTopbar.ClearContent(this);
+        }
+    }
 
     private async Task TogglePanelVisibleAsync(string panelId)
     {
@@ -442,6 +467,7 @@ public partial class EinsatzMonitor
     {
         _ = InvokeAsync(async () =>
         {
+            UpdateMissionTopbar();
             await RefreshMonitorWeatherAsync(forceGeocoding: true);
             StateHasChanged();
         });
@@ -697,10 +723,29 @@ public partial class EinsatzMonitor
         Critical
     }
 
-    private void SetTeamStatusFilter(TeamStatusFilter filter)
+    private void SelectTeamFilter(TeamStatusFilter filter)
     {
         _teamStatusFilter = filter;
+        _showTeamFilter = false;
     }
+
+    private static string TeamFilterLabel(TeamStatusFilter filter) => filter switch
+    {
+        TeamStatusFilter.Running => "Aktiv",
+        TeamStatusFilter.Pausing => "Pause",
+        TeamStatusFilter.Ready => "Bereit",
+        TeamStatusFilter.Critical => "Kritisch",
+        _ => "Alle"
+    };
+
+    private static string TeamFilterDotClass(TeamStatusFilter filter) => filter switch
+    {
+        TeamStatusFilter.Running => "teams-filter-dot--running",
+        TeamStatusFilter.Pausing => "teams-filter-dot--pausing",
+        TeamStatusFilter.Ready => "teams-filter-dot--ready",
+        TeamStatusFilter.Critical => "teams-filter-dot--critical",
+        _ => string.Empty
+    };
 
     private IEnumerable<Team> GetFilteredTeams()
     {
@@ -1665,6 +1710,20 @@ public partial class EinsatzMonitor
     {
         var isVisible = _replyVisible.TryGetValue(noteId, out var v) && v;
         _replyVisible[noteId] = !isVisible;
+    }
+
+    private void CancelReplyForm(string noteId)
+    {
+        _replyVisible[noteId] = false;
+        _replyTexts[noteId] = string.Empty;
+    }
+
+    private void HandleReplyKeyDown(string noteId, KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            CancelReplyForm(noteId);
+        }
     }
 
     private bool IsReplyFormVisible(string noteId)

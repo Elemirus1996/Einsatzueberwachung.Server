@@ -1,0 +1,47 @@
+@using Einsatzueberwachung.Domain.Models
+
+<div class="monitor-panels-menu">
+    <button class="btn btn-sm btn-outline-secondary" type="button"
+            @onclick="Toggle"
+            title="Panels ein-/ausblenden" aria-haspopup="true" aria-expanded="@_open">
+        <i class="bi bi-layout-three-columns me-1"></i>Panels
+    </button>
+    @if (_open)
+    {
+        <div class="monitor-panels-dropdown">
+            @foreach (var panel in Layout)
+            {
+                <button class="btn btn-sm w-100 text-start d-flex align-items-center gap-2 mb-1"
+                        type="button"
+                        @onclick="() => TogglePanelAsync(panel.PanelId)"
+                        @onclick:stopPropagation="true">
+                    <i class="bi @(panel.IsVisible ? "bi-toggle-on text-success" : "bi-toggle-off text-secondary") fs-5"></i>
+                    @Label(panel.PanelId)
+                </button>
+            }
+        </div>
+        <button type="button"
+                class="monitor-panels-backdrop"
+                @onclick="Close"
+                aria-label="Panel-Menü schließen"></button>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<DashboardPanelConfig> Layout { get; set; } = Array.Empty<DashboardPanelConfig>();
+    [Parameter] public EventCallback<string> OnTogglePanel { get; set; }
+
+    private bool _open;
+
+    private void Toggle() => _open = !_open;
+
+    private void Close() => _open = false;
+
+    private static string Label(string panelId) =>
+        KnownPanels.Labels.TryGetValue(panelId, out var label) ? label : panelId;
+
+    private async Task TogglePanelAsync(string panelId)
+    {
+        await OnTogglePanel.InvokeAsync(panelId);
+    }
+}

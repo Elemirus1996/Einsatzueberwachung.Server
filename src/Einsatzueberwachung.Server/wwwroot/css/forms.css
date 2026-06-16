@@ -70,6 +70,15 @@ a.list-group-item {
     align-items: center;
 }
 
+/* List-Group: aktiver Eintrag in Markenfarbe statt Bootstrap-Blau (#0d6efd).
+   Auf-Farbe luminanzbasiert (--theme-on-accent) → lesbar unter NRW/Ruhr/Custom.
+   Kontext-Varianten (.list-group-item-primary etc.) überschreiben pro Item. */
+.list-group {
+    --bs-list-group-active-bg: var(--theme-primary);
+    --bs-list-group-active-border-color: var(--theme-primary);
+    --bs-list-group-active-color: var(--theme-on-accent);
+}
+
 /* Mobile Spacing für bessere Touch-Bereiche */
 @media (max-width: 768px) {
     .btn {
@@ -157,8 +166,8 @@ textarea:focus {
 }
 
 [data-intensity="lebhaft"] .btn-secondary {
-    /* solid secondary bg in lebhaft mode → needs on-accent contrast */
-    color: var(--theme-on-accent);
+    /* solid secondary bg in lebhaft mode → secondary may be light (Ruhr yellow), use its own on-color */
+    color: var(--theme-on-secondary);
 }
 
 .btn-success {

@@ -3,7 +3,9 @@
     --lage-bg: color-mix(in srgb, var(--theme-secondary) 58%, #0e1418 42%);
     --lage-surface: color-mix(in srgb, var(--theme-secondary) 46%, #131a20 54%);
     --lage-surface-strong: color-mix(in srgb, var(--theme-secondary) 42%, #182027 58%);
-    --lage-ink: color-mix(in srgb, var(--ui-text, #e6eef2) 88%, #f7fbff 12%);
+    /* Die Lagewand ist konzeptionell IMMER dunkel (bg mit #0e1418 verankert).
+       Daher fixe helle Schrift statt --ui-text, das im Light-Theme dunkel umschlägt. */
+    --lage-ink: color-mix(in srgb, #e6eef2 88%, #f7fbff 12%);
     --lage-ink-muted: color-mix(in srgb, var(--lage-ink) 55%, transparent);
     --lage-ink-dim: color-mix(in srgb, var(--lage-ink) 35%, transparent);
     --lage-line: color-mix(in srgb, var(--lage-ink) 10%, transparent);

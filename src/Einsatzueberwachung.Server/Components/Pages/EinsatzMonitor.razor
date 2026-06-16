@@ -8,48 +8,6 @@
 <PageTitle>Einsatz-Monitor</PageTitle>
 
 <div class="monitor-dashboard-wrapper">
-    @if (HasActiveEinsatz)
-    {
-    <header class="monitor-dash-header">
-        <div class="monitor-dash-title">
-            <span class="text-muted small fw-semibold">Einsatz-Monitor</span>
-        </div>
-        <div class="monitor-dash-actions">
-            <div class="monitor-panel-picker-wrapper">
-                <button class="btn btn-secondary btn-sm" type="button"
-                        @onclick="() => _showPanelPicker = !_showPanelPicker">
-                    <i class="bi bi-layout-three-columns me-1"></i>Panels
-                </button>
-                @if (_showPanelPicker)
-                {
-                    <div class="panel-picker-dropdown">
-                        @foreach (var panel in _currentLayout)
-                        {
-                            <button class="btn btn-sm w-100 text-start d-flex align-items-center gap-2 mb-1"
-                                    @onclick="() => TogglePanelVisibleAsync(panel.PanelId)"
-                                    @onclick:stopPropagation="true">
-                                <i class="bi @(panel.IsVisible ? "bi-toggle-on text-success" : "bi-toggle-off text-secondary") fs-5"></i>
-                                @PanelLabel(panel.PanelId)
-                            </button>
-                        }
-                    </div>
-                    <button type="button"
-                            class="panel-picker-backdrop"
-                            @onclick="() => _showPanelPicker = false"
-                            aria-label="Panel-Menü schließen"></button>
-                }
-            </div>
-            <a class="btn btn-info btn-sm" href="/einsatz-karte">
-                <i class="bi bi-map me-1"></i>Karte
-            </a>
-            <button class="btn btn-outline-success btn-sm" type="button" @onclick="OpenTeamMobileModalAsync" title="QR-Code fuer Team-Smartphones">
-                <i class="bi bi-qr-code me-1"></i>Team-Mobile
-            </button>
-            
-        </div>
-    </header>
-    }
-
     @if (!string.IsNullOrWhiteSpace(_closeMissionStatus))
     {
         <div class="alert @(_closeMissionStatusIsError ? "alert-warning" : "alert-success") mx-2 mb-0 mt-2 py-2">
@@ -79,53 +37,76 @@
     else
     {
 
-    <div id="monitor-dashboard-grid" class="monitor-dashboard-grid">
+    <main id="monitor-dashboard-grid" class="monitor-dashboard-grid" aria-label="Einsatz-Dashboard">
         @foreach (var panel in _currentLayout.Where(p => p.IsVisible))
         {
             <div @key="panel.PanelId"
                  class="dashboard-panel-wrapper"
                  data-panel-id="@panel.PanelId">
-                <div class="dashboard-panel">
+                <section class="dashboard-panel" aria-labelledby="panel-title-@panel.PanelId">
                     <div class="dashboard-panel-header @(panel.PanelId == KnownPanels.Teams && EinsatzService.Teams.Count > 0 ? "dashboard-panel-header--teams" : "")">
-                        <span class="dashboard-panel-title">@PanelLabel(panel.PanelId)</span>
+                        <h2 class="dashboard-panel-title" id="panel-title-@panel.PanelId">@PanelLabel(panel.PanelId)</h2>
                         @if (panel.PanelId == KnownPanels.Teams)
                         {
                             @if (EinsatzService.Teams.Count > 0)
                             {
-                                <div class="teams-header-filters" role="group" aria-label="Teamstatus Filter">
+                                <div class="monitor-panel-picker-wrapper mon-anchor-teamfilter">
                                     <button type="button"
-                                            class="btn btn-xs @(_teamStatusFilter == TeamStatusFilter.All ? "btn-primary" : "btn-outline-primary")"
-                                            @onclick="() => SetTeamStatusFilter(TeamStatusFilter.All)">
-                                        Alle <span class="badge text-bg-light ms-1">@GetTeamCountForFilter(TeamStatusFilter.All)</span>
+                                            class="btn btn-sm btn-outline-secondary teams-filter-trigger @(_teamStatusFilter != TeamStatusFilter.All ? "is-filtered" : "")"
+                                            @onclick="() => _showTeamFilter = !_showTeamFilter"
+                                            aria-haspopup="true" aria-expanded="@_showTeamFilter"
+                                            title="Teams nach Status filtern">
+                                        <i class="bi bi-funnel" aria-hidden="true"></i>
+                                        @if (_teamStatusFilter != TeamStatusFilter.All)
+                                        {
+                                            <span class="teams-filter-dot @TeamFilterDotClass(_teamStatusFilter)" aria-hidden="true"></span>
+                                        }
+                                        <span class="teams-filter-trigger-label">@TeamFilterLabel(_teamStatusFilter)</span>
+                                        <span class="teams-filter-count">@GetTeamCountForFilter(_teamStatusFilter)</span>
                                     </button>
-                                    <button type="button"
-                                            class="btn btn-xs @(_teamStatusFilter == TeamStatusFilter.Running ? "btn-success" : "btn-outline-success")"
-                                            @onclick="() => SetTeamStatusFilter(TeamStatusFilter.Running)">
-                                        Aktiv <span class="badge text-bg-light ms-1">@GetTeamCountForFilter(TeamStatusFilter.Running)</span>
-                                    </button>
-                                    <button type="button"
-                                            class="btn btn-xs @(_teamStatusFilter == TeamStatusFilter.Pausing ? "btn-warning text-dark" : "btn-outline-warning")"
-                                            @onclick="() => SetTeamStatusFilter(TeamStatusFilter.Pausing)">
-                                        Pause <span class="badge text-bg-light ms-1">@GetTeamCountForFilter(TeamStatusFilter.Pausing)</span>
-                                    </button>
-                                    <button type="button"
-                                            class="btn btn-xs @(_teamStatusFilter == TeamStatusFilter.Ready ? "btn-secondary" : "btn-outline-secondary")"
-                                            @onclick="() => SetTeamStatusFilter(TeamStatusFilter.Ready)">
-                                        Bereit <span class="badge text-bg-light ms-1">@GetTeamCountForFilter(TeamStatusFilter.Ready)</span>
-                                    </button>
-                                    <button type="button"
-                                            class="btn btn-xs @(_teamStatusFilter == TeamStatusFilter.Critical ? "btn-danger" : "btn-outline-danger")"
-                                            @onclick="() => SetTeamStatusFilter(TeamStatusFilter.Critical)">
-                                        Kritisch <span class="badge text-bg-light ms-1">@GetTeamCountForFilter(TeamStatusFilter.Critical)</span>
-                                    </button>
+                                    @if (_showTeamFilter)
+                                    {
+                                        <div class="panel-picker-dropdown teams-filter-dropdown" role="group" aria-label="Teamstatus Filter">
+                                            @foreach (var filter in new[] { TeamStatusFilter.All, TeamStatusFilter.Running, TeamStatusFilter.Pausing, TeamStatusFilter.Ready, TeamStatusFilter.Critical })
+                                            {
+                                                <button type="button"
+                                                        class="teams-filter-option @(_teamStatusFilter == filter ? "active" : "")"
+                                                        aria-pressed="@(_teamStatusFilter == filter)"
+                                                        @onclick="() => SelectTeamFilter(filter)"
+                                                        @onclick:stopPropagation="true">
+                                                    @if (filter == TeamStatusFilter.All)
+                                                    {
+                                                        <i class="bi bi-list-ul teams-filter-option-icon" aria-hidden="true"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="teams-filter-dot @TeamFilterDotClass(filter)" aria-hidden="true"></span>
+                                                    }
+                                                    <span class="teams-filter-option-label">@TeamFilterLabel(filter)</span>
+                                                    <span class="teams-filter-count">@GetTeamCountForFilter(filter)</span>
+                                                </button>
+                                            }
+                                        </div>
+                                        <button type="button"
+                                                class="panel-picker-backdrop"
+                                                @onclick="() => _showTeamFilter = false"
+                                                aria-label="Filter-Menü schließen"></button>
+                                    }
                                 </div>
                             }
                             <div class="ms-auto d-flex align-items-center gap-2 flex-shrink-0">
+                                <button class="btn btn-sm btn-outline-success" type="button"
+                                        @onclick="OpenTeamMobileModalAsync"
+                                        title="QR-Code für Team-Smartphones"
+                                        aria-label="QR-Code für Team-Smartphones">
+                                    <i class="bi bi-qr-code" aria-hidden="true"></i>
+                                </button>
                                 <a class="btn btn-sm btn-outline-secondary"
                                    href="/popout-teams"
                                    target="_blank"
                                    rel="noopener noreferrer"
-                                   title="In neuem Fenster öffnen (Multi-Monitor)">
+                                   title="In neuem Fenster öffnen (Multi-Monitor)"
+                                   aria-label="Team-Übersicht in neuem Fenster öffnen">
                                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                 </a>
                                 <button class="btn btn-sm theme-accent-btn" @onclick="OpenNewTeamModal">
@@ -136,14 +117,15 @@
                         else if (panel.PanelId == KnownPanels.Notizen)
                         {
                             <div class="ms-auto d-flex align-items-center gap-1">
-                                <button class="btn btn-sm btn-link text-muted p-1" type="button" @onclick="OpenTeamMessageModal" title="Nachricht an ein Team-Smartphone">
+                                <button class="btn btn-sm btn-link text-muted p-1" type="button" @onclick="OpenTeamMessageModal" title="Nachricht an ein Team-Smartphone" aria-label="Nachricht an ein Team-Smartphone">
                                     <i class="bi bi-megaphone" aria-hidden="true"></i>
                                 </button>
                                 <a class="btn btn-sm btn-outline-secondary"
                                    href="/popout-notes"
                                    target="_blank"
                                    rel="noopener noreferrer"
-                                   title="In neuem Fenster öffnen (Multi-Monitor)">
+                                   title="In neuem Fenster öffnen (Multi-Monitor)"
+                                   aria-label="Notizen in neuem Fenster öffnen">
                                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                 </a>
                             </div>
@@ -151,7 +133,7 @@
                         else if (panel.PanelId == KnownPanels.EinsatzInfo)
                         {
                             <div class="ms-auto">
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="OpenEditEinsatzModal" title="Bearbeiten">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="OpenEditEinsatzModal" title="Bearbeiten" aria-label="Einsatzdaten bearbeiten">
                                     <i class="bi bi-pencil" aria-hidden="true"></i>
                                 </button>
                             </div>
@@ -159,7 +141,7 @@
                         else if (panel.PanelId == KnownPanels.Vermissten)
                         {
                             <div class="ms-auto">
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="OpenVermisstenModal" title="Bearbeiten">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="OpenVermisstenModal" title="Bearbeiten" aria-label="Vermisstendaten bearbeiten">
                                     <i class="bi bi-pencil" aria-hidden="true"></i>
                                 </button>
                             </div>
@@ -290,10 +272,10 @@
                                             </select>
                                             @if (_quickNoteTemplates.Count > 0)
                                             {
-                                                <div class="monitor-panel-picker-wrapper flex-shrink-0">
+                                                <div class="monitor-panel-picker-wrapper mon-anchor-quicknote flex-shrink-0">
                                                     <button class="btn btn-outline-success" type="button"
                                                             @onclick="() => _showQuickNoteDropdown = !_showQuickNoteDropdown"
-                                                            title="Schnell-Notiz">
+                                                            title="Schnell-Notiz" aria-label="Schnell-Notiz einfügen">
                                                         <i class="bi bi-lightning-fill"></i>
                                                     </button>
                                                     @if (_showQuickNoteDropdown)
@@ -364,9 +346,13 @@
                                                             <input class="form-control form-control-sm"
                                                                    placeholder="Antwort"
                                                                    value="@GetReplyText(note.Id)"
-                                                                   @oninput="e => SetReplyText(note.Id, e.Value?.ToString())" />
-                                                            <button class="btn btn-sm btn-primary" @onclick="() => AddReplyAsync(note.Id)">
+                                                                   @oninput="e => SetReplyText(note.Id, e.Value?.ToString())"
+                                                                   @onkeydown="e => HandleReplyKeyDown(note.Id, e)" />
+                                                            <button class="btn btn-sm btn-primary" @onclick="() => AddReplyAsync(note.Id)" title="Senden" aria-label="Antwort senden">
                                                                 <i class="bi bi-send-fill"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => CancelReplyForm(note.Id)" title="Abbrechen" aria-label="Antwort abbrechen">
+                                                                <i class="bi bi-x-lg"></i>
                                                             </button>
                                                         </div>
                                                     }
@@ -376,7 +362,7 @@
                                                         <div class="small">
                                                             @foreach (var reply in note.Replies.OrderBy(r => r.Timestamp))
                                                             {
-                                                                <div class="border-start ps-2 py-1 mb-1">
+                                                                <div class="monitor-reply-thread ps-2 py-1 mb-1">
                                                                     <div class="text-muted">@reply.SourceTeamName · @reply.FormattedTimestamp</div>
                                                                     <div>@MentionTextarea.RenderWithMentions(reply.Text)</div>
                                                                 </div>
@@ -625,10 +611,10 @@
                     break;
                         }
                     </div>
-                </div>
+                </section>
             </div>
         }
-    </div>
+    </main>
     }
 </div>
 

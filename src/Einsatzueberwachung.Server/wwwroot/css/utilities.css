@@ -98,10 +98,6 @@
         text-align: center;
     }
 
-    .timer-display {
-        font-size: 2rem;
-    }
-
     .team-card-bottom {
         justify-content: center;
     }
@@ -223,10 +219,6 @@
     
     .header-actions .btn {
         flex: 1;
-    }
-    
-    .timer-display {
-        font-size: 2.5rem;
     }
     
     .einsatz-meta {
@@ -584,7 +576,7 @@ textarea:focus-visible {
     align-items: center;
     justify-content: space-between;
     padding: 7px 10px 6px;
-    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    border-bottom: 1px solid var(--ui-border);
     flex-shrink: 0;
 }
 
@@ -593,12 +585,10 @@ textarea:focus-visible {
     align-items: center;
     justify-content: space-between;
     padding: 6px 10px 4px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--bs-secondary-color, #6c757d);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    color: var(--ui-text);
+    border-top: 1px solid var(--ui-border);
     margin-top: 4px;
 }
 
@@ -606,6 +596,10 @@ textarea:focus-visible {
     padding: 0 4px;
     font-size: 0.7rem;
     line-height: 1.4;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Toggle-Button (+ / ×) mit Farb- und Rotationsanimation */

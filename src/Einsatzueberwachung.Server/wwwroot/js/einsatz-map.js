@@ -66,12 +66,67 @@ window.einsatzMap = (function () {
 
         L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
+        // Lade-Skelett + Kachel-Fehlerbanner (in den Leaflet-Container injiziert,
+        // daher außerhalb des Blazor-DOM — Blazor fasst #einsatzMap-Inhalt nicht an)
+        wireTileStatus(containerId, [streetLayer, satelliteLayer, labelsLayer, topoLayer]);
+
         map.on("click", function (event) {
             if (!drawMode) {
                 return;
             }
 
             addDraftPoint(event.latlng.lat, event.latlng.lng);
+        });
+    }
+
+    function wireTileStatus(containerId, layers) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            return;
+        }
+
+        const skeleton = document.createElement("div");
+        skeleton.className = "map-loading-overlay";
+        skeleton.innerHTML =
+            '<div class="map-loading-card" role="status" aria-live="polite">' +
+            '<i class="bi bi-map"></i><span>Karte wird geladen…</span></div>';
+        container.appendChild(skeleton);
+
+        const errBanner = document.createElement("div");
+        errBanner.className = "map-tile-error";
+        errBanner.setAttribute("role", "alert");
+        errBanner.hidden = true;
+        errBanner.innerHTML =
+            '<i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>' +
+            '<span>Kartenkacheln konnten nicht geladen werden — Netzwerk/VPN prüfen.</span>' +
+            '<button type="button" class="map-tile-error-close" aria-label="Schließen">&times;</button>';
+        container.appendChild(errBanner);
+        errBanner.querySelector(".map-tile-error-close")
+            .addEventListener("click", function () { errBanner.hidden = true; });
+
+        let resolved = false;
+        function hideSkeleton() {
+            if (resolved) {
+                return;
+            }
+            resolved = true;
+            skeleton.remove();
+        }
+
+        // Aktive Basisschicht (streets) meldet 'load', wenn alle sichtbaren Kacheln da sind
+        if (layers[0]) {
+            layers[0].on("load", hideSkeleton);
+        }
+        // Sicherheitsnetz: Skelett nie länger als 8 s stehen lassen
+        setTimeout(hideSkeleton, 8000);
+
+        layers.forEach(function (layer) {
+            if (layer && typeof layer.on === "function") {
+                layer.on("tileerror", function () {
+                    hideSkeleton();
+                    errBanner.hidden = false;
+                });
+            }
         });
     }
 
