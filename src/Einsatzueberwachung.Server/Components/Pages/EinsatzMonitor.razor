@@ -12,10 +12,10 @@
     {
     <header class="monitor-dash-header">
         <div class="monitor-dash-title">
-            <span class="text-muted small fw-semibold">Einsatz-Monitor</span>
+            <h1 class="monitor-dash-title-text text-muted small fw-semibold mb-0">Einsatz-Monitor</h1>
         </div>
         <div class="monitor-dash-actions">
-            <div class="monitor-panel-picker-wrapper">
+            <div class="monitor-panel-picker-wrapper mon-anchor-panels">
                 <button class="btn btn-secondary btn-sm" type="button"
                         @onclick="() => _showPanelPicker = !_showPanelPicker">
                     <i class="bi bi-layout-three-columns me-1"></i>Panels
@@ -87,7 +87,7 @@
                  data-panel-id="@panel.PanelId">
                 <div class="dashboard-panel">
                     <div class="dashboard-panel-header @(panel.PanelId == KnownPanels.Teams && EinsatzService.Teams.Count > 0 ? "dashboard-panel-header--teams" : "")">
-                        <span class="dashboard-panel-title">@PanelLabel(panel.PanelId)</span>
+                        <h2 class="dashboard-panel-title">@PanelLabel(panel.PanelId)</h2>
                         @if (panel.PanelId == KnownPanels.Teams)
                         {
                             @if (EinsatzService.Teams.Count > 0)
@@ -125,7 +125,8 @@
                                    href="/popout-teams"
                                    target="_blank"
                                    rel="noopener noreferrer"
-                                   title="In neuem Fenster öffnen (Multi-Monitor)">
+                                   title="In neuem Fenster öffnen (Multi-Monitor)"
+                                   aria-label="Team-Übersicht in neuem Fenster öffnen">
                                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                 </a>
                                 <button class="btn btn-sm theme-accent-btn" @onclick="OpenNewTeamModal">
@@ -136,14 +137,15 @@
                         else if (panel.PanelId == KnownPanels.Notizen)
                         {
                             <div class="ms-auto d-flex align-items-center gap-1">
-                                <button class="btn btn-sm btn-link text-muted p-1" type="button" @onclick="OpenTeamMessageModal" title="Nachricht an ein Team-Smartphone">
+                                <button class="btn btn-sm btn-link text-muted p-1" type="button" @onclick="OpenTeamMessageModal" title="Nachricht an ein Team-Smartphone" aria-label="Nachricht an ein Team-Smartphone">
                                     <i class="bi bi-megaphone" aria-hidden="true"></i>
                                 </button>
                                 <a class="btn btn-sm btn-outline-secondary"
                                    href="/popout-notes"
                                    target="_blank"
                                    rel="noopener noreferrer"
-                                   title="In neuem Fenster öffnen (Multi-Monitor)">
+                                   title="In neuem Fenster öffnen (Multi-Monitor)"
+                                   aria-label="Notizen in neuem Fenster öffnen">
                                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                 </a>
                             </div>
@@ -151,7 +153,7 @@
                         else if (panel.PanelId == KnownPanels.EinsatzInfo)
                         {
                             <div class="ms-auto">
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="OpenEditEinsatzModal" title="Bearbeiten">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="OpenEditEinsatzModal" title="Bearbeiten" aria-label="Einsatzdaten bearbeiten">
                                     <i class="bi bi-pencil" aria-hidden="true"></i>
                                 </button>
                             </div>
@@ -159,7 +161,7 @@
                         else if (panel.PanelId == KnownPanels.Vermissten)
                         {
                             <div class="ms-auto">
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="OpenVermisstenModal" title="Bearbeiten">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="OpenVermisstenModal" title="Bearbeiten" aria-label="Vermisstendaten bearbeiten">
                                     <i class="bi bi-pencil" aria-hidden="true"></i>
                                 </button>
                             </div>
@@ -290,10 +292,10 @@
                                             </select>
                                             @if (_quickNoteTemplates.Count > 0)
                                             {
-                                                <div class="monitor-panel-picker-wrapper flex-shrink-0">
+                                                <div class="monitor-panel-picker-wrapper mon-anchor-quicknote flex-shrink-0">
                                                     <button class="btn btn-outline-success" type="button"
                                                             @onclick="() => _showQuickNoteDropdown = !_showQuickNoteDropdown"
-                                                            title="Schnell-Notiz">
+                                                            title="Schnell-Notiz" aria-label="Schnell-Notiz einfügen">
                                                         <i class="bi bi-lightning-fill"></i>
                                                     </button>
                                                     @if (_showQuickNoteDropdown)
@@ -376,7 +378,7 @@
                                                         <div class="small">
                                                             @foreach (var reply in note.Replies.OrderBy(r => r.Timestamp))
                                                             {
-                                                                <div class="border-start ps-2 py-1 mb-1">
+                                                                <div class="monitor-reply-thread ps-2 py-1 mb-1">
                                                                     <div class="text-muted">@reply.SourceTeamName · @reply.FormattedTimestamp</div>
                                                                     <div>@MentionTextarea.RenderWithMentions(reply.Text)</div>
                                                                 </div>

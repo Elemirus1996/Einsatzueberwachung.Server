@@ -606,6 +606,10 @@ textarea:focus-visible {
     padding: 0 4px;
     font-size: 0.7rem;
     line-height: 1.4;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Toggle-Button (+ / ×) mit Farb- und Rotationsanimation */

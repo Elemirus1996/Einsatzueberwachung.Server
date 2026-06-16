@@ -61,3 +61,20 @@
     animation: mention-pulse 2.5s ease-out;
 }
 
+/* ── Reduced motion: respect the OS-level setting ─────────────────────
+   The Dezent intensity above is a manual app preference; this block honors
+   the user's system setting independently. Status keyframes that rely on
+   opacity/scale (blink-timer, pulse-badge) are reset to their visible
+   resting state so a critical timer stays fully legible without flashing,
+   and the long screensaver ticker is frozen.                            */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+

@@ -6,6 +6,16 @@
 :root {
     --dark-bg: #1e1e1e;
     --light-bg: #ffffff;
+
+    /* Semantic z-index scale — never use bare magic numbers.
+       dropdown sits just below Bootstrap's modal (1055) so it stacks
+       correctly over page content but never over an open modal. */
+    --z-sticky: 1020;
+    --z-backdrop: 1049;
+    --z-dropdown: 1050;
+    --z-modal: 1055;
+    --z-toast: 1090;
+    --z-tooltip: 1100;
 }
 
 /* ========================================
