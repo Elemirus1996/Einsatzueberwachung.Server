@@ -12,12 +12,12 @@
             <div class="mission-status-strip" aria-live="polite">
                 @if (HasActiveEinsatz)
                 {
-                    <span class="badge text-bg-success">Laufend: @RunningTeamsCount</span>
+                    <span class="badge badge-status-success">Laufend: @RunningTeamsCount</span>
                     @if (PausingTeamsCount > 0)
                     {
-                        <span class="badge text-bg-warning">In Pause: @PausingTeamsCount</span>
+                        <span class="badge badge-status-warning">In Pause: @PausingTeamsCount</span>
                     }
-                    <span class="badge text-bg-secondary">Bereit: @ReadyTeamsCount</span>
+                    <span class="badge badge-status-muted">Bereit: @ReadyTeamsCount</span>
 
                     <div class="monitor-szenario-wrap">
                         <button class="badge monitor-szenario-btn"
@@ -58,7 +58,7 @@
                 }
                 else
                 {
-                    <span class="badge text-bg-secondary">Kein aktiver Einsatz</span>
+                    <span class="badge badge-status-muted">Kein aktiver Einsatz</span>
                 }
                 @if (_lastWarning != null)
                 {
@@ -99,31 +99,33 @@
                     </button>
                 }
 
-                <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
-                        type="button"
-                        title="@(BrowserPrefs.Preferences.ThemeMode == "Auto" ? "Theme: Automatisch (Systemmodus) — in Einstellungen ändern" : BrowserPrefs.Preferences.ThemeMode == "Scheduled" ? "Theme: Zeitsteuerung aktiv — in Einstellungen ändern" : (_isDarkMode ? "Dark Mode deaktivieren" : "Dark Mode aktivieren"))"
-                        disabled="@(BrowserPrefs.Preferences.ThemeMode != "Manual")"
-                        @onclick="ToggleThemeAsync">
-                    <i class="bi @(_isDarkMode ? "bi-sun" : "bi-moon-stars")"></i>
-                    @if (BrowserPrefs.Preferences.ThemeMode != "Manual")
-                    {
-                        <span class="topbar-theme-mode-label">@(BrowserPrefs.Preferences.ThemeMode == "Auto" ? "Auto" : "Plan")</span>
-                    }
-                </button>
+                <div class="topbar-utils">
+                    <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                            type="button"
+                            title="@(BrowserPrefs.Preferences.ThemeMode == "Auto" ? "Theme: Automatisch (Systemmodus) — in Einstellungen ändern" : BrowserPrefs.Preferences.ThemeMode == "Scheduled" ? "Theme: Zeitsteuerung aktiv — in Einstellungen ändern" : (_isDarkMode ? "Dark Mode deaktivieren" : "Dark Mode aktivieren"))"
+                            disabled="@(BrowserPrefs.Preferences.ThemeMode != "Manual")"
+                            @onclick="ToggleThemeAsync">
+                        <i class="bi @(_isDarkMode ? "bi-sun" : "bi-moon-stars")"></i>
+                        @if (BrowserPrefs.Preferences.ThemeMode != "Manual")
+                        {
+                            <span class="topbar-theme-mode-label">@(BrowserPrefs.Preferences.ThemeMode == "Auto" ? "Auto" : "Plan")</span>
+                        }
+                    </button>
 
-                <button class="btn btn-sm btn-outline-secondary"
-                        type="button"
-                        title="Vollbild umschalten"
-                        @onclick="ToggleFullscreenAsync">
-                    <i class="bi bi-arrows-fullscreen"></i>
-                </button>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            type="button"
+                            title="Vollbild umschalten (F11)"
+                            @onclick="ToggleFullscreenAsync">
+                        <i class="bi bi-arrows-fullscreen"></i>
+                    </button>
 
-                <button class="btn btn-sm btn-outline-secondary"
-                        type="button"
-                        title="Hilfe anzeigen"
-                        @onclick="() => _hilfeOpen = true">
-                    <i class="bi bi-question-circle"></i>
-                </button>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            type="button"
+                            title="Hilfe anzeigen"
+                            @onclick="() => _hilfeOpen = true">
+                        <i class="bi bi-question-circle"></i>
+                    </button>
+                </div>
             </div>
         </div>
 

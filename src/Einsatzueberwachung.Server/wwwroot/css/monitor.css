@@ -725,7 +725,12 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 /* Szenario-Dropdown im EinsatzMonitor-Header */
 .monitor-szenario-wrap {
     position: relative;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    /* Separator: status badges (readout) → szenario button (control) */
+    margin-left: 0.2rem;
+    padding-left: 0.55rem;
+    border-left: 1px solid var(--ui-topbar-border);
 }
 .monitor-szenario-btn {
     cursor: pointer;
