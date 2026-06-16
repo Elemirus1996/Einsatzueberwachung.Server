@@ -22,52 +22,53 @@
     justify-content: center;
     font-weight: 600;
     font-size: 0.9rem;
-    background: var(--bs-secondary-bg);
-    border: 2px solid var(--bs-border-color);
-    color: var(--bs-secondary-color);
+    background: var(--ui-surface-2);
+    border: 2px solid var(--ui-border);
+    color: var(--ui-muted);
     transition: all 0.2s;
 }
 
 .merge-step-label {
     font-size: 0.7rem;
-    color: var(--bs-secondary-color);
+    color: var(--ui-muted);
     margin-top: 4px;
     text-align: center;
     max-width: 80px;
 }
 
 .merge-step.active .merge-step-circle {
-    background: var(--bs-primary);
-    border-color: var(--bs-primary);
-    color: white;
+    /* match the brand-themed .btn-primary (forms.css), not raw bootstrap blue */
+    background: var(--theme-primary);
+    border-color: var(--theme-primary-border);
+    color: var(--theme-on-accent);
 }
 
 .merge-step.active .merge-step-label {
-    color: var(--bs-primary);
+    color: var(--theme-primary-text);
     font-weight: 600;
 }
 
 .merge-step.completed .merge-step-circle {
-    background: var(--bs-success);
-    border-color: var(--bs-success);
-    color: white;
+    background: var(--success-color);
+    border-color: var(--success-border);
+    color: var(--success-on-fill);
 }
 
 .merge-step-connector {
     flex: 1;
     height: 2px;
-    background: var(--bs-border-color);
+    background: var(--ui-border);
     margin: 0 4px;
     align-self: flex-start;
     margin-top: 16px;
 }
 
 .merge-step-connector.completed {
-    background: var(--bs-success);
+    background: var(--success-color);
 }
 
 .merge-item-card {
-    border-left: 4px solid var(--bs-border-color);
+    border-left: 4px solid var(--ui-border);
     transition: border-color 0.15s;
 }
 
@@ -81,9 +82,9 @@
     box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
-.merge-item-card.resolved-link    { border-left-color: var(--bs-success); }
-.merge-item-card.resolved-create  { border-left-color: var(--bs-primary); }
-.merge-item-card.resolved-skip    { border-left-color: var(--bs-secondary); }
+.merge-item-card.resolved-link    { border-left-color: var(--success-color); }
+.merge-item-card.resolved-create  { border-left-color: var(--theme-primary); }
+.merge-item-card.resolved-skip    { border-left-color: var(--ui-muted); }
 
 .candidate-option {
     cursor: pointer;
@@ -91,10 +92,10 @@
 }
 
 .candidate-option:hover {
-    background: var(--bs-tertiary-bg);
+    background: var(--ui-surface-2);
 }
 
 .candidate-option.selected {
-    background: var(--bs-primary-bg-subtle);
-    border-color: var(--bs-primary) !important;
+    background: var(--theme-primary-soft);
+    border-color: var(--theme-primary-border) !important;
 }
