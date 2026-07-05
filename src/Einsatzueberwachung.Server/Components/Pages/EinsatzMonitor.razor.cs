@@ -97,7 +97,6 @@ public partial class EinsatzMonitor
     };
 
     private List<string> _quickNoteTemplates = new();
-    private bool _showQuickNoteDropdown;
 
     private WeatherData? _monitorWeather;
     private WeatherForecast? _monitorForecast;
