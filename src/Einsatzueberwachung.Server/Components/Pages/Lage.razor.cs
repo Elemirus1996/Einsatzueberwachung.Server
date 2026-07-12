@@ -31,6 +31,8 @@ public partial class Lage : IAsyncDisposable
     // Karten-Marker Konfiguration (aus AppSettings geladen)
     private string _collarMarkerIcon = "paw";
     private string _humanMarkerIcon = "phone";
+    private string _collarTrackColorMode = "area";
+    private string _collarMarkerColorMode = "area";
 
     private string _einsatzTitle = "—";
     private string _vermisstName = "—";
@@ -52,6 +54,8 @@ public partial class Lage : IAsyncDisposable
         _mapZoom = settings.MapDefaultZoom;
         _collarMarkerIcon = settings.CollarMarkerIconOrDefault;
         _humanMarkerIcon = settings.HumanMarkerIconOrDefault;
+        _collarTrackColorMode = settings.CollarTrackColorModeOrDefault;
+        _collarMarkerColorMode = settings.CollarMarkerColorModeOrDefault;
 
         if (einsatz.ElwPosition.HasValue)
         {
@@ -130,7 +134,12 @@ public partial class Lage : IAsyncDisposable
 
             // Live-Tracking aktivieren
             await JSRuntime.InvokeVoidAsync("CollarTracking.initialize", "lageMap", _dotNetReference);
-            await JSRuntime.InvokeVoidAsync("CollarTracking.setOptions", new { collarIcon = _collarMarkerIcon });
+            await JSRuntime.InvokeVoidAsync("CollarTracking.setOptions", new
+            {
+                collarIcon = _collarMarkerIcon,
+                trackColorMode = _collarTrackColorMode,
+                markerColorMode = _collarMarkerColorMode
+            });
             await JSRuntime.InvokeVoidAsync("CollarTracking.toggleVisibility", "lageMap", true);
             await JSRuntime.InvokeVoidAsync("PhoneTracking.initialize", "lageMap");
             await JSRuntime.InvokeVoidAsync("PhoneTracking.setOptions", new { humanIcon = _humanMarkerIcon });

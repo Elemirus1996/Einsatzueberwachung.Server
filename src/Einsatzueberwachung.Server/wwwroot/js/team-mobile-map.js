@@ -3,6 +3,8 @@ window.teamMobileMap = (function () {
     let polygonLayer = null;
     let dogMarker = null;
     let trackLine = null;
+    let trackOutline = null;
+    let trackDots = null;
     let userMarker = null;
     let userTrackLine = null;
     // Abgeschlossene Track-Episoden früherer Suchläufe (historisch, persistent auf dem Server)
@@ -12,21 +14,75 @@ window.teamMobileMap = (function () {
     let _collarIcon = 'paw';
     let _humanIcon = 'phone';
 
-    // Farbe des aktuellen Suchgebiets – wird von renderSearchArea gesetzt und für Hund-Marker und Track übernommen
+    // Farbe des aktuellen Suchgebiets – wird von renderSearchArea gesetzt
     let _areaColor = '#dc3545';
+    let _trackColorMode = 'black';
+    let _markerColorMode = 'area-black-outline';
 
     function setOptions(opts) {
         if (opts && opts.collarIcon) _collarIcon = opts.collarIcon;
         if (opts && opts.humanIcon)  _humanIcon  = opts.humanIcon;
+        if (opts && ['area', 'black', 'contrast', 'area-dots', 'area-cased', 'black-cased'].includes(opts.trackColorMode)) _trackColorMode = opts.trackColorMode;
+        if (opts && ['area', 'black', 'contrast', 'area-black-outline', 'area-white-outline', 'black-white-outline'].includes(opts.markerColorMode)) _markerColorMode = opts.markerColorMode;
+    }
+
+    function _resolveColor(mode) {
+        if (mode === 'black' || mode === 'black-white-outline') return '#000000';
+        if (mode !== 'contrast' || !/^#[0-9a-f]{6}$/i.test(_areaColor)) return _areaColor;
+        const red = parseInt(_areaColor.slice(1, 3), 16);
+        const green = parseInt(_areaColor.slice(3, 5), 16);
+        const blue = parseInt(_areaColor.slice(5, 7), 16);
+        return `#${(255 - red).toString(16).padStart(2, '0')}${(255 - green).toString(16).padStart(2, '0')}${(255 - blue).toString(16).padStart(2, '0')}`;
+    }
+
+    function _resolveTrackColor() {
+        return _trackColorMode === 'area-dots' || _trackColorMode === 'black-cased' ? '#000000' : _resolveColor(_trackColorMode);
+    }
+
+    function _createTrackOutline(points, opacity) {
+        if (_trackColorMode !== 'area-cased' && _trackColorMode !== 'black-cased') return null;
+
+        return L.polyline(points, {
+            color: _trackColorMode === 'area-cased' ? '#000000' : '#ffffff',
+            weight: 7,
+            opacity,
+            lineCap: 'round',
+            lineJoin: 'round',
+            interactive: false
+        }).addTo(map);
+    }
+
+    function _createTrackDots(points, opacity) {
+        if (_trackColorMode !== 'area-dots') return null;
+
+        return L.polyline(points, {
+            color: _areaColor,
+            weight: 6,
+            opacity: opacity,
+            dashArray: '1 17',
+            lineCap: 'round',
+            interactive: false
+        }).addTo(map);
     }
 
     function _getCollarIconClass() {
         switch (_collarIcon) {
             case 'dog':  return 'fa-dog';
             case 'bone': return 'fa-bone';
+            case 'crosshairs': return 'fa-crosshairs';
+            case 'location-arrow': return 'fa-location-arrow';
             case 'dot':  return 'fa-location-dot';
             default:     return 'fa-paw'; // paw
         }
+    }
+
+    function _getCollarIconStyle() {
+        const outline = _markerColorMode === 'area-black-outline'
+            ? '-webkit-text-stroke:1.5px #000;paint-order:stroke fill;'
+            : _markerColorMode === 'area-white-outline' || _markerColorMode === 'black-white-outline'
+                ? '-webkit-text-stroke:1.5px #fff;paint-order:stroke fill;'
+                : '';
+        return `font-size:26px;color:${_resolveColor(_markerColorMode)};${outline}filter:drop-shadow(0 1px 3px rgba(0,0,0,0.55));display:block;line-height:1;`;
     }
 
     function _getHumanIconClass() {
@@ -76,7 +132,7 @@ window.teamMobileMap = (function () {
         if (!dogMarker) {
             const icon = L.divIcon({
                 className: 'team-mobile-dog-marker',
-                html: `<i class="fa-solid ${_getCollarIconClass()}" style="font-size:26px;color:${_areaColor};filter:drop-shadow(0 1px 3px rgba(0,0,0,0.55));display:block;line-height:1;"></i>`,
+                html: `<i class="fa-solid ${_getCollarIconClass()}" style="${_getCollarIconStyle()}"></i>`,
                 iconSize: [26, 26],
                 iconAnchor: [13, 13]
             });
@@ -90,20 +146,29 @@ window.teamMobileMap = (function () {
     function setTrack(points) {
         if (!map) return;
         if (trackLine) { map.removeLayer(trackLine); trackLine = null; }
+        if (trackOutline) { map.removeLayer(trackOutline); trackOutline = null; }
+        if (trackDots) { map.removeLayer(trackDots); trackDots = null; }
         if (!points || points.length < 2) return;
-        trackLine = L.polyline(points.map(p => [p.lat, p.lng]), {
-            color: _areaColor,
+        const trackPoints = points.map(p => [p.lat, p.lng]);
+        trackOutline = _createTrackOutline(trackPoints, 0.8);
+        trackLine = L.polyline(trackPoints, {
+            color: _resolveTrackColor(),
             weight: 3,
             opacity: 0.7
         }).addTo(map);
+        trackDots = _createTrackDots(trackPoints, 0.7);
     }
 
     function appendTrackPoint(lat, lng) {
         if (!map) return;
         if (!trackLine) {
-            trackLine = L.polyline([[lat, lng]], { color: _areaColor, weight: 3, opacity: 0.7 }).addTo(map);
+            trackOutline = _createTrackOutline([[lat, lng]], 0.8);
+            trackLine = L.polyline([[lat, lng]], { color: _resolveTrackColor(), weight: 3, opacity: 0.7 }).addTo(map);
+            trackDots = _createTrackDots([[lat, lng]], 0.7);
         } else {
             trackLine.addLatLng([lat, lng]);
+            if (trackOutline) trackOutline.addLatLng([lat, lng]);
+            if (trackDots) trackDots.addLatLng([lat, lng]);
         }
     }
 
@@ -149,13 +214,17 @@ window.teamMobileMap = (function () {
         const polyline = L.polyline(
             points.map(p => [p.lat, p.lng]),
             {
-                color: color || '#888888',
+                color: isHumanTrack ? (color || '#888888') : _resolveTrackColor(),
                 weight: 3,
                 opacity: 0.55,
                 dashArray: isHumanTrack ? '4 9' : null
             }
         ).addTo(map);
         historicalTracks.push(polyline);
+        if (!isHumanTrack) {
+            const dotOverlay = _createTrackDots(points.map(p => [p.lat, p.lng]), 0.55);
+            if (dotOverlay) historicalTracks.push(dotOverlay);
+        }
     }
 
     function loadUserTrack(points) {
@@ -204,6 +273,7 @@ window.teamMobileMap = (function () {
         polygonLayer = null;
         dogMarker = null;
         trackLine = null;
+        trackDots = null;
         userMarker = null;
         userTrackLine = null;
     }

@@ -145,7 +145,7 @@ namespace Einsatzueberwachung.Domain.Services
                     var imageBytes = await _mapRenderer!.RenderTrackMapAsync(
                         track.Points,
                         track.SearchAreaCoordinates?.Count >= 3 ? track.SearchAreaCoordinates : null,
-                        track.Color,
+                        "#000000",
                         track.SearchAreaColor,
                         800, 450);
 

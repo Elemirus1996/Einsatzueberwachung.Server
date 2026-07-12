@@ -89,10 +89,12 @@ namespace Einsatzueberwachung.Domain.Models
         public int CollarNoSignalTimeoutSeconds { get; set; }
 
         // Karten-Marker Symbole
-        // Collar: "paw" | "dog" | "bone" | "dot"
+        // Collar: "paw" | "dog" | "bone" | "dot" | "crosshairs" | "location-arrow"
         // Human:  "phone" | "person" | "person_walking" | "radio" | "dot"
         public string CollarMarkerIcon { get; set; }
         public string HumanMarkerIcon { get; set; }
+        public string CollarTrackColorMode { get; set; }
+        public string CollarMarkerColorMode { get; set; }
 
         /// <summary>Gibt den konfigurierten Collar-Marker-Icon-Typ zurück (nie null/leer).</summary>
         [System.Text.Json.Serialization.JsonIgnore]
@@ -103,6 +105,17 @@ namespace Einsatzueberwachung.Domain.Models
         [System.Text.Json.Serialization.JsonIgnore]
         public string HumanMarkerIconOrDefault =>
             string.IsNullOrWhiteSpace(HumanMarkerIcon) ? "person_walking" : HumanMarkerIcon;
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string CollarTrackColorModeOrDefault =>
+            CollarColorModeOrDefault(CollarTrackColorMode, "black");
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string CollarMarkerColorModeOrDefault =>
+            CollarColorModeOrDefault(CollarMarkerColorMode, "area-black-outline");
+
+        private static string CollarColorModeOrDefault(string? value, string defaultValue) =>
+            value is "black" or "contrast" or "area" or "area-dots" or "area-black-outline" or "area-white-outline" or "black-white-outline" or "area-cased" or "black-cased" ? value : defaultValue;
 
         // Warnzentrum-Regelkonfiguration (keyed by WarningEntry.Source)
         public Dictionary<string, WarningRuleConfig> WarningRules { get; set; } = new();
@@ -180,6 +193,8 @@ namespace Einsatzueberwachung.Domain.Models
             // Karten-Marker-Defaults
             CollarMarkerIcon = "paw";
             HumanMarkerIcon = "person_walking";
+            CollarTrackColorMode = "black";
+            CollarMarkerColorMode = "area-black-outline";
 
             // Divera 24/7 Defaults
             DiveraEnabled = false;

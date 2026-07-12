@@ -311,7 +311,9 @@ else
             await JS.InvokeVoidAsync("teamMobileMap.setOptions", new
             {
                 collarIcon = mapSettings.CollarMarkerIconOrDefault,
-                humanIcon  = mapSettings.HumanMarkerIconOrDefault
+                humanIcon  = mapSettings.HumanMarkerIconOrDefault,
+                trackColorMode = mapSettings.CollarTrackColorModeOrDefault,
+                markerColorMode = mapSettings.CollarMarkerColorModeOrDefault
             });
         }
         catch { /* tolerant — Icons bleiben auf Standard-Wert */ }
