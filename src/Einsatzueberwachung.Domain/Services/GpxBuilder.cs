@@ -14,6 +14,7 @@ public static class GpxBuilder
 {
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     private const string Creator = "Einsatzueberwachung.Server";
+    private const int GarminFileNameLength = 20;
 
     // -------------------------------------------------------------------------
     // Hilfsmethoden
@@ -75,8 +76,15 @@ public static class GpxBuilder
     }
 
     /// <summary>Gibt den Dateinamen für das GPX eines Suchgebiets zurück.</summary>
-    public static string SearchAreaFileName(SearchArea area) =>
-        area.Name.Replace(" ", "_") + ".gpx";
+    public static string SearchAreaFileName(SearchArea area, DateTime? date = null)
+    {
+        var dateStamp = (date ?? DateTime.Now).ToString("ddMM", Inv);
+        var areaName = area.Name.Replace(" ", "_");
+        var availableNameLength = GarminFileNameLength - dateStamp.Length - 1;
+        var shortenedAreaName = areaName.Substring(0, Math.Min(areaName.Length, availableNameLength));
+
+        return $"{dateStamp}_{shortenedAreaName}.gpx";
+    }
 
     // -------------------------------------------------------------------------
     // GPS-Track-Snapshot
