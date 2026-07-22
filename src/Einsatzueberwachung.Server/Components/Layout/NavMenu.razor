@@ -3,28 +3,35 @@
 @implements IDisposable
 
 <div class="top-row navbar @(IsCollapsed ? "nav-header-collapsed" : "")">
-    <div class="container-fluid nav-brand-row">
-        <a class="navbar-brand" href="/" title="Startseite">
-            @if (!string.IsNullOrWhiteSpace(_staffelLogoUrl))
-            {
+    <div class="nav-brand-row">
+        @if (!string.IsNullOrWhiteSpace(_staffelLogoUrl))
+        {
+            <a class="brand-identity" href="/" title="Startseite">
                 <img class="brand-logo" src="@_staffelLogoUrl" alt="Staffel-Logo" />
-            }
-            else
-            {
+                @if (!string.IsNullOrWhiteSpace(_staffelName))
+                {
+                    <span class="brand-staffel-name">@_staffelName</span>
+                }
+            </a>
+        }
+        else
+        {
+            <a class="navbar-brand" href="/" title="Startseite">
                 <i class="bi bi-radar brand-icon"></i>
-            }
-            <span class="brand-text">Einsatzüberwachung</span>
-        </a>
-        <button class="btn-sidebar-toggle @(IsCollapsed ? "is-collapsed" : "")"
-                type="button"
-                title="@(IsCollapsed ? "Navigation ausklappen" : "Navigation einklappen")"
-                aria-label="@(IsCollapsed ? "Navigation ausklappen" : "Navigation einklappen")"
-                aria-expanded="@(!IsCollapsed)"
-                @onclick="() => OnToggleSidebar.InvokeAsync()">
-            <i class="bi bi-chevron-left toggle-icon"></i>
-        </button>
+                <span class="brand-text">Einsatzüberwachung</span>
+            </a>
+        }
     </div>
 </div>
+
+<button class="btn-sidebar-toggle sidebar-edge-toggle @(IsCollapsed ? "is-collapsed" : "")"
+        type="button"
+        title="@ToggleSidebarLabel"
+        aria-label="@ToggleSidebarLabel"
+        aria-expanded="@(!IsCollapsed)"
+        @onclick="() => OnToggleSidebar.InvokeAsync()">
+    <i class="bi bi-chevron-left toggle-icon"></i>
+</button>
 
 <div class="sidebar-nav @(IsCollapsed ? "sidebar-collapsed" : "sidebar-expanded")">
     <nav class="nav flex-column nav-wrapper">
@@ -128,6 +135,7 @@
 
 @code {
     private string _staffelLogoUrl = string.Empty;
+    private string _staffelName = string.Empty;
 
     [Parameter]
     public bool IsCollapsed { get; set; }
@@ -135,11 +143,14 @@
     [Parameter]
     public EventCallback OnToggleSidebar { get; set; }
 
+    private string ToggleSidebarLabel => IsCollapsed ? "Navigation ausklappen" : "Navigation einklappen";
+
     protected override async Task OnInitializedAsync()
     {
         EinsatzService.SzenarioChanged += OnSzenarioChanged;
 
         var settings = await SettingsService.GetStaffelSettingsAsync();
+        _staffelName = settings.StaffelName;
         if (string.IsNullOrWhiteSpace(settings.StaffelLogoPfad))
         {
             return;
@@ -155,4 +166,3 @@
         EinsatzService.SzenarioChanged -= OnSzenarioChanged;
     }
 }
-
