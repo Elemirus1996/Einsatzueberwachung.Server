@@ -5,6 +5,11 @@ html, body {
     height: 100%;
 }
 
+:root {
+    --sidebar-control-size: 44px;
+    --sidebar-header-height: 5rem;
+}
+
 /* ========================================
    SIDEBAR & LAYOUT - WICHTIG!
    ======================================== */
@@ -18,7 +23,7 @@ html, body {
 }
 
 .sidebar {
-    background-color: #0d1f3c;
+    background-color: var(--ui-sidebar-bg);
     width: 250px;
     min-width: 250px;
     height: 100vh;
@@ -26,44 +31,10 @@ html, body {
     top: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
     z-index: 100;
     flex-shrink: 0;
     transition: width 0.3s ease, min-width 0.3s ease;
-}
-
-/* Sidebar Text (theme-aware via --ui-text) */
-.sidebar,
-.sidebar * {
-    color: var(--ui-text) !important;
-    opacity: 1 !important;
-}
-
-.sidebar .nav-section-header {
-    color: color-mix(in srgb, var(--ui-text) 85%, transparent) !important;
-}
-
-.sidebar .nav-link,
-.sidebar .nav-item .nav-link,
-.sidebar a.nav-link,
-.sidebar .nav-item a {
-    color: var(--ui-text) !important;
-}
-
-.sidebar .nav-link:hover,
-.sidebar .nav-link:focus,
-.sidebar .nav-item .nav-link:hover,
-.sidebar .nav-item .nav-link:focus {
-    background-color: color-mix(in srgb, var(--ui-text) 12%, transparent);
-    color: var(--ui-text) !important;
-}
-
-/* Aktiver Nav-Eintrag: deutlicher Linksrand + heller Hintergrund */
-.sidebar .nav-link.active,
-.sidebar .nav-item .nav-link.active {
-    background-color: color-mix(in srgb, var(--ui-text) 18%, transparent) !important;
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--ui-text) 75%, transparent);
-    font-weight: 600;
 }
 
 main {
@@ -81,6 +52,15 @@ main {
 .page.sidebar-collapsed .sidebar {
     width: 60px;
     min-width: 60px;
+}
+
+.sidebar-edge-toggle {
+    position: absolute;
+    top: 50vh;
+    right: calc(var(--sidebar-control-size)/-4) !important;
+    z-index: 2;
+    width: calc(var(--sidebar-control-size)/2) !important;
+    height: calc(var(--sidebar-control-size)/2) !important;
 }
 
 /* Nav wrapper in sidebar */
@@ -142,17 +122,13 @@ main {
 
 /* Top row adjustments for collapsed */
 .page.sidebar-collapsed .top-row.navbar {
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
 }
 
 .page.sidebar-collapsed .top-row .container-fluid {
     justify-content: center;
     padding: 0;
-}
-
-.page.sidebar-collapsed .btn-sidebar-toggle {
-    margin-left: 0;
 }
 
 .page.sidebar-collapsed .navbar-brand {
@@ -176,32 +152,6 @@ main {
 }
 
 /* Toggle Button Styles */
-.btn-sidebar-toggle {
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    margin-left: auto;
-}
-
-.btn-sidebar-toggle:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.05);
-}
-
-.btn-sidebar-toggle i {
-    font-size: 0.9rem;
-    color: white !important;
-}
-
 /* Mobile: Sidebar oben */
 @media (max-width: 640px) {
     .sidebar {
@@ -408,8 +358,6 @@ main {
     }
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.3);
-
-    transform: scale(1.05);
 }
 
 .btn-theme-toggle i {
@@ -699,7 +647,7 @@ main,
 .top-row.navbar {
     background: var(--ui-sidebar-bg);
     border-bottom: 1px solid var(--ui-sidebar-border);
-    padding: 0.8rem 0.6rem;
+    padding: 0.5rem;
 }
 
 /* Dezent: barely-visible separator, no shadow */
@@ -740,28 +688,30 @@ main,
 .nav-link {
     border-radius: 0.45rem;
     margin: 0.1rem 0;
+    border: 1px solid transparent;
 }
 
 .nav-link.active {
-    background: var(--ui-nav-active-bg);
+    background: color-mix(in srgb, var(--theme-primary) 18%, var(--ui-sidebar-bg));
+    border-color: color-mix(in srgb, var(--theme-primary) 42%, var(--ui-sidebar-border));
     color: var(--ui-nav-active-text) !important;
-    box-shadow: inset 3px 0 0 var(--theme-tertiary);
+    box-shadow: none;
+    font-weight: 600;
 }
 
-/* Dezent: minimal active indicator — just a thin neutral stripe, no fill.
-   !important overrides the base .nav-link.active background above.
-   Opacity values mirror the surrounding sidebar convention (0.08/0.18/0.75). */
+/* Dezent keeps the current page distinct without adding visual noise. */
 [data-intensity="dezent"] .nav-link.active {
-    background: color-mix(in srgb, var(--ui-sidebar-text) 8%, transparent) !important;
-    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--ui-sidebar-text) 35%, transparent);
+    background: color-mix(in srgb, var(--theme-primary) 8%, var(--ui-sidebar-bg)) !important;
+    border-color: color-mix(in srgb, var(--theme-primary) 20%, var(--ui-sidebar-border));
+    box-shadow: none;
     font-weight: 500;
 }
 
-/* Lebhaft: filled active link with glowing left border
-   !important overrides the base .nav-link.active background above. */
+/* Lebhaft increases the selected-state contrast without decorative glow. */
 [data-intensity="lebhaft"] .nav-link.active {
     background: color-mix(in srgb, var(--theme-tertiary) 28%, var(--ui-nav-active-bg)) !important;
-    box-shadow: inset 3px 0 0 var(--theme-tertiary), 0 0 8px color-mix(in srgb, var(--theme-tertiary) 30%, transparent);
+    border-color: color-mix(in srgb, var(--theme-tertiary) 58%, var(--ui-sidebar-border));
+    box-shadow: none;
 }
 
 .nav-icon i {
