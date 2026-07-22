@@ -37,10 +37,59 @@ window.CollarTracking = {
 
     // Konfiguriertes Halsband-Marker-Symbol ("paw" | "dog" | "bone" | "dot")
     _collarIcon: 'paw',
+    _trackColorMode: 'black',
+    _markerColorMode: 'area-black-outline',
+
+    _resolveColor: function (areaColor, mode) {
+        if (mode === 'black' || mode === 'black-white-outline') return '#000000';
+        if (mode !== 'contrast' || !/^#[0-9a-f]{6}$/i.test(areaColor)) return areaColor;
+
+        const red = parseInt(areaColor.slice(1, 3), 16);
+        const green = parseInt(areaColor.slice(3, 5), 16);
+        const blue = parseInt(areaColor.slice(5, 7), 16);
+        return `#${(255 - red).toString(16).padStart(2, '0')}${(255 - green).toString(16).padStart(2, '0')}${(255 - blue).toString(16).padStart(2, '0')}`;
+    },
+
+    _resolveTrackColor: function (areaColor) {
+        return this._trackColorMode === 'area-dots' || this._trackColorMode === 'black-cased'
+            ? '#000000'
+            : this._resolveColor(areaColor, this._trackColorMode);
+    },
+
+    _createTrackOutline: function (positions, opacity) {
+        if (this._trackColorMode !== 'area-cased' && this._trackColorMode !== 'black-cased') return null;
+
+        return L.polyline(positions, {
+            color: this._trackColorMode === 'area-cased' ? '#000000' : '#ffffff',
+            weight: 7,
+            opacity: opacity,
+            lineCap: 'round',
+            lineJoin: 'round',
+            interactive: false
+        });
+    },
+
+    _createTrackDotOverlay: function (positions, areaColor, opacity) {
+        if (this._trackColorMode !== 'area-dots') return null;
+
+        return L.polyline(positions, {
+            color: this._resolveColor(areaColor, 'area'),
+            weight: 6,
+            opacity: opacity,
+            dashArray: '1 17',
+            lineCap: 'round',
+            interactive: false
+        });
+    },
 
     // Gibt Font-Awesome-Icon-HTML basierend auf Konfiguration und Farbe zurück
     _getCollarIconHtml: function (color) {
-        const style = `font-size:24px;color:${color};filter:drop-shadow(0 1px 3px rgba(0,0,0,0.55));display:block;line-height:1;`;
+        const outline = this._markerColorMode === 'area-black-outline'
+            ? '-webkit-text-stroke:1.5px #000;paint-order:stroke fill;'
+            : this._markerColorMode === 'area-white-outline' || this._markerColorMode === 'black-white-outline'
+                ? '-webkit-text-stroke:1.5px #fff;paint-order:stroke fill;'
+                : '';
+        const style = `font-size:24px;color:${color};${outline}filter:drop-shadow(0 1px 3px rgba(0,0,0,0.55));display:block;line-height:1;`;
         switch (this._collarIcon) {
             case 'paw':
                 return `<i class="fa-solid fa-paw" style="${style}"></i>`;
@@ -48,6 +97,10 @@ window.CollarTracking = {
                 return `<i class="fa-solid fa-dog" style="${style}"></i>`;
             case 'bone':
                 return `<i class="fa-solid fa-bone" style="${style}"></i>`;
+            case 'crosshairs':
+                return `<i class="fa-solid fa-crosshairs" style="${style}"></i>`;
+            case 'location-arrow':
+                return `<i class="fa-solid fa-location-arrow" style="${style}"></i>`;
             case 'dot':
             default:
                 return `<i class="fa-solid fa-location-dot" style="${style}"></i>`;
@@ -57,6 +110,8 @@ window.CollarTracking = {
     // Setzt Darstellungsoptionen (wird direkt nach initialize() aufgerufen)
     setOptions: function (opts) {
         if (opts && opts.collarIcon) this._collarIcon = opts.collarIcon;
+        if (opts && ['area', 'black', 'contrast', 'area-dots', 'area-cased', 'black-cased'].includes(opts.trackColorMode)) this._trackColorMode = opts.trackColorMode;
+        if (opts && ['area', 'black', 'contrast', 'area-black-outline', 'area-white-outline', 'black-white-outline'].includes(opts.markerColorMode)) this._markerColorMode = opts.markerColorMode;
     },
 
     // Erstellt das divIcon für einen Halsband-Marker (konfiguriertes Symbol, optional mit OOB-Pulsring)
@@ -134,41 +189,51 @@ window.CollarTracking = {
             this._tracks[collarId] = {
                 positions: [],
                 polyline: null,
+                outlineOverlay: null,
+                dotOverlay: null,
                 marker: null,
-                color: color || this._colors[this._colorIndex % this._colors.length]
+                baseColor: color || this._colors[this._colorIndex % this._colors.length]
             };
             if (!color) this._colorIndex++;
         }
 
         // Farbe aktualisieren falls explizit übergeben und geändert
-        if (color && this._tracks[collarId].color !== color) {
-            this._setTrackColor(mapData, collarId, color);
+        if (color && this._tracks[collarId].baseColor !== color) {
+            this._setTrackColors(mapData, collarId, color);
         }
         // Label aktualisieren falls mitgeliefert
         if (dogLabel) this._tracks[collarId].dogLabel = dogLabel;
 
         const track = this._tracks[collarId];
+        const trackColor = this._resolveTrackColor(track.baseColor);
+        const markerColor = this._resolveColor(track.baseColor, this._markerColorMode);
         track.positions.push([lat, lng]);
 
         // Polyline aktualisieren oder erstellen
         if (track.polyline && mapData.trackingLayer.hasLayer(track.polyline)) {
             track.polyline.addLatLng([lat, lng]);
+            if (track.outlineOverlay) track.outlineOverlay.addLatLng([lat, lng]);
+            if (track.dotOverlay) track.dotOverlay.addLatLng([lat, lng]);
         } else {
             // Polyline neu erstellen (auch wenn alte Referenz existiert aber nicht mehr auf der Karte ist)
+            track.outlineOverlay = this._createTrackOutline(track.positions, 0.9);
+            if (track.outlineOverlay) track.outlineOverlay.addTo(mapData.trackingLayer);
             track.polyline = L.polyline(track.positions, {
-                color: track.color,
+                color: trackColor,
                 weight: 3,
                 opacity: 0.8,
                 dashArray: null
             });
             track.polyline.addTo(mapData.trackingLayer);
+            track.dotOverlay = this._createTrackDotOverlay(track.positions, track.baseColor, 0.8);
+            if (track.dotOverlay) track.dotOverlay.addTo(mapData.trackingLayer);
         }
 
         // Aktuellen Positions-Marker aktualisieren
         if (track.marker && mapData.trackingLayer.hasLayer(track.marker)) {
             track.marker.setLatLng([lat, lng]);
         } else {
-            const icon = this._createCollarIcon(track.color, track._oobActive);
+            const icon = this._createCollarIcon(markerColor, track._oobActive);
             track.marker = L.marker([lat, lng], { icon: icon })
                 .bindPopup(`<strong>${track.dogLabel || collarId}</strong><br><small>Halsband: ${collarId}</small><br><small>UTM: ${latLngToUtm(lat, lng)}</small><br><small>${new Date(timestamp).toLocaleTimeString('de-DE')}</small>`);
             track.marker.addTo(mapData.trackingLayer);
@@ -198,33 +263,41 @@ window.CollarTracking = {
             this._tracks[collarId] = {
                 positions: [],
                 polyline: null,
+                outlineOverlay: null,
+                dotOverlay: null,
                 marker: null,
-                color: color || this._colors[this._colorIndex % this._colors.length],
+                baseColor: color || this._colors[this._colorIndex % this._colors.length],
                 dogLabel: dogLabel || collarId
             };
             if (!color) this._colorIndex++;
         } else if (color) {
-            this._tracks[collarId].color = color;
+            this._tracks[collarId].baseColor = color;
         }
         if (dogLabel) this._tracks[collarId].dogLabel = dogLabel;
 
         const track = this._tracks[collarId];
+        const trackColor = this._resolveTrackColor(track.baseColor);
+        const markerColor = this._resolveColor(track.baseColor, this._markerColorMode);
         const positions = locations.map(loc => [loc.latitude, loc.longitude]);
         track.positions = positions;
 
         if (positions.length > 0) {
             // Polyline zeichnen
+            track.outlineOverlay = this._createTrackOutline(positions, 0.9);
+            if (track.outlineOverlay) track.outlineOverlay.addTo(mapData.trackingLayer);
             track.polyline = L.polyline(positions, {
-                color: track.color,
+                color: trackColor,
                 weight: 3,
                 opacity: 0.8
             });
             track.polyline.addTo(mapData.trackingLayer);
+            track.dotOverlay = this._createTrackDotOverlay(positions, track.baseColor, 0.8);
+            if (track.dotOverlay) track.dotOverlay.addTo(mapData.trackingLayer);
 
             // Marker an letzter Position
             const lastPos = positions[positions.length - 1];
             const lastLoc = locations[locations.length - 1];
-            const icon = this._createCollarIcon(track.color, false);
+            const icon = this._createCollarIcon(markerColor, false);
             track.marker = L.marker(lastPos, { icon: icon })
                 .bindPopup(`<strong>${track.dogLabel || collarId}</strong><br><small>Halsband: ${collarId}</small><br><small>UTM: ${latLngToUtm(lastPos[0], lastPos[1])}</small><br><small>${new Date(lastLoc.timestamp).toLocaleTimeString('de-DE')}</small>`);
             track.marker.addTo(mapData.trackingLayer);
@@ -240,7 +313,7 @@ window.CollarTracking = {
         if (!track || !track.marker) return;
 
         // Marker-Icon durch pulsierende Variante ersetzen
-        const icon = this._createCollarIcon(track.color, true);
+        const icon = this._createCollarIcon(this._resolveColor(track.baseColor, this._markerColorMode), true);
         track.marker.setIcon(icon);
         track._oobActive = true;
 
@@ -261,7 +334,7 @@ window.CollarTracking = {
             track._oobTimeout = null;
         }
 
-        const icon = this._createCollarIcon(track.color, false);
+        const icon = this._createCollarIcon(this._resolveColor(track.baseColor, this._markerColorMode), false);
         track.marker.setIcon(icon);
         track._oobActive = false;
     },
@@ -281,6 +354,8 @@ window.CollarTracking = {
         const track = this._tracks[collarId];
         if (track) {
             if (track.polyline) mapData.trackingLayer.removeLayer(track.polyline);
+            if (track.outlineOverlay) mapData.trackingLayer.removeLayer(track.outlineOverlay);
+            if (track.dotOverlay) mapData.trackingLayer.removeLayer(track.dotOverlay);
             if (track.marker) mapData.trackingLayer.removeLayer(track.marker);
             delete this._tracks[collarId];
         }
@@ -297,19 +372,27 @@ window.CollarTracking = {
     },
 
     // Farbe eines bestehenden Tracks ändern (Polyline + Marker neu zeichnen)
-    _setTrackColor: function (mapData, collarId, newColor) {
+    _setTrackColors: function (mapData, collarId, newColor) {
         const track = this._tracks[collarId];
         if (!track) return;
-        track.color = newColor;
+        track.baseColor = newColor;
+        const trackColor = this._resolveTrackColor(newColor);
+        const markerColor = this._resolveColor(newColor, this._markerColorMode);
 
         // Polyline-Farbe aktualisieren
         if (track.polyline && mapData.trackingLayer.hasLayer(track.polyline)) {
-            track.polyline.setStyle({ color: newColor });
+            track.polyline.setStyle({ color: trackColor });
+        }
+        if (track.outlineOverlay && mapData.trackingLayer.hasLayer(track.outlineOverlay)) {
+            track.outlineOverlay.setStyle({ color: this._trackColorMode === 'area-cased' ? '#000000' : '#ffffff' });
+        }
+        if (track.dotOverlay && mapData.trackingLayer.hasLayer(track.dotOverlay)) {
+            track.dotOverlay.setStyle({ color: this._resolveColor(newColor, 'area') });
         }
 
         // Marker-Icon mit neuer Farbe ersetzen
         if (track.marker && mapData.trackingLayer.hasLayer(track.marker)) {
-            const icon = this._createCollarIcon(newColor, track._oobActive);
+            const icon = this._createCollarIcon(markerColor, track._oobActive);
             track.marker.setIcon(icon);
         }
     },
@@ -344,13 +427,17 @@ window.CollarTracking = {
 
         const positions = points.map(p => [p.latitude, p.longitude]);
 
+        const outlineOverlay = this._createTrackOutline(positions, isHumanTrack ? 0.7 : 0.6);
+        if (outlineOverlay) outlineOverlay.addTo(mapData.trackingLayer);
         const polyline = L.polyline(positions, {
-            color: color,
+            color: this._resolveTrackColor(color),
             weight: isHumanTrack ? 3 : 4,
             opacity: isHumanTrack ? 0.7 : 0.5,
             dashArray: isHumanTrack ? '3 8' : '6 5'
         });
         polyline.addTo(mapData.trackingLayer);
+        const dotOverlay = isHumanTrack ? null : this._createTrackDotOverlay(positions, color, 0.5);
+        if (dotOverlay) dotOverlay.addTo(mapData.trackingLayer);
 
         // Klick auf Linie → Blazor-Callback um GPS-Tab zu öffnen und Snapshot aufzuklappen
         polyline.on('click', () => {
@@ -366,7 +453,7 @@ window.CollarTracking = {
         // Start-Marker (kleines Dreieck)
         const startIcon = L.divIcon({
             html: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
-                <polygon points="7,1 13,13 1,13" fill="${color}" stroke="white" stroke-width="1.5" opacity="0.7"/>
+                <polygon points="7,1 13,13 1,13" fill="${this._resolveColor(color, this._trackColorMode)}" stroke="white" stroke-width="1.5" opacity="0.7"/>
             </svg>`,
             iconSize: [14, 14], iconAnchor: [7, 7], className: 'collar-completed-icon'
         });
@@ -378,7 +465,7 @@ window.CollarTracking = {
         const lastPos = positions[positions.length - 1];
         const endIcon = L.divIcon({
             html: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
-                <rect x="1" y="1" width="12" height="12" fill="${color}" stroke="white" stroke-width="1.5" opacity="0.7"/>
+                <rect x="1" y="1" width="12" height="12" fill="${this._resolveColor(color, this._trackColorMode)}" stroke="white" stroke-width="1.5" opacity="0.7"/>
             </svg>`,
             iconSize: [14, 14], iconAnchor: [7, 7], className: 'collar-completed-icon'
         });
@@ -388,6 +475,8 @@ window.CollarTracking = {
 
         this._completedTracks[snapshotId] = {
             polyline: polyline,
+            outlineOverlay: outlineOverlay,
+            dotOverlay: dotOverlay,
             startMarker: startMarker,
             endMarker: endMarker,
             visible: true
@@ -403,7 +492,7 @@ window.CollarTracking = {
         if (!ct) return;
 
         ct.visible = visible;
-        [ct.polyline, ct.startMarker, ct.endMarker].forEach(layer => {
+        [ct.outlineOverlay, ct.polyline, ct.dotOverlay, ct.startMarker, ct.endMarker].forEach(layer => {
             if (!layer) return;
             if (visible) {
                 if (!mapData.trackingLayer.hasLayer(layer)) mapData.trackingLayer.addLayer(layer);
@@ -428,7 +517,7 @@ window.CollarTracking = {
     _removeCompletedTrackLayers: function (mapData, snapshotId) {
         const ct = this._completedTracks[snapshotId];
         if (!ct) return;
-        [ct.polyline, ct.startMarker, ct.endMarker].forEach(layer => {
+        [ct.outlineOverlay, ct.polyline, ct.dotOverlay, ct.startMarker, ct.endMarker].forEach(layer => {
             if (layer && mapData.trackingLayer.hasLayer(layer))
                 mapData.trackingLayer.removeLayer(layer);
         });

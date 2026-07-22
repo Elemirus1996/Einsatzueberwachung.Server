@@ -238,6 +238,8 @@
                                 <option value="dog">Hund-Kopf</option>
                                 <option value="bone">Knochen</option>
                                 <option value="dot">Farbiger Punkt</option>
+                                <option value="crosshairs">Fadenkreuz (präzise Position)</option>
+                                <option value="location-arrow">Richtungspfeil (Bewegungsposition)</option>
                             </InputSelect>
                             <span class="cfg-help">Symbol für die aktuelle Position eines GPS-Halsbands auf der Karte.</span>
                         </div>
@@ -251,6 +253,32 @@
                                 <option value="dot">Farbiger Punkt</option>
                             </InputSelect>
                             <span class="cfg-help">Symbol für die aktuelle Handy-GPS-Position eines Teams auf der Karte.</span>
+                        </div>
+                    </div>
+                    <div class="cfg-grid cfg-grid-2 mt-2">
+                        <div class="cfg-field">
+                            <label class="cfg-label">Farbe: Hundepfad</label>
+                            <InputSelect class="cfg-input" @bind-Value="_appSettings.CollarTrackColorMode">
+                                <option value="area">Suchgebiet-Farbe</option>
+                                <option value="black">Schwarz</option>
+                                <option value="area-dots">Schwarz mit Suchgebiets-Punkten</option>
+                                <option value="contrast">Kontrastfarbe</option>
+                                <option value="area-cased">Suchgebietsfarbe mit schwarzem Rand</option>
+                                <option value="black-cased">Schwarz mit weißem Rand</option>
+                            </InputSelect>
+                            <span class="cfg-help">Farbe des GPS-Pfads des Hundes auf Live-Karten.</span>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label">Farbe: Live-Icon Hund</label>
+                            <InputSelect class="cfg-input" @bind-Value="_appSettings.CollarMarkerColorMode">
+                                <option value="area-black-outline">Suchgebiet-Farbe mit schwarzem Rand</option>
+                                <option value="area-white-outline">Suchgebiet-Farbe mit weißem Rand</option>
+                                <option value="black-white-outline">Schwarz mit weißem Rand</option>
+                                <option value="area">Suchgebiet-Farbe</option>
+                                <option value="black">Schwarz</option>
+                                <option value="contrast">Kontrastfarbe</option>
+                            </InputSelect>
+                            <span class="cfg-help">Farbe des GPS-Halsband-Symbols auf Live-Karten.</span>
                         </div>
                     </div>
                 </div>

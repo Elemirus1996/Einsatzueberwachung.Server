@@ -120,6 +120,8 @@ public partial class EinsatzKarte
     // Karten-Marker Konfiguration (aus AppSettings geladen)
     private string _collarMarkerIcon = "paw";
     private string _humanMarkerIcon = "phone";
+    private string _collarTrackColorMode = "area";
+    private string _collarMarkerColorMode = "area";
 
     private string _coordInputMode = "click"; // "click", "latlong", "utm" — auch von KartePunkteTab über @bind synchronisiert
     private bool _clickToPlaceActive = false;
@@ -175,6 +177,8 @@ public partial class EinsatzKarte
         _mapZoom = settings.MapDefaultZoom;
         _collarMarkerIcon = settings.CollarMarkerIconOrDefault;
         _humanMarkerIcon = settings.HumanMarkerIconOrDefault;
+        _collarTrackColorMode = settings.CollarTrackColorModeOrDefault;
+        _collarMarkerColorMode = settings.CollarMarkerColorModeOrDefault;
 
         // Wenn Einsatzort-Adresse vorhanden, versuche zu geocoden
         if (!string.IsNullOrWhiteSpace(EinsatzService.CurrentEinsatz.MapAddress))
@@ -242,7 +246,12 @@ public partial class EinsatzKarte
 
                 // Collar-Tracking initialisieren
                 await JSRuntime.InvokeVoidAsync("CollarTracking.initialize", "einsatzMap", _dotNetReference);
-                await JSRuntime.InvokeVoidAsync("CollarTracking.setOptions", new { collarIcon = _collarMarkerIcon });
+                await JSRuntime.InvokeVoidAsync("CollarTracking.setOptions", new
+                {
+                    collarIcon = _collarMarkerIcon,
+                    trackColorMode = _collarTrackColorMode,
+                    markerColorMode = _collarMarkerColorMode
+                });
 
                 // Handy-GPS Layer initialisieren
                 await JSRuntime.InvokeVoidAsync("PhoneTracking.initialize", "einsatzMap");
