@@ -72,6 +72,7 @@ namespace Einsatzueberwachung.Domain.Models
                 {
                     GlobalNotesEntryType.TeamStart => "play-fill",
                     GlobalNotesEntryType.TeamStop => "stop-fill",
+                    GlobalNotesEntryType.TeamPause => "pause-fill",
                     GlobalNotesEntryType.TeamReset => "arrow-repeat",
                     GlobalNotesEntryType.TeamWarning => "exclamation-triangle-fill",
                     GlobalNotesEntryType.EinsatzUpdate => "info-circle-fill",
@@ -89,6 +90,7 @@ namespace Einsatzueberwachung.Domain.Models
                 {
                     GlobalNotesEntryType.TeamStart => "success",
                     GlobalNotesEntryType.TeamStop => "warning",
+                    GlobalNotesEntryType.TeamPause => "info",
                     GlobalNotesEntryType.TeamReset => "info",
                     GlobalNotesEntryType.TeamWarning => "danger",
                     GlobalNotesEntryType.EinsatzUpdate => "primary",

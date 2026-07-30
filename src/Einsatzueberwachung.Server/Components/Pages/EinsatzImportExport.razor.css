@@ -68,8 +68,8 @@
 }
 
 .merge-item-card {
-    border-left: 4px solid var(--ui-border);
-    transition: border-color 0.15s;
+    border: 1px solid var(--ui-border);
+    transition: border-color 0.15s, background-color 0.15s;
 }
 
 .import-mode-card {
@@ -82,9 +82,18 @@
     box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
-.merge-item-card.resolved-link    { border-left-color: var(--success-color); }
-.merge-item-card.resolved-create  { border-left-color: var(--theme-primary); }
-.merge-item-card.resolved-skip    { border-left-color: var(--ui-muted); }
+.merge-item-card.resolved-link {
+    border-color: var(--success-color);
+    background: color-mix(in srgb, var(--success-color) 6%, transparent);
+}
+.merge-item-card.resolved-create {
+    border-color: var(--theme-primary);
+    background: color-mix(in srgb, var(--theme-primary) 6%, transparent);
+}
+.merge-item-card.resolved-skip {
+    border-color: var(--ui-muted);
+    background: color-mix(in srgb, var(--ui-muted) 6%, transparent);
+}
 
 .candidate-option {
     cursor: pointer;

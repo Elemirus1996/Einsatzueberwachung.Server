@@ -288,6 +288,20 @@
     50%      { box-shadow: 0 0 0 10px transparent; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .home-status-band.is-alarm,
+    [data-intensity="lebhaft"] .home-status-band.is-alarm {
+        animation: none;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-color) 60%, transparent);
+    }
+    .home-action-btn--alarm,
+    [data-intensity="lebhaft"] .home-action-btn--alarm {
+        animation: none;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-color) 60%, transparent);
+        border-width: 2px;
+    }
+}
+
 @keyframes home-alarm-btn-pulse {
     0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger-color) 55%, transparent); }
     50%      { box-shadow: 0 0 0 14px transparent; }

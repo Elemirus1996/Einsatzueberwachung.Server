@@ -220,10 +220,10 @@
                                     {
                                         <div class="teams-monitor-list">
                                             @foreach (var team in GetFilteredTeams()
-                                                .OrderBy(team => team.IsPausing ? 2 : team.IsRunning ? 0 : 1)
+                                                .OrderBy(team => team.IsPausing ? 3 : team.IsManuallyPaused ? 2 : team.IsRunning ? 0 : 1)
                                                 .ThenBy(team => team.TeamName))
                                             {
-                                                var isDogConflict = !team.IsRunning && !team.IsPausing
+                                                var isDogConflict = !team.IsRunning && !team.IsPausing && !team.IsManuallyPaused
                                                     && !string.IsNullOrWhiteSpace(team.DogId)
                                                     && EinsatzService.IsDogRunning(team.DogId);
                                                 var conflictingTeamName = isDogConflict
@@ -238,6 +238,7 @@
                                                           LatestNoteEntries="GetLatestTeamNoteEntries(team, 3)"
                                                           CompletedSearches="GetCompletedSearches(team, 5)"
                                                           OnStart="StartTeamAsync"
+                                                          OnPause="PauseTeamAsync"
                                                           OnStop="StopTeamAsync"
                                                           OnReset="RequestResetTeamAsync"
                                                           OnEdit="id => EditTeam(id)"

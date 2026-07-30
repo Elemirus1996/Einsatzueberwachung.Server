@@ -208,7 +208,7 @@ public class EinsatzServiceTests
     }
 
     [Fact]
-    public void StopTimer_DogTeam_DoesNotEnterPauseBelowConfiguredThreshold()
+    public void StopTimer_DogTeam_AlwaysEntersPauseModeEvenBelowConfiguredThreshold()
     {
         var team = new Team
         {
@@ -223,9 +223,8 @@ public class EinsatzServiceTests
 
         team.StopTimer();
 
-        Assert.False(team.IsPausing);
-        Assert.False(team.IsPauseComplete);
-        Assert.Equal(0, team.RequiredPauseMinutes);
+        Assert.True(team.IsPausing);
+        Assert.Equal(60, team.RequiredPauseMinutes);
     }
 
     [Fact]
@@ -247,6 +246,59 @@ public class EinsatzServiceTests
         Assert.True(team.IsPausing);
         Assert.Equal(60, team.RequiredPauseMinutes);
         Assert.True(team.PauseStartTime.HasValue);
+    }
+
+    [Fact]
+    public void PauseTimer_WhileRunning_FreezesElapsedTimeAndSetsManualPauseFlag()
+    {
+        var team = new Team { TeamName = "Lima", DogId = "dog-3" };
+        team.StartTimer(DateTime.Now.AddMinutes(-5));
+
+        team.PauseTimer(DateTime.Now);
+
+        Assert.False(team.IsRunning);
+        Assert.True(team.IsManuallyPaused);
+        Assert.False(team.IsPausing);
+        Assert.InRange(team.ElapsedTime.TotalMinutes, 4.9, 5.1);
+    }
+
+    [Fact]
+    public void PauseTimer_NotRunning_DoesNothing()
+    {
+        var team = new Team { TeamName = "Mike" };
+
+        team.PauseTimer();
+
+        Assert.False(team.IsManuallyPaused);
+        Assert.False(team.IsRunning);
+    }
+
+    [Fact]
+    public void StartTimer_AfterManualPause_ContinuesFromFrozenElapsedTimeAndClearsFlag()
+    {
+        var team = new Team { TeamName = "November" };
+        team.StartTimer(DateTime.Now.AddMinutes(-10));
+        team.PauseTimer(DateTime.Now);
+        var frozenElapsed = team.ElapsedTime;
+
+        team.StartTimer(DateTime.Now);
+
+        Assert.False(team.IsManuallyPaused);
+        Assert.True(team.IsRunning);
+        Assert.Equal(frozenElapsed, team.ElapsedTime);
+    }
+
+    [Fact]
+    public void StopTimer_FromManualPause_EntersPauseMode()
+    {
+        var team = new Team { TeamName = "Oscar", DogId = "dog-4" };
+        team.StartTimer(DateTime.Now.AddMinutes(-30));
+        team.PauseTimer(DateTime.Now);
+
+        team.StopTimer();
+
+        Assert.False(team.IsManuallyPaused);
+        Assert.True(team.IsPausing);
     }
 
     // --- Notizen ---

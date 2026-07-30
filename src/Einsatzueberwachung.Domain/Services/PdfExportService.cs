@@ -41,6 +41,7 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 GlobalNotesEntryType.TeamStart => "#27AE60",
                 GlobalNotesEntryType.TeamStop => "#7F8C8D",
+                GlobalNotesEntryType.TeamPause => "#2C81BA",
                 GlobalNotesEntryType.TeamWarning => "#C0392B",
                 GlobalNotesEntryType.TeamReset => "#7F8C8D",
                 GlobalNotesEntryType.EinsatzUpdate => "#2C3E50",
@@ -55,6 +56,7 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 GlobalNotesEntryType.TeamStart => "Ausrücken",
                 GlobalNotesEntryType.TeamStop => "Einrücken",
+                GlobalNotesEntryType.TeamPause => "Kurzpause",
                 GlobalNotesEntryType.TeamWarning => "Warnung",
                 GlobalNotesEntryType.TeamReset => "Reset",
                 GlobalNotesEntryType.EinsatzUpdate => "Einsatz",

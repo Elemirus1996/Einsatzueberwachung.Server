@@ -19,7 +19,7 @@
     height: 100vh;
     background: var(--lage-bg);
     color: var(--lage-ink);
-    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-feature-settings: "tnum" 1;
     overflow: hidden;
     display: grid;

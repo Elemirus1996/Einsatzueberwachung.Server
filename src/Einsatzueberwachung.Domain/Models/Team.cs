@@ -83,6 +83,10 @@ namespace Einsatzueberwachung.Domain.Models
         // Gespeicherte GPS-Tracks (bei Team-Stopp gesichert)
         public List<TeamTrackSnapshot> TrackSnapshots { get; set; } = new();
 
+        // Manuelle Kurzpause (z.B. Trinkpause) - getrennt vom Pflichtpausen-System unten.
+        // Keine Mindestdauer, kein Ruhezeit-Countdown; Weiter/Start setzt sie einfach zurück.
+        public bool IsManuallyPaused { get; set; }
+
         // Pausen-Modus für Hundeteams
         public bool IsPausing { get; set; }
         public DateTime? PauseStartTime { get; set; }
@@ -109,6 +113,7 @@ namespace Einsatzueberwachung.Domain.Models
         public event Action<Team>? TimerStarted;
         public event Action<Team>? TimerStopped;
         public event Action<Team>? TimerReset;
+        public event Action<Team>? TimerPaused;
         public event Action<Team, bool>? WarningTriggered;
         public event Action<Team>? TimerTick;
 
@@ -148,6 +153,7 @@ namespace Einsatzueberwachung.Domain.Models
                 var t = now ?? DateTime.Now;
                 // Pausen-Zustand für neuen Lauf zurücksetzen
                 IsPausing = false;
+                IsManuallyPaused = false;
                 PauseStartTime = null;
                 RunTimeBeforePause = TimeSpan.Zero;
                 RequiredPauseMinutes = 0;
@@ -157,18 +163,32 @@ namespace Einsatzueberwachung.Domain.Models
             }
         }
 
+        /// <summary>
+        /// Manuelle Kurzpause (z.B. Trinkpause): friert die Zeit ein, ohne die Pflichtpausen-Logik auszulösen.
+        /// </summary>
+        public void PauseTimer(DateTime? now = null)
+        {
+            if (!IsRunning) return;
+
+            var t = now ?? DateTime.Now;
+            ElapsedTime = t - StartTime;
+            IsRunning = false;
+            IsManuallyPaused = true;
+            TimerPaused?.Invoke(this);
+        }
+
         public void StopTimer()
         {
-            if (IsRunning)
-            {
-                IsRunning = false;
-                TimerStopped?.Invoke(this);
+            if (!IsRunning && !IsManuallyPaused) return;
 
+            IsRunning = false;
+            IsManuallyPaused = false;
+            TimerStopped?.Invoke(this);
+
+            if (IsHundeteam)
+            {
                 var pauseThreshold = PauseThresholdMinutes > 0 ? PauseThresholdMinutes : 20;
-                if (IsHundeteam && ElapsedTime.TotalMinutes >= pauseThreshold)
-                {
-                    EnterPauseMode(pauseThreshold: pauseThreshold, pauseShort: PauseMinutesShortRun, pauseLong: PauseMinutesLongRun);
-                }
+                EnterPauseMode(pauseThreshold: pauseThreshold, pauseShort: PauseMinutesShortRun, pauseLong: PauseMinutesLongRun);
             }
         }
 
@@ -215,6 +235,7 @@ namespace Einsatzueberwachung.Domain.Models
         public void SilentReset()
         {
             IsRunning = false;
+            IsManuallyPaused = false;
             ElapsedTime = TimeSpan.Zero;
             IsFirstWarning = false;
             IsSecondWarning = false;

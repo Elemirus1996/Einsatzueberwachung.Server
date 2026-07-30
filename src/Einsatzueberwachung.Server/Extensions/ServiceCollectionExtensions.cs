@@ -5,7 +5,6 @@ using Einsatzueberwachung.Server.Hubs;
 using Einsatzueberwachung.Server.Security;
 using Einsatzueberwachung.Server.Services;
 using Einsatzueberwachung.Server.Services.Radio;
-using Einsatzueberwachung.Server.Training;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -32,7 +31,7 @@ internal static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddSwaggerWithTrainingSchema(this IServiceCollection services)
+    public static IServiceCollection AddSwagger(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
@@ -41,10 +40,8 @@ internal static class ServiceCollectionExtensions
             {
                 Title = "Einsatzueberwachung.Server API",
                 Version = "v1",
-                Description = "REST API fuer Mobile- und externe Integrationen inkl. Trainings-Endpoints."
+                Description = "REST API fuer Mobile- und externe Integrationen."
             });
-
-            options.SchemaFilter<TrainingOpenApiSchemaFilter>();
 
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
@@ -56,50 +53,12 @@ internal static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddTrainingModule(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.Configure<TrainingApiOptions>(
-            configuration.GetSection(TrainingApiOptions.SectionName));
-        services.AddSingleton<ITrainingExerciseService, TrainingExerciseService>();
-        services.AddSingleton<ITrainingScenarioSuggestionService, TrainingScenarioSuggestionService>();
-        services.AddSingleton<TrainerNotificationService>();
-        services.Configure<TrainerAuthOptions>(
-            configuration.GetSection(TrainerAuthOptions.SectionName));
-        return services;
-    }
-
-    public static IServiceCollection AddTrainerCookieAuthentication(this IServiceCollection services)
-    {
-        services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-            .AddCookie(options =>
-            {
-                options.Cookie.Name = "einsatz.trainer.auth";
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.Strict;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-                options.LoginPath = "/einstellungen";
-                options.AccessDeniedPath = "/einstellungen";
-                options.ExpireTimeSpan = TimeSpan.FromHours(12);
-                options.SlidingExpiration = true;
-            });
-
-        services.AddAuthorization(options =>
-        {
-            options.AddPolicy("TrainerOnly", policy =>
-            {
-                policy.RequireAuthenticatedUser();
-                policy.RequireRole("Trainer");
-            });
-        });
-
-        services.AddCascadingAuthenticationState();
-        services.AddHttpContextAccessor();
-        return services;
-    }
-
     public static IServiceCollection AddTeamMobileAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<TeamMobileOptions>(configuration.GetSection(TeamMobileOptions.SectionName));
+
+        services.AddCascadingAuthenticationState();
+        services.AddHttpContextAccessor();
 
         services.AddAuthentication()
             .AddCookie(TeamMobileAuth.AuthenticationScheme, options =>
@@ -202,14 +161,10 @@ internal static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddCorsPolicies(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddCorsPolicies(this IServiceCollection services)
     {
         services.AddCors(options =>
         {
-            var trainingOrigins = configuration
-                .GetSection("TrainingApi:AllowedOrigins")
-                .Get<string[]>() ?? Array.Empty<string>();
-
             options.AddPolicy("VpnPolicy", policy =>
             {
                 policy.SetIsOriginAllowed(_ => true)
@@ -222,21 +177,6 @@ internal static class ServiceCollectionExtensions
             {
                 policy.SetIsOriginAllowed(_ => true)
                       .AllowAnyMethod()
-                      .AllowAnyHeader();
-            });
-
-            options.AddPolicy("TrainingApi", policy =>
-            {
-                if (trainingOrigins.Length == 0)
-                {
-                    policy.SetIsOriginAllowed(_ => true);
-                }
-                else
-                {
-                    policy.WithOrigins(trainingOrigins);
-                }
-
-                policy.AllowAnyMethod()
                       .AllowAnyHeader();
             });
         });

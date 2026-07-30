@@ -11,10 +11,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddControllers();
-builder.Services.AddSwaggerWithTrainingSchema();
+builder.Services.AddSwagger();
 
-builder.Services.AddTrainingModule(builder.Configuration);
-builder.Services.AddTrainerCookieAuthentication();
 builder.Services.AddTeamMobileAuthentication(builder.Configuration);
 
 builder.Services.AddCompressionAndCaching();
@@ -23,7 +21,7 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddRuntimeStateDb();
 builder.Services.AddSignalRForRealtime(builder.Environment);
-builder.Services.AddCorsPolicies(builder.Configuration);
+builder.Services.AddCorsPolicies();
 
 builder.Services.AddDomainServices();
 builder.Services.AddStaticMapAndUpdateServices();

@@ -169,5 +169,9 @@ public class PdfExportSmokeTests
             Dictionary<string, List<TeamPhoneLocation>>? phoneTrackHistories = null,
             List<Team>? teams = null, int width = 1500, int height = 1060)
             => Task.FromResult<byte[]?>(null);
+
+        public Task<byte[]?> RenderCoverageHeatmapAsync(List<SearchAreaCoverageResult> coverageResults,
+            (double Latitude, double Longitude)? elwPosition, int width = 1200, int height = 780)
+            => Task.FromResult<byte[]?>(null);
     }
 }

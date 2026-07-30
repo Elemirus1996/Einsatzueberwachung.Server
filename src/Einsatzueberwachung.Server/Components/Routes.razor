@@ -1,18 +1,8 @@
-﻿@rendermode InteractiveServer
+@rendermode InteractiveServer
 
 <Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
-        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
-            <NotAuthorized>
-                <LayoutView Layout="typeof(Layout.MainLayout)">
-                    <div class="container py-5">
-                        <div class="alert alert-warning mb-0">
-                            Zugriff verweigert. Der Trainerbereich ist nur nach Anmeldung ueber Einstellungen verfuegbar.
-                        </div>
-                    </div>
-                </LayoutView>
-            </NotAuthorized>
-        </AuthorizeRouteView>
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>

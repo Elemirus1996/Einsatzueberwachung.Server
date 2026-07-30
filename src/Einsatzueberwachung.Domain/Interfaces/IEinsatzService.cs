@@ -51,6 +51,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         Task<Team?> GetTeamByIdAsync(string teamId);
 
         Task StartTeamTimerAsync(string teamId);
+        Task PauseTeamTimerAsync(string teamId);
         Task StopTeamTimerAsync(string teamId);
         Task ResetTeamTimerAsync(string teamId);
 

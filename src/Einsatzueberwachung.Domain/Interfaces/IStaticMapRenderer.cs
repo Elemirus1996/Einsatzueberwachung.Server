@@ -53,4 +53,13 @@ public interface IStaticMapRenderer
         List<Team>? teams = null,
         int width = 1500,
         int height = 1060);
+
+    /// <summary>
+    /// Rendert eine Karte mit der Flächenabdeckungs-Analyse (Heatmap) je Suchgebiet für den PDF-Bericht.
+    /// </summary>
+    Task<byte[]?> RenderCoverageHeatmapAsync(
+        List<SearchAreaCoverageResult> coverageResults,
+        (double Latitude, double Longitude)? elwPosition,
+        int width = 1200,
+        int height = 780);
 }

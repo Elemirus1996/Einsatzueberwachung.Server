@@ -2,7 +2,6 @@
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Server.Services;
-using Einsatzueberwachung.Server.Training;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.JSInterop;
@@ -13,7 +12,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
 {
     [Inject] private BrowserPreferencesService BrowserPrefs { get; set; } = default!;
     [Inject] private IEinsatzService EinsatzService { get; set; } = default!;
-    [Inject] private TrainerNotificationService TrainerNotifications { get; set; } = default!;
     [Inject] private IWarningService WarningService { get; set; } = default!;
     [Inject] private ITimeService TimeService { get; set; } = default!;
     [Inject] private MissionTopbarService MissionTopbar { get; set; } = default!;
@@ -29,9 +27,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
     private string _criticalWarningMessage = string.Empty;
     private bool _audioEnableHintVisible;
 
-    private bool _showExerciseEndedPopup;
-    private string _exerciseEndedName = string.Empty;
-    private string _exerciseEndedSummary = string.Empty;
     private bool _szenarioMenuOpen;
     private TimeSpan? _missionDuration;
     private System.Threading.Timer? _missionDurationTimer;
@@ -56,7 +51,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         EinsatzService.TeamRemoved += OnTeamStateChanged;
         EinsatzService.TeamWarningTriggered += OnTeamWarningTriggered;
         EinsatzService.DogPauseStarted += OnDogPauseStarted;
-        TrainerNotifications.ExerciseEnded += OnExerciseEnded;
         WarningService.WarningAdded += OnWarningAdded;
         MissionTopbar.Changed += OnMissionTopbarChanged;
     }
@@ -81,22 +75,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         WarningLevel.Info     => "text-bg-info",
         _                     => "text-bg-warning"
     };
-
-    private void OnExerciseEnded(string exerciseName, string summary)
-    {
-        _ = InvokeAsync(() =>
-        {
-            _exerciseEndedName = exerciseName;
-            _exerciseEndedSummary = summary;
-            _showExerciseEndedPopup = true;
-            StateHasChanged();
-        });
-    }
-
-    private void DismissExerciseEndedPopup()
-    {
-        _showExerciseEndedPopup = false;
-    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -362,7 +340,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         EinsatzService.TeamRemoved -= OnTeamStateChanged;
         EinsatzService.TeamWarningTriggered -= OnTeamWarningTriggered;
         EinsatzService.DogPauseStarted -= OnDogPauseStarted;
-        TrainerNotifications.ExerciseEnded -= OnExerciseEnded;
         WarningService.WarningAdded -= OnWarningAdded;
         MissionTopbar.Changed -= OnMissionTopbarChanged;
         _missionDurationTimer?.Dispose();

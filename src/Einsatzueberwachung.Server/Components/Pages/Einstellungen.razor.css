@@ -314,7 +314,7 @@
     resize: vertical;
     min-height: 100px;
     line-height: 1.4;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.85rem;
 }
 
@@ -566,7 +566,7 @@
 }
 
 ::deep .cfg-logo-path {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.72rem;
     color: var(--ui-muted);
     background: color-mix(in srgb, var(--ui-text) 4%, transparent);
@@ -709,7 +709,7 @@
 }
 
 ::deep .cfg-path {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.78rem;
     background: color-mix(in srgb, var(--ui-text) 4%, transparent);
     padding: 0.2rem 0.45rem;
@@ -741,9 +741,8 @@
     position: fixed;
     bottom: 1.5rem;
     right: 1.5rem;
-    background: var(--ui-surface);
-    border: 1px solid color-mix(in srgb, var(--success-color) 35%, var(--ui-border));
-    border-left: 3px solid var(--success-color);
+    background: color-mix(in srgb, var(--success-color) 8%, var(--ui-surface));
+    border: 1px solid var(--success-color);
     border-radius: 6px;
     padding: 0.6rem 0.95rem;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);

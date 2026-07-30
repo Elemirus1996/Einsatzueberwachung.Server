@@ -21,13 +21,16 @@ namespace Einsatzueberwachung.Domain.Services
                 var einsatzPath = AppPathResolver.GetReportDirectory();
                 var filePath = Path.Combine(einsatzPath, filename);
                 var tracks = includeTracks ? einsatzData.TrackSnapshots : null;
+                List<SearchAreaCoverageResult>? coverage = null;
+                byte[]? coverageHeatmap = null;
 
                 if (tracks != null && _mapRenderer != null)
                 {
                     await RenderTrackMapsAsync(tracks);
+                    (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, einsatzData.ElwPosition);
                 }
 
-                var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo, tracks);
+                var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo, tracks, coverage, coverageHeatmap);
 
                 await Task.Run(() =>
                 {
@@ -62,13 +65,16 @@ namespace Einsatzueberwachung.Domain.Services
                 var einsatzPath = AppPathResolver.GetReportDirectory();
                 var filePath = Path.Combine(einsatzPath, filename);
                 var tracks = includeTracks ? archivedEinsatz.TrackSnapshots : null;
+                List<SearchAreaCoverageResult>? coverage = null;
+                byte[]? coverageHeatmap = null;
 
                 if (tracks?.Any(t => t.Points.Count >= 2) == true && _mapRenderer != null)
                 {
                     await RenderTrackMapsAsync(tracks);
+                    (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, archivedEinsatz.ElwPosition);
                 }
 
-                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks);
+                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, coverage, coverageHeatmap);
 
                 await Task.Run(() =>
                 {
@@ -98,13 +104,16 @@ namespace Einsatzueberwachung.Domain.Services
         {
             var staffelInfo = await ResolveStaffelInfoAsync(archivedEinsatz);
             var tracks = includeTracks ? archivedEinsatz.TrackSnapshots : null;
+            List<SearchAreaCoverageResult>? coverage = null;
+            byte[]? coverageHeatmap = null;
 
             if (tracks?.Any(t => t.Points.Count >= 2) == true && _mapRenderer != null)
             {
                 await RenderTrackMapsAsync(tracks);
+                (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, archivedEinsatz.ElwPosition);
             }
 
-            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks);
+            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, coverage, coverageHeatmap);
 
             return await Task.Run(() =>
             {
@@ -121,13 +130,16 @@ namespace Einsatzueberwachung.Domain.Services
         {
             var staffelInfo = await ResolveStaffelInfoAsync(einsatzData);
             var tracks = includeTracks ? einsatzData.TrackSnapshots : null;
+            List<SearchAreaCoverageResult>? coverage = null;
+            byte[]? coverageHeatmap = null;
 
             if (tracks?.Any(t => t.Points.Count >= 2) == true && _mapRenderer != null)
             {
                 await RenderTrackMapsAsync(tracks);
+                (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, einsatzData.ElwPosition);
             }
 
-            var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo, tracks);
+            var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo, tracks, coverage, coverageHeatmap);
             return await Task.Run(() =>
             {
                 using var stream = new MemoryStream();
@@ -161,7 +173,27 @@ namespace Einsatzueberwachung.Domain.Services
             }
         }
 
-        private Document CreateEinsatzDocument(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null)
+        private async Task<(List<SearchAreaCoverageResult>? Coverage, byte[]? Heatmap)> CalculateAndRenderCoverageAsync(
+            List<TeamTrackSnapshot> tracks, (double Latitude, double Longitude)? elwPosition)
+        {
+            var coverage = CoverageAnalysisCalculator.Calculate(tracks);
+            if (coverage.Count == 0)
+                return (null, null);
+
+            byte[]? heatmap = null;
+            try
+            {
+                heatmap = await _mapRenderer!.RenderCoverageHeatmapAsync(coverage, elwPosition);
+            }
+            catch
+            {
+                // Kein Heatmap-Bild verfügbar, Tabelle wird trotzdem angezeigt
+            }
+
+            return (coverage, heatmap);
+        }
+
+        private Document CreateEinsatzDocument(EinsatzData einsatzData, List<Team> teams, List<GlobalNotesEntry> notes, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null, List<SearchAreaCoverageResult>? coverage = null, byte[]? coverageHeatmap = null)
         {
             return Document.Create(container =>
             {
@@ -197,6 +229,11 @@ namespace Einsatzueberwachung.Domain.Services
                                 column.Item().PageBreak();
                                 column.Item().PaddingVertical(10).Element(c => ComposeGpsTracks(c, tracks));
                             }
+                            if (coverage?.Any() == true)
+                            {
+                                column.Item().PageBreak();
+                                column.Item().PaddingVertical(10).Element(c => ComposeCoverageAnalysis(c, coverage, coverageHeatmap));
+                            }
                             if (notes.Any())
                             {
                                 column.Item().PageBreak();
@@ -219,7 +256,7 @@ namespace Einsatzueberwachung.Domain.Services
             });
         }
 
-        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null)
+        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null, List<SearchAreaCoverageResult>? coverage = null, byte[]? coverageHeatmap = null)
         {
             return Document.Create(container =>
             {
@@ -261,6 +298,11 @@ namespace Einsatzueberwachung.Domain.Services
                             {
                                 column.Item().PageBreak();
                                 column.Item().PaddingVertical(10).Element(c => ComposeGpsTracks(c, tracks));
+                            }
+                            if (coverage?.Any() == true)
+                            {
+                                column.Item().PageBreak();
+                                column.Item().PaddingVertical(10).Element(c => ComposeCoverageAnalysis(c, coverage, coverageHeatmap));
                             }
                             if (einsatz.GlobalNotesEntries?.Any() == true)
                             {

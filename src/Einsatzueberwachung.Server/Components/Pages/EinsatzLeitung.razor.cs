@@ -44,12 +44,12 @@ public partial class EinsatzLeitung : IDisposable
         .ToList();
 
     private IReadOnlyList<Team> ReadyTeams => EinsatzService.Teams
-        .Where(t => !t.IsRunning && !t.IsPausing)
+        .Where(t => !t.IsRunning && !t.IsPausing && !t.IsManuallyPaused)
         .OrderBy(t => t.TeamName)
         .ToList();
 
     private IReadOnlyList<Team> PauseTeams => EinsatzService.Teams
-        .Where(t => t.IsPausing)
+        .Where(t => t.IsPausing || t.IsManuallyPaused)
         .OrderBy(t => t.TeamName)
         .ToList();
 
@@ -277,6 +277,14 @@ public partial class EinsatzLeitung : IDisposable
     }
 
     private async Task PauseTeamAsync(string teamId)
+    {
+        if (_busyTeamId is not null) return;
+        _busyTeamId = teamId;
+        try { await EinsatzService.PauseTeamTimerAsync(teamId); }
+        finally { _busyTeamId = null; }
+    }
+
+    private async Task StopTeamAsync(string teamId)
     {
         if (_busyTeamId is not null) return;
         _busyTeamId = teamId;
@@ -520,6 +528,9 @@ public partial class EinsatzLeitung : IDisposable
 
     private static string Pct(double v)
         => v.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "%";
+
+    private static string Frac(double v)
+        => (v / 100.0).ToString("0.000", System.Globalization.CultureInfo.InvariantCulture);
 
     // ── Funkstammbuch-Tape (letzte Funkmeldungen) ────────────────
     private List<GlobalNotesEntry> FunktapeEntries(int max = 6)

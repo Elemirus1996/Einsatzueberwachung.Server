@@ -104,6 +104,7 @@
 
 .note-card.note-type-teamstart,
 .note-card.note-type-teamstop,
+.note-card.note-type-teampause,
 .note-card.note-type-teamreset {
     border-left-color: var(--info-color);
     background: var(--info-soft);

@@ -301,11 +301,6 @@ public partial class Einstellungen
         await InvokeAsync(StateHasChanged);
     }
 
-    private void OpenTrainerDashboardAsync()
-    {
-        Navigation.NavigateTo("/trainer");
-    }
-
     private async Task UploadStaffelLogoAsync(InputFileChangeEventArgs args)
     {
         var file = args.File;

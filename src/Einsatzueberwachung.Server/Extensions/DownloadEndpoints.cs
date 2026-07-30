@@ -224,7 +224,7 @@ internal static class DownloadEndpoints
             return Results.File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "stammdaten-template.xlsx");
         });
 
-        app.MapGet("/downloads/data-backup.zip", () =>
+        app.MapGet("/downloads/data-backup.zip", (ILogger<Program> logger) =>
         {
             var dataDirectory = AppPathResolver.GetDataDirectory();
             if (!Directory.Exists(dataDirectory))
@@ -232,19 +232,29 @@ internal static class DownloadEndpoints
                 return Results.NotFound();
             }
 
-            using var memoryStream = new MemoryStream();
-            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, leaveOpen: true))
+            var fileName = $"einsatzueberwachung-data-backup-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+
+            return Results.Stream(async responseStream =>
             {
+                using var archive = new ZipArchive(responseStream, ZipArchiveMode.Create, leaveOpen: true);
                 var files = Directory.GetFiles(dataDirectory, "*", SearchOption.AllDirectories);
                 foreach (var filePath in files)
                 {
-                    var relativePath = Path.GetRelativePath(dataDirectory, filePath);
-                    archive.CreateEntryFromFile(filePath, relativePath, CompressionLevel.Optimal);
+                    try
+                    {
+                        var relativePath = Path.GetRelativePath(dataDirectory, filePath);
+                        var entry = archive.CreateEntry(relativePath, CompressionLevel.Fastest);
+                        await using var entryStream = entry.Open();
+                        await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        await fileStream.CopyToAsync(entryStream);
+                    }
+                    catch (IOException ex)
+                    {
+                        // Datei war z.B. gerade durch RuntimeStatePersistenceService gesperrt - Backup ohne diese Datei fortsetzen
+                        logger.LogWarning(ex, "Datei {FilePath} konnte fuer das Daten-Backup nicht gelesen werden und wurde uebersprungen", filePath);
+                    }
                 }
-            }
-
-            var fileName = $"einsatzueberwachung-data-backup-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
-            return Results.File(memoryStream.ToArray(), "application/zip", fileName);
+            }, "application/zip", fileName);
         });
 
         app.MapGet("/downloads/livetracking.zip", () =>

@@ -3,7 +3,6 @@
 
 @using Einsatzueberwachung.Domain.Models.Enums
 @using Einsatzueberwachung.Domain.Models.Divera
-@using Einsatzueberwachung.Server.Training
 
 <PageTitle>Einsatz anlegen</PageTitle>
 
@@ -88,36 +87,7 @@
                 <header class="es-section-header">
                     <i class="bi bi-clipboard-data"></i>
                     <span>Lagedaten</span>
-
-                    @if (_trainerStartPreset is not null)
-                    {
-                        <button type="button" class="es-trainer-chip" @onclick="ToggleTrainerDetails"
-                                title="Trainer-Lage geladen"
-                                aria-expanded="@_trainerDetailsOpen">
-                            <i class="bi bi-mortarboard-fill"></i>
-                            <span>Trainer-Lage</span>
-                            <i class="bi @(_trainerDetailsOpen ? "bi-chevron-up" : "bi-chevron-down")"></i>
-                        </button>
-                    }
                 </header>
-
-                @if (_trainerStartPreset is not null && _trainerDetailsOpen)
-                {
-                    <div class="es-trainer-details">
-                        <div class="small">
-                            <strong>@_trainerStartPreset.ExerciseName</strong> · @_trainerStartPreset.ScenarioCategory
-                        </div>
-                        <div class="small text-muted mt-1">@_trainerStartPreset.BriefingText</div>
-                        <div class="d-flex gap-2 mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="ApplyTrainerPreset">
-                                <i class="bi bi-arrow-repeat me-1"></i>Erneut anwenden
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearTrainerPresetAsync">
-                                <i class="bi bi-x-circle me-1"></i>Entfernen
-                            </button>
-                        </div>
-                    </div>
-                }
 
                 <div class="es-grid-row es-grid-3">
                     <div class="es-field">

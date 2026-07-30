@@ -163,31 +163,6 @@
     </div>
 }
 
-@if (_showExerciseEndedPopup)
-{
-    <div class="global-warning-overlay">
-        <button type="button"
-                class="global-warning-overlay-dismiss"
-                @onclick="DismissExerciseEndedPopup"
-                aria-label="Hinweis schließen"></button>
-        <div class="global-warning-popup" @onclick:stopPropagation="true">
-            <div class="global-warning-header global-warning-header--success">
-                <h4 class="mb-0"><i class="bi bi-flag-fill me-2"></i>Übung beendet</h4>
-            </div>
-            <div class="global-warning-body">
-                <p class="mb-2"><strong>@_exerciseEndedName</strong></p>
-                @if (!string.IsNullOrWhiteSpace(_exerciseEndedSummary))
-                {
-                    <p class="mb-0">@_exerciseEndedSummary</p>
-                }
-            </div>
-            <div class="global-warning-footer">
-                <button class="btn btn-success" @onclick="DismissExerciseEndedPopup">OK</button>
-            </div>
-        </div>
-    </div>
-}
-
 <div id="blazor-error-ui" data-nosnippet>
     Es ist ein Fehler aufgetreten.
     <a href="." class="reload">Neu laden</a>

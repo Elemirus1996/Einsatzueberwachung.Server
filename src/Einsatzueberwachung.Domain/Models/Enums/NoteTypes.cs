@@ -8,6 +8,7 @@ namespace Einsatzueberwachung.Domain.Models.Enums
         Manual,
         TeamStart,
         TeamStop,
+        TeamPause,
         TeamReset,
         TeamWarning,
         EinsatzUpdate,

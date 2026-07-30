@@ -143,11 +143,20 @@
     align-items: center;
     gap: var(--s4);
     padding: var(--s2) var(--s4);
-    background: var(--funk-anthrazit);
+    background:
+        repeating-linear-gradient(180deg,
+            rgba(255, 255, 255, 0.025) 0px,
+            rgba(255, 255, 255, 0.025) 1px,
+            transparent 1px,
+            transparent 3px),
+        var(--funk-anthrazit);
     color: var(--funk-on-anthrazit);
     flex-shrink: 0;
     min-height: 52px;
     border-bottom: 1px solid var(--funk-anthrazit-2);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
 .el-header-left { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--s4); }
@@ -292,12 +301,20 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    border: 1px solid var(--funk-bezel);
+    border: 1px solid var(--funk-bezel-stark);
+    border-top-color: var(--funk-bezel);
+    border-left-color: var(--funk-bezel);
     background: var(--funk-platte);
     color: var(--funk-inschrift);
-    border-radius: 999px;
+    border-radius: var(--r-sm);
     font-size: 13px;
     cursor: pointer;
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+[data-bs-theme="dark"] .el-vermissten-tab,
+.el-dashboard.el-dark .el-vermissten-tab {
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.05);
 }
 .el-vermissten-tab:hover {
     background: var(--funk-platte-tief);
@@ -383,6 +400,15 @@
 }
 
 @keyframes el-blink { 50% { opacity: 0.4; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .el-offline-badge { animation: none; }
+    .bahn[data-status="kritisch"] .bahn-elapsed {
+        animation: none;
+        outline: 2px solid var(--bahn-akzent);
+        outline-offset: 2px;
+    }
+}
 
 /* ── Funkstammbuch-Tape (Signature) ─────────────────────────────── */
 .el-funktape {
@@ -592,11 +618,13 @@
     align-items: flex-start;
     gap: var(--s2);
     padding: var(--s3);
-    background: var(--funk-anthrazit);
+    background: color-mix(in srgb, var(--einsatz-aktiv) 10%, var(--funk-anthrazit));
     color: var(--funk-on-anthrazit);
-    border: 1px solid var(--funk-bezel-stark);
-    border-left: 3px solid var(--einsatz-aktiv);
+    border: 1px solid var(--einsatz-aktiv);
     border-radius: var(--r-sm);
+    box-shadow:
+        inset 1px 1px 0 rgba(255, 255, 255, 0.08),
+        0 6px 18px rgba(0, 0, 0, 0.35);
     animation: el-toast-in 0.18s ease-out;
 }
 
@@ -672,8 +700,15 @@
 /* ── Bottom-Tabbar (Hochformat) ────────────────────────────────── */
 .el-tabbar {
     display: flex;
-    background: var(--funk-anthrazit);
-    border-top: 1px solid var(--funk-bezel);
+    background:
+        repeating-linear-gradient(180deg,
+            rgba(255, 255, 255, 0.025) 0px,
+            rgba(255, 255, 255, 0.025) 1px,
+            transparent 1px,
+            transparent 3px),
+        var(--funk-anthrazit);
+    border-top: 1px solid var(--funk-bezel-stark);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     flex-shrink: 0;
     padding-bottom: env(safe-area-inset-bottom);
 }
@@ -688,6 +723,7 @@
     padding: var(--s2) var(--s1);
     background: transparent;
     border: none;
+    border-right: 1px solid var(--funk-bezel-soft);
     color: rgba(240, 233, 216, 0.5);
     font-family: inherit;
     font-size: 10px;
@@ -696,15 +732,22 @@
     text-transform: uppercase;
     cursor: pointer;
     position: relative;
-    transition: color 0.15s;
+    transition: color 0.15s, background-color 0.15s;
     min-height: 52px;
     -webkit-tap-highlight-color: transparent;
 }
 
+.el-tab-btn:last-child { border-right: none; }
+
 .el-tab-btn i { font-size: 18px; }
 .el-tab-btn:active { color: var(--funk-on-anthrazit); }
-.el-tab-active { color: var(--funk-on-anthrazit) !important; }
-.el-tab-active i { color: var(--einsatz-aktiv); }
+
+.el-tab-active {
+    color: var(--funk-on-anthrazit) !important;
+    background: rgba(0, 0, 0, 0.18);
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+.el-tab-active i { color: var(--einsatz-aktiv); text-shadow: 0 0 6px var(--einsatz-aktiv-glow); }
 
 .el-tab-active::after {
     content: '';
@@ -714,6 +757,7 @@
     right: 0;
     height: 2px;
     background: var(--einsatz-aktiv);
+    box-shadow: 0 0 4px var(--einsatz-aktiv-glow);
 }
 
 .el-tab-badge {
@@ -749,10 +793,19 @@
     grid-template-columns: 1fr;
     gap: var(--s2);
     padding: var(--s3);
-    background: var(--funk-platte);
-    border: 1px solid var(--funk-bezel);
-    border-left: 3px solid var(--bahn-akzent, var(--bereit));
+    background: color-mix(in srgb, var(--bahn-akzent, var(--bereit)) 6%, var(--funk-platte));
+    border: 1px solid var(--bahn-akzent, var(--bereit));
     border-radius: var(--r-md);
+    box-shadow:
+        inset 1px 1px 0 rgba(255, 255, 255, 0.4),
+        0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+[data-bs-theme="dark"] .bahn,
+.el-dashboard.el-dark .bahn {
+    box-shadow:
+        inset 1px 1px 0 rgba(255, 255, 255, 0.05),
+        0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .bahn[data-status="aktiv"]    { --bahn-akzent: var(--einsatz-aktiv); }
@@ -813,6 +866,16 @@
     border: 1px solid var(--funk-bezel-soft);
     border-radius: 1px;
     margin-top: 14px;  /* Platz für Mark-Labels oberhalb */
+    box-shadow:
+        inset 0 2px 3px rgba(0, 0, 0, 0.25),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.4);
+}
+
+[data-bs-theme="dark"] .bahn-track,
+.el-dashboard.el-dark .bahn-track {
+    box-shadow:
+        inset 0 2px 3px rgba(0, 0, 0, 0.6),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .bahn-fill {
@@ -820,8 +883,11 @@
     left: 0;
     top: 0;
     bottom: 0;
+    width: 100%;
+    transform-origin: left;
+    transform: scaleX(0);
     background: var(--bahn-akzent, var(--einsatz-aktiv));
-    transition: width 0.6s ease-out, background 0.2s;
+    transition: transform 0.6s ease-out, background 0.2s;
 }
 
 /* Schraffur in der "Warn-Zone" der Bahn — nach warn1 wird der Hintergrund leicht warnig */
@@ -1285,13 +1351,23 @@
 
 .el-notiz-card {
     background: var(--funk-platte);
-    border: 1px solid var(--funk-bezel);
+    border: 1px solid var(--funk-bezel-stark);
+    border-top-color: var(--funk-bezel);
+    border-left-color: var(--funk-bezel);
     border-radius: var(--r-sm);
     padding: var(--s3);
-    border-left: 2px solid var(--funk-bezel-stark);
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4);
 }
 
-.el-notiz-shared { border-left-color: var(--einsatz-aktiv); }
+[data-bs-theme="dark"] .el-notiz-card,
+.el-dashboard.el-dark .el-notiz-card {
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.el-notiz-shared {
+    border-color: var(--einsatz-aktiv);
+    background: color-mix(in srgb, var(--einsatz-aktiv) 8%, var(--funk-platte));
+}
 
 .el-notiz-meta {
     display: flex;
@@ -1805,10 +1881,10 @@
 
 .eskalation {
     padding: var(--s3);
-    border: 1px solid var(--funk-bezel);
-    border-left: 3px solid var(--bahn-akzent, var(--einsatz-aktiv));
-    background: var(--funk-platte);
+    border: 1px solid var(--bahn-akzent, var(--einsatz-aktiv));
+    background: color-mix(in srgb, var(--bahn-akzent, var(--einsatz-aktiv)) 8%, var(--funk-platte));
     border-radius: var(--r-md);
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.3);
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -2022,8 +2098,20 @@
     align-items: center;
     padding: var(--s3);
     background: var(--funk-platte);
-    border: 1px solid var(--funk-bezel);
+    border: 1px solid var(--funk-bezel-stark);
+    border-top-color: var(--funk-bezel);
+    border-left-color: var(--funk-bezel);
     border-radius: var(--r-md);
+    box-shadow:
+        inset 1px 1px 0 rgba(255, 255, 255, 0.5),
+        0 1px 0 var(--funk-bezel);
+}
+
+[data-bs-theme="dark"] .dashboard-team-kompakt,
+.el-dashboard.el-dark .dashboard-team-kompakt {
+    box-shadow:
+        inset 1px 1px 0 rgba(255, 255, 255, 0.06),
+        0 1px 0 rgba(0, 0, 0, 0.4);
 }
 
 .dashboard-team-dot {
@@ -2064,6 +2152,8 @@
     align-self: center;
     background: var(--funk-platte);
     border: 1px solid var(--funk-bezel-stark);
+    border-top-color: var(--funk-bezel);
+    border-left-color: var(--funk-bezel);
     color: var(--funk-vermerk);
     padding: 6px 12px;
     font-family: inherit;
@@ -2078,26 +2168,47 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    box-shadow:
+        inset 1px 1px 0 rgba(255, 255, 255, 0.5),
+        0 1px 0 var(--funk-bezel);
+}
+
+[data-bs-theme="dark"] .dashboard-quick-action,
+.el-dashboard.el-dark .dashboard-quick-action {
+    box-shadow:
+        inset 1px 1px 0 rgba(255, 255, 255, 0.06),
+        0 1px 0 rgba(0, 0, 0, 0.4);
 }
 
 .dashboard-quick-action:active {
     background: var(--einsatz-aktiv-glow);
     border-color: var(--einsatz-aktiv);
     color: var(--einsatz-aktiv);
+    box-shadow: inset 1px 1px 2px var(--funk-bezel);
+    transform: translateY(1px);
 }
 
 .dashboard-quick-action:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Kontaktbeamter-Karte */
 .dashboard-kontakt {
-    background: var(--funk-platte);
-    border: 1px solid var(--funk-bezel);
-    border-left: 3px solid var(--funk-aktion);
+    background: color-mix(in srgb, var(--funk-aktion) 8%, var(--funk-platte));
+    border: 1px solid var(--funk-aktion);
     border-radius: var(--r-md);
     padding: var(--s3);
     display: flex;
     flex-direction: column;
     gap: var(--s2);
+    box-shadow:
+        inset 1px 1px 0 rgba(255, 255, 255, 0.35),
+        0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+[data-bs-theme="dark"] .dashboard-kontakt,
+.el-dashboard.el-dark .dashboard-kontakt {
+    box-shadow:
+        inset 1px 1px 0 rgba(255, 255, 255, 0.05),
+        0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .dashboard-kontakt-name {
@@ -2233,14 +2344,16 @@
 
 /* EL-Notizblock — Klemmbrett-Feel mit Kreidegelb-Akzent */
 .notizblock-mein {
-    background: var(--funk-platte);
-    border: 1px solid var(--funk-bezel);
-    border-top: 3px solid var(--kreide);
+    background: color-mix(in srgb, var(--kreide) 10%, var(--funk-platte));
+    border: 1px solid var(--kreide);
     border-radius: var(--r-md);
     padding: var(--s3);
     display: flex;
     flex-direction: column;
     gap: var(--s2);
+    box-shadow:
+        inset 0 2px 3px rgba(0, 0, 0, 0.12),
+        0 1px 2px rgba(0, 0, 0, 0.15);
     /* dezente Linien wie auf Notizpapier — vertikale Hilfslinie links */
     background-image: linear-gradient(90deg,
         transparent 0,

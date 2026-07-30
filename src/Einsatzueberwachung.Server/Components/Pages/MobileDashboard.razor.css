@@ -26,6 +26,14 @@
     animation: mobile-timer-critical 1.1s ease-in-out infinite;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .mobile-dashboard-timer.text-danger {
+        animation: none;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+}
+
 @keyframes mobile-timer-critical {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.45; }

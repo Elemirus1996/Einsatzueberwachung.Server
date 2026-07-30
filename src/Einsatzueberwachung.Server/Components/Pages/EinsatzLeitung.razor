@@ -951,7 +951,7 @@
             </div>
 
             <div class="bahn-track" style="--bahn-warn1: @Pct(b.Warn1Pct);">
-                <div class="bahn-fill" style="width: @Pct(b.ElapsedPct);"></div>
+                <div class="bahn-fill" style="transform: scaleX(@Frac(b.ElapsedPct));"></div>
                 <span class="bahn-mark bahn-mark-warn" style="left: @Pct(b.Warn1Pct);" data-label="STUFE 1"></span>
                 <span class="bahn-mark bahn-mark-crit" style="left: 100%;" data-label="STUFE 2"></span>
                 <span class="bahn-needle" style="left: @Pct(b.ElapsedPct);"></span>
@@ -964,11 +964,17 @@
                     <span class="bahn-prewarn"><i class="bi bi-hourglass-split"></i> @preWarn</span>
                 }
                 <div class="bahn-actions">
-                    <button class="bahn-action @(team.IsPausing ? "bahn-action-current" : "")"
+                    <button class="bahn-action"
                             disabled="@(_busyTeamId == team.TeamId)"
                             @onclick="() => PauseTeamAsync(team.TeamId)"
                             title="Pause">
                         <i class="bi bi-pause-fill"></i>
+                    </button>
+                    <button class="bahn-action"
+                            disabled="@(_busyTeamId == team.TeamId)"
+                            @onclick="() => StopTeamAsync(team.TeamId)"
+                            title="Stopp">
+                        <i class="bi bi-stop-fill"></i>
                     </button>
                     <button class="bahn-action"
                             disabled="@(_busyTeamId == team.TeamId)"

@@ -1070,8 +1070,12 @@ public partial class EinsatzMonitor
     {
         var team = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
 
+        // "Weiter" nach manueller Kurzpause: Track/Halsband-Historie darf nicht angetastet werden,
+        // die Aufzeichnung läuft nahtlos weiter.
+        var resumingFromManualPause = team?.IsManuallyPaused == true;
+
         // Kein Halsband zugewiesen → Dialog zur Auswahl einblenden (nur für Hundeteams)
-        if (team != null && !team.IsDroneTeam && !team.IsSupportTeam && string.IsNullOrEmpty(team.CollarId))
+        if (!resumingFromManualPause && team != null && !team.IsDroneTeam && !team.IsSupportTeam && string.IsNullOrEmpty(team.CollarId))
         {
             _collarSelectTeamId = teamId;
             _collarSelectCollarId = string.Empty;
@@ -1080,7 +1084,7 @@ public partial class EinsatzMonitor
         }
 
         // Bei Suchstart: Halsband-History löschen für frischen Track
-        if (team != null && !string.IsNullOrEmpty(team.CollarId))
+        if (!resumingFromManualPause && team != null && !string.IsNullOrEmpty(team.CollarId))
         {
             CollarTrackingService.ClearCollarHistory(team.CollarId);
         }
@@ -1094,6 +1098,11 @@ public partial class EinsatzMonitor
             _teamStatusMessage = ex.Message;
             _teamStatusIsError = true;
         }
+    }
+
+    private async Task PauseTeamAsync(string teamId)
+    {
+        await EinsatzService.PauseTeamTimerAsync(teamId);
     }
 
     private async Task StopTeamAsync(string teamId)
@@ -1752,6 +1761,7 @@ public partial class EinsatzMonitor
         {
             GlobalNotesEntryType.TeamStart => "note-type-teamstart",
             GlobalNotesEntryType.TeamStop => "note-type-teamstop",
+            GlobalNotesEntryType.TeamPause => "note-type-teampause",
             GlobalNotesEntryType.TeamReset => "note-type-teamreset",
             GlobalNotesEntryType.TeamWarning => "note-type-teamwarning",
             GlobalNotesEntryType.EinsatzUpdate => "note-type-einsatzupdate",

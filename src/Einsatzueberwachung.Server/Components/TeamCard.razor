@@ -66,7 +66,11 @@
                 else
                 {
                     <div class="tc-time @TimerDisplayClass">@Team.ElapsedTime.ToString(@"hh\:mm\:ss")</div>
-                    @if (Team.IsSecondWarning)
+                    @if (Team.IsManuallyPaused)
+                    {
+                        <div class="tc-badge tc-badge--pause">PAUSE</div>
+                    }
+                    else if (Team.IsSecondWarning)
                     {
                         <div class="tc-badge tc-badge--critical">KRITISCH</div>
                     }
@@ -135,17 +139,23 @@
             {
                 @if (Team.IsRunning)
                 {
+                    <button class="btn btn-outline-info btn-sm" @onclick="() => OnPause.InvokeAsync(Team.TeamId)">Pause</button>
                     <button class="btn btn-warning btn-sm" @onclick="() => OnStop.InvokeAsync(Team.TeamId)">Stopp</button>
                 }
-                else if (!Team.IsPausing)
+                else if (Team.IsManuallyPaused)
+                {
+                    <button class="btn btn-success btn-sm" @onclick="() => OnStart.InvokeAsync(Team.TeamId)">Weiter</button>
+                    <button class="btn btn-warning btn-sm" @onclick="() => OnStop.InvokeAsync(Team.TeamId)">Stopp</button>
+                }
+                else if (Team.IsPausing)
+                {
+                    <button class="btn btn-success btn-sm" @onclick="() => OnStart.InvokeAsync(Team.TeamId)" title="Neuen Einsatz starten (Pause beendet)">Start</button>
+                }
+                else
                 {
                     <button class="btn btn-success btn-sm" disabled="@IsDogConflict"
                             @onclick="() => OnStart.InvokeAsync(Team.TeamId)"
                             title="@(IsDogConflict ? "Hund läuft bereits in einem anderen Team" : "Timer starten")">Start</button>
-                }
-                else
-                {
-                    <button class="btn btn-success btn-sm" @onclick="() => OnStart.InvokeAsync(Team.TeamId)" title="Neuen Einsatz starten (Pause beendet)">Start</button>
                 }
                 <button class="btn btn-outline-secondary btn-sm btn-team-reset" disabled="@IsDogConflict"
                         @onclick="() => OnReset.InvokeAsync(Team.TeamId)" title="Timer zurücksetzen">
@@ -255,6 +265,7 @@
     [Parameter] public IReadOnlyList<GlobalNotesEntry> LatestNoteEntries { get; set; } = Array.Empty<GlobalNotesEntry>();
     [Parameter] public IReadOnlyList<TeamTrackSnapshot> CompletedSearches { get; set; } = Array.Empty<TeamTrackSnapshot>();
     [Parameter] public EventCallback<string> OnStart { get; set; }
+    [Parameter] public EventCallback<string> OnPause { get; set; }
     [Parameter] public EventCallback<string> OnStop { get; set; }
     [Parameter] public EventCallback<string> OnReset { get; set; }
     [Parameter] public EventCallback<string> OnEdit { get; set; }
@@ -267,6 +278,7 @@
             var classes = new System.Text.StringBuilder();
             if (Team.IsRunning) classes.Append("team-running ");
             if (Team.IsPausing) classes.Append("team-pausing ");
+            if (Team.IsManuallyPaused) classes.Append("team-manual-pause ");
             if (Team.IsSecondWarning) classes.Append("team-critical ");
             else if (Team.IsFirstWarning) classes.Append("team-warning ");
             return classes.ToString().TrimEnd();

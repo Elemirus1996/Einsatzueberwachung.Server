@@ -29,6 +29,7 @@ namespace Einsatzueberwachung.Domain.Services
             team.TimerStarted += Team_TimerStarted;
             team.TimerStopped += Team_TimerStopped;
             team.TimerReset += Team_TimerReset;
+            team.TimerPaused += Team_TimerPaused;
             team.WarningTriggered += Team_WarningTriggered;
 
             TeamAdded?.Invoke(team);
@@ -82,6 +83,14 @@ namespace Einsatzueberwachung.Domain.Services
 
             team.StartTimer(_timeService?.Now ?? DateTime.Now);
             ClearPhoneTrackHistory(teamId);
+        }
+
+        public async Task PauseTeamTimerAsync(string teamId)
+        {
+            var team = await GetTeamByIdAsync(teamId);
+            if (team == null) return;
+
+            team.PauseTimer(_timeService?.Now ?? DateTime.Now);
         }
 
         public async Task StopTeamTimerAsync(string teamId)
@@ -149,6 +158,9 @@ namespace Einsatzueberwachung.Domain.Services
 
         private void Team_TimerReset(Team team)
             => _ = AddGlobalNoteAsync("Timer zurückgesetzt", GlobalNotesEntryType.TeamReset, team.TeamId);
+
+        private void Team_TimerPaused(Team team)
+            => _ = AddGlobalNoteAsync("Timer pausiert", GlobalNotesEntryType.TeamPause, team.TeamId);
 
         private void Team_WarningTriggered(Team team, bool isSecondWarning)
         {

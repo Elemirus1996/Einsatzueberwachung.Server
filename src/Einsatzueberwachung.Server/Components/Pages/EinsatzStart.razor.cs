@@ -3,7 +3,6 @@ using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Divera;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Server.Services;
-using Einsatzueberwachung.Server.Training;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -16,7 +15,6 @@ public partial class EinsatzStart
     [Inject] private IMasterDataService MasterDataService { get; set; } = default!;
     [Inject] private ISettingsService SettingsService { get; set; } = default!;
     [Inject] private IDiveraService DiveraService { get; set; } = default!;
-    [Inject] private ITrainingExerciseService TrainingExerciseService { get; set; } = default!;
     [Inject] private BrowserPreferencesService BrowserPrefs { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
@@ -46,8 +44,6 @@ public partial class EinsatzStart
     private bool _einsatzortMissing;
     private bool _mapAddressUserDirty;
     private bool _diveraDrawerOpen;
-    private bool _trainerDetailsOpen;
-    private TrainingStartPreset? _trainerStartPreset;
 
     private List<DiveraAlarm> _diveraAlarms = new();
     private bool _diveraLoading;
@@ -101,12 +97,6 @@ public partial class EinsatzStart
         _model.StaffelTelefon = staffelSettings.StaffelTelefon;
         _model.StaffelEmail = staffelSettings.StaffelEmail;
         _model.StaffelLogoPfad = staffelSettings.StaffelLogoPfad;
-
-        _trainerStartPreset = await TrainingExerciseService.GetStartPresetAsync(CancellationToken.None);
-        if (_trainerStartPreset is not null)
-        {
-            ApplyTrainerPreset();
-        }
 
         var alarmBase = _model.AlarmierungsZeit ?? DateTime.Now;
         _alarmStartTime = alarmBase.ToString("HH:mm");
@@ -232,10 +222,6 @@ public partial class EinsatzStart
         {
             _model.EinsatzDatum = _clientNow ?? DateTime.Now;
             await EinsatzService.StartEinsatzAsync(_model);
-            if (_trainerStartPreset is not null)
-            {
-                await TrainingExerciseService.ClearStartPresetAsync(CancellationToken.None);
-            }
             _status = "Einsatz wurde gestartet.";
             _error = false;
             await Task.Delay(800);
@@ -344,33 +330,6 @@ public partial class EinsatzStart
     }
 
     private void ToggleDiveraDrawer() => _diveraDrawerOpen = !_diveraDrawerOpen;
-
-    private void ToggleTrainerDetails() => _trainerDetailsOpen = !_trainerDetailsOpen;
-
-    private void ApplyTrainerPreset()
-    {
-        if (_trainerStartPreset is null)
-        {
-            return;
-        }
-
-        _model.IstEinsatz = false;
-        _model.Einsatzort = _trainerStartPreset.SuggestedLocation;
-        _model.Stichwort = _trainerStartPreset.ScenarioCategory;
-        _model.Alarmiert = "Trainer-Modul";
-        _model.ExportPfad = _trainerStartPreset.BriefingText;
-
-        if (string.IsNullOrWhiteSpace(_model.EinsatzNummer))
-        {
-            _model.EinsatzNummer = $"U-{DateTime.Now:yyyyMMddHHmm}";
-        }
-    }
-
-    private async Task ClearTrainerPresetAsync()
-    {
-        await TrainingExerciseService.ClearStartPresetAsync(CancellationToken.None);
-        _trainerStartPreset = null;
-    }
 
     // ── Stepper-Tastatursteuerung ────────────────────────────────────────
 
