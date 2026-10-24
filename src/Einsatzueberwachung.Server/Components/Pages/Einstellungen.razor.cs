@@ -804,6 +804,25 @@ private async Task SetDesignModeAsync(bool darkMode)
         return new Uri(new Uri(Navigation.BaseUri), relativePath.TrimStart('/')).ToString();
     }
 
+    // Die LiveTracking-App haengt /api/CollarWebhook/... selbst an – daher die Basisadresse ohne Schraegstrich am Ende
+    private string LiveTrackingServerUrl => Navigation.BaseUri.TrimEnd('/');
+
+    private string _copyFeedback = string.Empty;
+
+    private async Task CopyToClipboardAsync(string text, string label)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            _copyFeedback = $"{label} kopiert.";
+        }
+        catch (JSException)
+        {
+            // Zwischenablage nur ueber HTTPS verfuegbar – Feld ist markierbar
+            _copyFeedback = "Kopieren nicht möglich – bitte das Feld anklicken und mit Strg+C kopieren.";
+        }
+    }
+
     private void SetMaintenanceStatus(string message, bool isError)
     {
         _maintenanceStatus = message;

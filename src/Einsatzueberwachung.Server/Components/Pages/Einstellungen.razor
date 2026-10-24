@@ -930,11 +930,43 @@
                             <i class="bi bi-download"></i> Herunterladen
                         </a>
                     </div>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="livetracking-download-url">Download-Adresse</label>
+                        <div class="cfg-copy-row">
+                            <input id="livetracking-download-url" class="cfg-input" readonly value="@GetDownloadUrl("/downloads/livetracking.zip")" onfocus="this.select()" />
+                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick='() => CopyToClipboardAsync(GetDownloadUrl("/downloads/livetracking.zip"), "Download-Adresse")'>
+                                <i class="bi bi-copy"></i> Kopieren
+                            </button>
+                        </div>
+                        <span class="cfg-help">Zum Aufrufen auf dem Windows-Rechner im ELW (muss im VPN sein).</span>
+                    </div>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="livetracking-server-url">Server-Adresse für die App</label>
+                        <div class="cfg-copy-row">
+                            <input id="livetracking-server-url" class="cfg-input" readonly value="@LiveTrackingServerUrl" onfocus="this.select()" />
+                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick='() => CopyToClipboardAsync(LiveTrackingServerUrl, "Server-Adresse")'>
+                                <i class="bi bi-copy"></i> Kopieren
+                            </button>
+                        </div>
+                        <span class="cfg-help">
+                            Genau diese Adresse in der App in das Feld unter „Einsatzüberwachung Server“ eintragen und verbinden.
+                            Es ist dieselbe Adresse, über die du diese Seite gerade aufrufst.
+                        </span>
+                        @if (!string.IsNullOrEmpty(_copyFeedback))
+                        {
+                            <span class="cfg-help" role="status">@_copyFeedback</span>
+                        }
+                    </div>
                     <ol class="cfg-steps">
-                        <li>ZIP herunterladen und entpacken.</li>
-                        <li><code>Einsatzueberwachung.LiveTracking.exe</code> auf dem Windows-Rechner starten.</li>
-                        <li>Verbindung zur Einsatzüberwachung im Tool konfigurieren.</li>
+                        <li>Den Windows-Rechner mit dem GPS-Empfänger (z. B. Garmin Alpha) ins VPN bringen.</li>
+                        <li>ZIP über die Download-Adresse herunterladen und entpacken.</li>
+                        <li><code>Einsatzueberwachung.LiveTracking.exe</code> starten.</li>
+                        <li>Die Server-Adresse oben in der App eintragen und auf „Verbinden“ klicken.</li>
                     </ol>
+                    <p class="cfg-help">
+                        Zeigt der Browser beim Aufruf dieser Seite eine Zertifikatswarnung, lehnt auch die App die Verbindung ab.
+                        Dann bitte melden – eine Anbindung mit eigenem Zertifikat ist für Version 1.10 geplant.
+                    </p>
                 </div>
 
                 <div class="cfg-section">
