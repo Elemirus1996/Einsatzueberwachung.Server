@@ -10,11 +10,11 @@ RestartSec=10
 SyslogIdentifier=einsatzueberwachung-server
 User=einsatz
 Environment=ASPNETCORE_ENVIRONMENT=Production
-# 5000 = VPN (Nginx-Block einsatzueberwachung.conf), 5001 = oeffentlicher Team-Zugang (einsatzueberwachung-public.conf).
-# Auf Port 5001 sind nur die Team-Seiten erreichbar. Ohne EINSATZUEBERWACHUNG_PUBLIC_PORT gilt 5001 als intern –
+# 5000 = VPN (Nginx-Block einsatzueberwachung.conf), 5002 = oeffentlicher Team-Zugang (einsatzueberwachung-public.conf).
+# Auf Port 5002 sind nur die Team-Seiten erreichbar. Ohne EINSATZUEBERWACHUNG_PUBLIC_PORT gilt 5002 als intern –
 # beide Zeilen deshalb immer gemeinsam aendern.
-Environment="ASPNETCORE_URLS=http://127.0.0.1:5000;http://127.0.0.1:5001"
-Environment=EINSATZUEBERWACHUNG_PUBLIC_PORT=5001
+Environment="ASPNETCORE_URLS=http://127.0.0.1:5000;http://127.0.0.1:5002"
+Environment=EINSATZUEBERWACHUNG_PUBLIC_PORT=5002
 Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
 # Optional: erforderlich bei privatem GitHub-Repository fuer Update-Pruefung
 # Environment=EINSATZUEBERWACHUNG_GITHUB_TOKEN=<PAT_mit_repo_scope>

@@ -9,7 +9,7 @@ namespace Einsatzueberwachung.Server.Security;
 /// </summary>
 public sealed class PublicAccess
 {
-    /// <summary>Umgebungsvariable mit dem Port des oeffentlichen Zugangs (z.B. 5001). Leer = kein oeffentlicher Zugang.</summary>
+    /// <summary>Umgebungsvariable mit dem Port des oeffentlichen Zugangs (z.B. 5002). Leer = kein oeffentlicher Zugang.</summary>
     public const string PortVariable = "EINSATZUEBERWACHUNG_PUBLIC_PORT";
 
     // Seiten, die ueber den oeffentlichen Zugang gerendert werden duerfen

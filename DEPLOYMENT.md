@@ -100,9 +100,9 @@ Anwendungskonfiguration in `deploy/nginx/einsatzueberwachung.conf`.
 ### Oeffentlicher Team-Zugang (optional)
 
 `deploy/nginx/einsatzueberwachung-public.conf` macht nur die Team-Mobile-Ansicht (`/team`) aus dem Internet erreichbar.
-Ab Version 1.9.3 leitet dieser Block auf einen eigenen Port (5001). Ein reiner Pfadfilter in Nginx reicht bei Blazor
+Ab Version 1.9.3 leitet dieser Block auf einen eigenen Port (5002). Ein reiner Pfadfilter in Nginx reicht bei Blazor
 Server nicht aus: Ueber die Blazor-Verbindung (`/_blazor`) kann ein Browser jede Seite aufrufen, ohne dass Nginx den Pfad
-sieht. Die App erkennt Anfragen auf Port 5001 und zeigt dort nur die Team-Seiten.
+sieht. Die App erkennt Anfragen auf Port 5002 und zeigt dort nur die Team-Seiten.
 
 **Einmalig bei bestehenden Servern** (ein App-Update aendert die systemd-Unit nicht):
 
@@ -112,19 +112,19 @@ sudo systemctl edit einsatzueberwachung-server.service
 
 ```ini
 [Service]
-Environment="ASPNETCORE_URLS=http://127.0.0.1:5000;http://127.0.0.1:5001"
-Environment=EINSATZUEBERWACHUNG_PUBLIC_PORT=5001
+Environment="ASPNETCORE_URLS=http://127.0.0.1:5000;http://127.0.0.1:5002"
+Environment=EINSATZUEBERWACHUNG_PUBLIC_PORT=5002
 ```
 
-Danach die neue `einsatzueberwachung-public.conf` (Upstream `127.0.0.1:5001`) nach `/etc/nginx/sites-available/` kopieren und:
+Danach die neue `einsatzueberwachung-public.conf` (Upstream `127.0.0.1:5002`) nach `/etc/nginx/sites-available/` kopieren und:
 
 ```bash
 sudo systemctl restart einsatzueberwachung-server.service
-sudo journalctl -u einsatzueberwachung-server.service | grep "Oeffentlicher Team-Zugang"   # muss Port 5001 melden
+sudo journalctl -u einsatzueberwachung-server.service | grep "Oeffentlicher Team-Zugang"   # muss Port 5002 melden
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Beide Umgebungsvariablen immer gemeinsam setzen: Lauscht Kestrel auf 5001, ohne dass `EINSATZUEBERWACHUNG_PUBLIC_PORT`
+Beide Umgebungsvariablen immer gemeinsam setzen: Lauscht Kestrel auf 5002, ohne dass `EINSATZUEBERWACHUNG_PUBLIC_PORT`
 gesetzt ist, gilt der Port als intern. Fehlt umgekehrt der Port in `ASPNETCORE_URLS`, antwortet der oeffentliche Block mit
 502 – dann ist nichts oeffentlich erreichbar.
 
@@ -148,7 +148,7 @@ sudo journalctl -u einsatzueberwachung-mobile.service -f
 sudo journalctl -t einsatz-health-check -f
 ```
 
-- Kestrel bleibt intern auf `127.0.0.1` (Ports 5000/5001)
+- Kestrel bleibt intern auf `127.0.0.1`: 5000 (VPN), 5002 (oeffentlicher Team-Zugang); 5001 belegt der alte Dienst `einsatzueberwachung-mobile`
 - Zugriff nur ueber VPN freigeben
 - Kein oeffentliches Port-Forwarding
 

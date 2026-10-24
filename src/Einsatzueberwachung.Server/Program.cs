@@ -93,4 +93,14 @@ if (publicAccess.Port > 0)
     app.Logger.LogInformation("Oeffentlicher Team-Zugang auf Port {Port}: dort nur Team-Seiten erreichbar", publicAccess.Port);
 }
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (IOException ex) when (ex.Message.Contains("address already in use", StringComparison.OrdinalIgnoreCase))
+{
+    // Sonst steht im Journal nur ein langer Stacktrace und systemd startet den Dienst endlos neu
+    app.Logger.LogCritical("Server startet nicht: {Message} Belegte Ports pruefen mit 'ss -ltnp' (5001 nutzt z.B. der alte " +
+        "Dienst einsatzueberwachung-mobile) und ASPNETCORE_URLS / {PortVariable} anpassen.", ex.Message, PublicAccess.PortVariable);
+    throw;
+}
