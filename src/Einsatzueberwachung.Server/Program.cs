@@ -2,10 +2,12 @@ using Einsatzueberwachung.Server.Components;
 using Einsatzueberwachung.Server.Extensions;
 using Einsatzueberwachung.Server.Hubs;
 using Einsatzueberwachung.Server.Middleware;
+using Einsatzueberwachung.Server.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddForwardedHeadersForReverseProxy();
+builder.Services.AddForwardedHeadersForReverseProxy(builder.Configuration);
+builder.Services.AddPublicTeamAccess(builder.Configuration);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -21,7 +23,7 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddRuntimeStateDb();
 builder.Services.AddSignalRForRealtime(builder.Environment);
-builder.Services.AddCorsPolicies();
+builder.Services.AddCorsPolicies(builder.Configuration);
 
 builder.Services.AddDomainServices();
 builder.Services.AddStaticMapAndUpdateServices();
@@ -34,6 +36,9 @@ var app = builder.Build();
 
 // Forwarded Headers MUSS als erstes kommen (Nginx!)
 app.UseForwardedHeaders();
+
+// Oeffentlicher Team-Zugang: nur Team-Pfade, noch vor statischen Dateien und Endpunkten
+app.UseMiddleware<PublicAccessMiddleware>();
 
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
@@ -54,7 +59,8 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseResponseCaching();
 
-app.UseCors("VpnPolicy");
+// Nur ausdruecklich eingetragene fremde Origins (Cors:AllowedOrigins), sonst keine CORS-Freigabe
+app.UseCors(ServiceCollectionExtensions.CorsPolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -65,7 +71,7 @@ app.MapStaticAssets();
 
 app.MapHealthChecks("/health");
 
-app.MapControllers().RequireCors("RestApi");
+app.MapControllers();
 
 if (app.Environment.IsDevelopment())
 {
@@ -80,5 +86,11 @@ app.MapDownloadEndpoints();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+var publicAccess = app.Services.GetRequiredService<PublicAccess>();
+if (publicAccess.Port > 0)
+{
+    app.Logger.LogInformation("Oeffentlicher Team-Zugang auf Port {Port}: dort nur Team-Seiten erreichbar", publicAccess.Port);
+}
 
 app.Run();

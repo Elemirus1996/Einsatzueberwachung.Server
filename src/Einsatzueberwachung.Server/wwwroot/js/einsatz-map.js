@@ -163,10 +163,10 @@ window.einsatzMap = (function () {
             }).addTo(areasLayer);
 
             const assigned = area.assignedTeamName
-                ? `<br/>Team: ${area.assignedTeamName}`
+                ? `<br/>Team: ${escapeHtml(area.assignedTeamName)}`
                 : "";
 
-            polygon.bindPopup(`<strong>${area.name || "Suchgebiet"}</strong>${assigned}`);
+            polygon.bindPopup(`<strong>${escapeHtml(area.name || "Suchgebiet")}</strong>${assigned}`);
         }
     }
 

@@ -74,7 +74,7 @@ deploy/
 Für Halsband-Tracking wird die beiliegende Windows-App **Einsatzueberwachung.LiveTracking** verwendet:
 
 1. App über `/downloads/livetracking.zip` herunterladen, entpacken und auf dem Windows-Rechner mit angeschlossenem GPS-Empfänger (z. B. Garmin Alpha) starten.
-2. Server-URL eintragen (z. B. `http://10.0.0.1:5000`) und verbinden.
+2. Server-URL eintragen (z. B. `http://10.10.0.1:5000`) und verbinden.
 3. Erkannte Halsbänder erscheinen automatisch im EinsatzMonitor.
 4. Im EinsatzMonitor Team starten → Halsband zuweisen → Live-Pfad auf der Karte verfolgen.
 5. Team stoppen → GPS-Track wird als Snapshot gespeichert und steht im PDF-Bericht zur Verfügung.

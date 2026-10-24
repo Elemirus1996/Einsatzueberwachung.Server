@@ -1,8 +1,31 @@
 @rendermode InteractiveServer
+@using Einsatzueberwachung.Server.Security
 
 <Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        @if (PublicOnly && !PublicAccess.IsPublicPage(routeData.PageType))
+        {
+            @* Oeffentlicher Team-Zugang: andere Seiten auch bei Navigation im Circuit nicht rendern *@
+            <LayoutView Layout="typeof(Layout.TeamMobileLayout)">
+                <PageTitle>Nicht verfügbar</PageTitle>
+                <div class="container py-5 text-center">
+                    <p class="mb-3">Diese Seite ist über den öffentlichen Team-Zugang nicht verfügbar.</p>
+                    <a href="/team/login" class="btn btn-primary">Zur Team-Anmeldung</a>
+                </div>
+            </LayoutView>
+        }
+        else
+        {
+            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        }
     </Found>
 </Router>
+
+@code {
+    /// <summary>
+    /// Circuit wurde ueber den oeffentlichen Port aufgebaut. Der Wert kommt beim ersten Seitenaufruf aus App.razor
+    /// und steckt signiert im Komponenten-Marker – der Browser kann ihn nicht aendern.
+    /// </summary>
+    [Parameter] public bool PublicOnly { get; set; }
+}

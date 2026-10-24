@@ -345,7 +345,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                 }
             });
             
-            layer.bindPopup(`<strong>${name}</strong>`);
+            layer.bindPopup(`<strong>${escapeHtml(name)}</strong>`);
             // WICHTIG: Zu savedAreas hinzufügen (NICHT drawnItems!)
             // Das verhindert, dass gespeicherte Gebiete gelöscht werden
             layer.addTo(mapData.savedAreas);
@@ -456,14 +456,14 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             }).addTo(mapData.map);
             
             // Popup
-            marker.bindPopup(`<strong>${title}</strong><br><small>Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}</small>`);
+            marker.bindPopup(`<strong>${escapeHtml(title)}</strong><br><small>Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}</small>`);
             
             // Bei Verschiebung von ELW: Update Position
             if (markerId === 'elw') {
                 marker.on('dragend', function(e) {
                     const newPos = e.target.getLatLng();
                     log('ELW verschoben zu:', newPos);
-                    marker.setPopupContent(`<strong>${title}</strong><br><small>Lat: ${newPos.lat.toFixed(5)}, Lng: ${newPos.lng.toFixed(5)}</small>`);
+                    marker.setPopupContent(`<strong>${escapeHtml(title)}</strong><br><small>Lat: ${newPos.lat.toFixed(5)}, Lng: ${newPos.lng.toFixed(5)}</small>`);
                     
                     // Informiere Blazor ueber neue Position
                     if (mapData.dotNetReference) {
@@ -1380,10 +1380,10 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                 delete mapData.markers[coordMarkerId];
             }
 
-            const markerColor = color || '#2196F3';
+            const markerColor = escapeHtml(color || '#2196F3');
 
             // SVG Pin-Icon mit Label-Nummer/Buchstabe
-            const shortLabel = ((label && label.trim()) || '?').substring(0, 2);
+            const shortLabel = escapeHtml(((label && label.trim()) || '?').substring(0, 2));
             const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42">
                 <path fill="${markerColor}" stroke="#333" stroke-width="1.5" d="M15 0 C7 0 0 6.5 0 15 C0 26 15 42 15 42 C15 42 30 26 30 15 C30 6.5 23 0 15 0 Z"/>
                 <circle cx="15" cy="15" r="9" fill="white"/>
@@ -1411,8 +1411,8 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             // Popup mit Koordinaten-Info
             const utmInfo = this._latLngToUtmString(lat, lng);
             const popupHtml = `<div class="coord-marker-popup">
-                <strong>${label || 'Punkt'}</strong>
-                ${description ? '<br><small>' + description + '</small>' : ''}
+                <strong>${escapeHtml(label || 'Punkt')}</strong>
+                ${description ? '<br><small>' + escapeHtml(description) + '</small>' : ''}
                 <hr style="margin: 4px 0;">
                 <small><strong>Lat/Long:</strong> ${lat.toFixed(6)}° / ${lng.toFixed(6)}°</small><br>
                 <small><strong>UTM:</strong> ${utmInfo}</small>
@@ -1584,7 +1584,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                 const newUtmInfo = window.LeafletMap._latLngToUtmString(newPos.lat, newPos.lng);
                 const title = marker.options.title || 'Punkt';
                 const updatedPopup = `<div class="coord-marker-popup">
-                    <strong>${title}</strong>
+                    <strong>${escapeHtml(title)}</strong>
                     <hr style="margin: 4px 0;">
                     <small><strong>Lat/Long:</strong> ${newPos.lat.toFixed(6)}° / ${newPos.lng.toFixed(6)}°</small><br>
                     <small><strong>UTM:</strong> ${newUtmInfo}</small>

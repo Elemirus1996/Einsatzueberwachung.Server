@@ -235,14 +235,14 @@ window.CollarTracking = {
         } else {
             const icon = this._createCollarIcon(markerColor, track._oobActive);
             track.marker = L.marker([lat, lng], { icon: icon })
-                .bindPopup(`<strong>${track.dogLabel || collarId}</strong><br><small>Halsband: ${collarId}</small><br><small>UTM: ${latLngToUtm(lat, lng)}</small><br><small>${new Date(timestamp).toLocaleTimeString('de-DE')}</small>`);
+                .bindPopup(`<strong>${escapeHtml(track.dogLabel || collarId)}</strong><br><small>Halsband: ${escapeHtml(collarId)}</small><br><small>UTM: ${latLngToUtm(lat, lng)}</small><br><small>${new Date(timestamp).toLocaleTimeString('de-DE')}</small>`);
             track.marker.addTo(mapData.trackingLayer);
         }
 
         // Popup aktualisieren
         track.marker.setPopupContent(
-            `<strong>${track.dogLabel || collarId}</strong><br>` +
-            `<small>Halsband: ${collarId}</small><br>` +
+            `<strong>${escapeHtml(track.dogLabel || collarId)}</strong><br>` +
+            `<small>Halsband: ${escapeHtml(collarId)}</small><br>` +
             `<small>UTM: ${latLngToUtm(lat, lng)}</small><br>` +
             `<small>Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}</small><br>` +
             `<small>${new Date(timestamp).toLocaleTimeString('de-DE')}</small>`
@@ -299,7 +299,7 @@ window.CollarTracking = {
             const lastLoc = locations[locations.length - 1];
             const icon = this._createCollarIcon(markerColor, false);
             track.marker = L.marker(lastPos, { icon: icon })
-                .bindPopup(`<strong>${track.dogLabel || collarId}</strong><br><small>Halsband: ${collarId}</small><br><small>UTM: ${latLngToUtm(lastPos[0], lastPos[1])}</small><br><small>${new Date(lastLoc.timestamp).toLocaleTimeString('de-DE')}</small>`);
+                .bindPopup(`<strong>${escapeHtml(track.dogLabel || collarId)}</strong><br><small>Halsband: ${escapeHtml(collarId)}</small><br><small>UTM: ${latLngToUtm(lastPos[0], lastPos[1])}</small><br><small>${new Date(lastLoc.timestamp).toLocaleTimeString('de-DE')}</small>`);
             track.marker.addTo(mapData.trackingLayer);
         }
     },
@@ -458,7 +458,7 @@ window.CollarTracking = {
             iconSize: [14, 14], iconAnchor: [7, 7], className: 'collar-completed-icon'
         });
         const startMarker = L.marker(positions[0], { icon: startIcon })
-            .bindPopup(`<strong>${teamName}</strong><br><small>Start · ${trackLabel}</small>`);
+            .bindPopup(`<strong>${escapeHtml(teamName)}</strong><br><small>Start · ${escapeHtml(trackLabel)}</small>`);
         startMarker.addTo(mapData.trackingLayer);
 
         // End-Marker (kleines Quadrat)
@@ -470,7 +470,7 @@ window.CollarTracking = {
             iconSize: [14, 14], iconAnchor: [7, 7], className: 'collar-completed-icon'
         });
         const endMarker = L.marker(lastPos, { icon: endIcon })
-            .bindPopup(`<strong>${teamName}</strong><br><small>Ende · ${trackLabel}</small>`);
+            .bindPopup(`<strong>${escapeHtml(teamName)}</strong><br><small>Ende · ${escapeHtml(trackLabel)}</small>`);
         endMarker.addTo(mapData.trackingLayer);
 
         this._completedTracks[snapshotId] = {

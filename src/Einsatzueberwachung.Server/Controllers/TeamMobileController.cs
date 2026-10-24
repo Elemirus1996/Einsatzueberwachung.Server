@@ -82,7 +82,7 @@ public sealed class TeamMobileController : ControllerBase
         {
             new Claim(TeamMobileAuth.TeamIdClaim, team.TeamId),
             new Claim(TeamMobileAuth.GenerationClaim, _tokenService.CurrentGeneration.ToString()),
-            new Claim("team-cookie", cookieValue)
+            new Claim(TeamMobileAuth.CookieValueClaim, cookieValue)
         };
         var identity = new ClaimsIdentity(claims, TeamMobileAuth.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);

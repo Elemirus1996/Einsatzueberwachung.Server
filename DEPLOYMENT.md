@@ -91,9 +91,50 @@ sudo systemctl start einsatzueberwachung-server.service einsatzueberwachung-mobi
 
 Beispielkonfiguration in `deploy/wireguard/wg0.conf.example`.
 
+Das VPN-Netz ist `10.10.0.0/24` und muss zu `allow 10.10.0.0/24` in `deploy/nginx/einsatzueberwachung.conf` passen.
+
 ## 7. Nginx Anpassungen
 
 Anwendungskonfiguration in `deploy/nginx/einsatzueberwachung.conf`.
+
+### Oeffentlicher Team-Zugang (optional)
+
+`deploy/nginx/einsatzueberwachung-public.conf` macht nur die Team-Mobile-Ansicht (`/team`) aus dem Internet erreichbar.
+Ab Version 1.9.3 leitet dieser Block auf einen eigenen Port (5001). Ein reiner Pfadfilter in Nginx reicht bei Blazor
+Server nicht aus: Ueber die Blazor-Verbindung (`/_blazor`) kann ein Browser jede Seite aufrufen, ohne dass Nginx den Pfad
+sieht. Die App erkennt Anfragen auf Port 5001 und zeigt dort nur die Team-Seiten.
+
+**Einmalig bei bestehenden Servern** (ein App-Update aendert die systemd-Unit nicht):
+
+```bash
+sudo systemctl edit einsatzueberwachung-server.service
+```
+
+```ini
+[Service]
+Environment="ASPNETCORE_URLS=http://127.0.0.1:5000;http://127.0.0.1:5001"
+Environment=EINSATZUEBERWACHUNG_PUBLIC_PORT=5001
+```
+
+Danach die neue `einsatzueberwachung-public.conf` (Upstream `127.0.0.1:5001`) nach `/etc/nginx/sites-available/` kopieren und:
+
+```bash
+sudo systemctl restart einsatzueberwachung-server.service
+sudo journalctl -u einsatzueberwachung-server.service | grep "Oeffentlicher Team-Zugang"   # muss Port 5001 melden
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Beide Umgebungsvariablen immer gemeinsam setzen: Lauscht Kestrel auf 5001, ohne dass `EINSATZUEBERWACHUNG_PUBLIC_PORT`
+gesetzt ist, gilt der Port als intern. Fehlt umgekehrt der Port in `ASPNETCORE_URLS`, antwortet der oeffentliche Block mit
+502 – dann ist nichts oeffentlich erreichbar.
+
+### Weitere Optionen
+
+- `Cors:AllowedOrigins` (z.B. `Cors__AllowedOrigins__0=https://andere-app.example`): fremde Webseiten, die die API im
+  Browser aufrufen duerfen. Standard: keine – die eigene Oberflaeche braucht das nicht.
+- `ReverseProxy:KnownNetworks` (z.B. `ReverseProxy__KnownNetworks__0=172.16.0.0/12`): weitere Proxys, deren
+  `X-Forwarded-For`/`-Proto` uebernommen wird. Standard: nur `127.0.0.1`/`::1`.
+- Das Team-Cookie wird nur noch ueber HTTPS gesendet. Die Team-Ansicht deshalb immer ueber Nginx mit HTTPS aufrufen.
 
 ## 8. Monitoring und Hinweise
 
