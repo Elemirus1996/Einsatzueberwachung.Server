@@ -491,6 +491,18 @@
     gap: 0.5rem;
 }
 
+/* Nur-Lesen-Feld mit Kopier-Knopf daneben (LiveTracking-Adressen) */
+::deep .cfg-copy-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+::deep .cfg-copy-row .cfg-input {
+    flex: 1;
+    min-width: 0;
+}
+
 ::deep .cfg-actions-wrap {
     flex-wrap: wrap;
 }

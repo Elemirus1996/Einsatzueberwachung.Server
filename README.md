@@ -73,11 +73,12 @@ deploy/
 
 Für Halsband-Tracking wird die beiliegende Windows-App **Einsatzueberwachung.LiveTracking** verwendet:
 
-1. App über `/downloads/livetracking.zip` herunterladen, entpacken und auf dem Windows-Rechner mit angeschlossenem GPS-Empfänger (z. B. Garmin Alpha) starten.
-2. Server-URL eintragen (z. B. `http://10.10.0.1:5000`) und verbinden.
-3. Erkannte Halsbänder erscheinen automatisch im EinsatzMonitor.
-4. Im EinsatzMonitor Team starten → Halsband zuweisen → Live-Pfad auf der Karte verfolgen.
-5. Team stoppen → GPS-Track wird als Snapshot gespeichert und steht im PDF-Bericht zur Verfügung.
+1. In der Einsatzüberwachung *Einstellungen → Integration → GPS-Livetracking* öffnen. Dort stehen die Download-Adresse und die Server-Adresse für die App, jeweils mit Kopier-Knopf.
+2. App herunterladen, entpacken und auf dem Windows-Rechner mit angeschlossenem GPS-Empfänger (z. B. Garmin Alpha) starten. Der Rechner muss im VPN sein.
+3. Die Server-Adresse aus den Einstellungen in der App eintragen und verbinden. Es ist dieselbe Adresse, über die die Einsatzüberwachung im Browser aufgerufen wird (z. B. `https://10.10.0.1`).
+4. Erkannte Halsbänder erscheinen automatisch im EinsatzMonitor.
+5. Im EinsatzMonitor Team starten → Halsband zuweisen → Live-Pfad auf der Karte verfolgen.
+6. Team stoppen → GPS-Track wird als Snapshot gespeichert und steht im PDF-Bericht zur Verfügung.
 
 Verlässt ein Hund sein Suchgebiet: rot pulsierender Marker auf der Karte + Warnung im Tracking-Panel.
 
