@@ -35,6 +35,23 @@ public class CollarWebhookController : ControllerBase
             return BadRequest(new ErrorResponse("Id ist erforderlich."));
         }
 
+        if (!IsValidCollarId(request.Id))
+        {
+            return BadRequest(new ErrorResponse($"Id ist ungültig (höchstens {MaxIdLength} Zeichen: Buchstaben, Ziffern, - _ . :)."));
+        }
+
+        if (request.CollarName is { } name && (name.Length > MaxNameLength || name.Any(char.IsControl)))
+        {
+            return BadRequest(new ErrorResponse($"CollarName ist ungültig (höchstens {MaxNameLength} Zeichen, keine Steuerzeichen)."));
+        }
+
+        // Unbegrenzt neue Halsband-IDs wuerden Speicher und Karte fluten
+        if (_trackingService.Collars.Count >= MaxCollars && _trackingService.Collars.All(c => c.Id != request.Id))
+        {
+            return StatusCode(StatusCodes.Status429TooManyRequests,
+                new ErrorResponse($"Es sind bereits {MaxCollars} Halsbänder bekannt."));
+        }
+
         if (request.Coordinates == null)
         {
             return BadRequest(new ErrorResponse("Coordinates sind erforderlich."));
@@ -96,6 +113,15 @@ public class CollarWebhookController : ControllerBase
         var history = _trackingService.GetLocationHistory(collarId);
         return Ok(new { collarId, locations = history });
     }
+
+    // --- Eingabepruefung (Audit 2026-10-24: Werte landen in Karten-Popups und PDF) ---
+
+    public const int MaxIdLength = 64;
+    public const int MaxNameLength = 64;
+    public const int MaxCollars = 50;
+
+    public static bool IsValidCollarId(string id) =>
+        id.Length <= MaxIdLength && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.' or ':');
 
     // --- Request-DTOs ---
 

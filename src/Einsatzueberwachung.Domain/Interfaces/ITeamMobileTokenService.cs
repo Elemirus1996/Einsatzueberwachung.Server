@@ -9,7 +9,7 @@ public interface ITeamMobileTokenService
     /// <summary>Aktuell gültiger Master-Token (null wenn kein aktiver Einsatz).</summary>
     string? CurrentMasterToken { get; }
 
-    /// <summary>Aktuelle Generation – inkrementiert bei Einsatz-Ende, entwertet alle Team-Cookies.</summary>
+    /// <summary>Aktuelle Generation – fest je Einsatz, wechselt bei Einsatz-Start und -Ende und entwertet dann alle Team-Cookies.</summary>
     int CurrentGeneration { get; }
 
     /// <summary>Wird gefeuert wenn die Generation wechselt (Einsatz-Start oder -Ende).</summary>

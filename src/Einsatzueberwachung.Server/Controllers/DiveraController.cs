@@ -97,8 +97,12 @@ public class DiveraController : ControllerBase
     /// Aufruf: GET /api/divera/debug — zeigt was Divera tatsaechlich sendet.
     /// </summary>
     [HttpGet("debug")]
-    public async Task<IActionResult> GetDebug()
+    public async Task<IActionResult> GetDebug([FromServices] IWebHostEnvironment environment)
     {
+        // Rohdaten von Divera (Namen, Telefonnummern, Alarmtexte) nur in der Entwicklungsumgebung
+        if (!environment.IsDevelopment())
+            return NotFound();
+
         var raw = await _diveraService.GetRawDiagnosticAsync();
         return Ok(raw);
     }

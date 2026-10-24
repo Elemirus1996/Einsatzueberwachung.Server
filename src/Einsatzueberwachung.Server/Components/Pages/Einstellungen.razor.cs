@@ -1,6 +1,7 @@
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Services;
+using Einsatzueberwachung.Server.Security;
 using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
@@ -621,6 +622,7 @@ private async Task SetDesignModeAsync(bool darkMode)
                 return;
             }
 
+            SettingsSecrets.KeepExistingSecrets(imported, await SettingsService.GetAppSettingsAsync());
             await SettingsService.SaveAppSettingsAsync(imported);
             _appSettings = await SettingsService.GetAppSettingsAsync();
             EnsureQuickNoteTemplatesInitialized(_appSettings);
@@ -722,6 +724,7 @@ private async Task SetDesignModeAsync(bool darkMode)
                 var appSettings = await ReadZipJsonAsync<AppSettings>(appEntry);
                 if (appSettings is not null)
                 {
+                    SettingsSecrets.KeepExistingSecrets(appSettings, await SettingsService.GetAppSettingsAsync());
                     await SettingsService.SaveAppSettingsAsync(appSettings);
                     importedCount++;
                 }

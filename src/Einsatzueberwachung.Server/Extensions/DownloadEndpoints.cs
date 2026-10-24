@@ -1,5 +1,6 @@
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Services;
+using Einsatzueberwachung.Server.Security;
 using Microsoft.AspNetCore.StaticFiles;
 using System.IO.Compression;
 using System.Text.Json;
@@ -166,7 +167,7 @@ internal static class DownloadEndpoints
         app.MapGet("/downloads/app-settings.json", async (ISettingsService settingsService) =>
         {
             var settings = await settingsService.GetAppSettingsAsync();
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(settings, new JsonSerializerOptions { WriteIndented = true });
+            var bytes = SettingsSecrets.SerializeWithoutSecrets(settings);
             return Results.File(bytes, "application/json", "app-settings.json");
         });
 
@@ -243,8 +244,20 @@ internal static class DownloadEndpoints
                     try
                     {
                         var relativePath = Path.GetRelativePath(dataDirectory, filePath);
+                        if (SettingsSecrets.IsExcludedFromBackup(relativePath))
+                        {
+                            continue;
+                        }
+
                         var entry = archive.CreateEntry(relativePath, CompressionLevel.Fastest);
                         await using var entryStream = entry.Open();
+                        if (SettingsSecrets.IsAppSettingsFile(relativePath))
+                        {
+                            // Zugangsdaten nicht ins Backup; beim Einspielen bleiben die vorhandenen erhalten
+                            await entryStream.WriteAsync(SettingsSecrets.MaskJson(await File.ReadAllBytesAsync(filePath)));
+                            continue;
+                        }
+
                         await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                         await fileStream.CopyToAsync(entryStream);
                     }

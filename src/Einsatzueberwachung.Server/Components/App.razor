@@ -2,6 +2,7 @@
 @using Einsatzueberwachung.Domain.Interfaces
 @using Einsatzueberwachung.Domain.Models
 @inject ISettingsService SettingsService
+@inject Einsatzueberwachung.Server.Security.PublicAccess PublicAccess
 
 <!DOCTYPE html>
 <html lang="de" data-bs-theme="light">
@@ -145,11 +146,12 @@
 
 <body>
     <CascadingAuthenticationState>
-        <Routes />
+        <Routes PublicOnly="@PublicAccess.IsPublicRequest(HttpContext)" />
     </CascadingAuthenticationState>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
+    <script src="js/html-escape.js"></script>
     <script src="js/leaflet-grid.js"></script>
     <script src="js/leaflet-grid-control.js"></script>
     <script src="leaflet-interop.js"></script>
@@ -171,6 +173,8 @@
 </html>
 
 @code {
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
+
     private string _serverThemeModeJson = "\"Manual\"";
     private bool _serverThemeDark;
     private string _serverThemePresetJson = "\"nrw\"";

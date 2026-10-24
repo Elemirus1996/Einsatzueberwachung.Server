@@ -76,7 +76,7 @@ window.minimapInterop = (function () {
                 fillOpacity: area.isCompleted ? 0.1 : 0.2,
                 weight: 2,
                 dashArray: area.isCompleted ? '6 4' : null
-            }).bindTooltip(area.name + (area.teamName ? '\n' + area.teamName : ''), {
+            }).bindTooltip(escapeHtml(area.name) + (area.teamName ? '<br>' + escapeHtml(area.teamName) : ''), {
                 permanent: false,
                 sticky: true
             }).addTo(inst.map);

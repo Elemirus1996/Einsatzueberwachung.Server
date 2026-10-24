@@ -137,7 +137,7 @@ window.teamMobileMap = (function () {
                 iconAnchor: [13, 13]
             });
             dogMarker = L.marker(pos, { icon }).addTo(map);
-            if (dogName) dogMarker.bindTooltip(dogName, { permanent: false });
+            if (dogName) dogMarker.bindTooltip(escapeHtml(dogName), { permanent: false });
         } else {
             dogMarker.setLatLng(pos);
         }

@@ -56,7 +56,7 @@ window.PhoneTracking = (function () {
         const time = timestamp
             ? new Date(timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
             : '--:--';
-        return `<strong>&#128241; ${teamName}</strong><br>` +
+        return `<strong>&#128241; ${escapeHtml(teamName)}</strong><br>` +
                `<small>Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}</small><br>` +
                `<small>Stand: ${time}</small>`;
     }

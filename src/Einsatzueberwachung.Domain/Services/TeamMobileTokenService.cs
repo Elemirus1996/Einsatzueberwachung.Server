@@ -15,8 +15,9 @@ public sealed class TeamMobileTokenService : ITeamMobileTokenService, IDisposabl
     private readonly object _lock = new();
 
     private string? _currentMasterToken;
-    private int _currentGeneration;
+    private int _currentGeneration = RandomGeneration();
     private bool _wasActive;
+    private DateTime _activeEinsatzDatum;
     private bool _disposed;
 
     public TeamMobileTokenService(byte[] hmacSecret, IEinsatzService einsatzService)
@@ -117,21 +118,25 @@ public sealed class TeamMobileTokenService : ITeamMobileTokenService, IDisposabl
     private void OnEinsatzChanged()
     {
         var current = _einsatzService.CurrentEinsatz;
-        var isActive = current is { IstEinsatz: true, EinsatzEnde: null };
+        // Wie EinsatzService: ohne Einsatzort gibt es keinen Einsatz. Das leere Platzhalter-Objekt beim Start hat
+        // IstEinsatz = true – ohne diese Pruefung galt es als aktiv, und die Generation hing an seinem Erzeugungszeitpunkt.
+        var isActive = current is { IstEinsatz: true, EinsatzEnde: null } && !string.IsNullOrWhiteSpace(current.Einsatzort);
 
         bool changed = false;
         lock (_lock)
         {
-            if (isActive && !_wasActive)
+            // Neuer Einsatz ohne Ende des vorigen (anderer Startzeitpunkt): ebenfalls neuer Token und neue Generation
+            if (isActive && (!_wasActive || current!.EinsatzDatum != _activeEinsatzDatum))
             {
                 _currentMasterToken = GenerateRandomToken(MasterTokenLength);
-                _currentGeneration++;
+                _currentGeneration = GenerationFor(current!);
+                _activeEinsatzDatum = current!.EinsatzDatum;
                 changed = true;
             }
             else if (!isActive && _wasActive)
             {
                 _currentMasterToken = null;
-                _currentGeneration++;
+                _currentGeneration = RandomGeneration();
                 changed = true;
             }
             _wasActive = isActive;
@@ -140,6 +145,19 @@ public sealed class TeamMobileTokenService : ITeamMobileTokenService, IDisposabl
         if (changed)
             GenerationChanged?.Invoke();
     }
+
+    // Generation je Einsatz statt fortlaufendem Zaehler: Ein Zaehler beginnt nach jedem Neustart wieder bei 0,
+    // dann passten Cookies aus einem frueheren Einsatz wieder. So bleiben Cookies nur innerhalb desselben
+    // Einsatzes gueltig – auch ueber einen Neustart des Servers hinweg. Grundlage ist der Startzeitpunkt
+    // (EinsatzDatum), weil sich Einsatznummer und Ort waehrend des Einsatzes noch aendern koennen.
+    private int GenerationFor(Models.EinsatzData einsatz)
+    {
+        using var hmac = new HMACSHA256(_hmacSecret);
+        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes($"generation|{einsatz.EinsatzDatum.Ticks}"));
+        return BitConverter.ToInt32(hash, 0) & int.MaxValue;
+    }
+
+    private static int RandomGeneration() => RandomNumberGenerator.GetInt32(int.MaxValue);
 
     private static string GenerateRandomToken(int length)
     {
