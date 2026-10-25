@@ -54,6 +54,10 @@ namespace Einsatzueberwachung.LiveTracking
         [ObservableProperty]
         private bool _isSimulationActive;
 
+        /// <summary>Positionen, die wegen Netzausfall noch auf das Senden warten.</summary>
+        [ObservableProperty]
+        private int _pendingLocations;
+
         public string ServerConnectButtonText => IsServerConnected ? "Trennen" : "Verbinden";
         public string SimulationButtonText => IsSimulationActive ? "Simulation stoppen" : "Simulation starten";
 
@@ -64,6 +68,9 @@ namespace Einsatzueberwachung.LiveTracking
         {
             _serverApiClient = new ServerApiClient();
             _serverApiClient.StatusChanged += msg => AddLog(msg);
+            _serverApiClient.LocationDelivered += OnLocationDelivered;
+            _serverApiClient.LocationDropped += _ => Application.Current?.Dispatcher.Invoke(() => TotalLocationsFailed++);
+            _serverApiClient.PendingCountChanged += count => Application.Current?.Dispatcher.Invoke(() => PendingLocations = count);
 
             _gpsService = new GpsUsbService();
             _gpsService.StatusMessageChanged += OnGpsStatusChanged;
@@ -123,27 +130,36 @@ namespace Einsatzueberwachung.LiveTracking
 
             if (string.IsNullOrWhiteSpace(ServerUrl))
             {
-                StatusMessage = "Bitte Server-URL eingeben.";
+                StatusMessage = "Bitte den Verbindungscode aus den Einstellungen der Einsatzüberwachung einfügen.";
                 return;
             }
 
-            _serverApiClient.Configure(ServerUrl);
-            AddLog($"Teste Verbindung zu {ServerUrl}...");
-
-            bool connected = await _serverApiClient.TestConnectionAsync();
-            IsServerConnected = connected;
-
-            if (connected)
+            if (!_serverApiClient.Configure(ServerUrl))
             {
-                AddLog("Server-Verbindung erfolgreich.");
-                StatusMessage = "Server verbunden.";
+                StatusMessage = "Verbindungscode ungültig.";
+                return;
+            }
+            AddLog($"Teste Verbindung zu {_serverApiClient.ServerUrl}...");
+
+            var result = await _serverApiClient.TestConnectionAsync();
+            IsServerConnected = result == ConnectionTestResult.Ok;
+
+            StatusMessage = result switch
+            {
+                ConnectionTestResult.Ok => "Server verbunden.",
+                ConnectionTestResult.Unauthorized => "API-Schlüssel ungültig – neuen Verbindungscode aus den Einstellungen verwenden.",
+                ConnectionTestResult.CertificateRejected => "Zertifikat abgelehnt – bitte den Verbindungscode statt nur der Adresse verwenden.",
+                ConnectionTestResult.ServerError => "Server antwortet mit einem Fehler.",
+                _ => "Server nicht erreichbar – ist der Rechner im VPN?",
+            };
+            AddLog(StatusMessage);
+
+            if (IsServerConnected)
+            {
+                // Code (mit Schlüssel) merken, damit nach einem Neustart der App direkt weitergesendet wird
                 Properties.Settings.Default.ServerUrl = ServerUrl;
                 Properties.Settings.Default.Save();
-            }
-            else
-            {
-                AddLog("Server nicht erreichbar.");
-                StatusMessage = "Server-Verbindung fehlgeschlagen.";
+                await _serverApiClient.FlushAsync();
             }
         }
 
@@ -254,30 +270,28 @@ namespace Einsatzueberwachung.LiveTracking
 
             if (trackInfo != null && IsServerConnected)
             {
-                bool success = await _serverApiClient.SendCollarLocationAsync(
+                // Über den Puffer: bei Netzausfall wird später mit Originalzeit nachgesendet
+                _serverApiClient.EnqueueCollarLocation(
                     dogData.ID.ToString(),
                     dogData.DogName,
                     dogData.LatitudeDegrees,
                     dogData.LongitudeDegrees,
                     dogData.BatteryLevel);
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (trackInfo != null)
-                    {
-                        trackInfo.LastSendSuccess = success;
-                        if (success)
-                        {
-                            trackInfo.TotalPointsSent++;
-                            TotalLocationsSent++;
-                        }
-                        else
-                        {
-                            TotalLocationsFailed++;
-                        }
-                    }
-                });
             }
+            await Task.CompletedTask;
+        }
+
+        private void OnLocationDelivered(string collarId)
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                TotalLocationsSent++;
+                if (int.TryParse(collarId, out var id) && _dogTrackMap.TryGetValue(id, out var trackInfo))
+                {
+                    trackInfo.LastSendSuccess = true;
+                    trackInfo.TotalPointsSent++;
+                }
+            });
         }
 
         private void AddLog(string message)

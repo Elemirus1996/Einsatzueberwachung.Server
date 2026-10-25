@@ -33,7 +33,7 @@ namespace Einsatzueberwachung.Domain.Services
             _einsatzService.TeamRemoved += OnTeamRemoved;
         }
 
-        public Task<CollarLocation> ReceiveLocationAsync(string collarId, string collarName, double latitude, double longitude, int? batteryLevel = null)
+        public Task<CollarLocation> ReceiveLocationAsync(string collarId, string collarName, double latitude, double longitude, int? batteryLevel = null, DateTime? timestampUtc = null)
         {
             // Halsband registrieren / aktualisieren
             var collar = _collars.AddOrUpdate(
@@ -45,9 +45,14 @@ namespace Einsatzueberwachung.Domain.Services
                     return existing;
                 });
 
-            // Position speichern
-            var location = new CollarLocation(collarId, latitude, longitude, DateTime.UtcNow, batteryLevel);
-            _latestLocations[collarId] = location;
+            // Position speichern. Nachgesendete Positionen (Puffer der LiveTracking-App nach Netzausfall) tragen ihren
+            // Originalzeitpunkt und duerfen die aktuelle Position nicht ueberschreiben.
+            var location = new CollarLocation(collarId, latitude, longitude, timestampUtc ?? DateTime.UtcNow, batteryLevel);
+            var isNewest = !_latestLocations.TryGetValue(collarId, out var latest) || location.Timestamp >= latest.Timestamp;
+            if (isNewest)
+            {
+                _latestLocations[collarId] = location;
+            }
 
             // Nur in History speichern wenn das zugewiesene Team aktiv sucht (IsRunning)
             var isRecording = false;
@@ -62,8 +67,16 @@ namespace Einsatzueberwachung.Domain.Services
                 var history = _locationHistory.GetOrAdd(collarId, _ => new List<CollarLocation>());
                 lock (_lock)
                 {
-                    history.Add(location);
+                    // Zeitlich einsortieren, damit der Track auch mit nachgesendeten Punkten in der richtigen Reihenfolge ist
+                    var index = history.Count;
+                    while (index > 0 && history[index - 1].Timestamp > location.Timestamp) index--;
+                    history.Insert(index, location);
                 }
+            }
+
+            if (!isNewest)
+            {
+                return Task.FromResult(location);
             }
 
             // Event auslösen für SignalR-Broadcast (immer, auch wenn nicht aufgezeichnet wird)
