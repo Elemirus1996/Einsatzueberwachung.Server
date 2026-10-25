@@ -50,6 +50,8 @@ else
 # Einsatzueberwachung: DNS nur fuer Geraete im VPN ($WG_IF)
 listen-address=$WG_IP
 bind-interfaces
+# /etc/hosts des Servers nicht verwenden (dort kann der eigene Name auf 127.0.0.1 zeigen)
+no-hosts
 # Im VPN zeigt die Domain auf den Server im VPN – gleiche Adresse wie von aussen, gueltiges Zertifikat
 address=/$DOMAIN/$WG_IP
 resolv-file=$UPSTREAM
@@ -68,8 +70,12 @@ echo "[3/3] Hinweise"
 cat <<EOF
   - In der Einsatzueberwachung: Einstellungen -> System -> VPN-Geraete. Adresse des VPN-Servers eintragen
     (z. B. ${DOMAIN:-<domain>}:$(wg show "$WG_IF" listen-port)), dann Geraete per QR-Code anlegen.
-  - Neue Geraete bekommen ${DOMAIN:+DNS = $WG_IP und erreichen https://$DOMAIN mit gueltigem Zertifikat}${DOMAIN:-keinen DNS-Eintrag}.
 EOF
+if [[ -n "$DOMAIN" ]]; then
+	echo "  - Neue Geraete bekommen DNS = $WG_IP und erreichen https://$DOMAIN mit gueltigem Zertifikat."
+else
+	echo "  - Neue Geraete bekommen keinen DNS-Eintrag und erreichen den Server ueber $WG_IP."
+fi
 if [[ -n "$DOMAIN" ]]; then
 	cat <<EOF
   - Damit https://$DOMAIN im VPN die volle Oberflaeche zeigt, die neue deploy/nginx/einsatzueberwachung-public.conf
