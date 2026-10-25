@@ -26,11 +26,6 @@ public class EinsatzHub : Hub
         return Groups.RemoveFromGroupAsync(Context.ConnectionId, channel);
     }
 
-    public Task BroadcastUpdate(string channel, string eventName, string payload)
-    {
-        return Clients.Group(channel).SendAsync("einsatz:update", eventName, payload);
-    }
-
     public EinsatzData GetCurrentEinsatz()
     {
         return _einsatzService.CurrentEinsatz;

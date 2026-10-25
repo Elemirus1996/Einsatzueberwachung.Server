@@ -804,6 +804,27 @@ private async Task SetDesignModeAsync(bool darkMode)
         return new Uri(new Uri(Navigation.BaseUri), relativePath.TrimStart('/')).ToString();
     }
 
+    [Inject] private LeitungAuthStore LeitungAuthStore { get; set; } = default!;
+
+    private string _pwCurrent = string.Empty;
+    private string _pwNew = string.Empty;
+    private string _pwRepeat = string.Empty;
+    private string _pwError = string.Empty;
+
+    private Task ChangeLeitungPasswordAsync()
+    {
+        if (LeitungAuthStore.ChangePassword(_pwCurrent, _pwNew, _pwRepeat) is { } error)
+        {
+            _pwError = error;
+            return Task.CompletedTask;
+        }
+
+        // Auch diese Anmeldung ist jetzt ungueltig – direkt mit dem neuen Passwort neu anmelden
+        _pwCurrent = _pwNew = _pwRepeat = _pwError = string.Empty;
+        Navigation.NavigateTo($"{LeitungAuth.LoginPath}?geaendert=true", forceLoad: true);
+        return Task.CompletedTask;
+    }
+
     // Die LiveTracking-App haengt /api/CollarWebhook/... selbst an – daher die Basisadresse ohne Schraegstrich am Ende
     private string LiveTrackingServerUrl => Navigation.BaseUri.TrimEnd('/');
 

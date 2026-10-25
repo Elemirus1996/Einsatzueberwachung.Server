@@ -1001,6 +1001,35 @@
                 </div>
 
                 <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-shield-lock me-1"></i>Passwort der Einsatzleitung</h3>
+                    <p class="cfg-help">
+                        Ein gemeinsames Passwort für die Staffel. Nach dem Ändern sind alle Geräte abgemeldet – auch offene
+                        Seiten auf Tablets. Sinnvoll z. B., wenn jemand die Staffel verlässt.
+                    </p>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="pw-current">Aktuelles Passwort</label>
+                        <input id="pw-current" type="password" class="cfg-input" autocomplete="current-password" @bind="_pwCurrent" />
+                    </div>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="pw-new">Neues Passwort (mindestens @Einsatzueberwachung.Server.Security.LeitungAuthStore.MinPasswordLength Zeichen)</label>
+                        <input id="pw-new" type="password" class="cfg-input" autocomplete="new-password" @bind="_pwNew" />
+                    </div>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="pw-repeat">Neues Passwort wiederholen</label>
+                        <input id="pw-repeat" type="password" class="cfg-input" autocomplete="new-password" @bind="_pwRepeat" />
+                    </div>
+                    <div class="cfg-actions">
+                        <button type="button" class="cfg-btn" @onclick="ChangeLeitungPasswordAsync">
+                            <i class="bi bi-key"></i> Passwort ändern
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_pwError))
+                    {
+                        <span class="cfg-help text-danger" role="alert">@_pwError</span>
+                    }
+                </div>
+
+                <div class="cfg-section">
                     <div class="cfg-section-title-row">
                         <h3 class="cfg-sub-header"><i class="bi bi-arrow-repeat me-1"></i>Updates</h3>
                         @if (_updateStatus.UpdateAvailable)

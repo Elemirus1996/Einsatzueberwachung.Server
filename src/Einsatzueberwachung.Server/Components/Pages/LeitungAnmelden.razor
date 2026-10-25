@@ -1,0 +1,88 @@
+@page "/leitung/anmelden"
+@layout Einsatzueberwachung.Server.Components.Layout.TeamMobileLayout
+@using Einsatzueberwachung.Server.Security
+@inject LeitungAuthStore AuthStore
+
+<PageTitle>Anmeldung Einsatzleitung</PageTitle>
+
+<div class="team-login-shell">
+    <h1 class="h3 mb-4 text-center">
+        <i class="bi bi-shield-lock me-2"></i>Einsatzleitung
+    </h1>
+
+    @if (!AuthStore.IsSetUp)
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h6">Erstes Einrichten</h2>
+                <p class="text-muted small">
+                    Lege das Passwort der Staffel fest. Den Einrichtungscode findest du auf dem Server – im Protokoll
+                    (<code>journalctl -u einsatzueberwachung-server | grep Einrichtungscode</code>) oder in der Datei
+                    <code>@LeitungAuthStore.SetupCodeFileName</code> im Datenverzeichnis.
+                </p>
+                <form method="post" action="/leitung/einrichten">
+                    <div class="mb-3">
+                        <label class="form-label" for="code">Einrichtungscode</label>
+                        <input id="code" name="code" class="form-control form-control-lg text-center" autocomplete="off" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="passwort">Neues Passwort (mindestens @LeitungAuthStore.MinPasswordLength Zeichen)</label>
+                        <input id="passwort" name="passwort" type="password" class="form-control" autocomplete="new-password"
+                               minlength="@LeitungAuthStore.MinPasswordLength" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="wiederholung">Passwort wiederholen</label>
+                        <input id="wiederholung" name="wiederholung" type="password" class="form-control" autocomplete="new-password" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check2-circle me-1"></i>Passwort festlegen
+                    </button>
+                </form>
+                @if (LeitungAuthStore.IsKnownSetupError(Einrichtung))
+                {
+                    <div class="alert alert-danger mt-3 mb-0" role="alert">@Einrichtung</div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post" action="/leitung/anmeldung">
+                    <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+                    <div class="mb-3">
+                        <label class="form-label" for="passwort">Passwort der Staffel</label>
+                        <input id="passwort" name="passwort" type="password" class="form-control form-control-lg"
+                               autocomplete="current-password" autofocus required />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Anmelden
+                    </button>
+                </form>
+                @if (Fehler == "falsch")
+                {
+                    <div class="alert alert-danger mt-3 mb-0" role="alert">Das Passwort ist falsch.</div>
+                }
+                else if (Fehler == "gesperrt")
+                {
+                    <div class="alert alert-danger mt-3 mb-0" role="alert">Zu viele Fehlversuche – bitte 5 Minuten warten.</div>
+                }
+                else if (Geaendert)
+                {
+                    <div class="alert alert-success mt-3 mb-0" role="status">Passwort geändert – bitte mit dem neuen Passwort anmelden.</div>
+                }
+            </div>
+        </div>
+        <p class="text-muted small text-center mt-3">
+            Teams melden sich nicht hier an, sondern über den QR-Code am ELW.
+        </p>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery] public string? Fehler { get; set; }
+    [SupplyParameterFromQuery] public string? Einrichtung { get; set; }
+    [SupplyParameterFromQuery] public bool Geaendert { get; set; }
+}

@@ -65,7 +65,7 @@ deploy/
 - **PDF-Export**: QuestPDF + SkiaSharp
 - **Excel**: ClosedXML
 - **Deployment**: systemd-Dienst hinter Nginx auf Ubuntu 22.04/24.04 LTS
-- **Zugriff**: ausschließlich VPN-intern (WireGuard/OpenVPN)
+- **Zugriff**: ausschließlich VPN-intern (WireGuard/OpenVPN), Anmeldung der Einsatzleitung mit Staffel-Passwort (ab 1.10)
 
 ---
 
