@@ -260,3 +260,35 @@
         overflow-x: hidden;
     }
 }
+
+/* Handy: nur die Kopfleiste mit Menue-Knopf, die Navigation klappt bei Bedarf auf.
+   Muss hier stehen (nicht in layout.css), weil diese komponentengebundene Regel sonst gewinnt. */
+@media (max-width: 640px) {
+    .top-row {
+        height: auto;
+        min-height: 3.5rem;
+    }
+
+    .nav-brand-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        text-align: left;
+    }
+
+    .sidebar-edge-toggle {
+        display: none !important;
+    }
+
+    .sidebar-nav {
+        display: none;
+        height: auto;
+    }
+
+    .sidebar-nav.mobile-open {
+        display: block;
+        max-height: calc(100dvh - 4rem);
+        overflow-y: auto;
+    }
+}

@@ -2,9 +2,10 @@
 @using Einsatzueberwachung.Domain.Models
 @using Einsatzueberwachung.Domain.Models.Enums
 
-<div class="page @(_sidebarCollapsed ? "sidebar-collapsed" : string.Empty)">
+<div class="page @(_sidebarCollapsed ? "sidebar-collapsed" : string.Empty) @(_mobileNavOpen ? "mobile-nav-open" : string.Empty)">
     <div class="sidebar">
-        <NavMenu IsCollapsed="_sidebarCollapsed" OnToggleSidebar="ToggleSidebarAsync" />
+        <NavMenu IsCollapsed="_sidebarCollapsed" OnToggleSidebar="ToggleSidebarAsync"
+                 IsMobileOpen="_mobileNavOpen" OnToggleMobile="() => _mobileNavOpen = !_mobileNavOpen" />
     </div>
 
     <main>

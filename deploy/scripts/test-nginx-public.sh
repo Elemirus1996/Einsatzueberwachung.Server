@@ -53,9 +53,14 @@ expect() { # $1 Pfad, $2 erwarteter Port oder 404
 
 echo "--- von aussen"
 render 0; start
-for p in /team/login /team /api/team-mobile/state /api/team-mobile/traccar /hubs/team-mobile/negotiate /_blazor/negotiate /_framework/blazor.web.js /app.css; do expect "$p" 5002; done
+for p in /team/login /team /api/team-mobile/state /api/team-mobile/traccar /hubs/team-mobile/negotiate /_blazor/negotiate /_framework/blazor.web.js \
+	/app.css /app.jlypqgwbzp.css /leaflet-interop.k3x9a1b2c3.js /Einsatzueberwachung.Server.os4ukl7apd.styles.css /css/layout.ab12cd34ef.css /js/layout-tools.ab12cd34ef.js /favicon.png; do
+	expect "$p" 5002
+done
 expect / 404
 expect /einstellungen 404
+expect /downloads/app-settings.json 404
+expect /css/../einstellungen 404
 
 echo "--- aus dem VPN"
 render 1; start

@@ -54,7 +54,10 @@ app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
     {
-        ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=2592000");
+        // Dateien ohne Fingerabdruck im Namen: vor Gebrauch beim Server nachfragen (304, wenn unveraendert).
+        // Frueher 30 Tage ohne Rueckfrage – nach einem Update liefen Browser dann wochenlang mit alten Skripten.
+        // Dateien mit Fingerabdruck (@Assets[...]) liefert MapStaticAssets dauerhaft zwischenspeicherbar aus.
+        ctx.Context.Response.Headers.Append("Cache-Control", "no-cache");
     }
 });
 
