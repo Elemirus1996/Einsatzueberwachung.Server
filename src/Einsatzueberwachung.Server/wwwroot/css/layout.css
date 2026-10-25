@@ -153,14 +153,41 @@ main {
 
 /* Toggle Button Styles */
 /* Mobile: Sidebar oben */
+.btn-mobile-nav-toggle {
+    display: none;
+}
+
 @media (max-width: 640px) {
+    /* Handy: Seitenleiste wird zur Kopfleiste, der Inhalt bekommt den Rest des Bildschirms.
+       Vorher nahm die ausgeklappte Navigation die ganze Hoehe ein und der Inhalt war nicht erreichbar. */
+    .page {
+        flex-direction: column;
+        height: 100dvh;
+    }
+
     .sidebar {
         width: 100%;
+        min-width: 0;
         height: auto;
         position: relative !important;
     }
-    
+
+    .btn-mobile-nav-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: auto;
+        min-width: 44px;
+        min-height: 44px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font-size: 1.5rem;
+    }
+
     main {
+        flex: 1;
+        min-height: 0;
         margin: 0;
         width: 100%;
     }

@@ -20,6 +20,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
 
     private bool _isDarkMode;
     private bool _sidebarCollapsed;
+    private bool _mobileNavOpen;
     private bool _hilfeOpen;
     private DotNetObjectReference<MainLayout>? _dotNetRef;
     private bool _showCriticalWarningPopup;
@@ -80,6 +81,14 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
     {
         if (!firstRender)
         {
+            return;
+        }
+
+        // Handy: Startseite → EL-Ansicht (einmal je Sitzung; ueber das Menue bleibt alles erreichbar)
+        if (Navigation.ToBaseRelativePath(Navigation.Uri).Length == 0
+            && await JS.InvokeAsync<bool>("layoutTools.shouldOpenElOnPhone"))
+        {
+            Navigation.NavigateTo("/el");
             return;
         }
 
@@ -265,6 +274,8 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        // Handy: nach dem Antippen eines Menuepunkts die Navigation wieder zuklappen
+        _mobileNavOpen = false;
         try
         {
             await ApplyPersistedThemeAsync();

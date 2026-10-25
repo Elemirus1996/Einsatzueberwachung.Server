@@ -133,7 +133,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" />
-    <link rel="stylesheet" href="@Assets["app.css"]" />
+    @* CSS-Module einzeln mit Fingerabdruck im Dateinamen (statt @import in app.css): nach einem Update laden
+       Browser die neue Fassung sofort, statt bis zu 30 Tage die alte aus dem Zwischenspeicher zu nehmen *@
+    <link rel="stylesheet" href="@Assets["css/theme-tokens.css"]" />
+    <link rel="stylesheet" href="@Assets["css/animations.css"]" />
+    <link rel="stylesheet" href="@Assets["css/layout.css"]" />
+    <link rel="stylesheet" href="@Assets["css/typography.css"]" />
+    <link rel="stylesheet" href="@Assets["css/forms.css"]" />
+    <link rel="stylesheet" href="@Assets["css/cards.css"]" />
+    <link rel="stylesheet" href="@Assets["css/teams.css"]" />
+    <link rel="stylesheet" href="@Assets["css/notes.css"]" />
+    <link rel="stylesheet" href="@Assets["css/map.css"]" />
+    <link rel="stylesheet" href="@Assets["css/monitor.css"]" />
+    <link rel="stylesheet" href="@Assets["css/home.css"]" />
+    <link rel="stylesheet" href="@Assets["css/utilities.css"]" />
     <link rel="stylesheet" href="@Assets["Einsatzueberwachung.Server.styles.css"]" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -151,23 +164,23 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
-    <script src="js/html-escape.js"></script>
-    <script src="js/leaflet-grid.js"></script>
-    <script src="js/leaflet-grid-control.js"></script>
-    <script src="leaflet-interop.js"></script>
+    <script src="@Assets["js/html-escape.js"]"></script>
+    <script src="@Assets["js/leaflet-grid.js"]"></script>
+    <script src="@Assets["js/leaflet-grid-control.js"]"></script>
+    <script src="@Assets["leaflet-interop.js"]"></script>
     <script src="_framework/blazor.web.js"></script>
-    <script src="js/einsatz-map.js"></script>
-    <script src="js/keyboard-shortcuts.js"></script>
-    <script src="js/clock.js"></script>
-    <script src="js/layout-tools.js"></script>
-    <script src="js/theme-sync.js"></script>
-    <script src="js/collar-tracking.js"></script>
-    <script src="js/phone-tracking.js"></script>
-    <script src="js/team-mobile-map.js"></script>
-    <script src="js/mention-textarea.js"></script>
-    <script src="js/drone-stream.js"></script>
-    <script src="js/truemmer-map.js"></script>
-    <script src="js/hilfe-drawer.js"></script>
+    <script src="@Assets["js/einsatz-map.js"]"></script>
+    <script src="@Assets["js/keyboard-shortcuts.js"]"></script>
+    <script src="@Assets["js/clock.js"]"></script>
+    <script src="@Assets["js/layout-tools.js"]"></script>
+    <script src="@Assets["js/theme-sync.js"]"></script>
+    <script src="@Assets["js/collar-tracking.js"]"></script>
+    <script src="@Assets["js/phone-tracking.js"]"></script>
+    <script src="@Assets["js/team-mobile-map.js"]"></script>
+    <script src="@Assets["js/mention-textarea.js"]"></script>
+    <script src="@Assets["js/drone-stream.js"]"></script>
+    <script src="@Assets["js/truemmer-map.js"]"></script>
+    <script src="@Assets["js/hilfe-drawer.js"]"></script>
 </body>
 
 </html>

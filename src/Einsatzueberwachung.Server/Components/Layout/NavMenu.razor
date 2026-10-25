@@ -21,6 +21,13 @@
                 <span class="brand-text">Einsatzüberwachung</span>
             </a>
         }
+        @* Nur auf schmalen Bildschirmen sichtbar: Navigation auf- und zuklappen *@
+        <button class="btn-mobile-nav-toggle" type="button"
+                aria-label="@(IsMobileOpen ? "Menü schließen" : "Menü öffnen")"
+                aria-expanded="@IsMobileOpen"
+                @onclick="() => OnToggleMobile.InvokeAsync()">
+            <i class="bi @(IsMobileOpen ? "bi-x-lg" : "bi-list")"></i>
+        </button>
     </div>
 </div>
 
@@ -33,12 +40,19 @@
     <i class="bi bi-chevron-left toggle-icon"></i>
 </button>
 
-<div class="sidebar-nav @(IsCollapsed ? "sidebar-collapsed" : "sidebar-expanded")">
+<div class="sidebar-nav @(IsCollapsed ? "sidebar-collapsed" : "sidebar-expanded") @(IsMobileOpen ? "mobile-open" : "")">
     <nav class="nav flex-column nav-wrapper">
         <div class="nav-item px-2">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All" title="Home">
                 <span class="nav-icon"><i class="bi bi-house-door-fill"></i></span>
                 <span class="nav-text">Home</span>
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="/el" title="Einsatzleitung (Tablet/Handy)">
+                <span class="nav-icon"><i class="bi bi-broadcast-pin"></i></span>
+                <span class="nav-text">Einsatzleitung</span>
             </NavLink>
         </div>
 
@@ -142,6 +156,13 @@
 
     [Parameter]
     public EventCallback OnToggleSidebar { get; set; }
+
+    /// <summary>Handy: Navigation ist aufgeklappt (sonst nur die Kopfleiste).</summary>
+    [Parameter]
+    public bool IsMobileOpen { get; set; }
+
+    [Parameter]
+    public EventCallback OnToggleMobile { get; set; }
 
     private string ToggleSidebarLabel => IsCollapsed ? "Navigation ausklappen" : "Navigation einklappen";
 

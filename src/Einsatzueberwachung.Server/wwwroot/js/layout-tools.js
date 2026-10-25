@@ -40,6 +40,18 @@ window.layoutTools.getSidebarCollapsed = function () {
     return value === "1" || value === "true";
 };
 
+// Handy (schmaler Bildschirm): beim ersten Aufruf der Startseite in dieser Sitzung zur EL-Ansicht wechseln
+window.layoutTools.shouldOpenElOnPhone = function () {
+    if (!window.matchMedia("(max-width: 640px)").matches) return false;
+    try {
+        if (sessionStorage.getItem("einsatz.elOpened") === "1") return false;
+        sessionStorage.setItem("einsatz.elOpened", "1");
+    } catch (e) {
+        // Ohne sessionStorage (privater Modus): trotzdem einmal weiterleiten
+    }
+    return true;
+};
+
 window.layoutTools.setSidebarCollapsed = function (collapsed) {
     localStorage.setItem("einsatz.sidebarCollapsed", collapsed ? "1" : "0");
 };
