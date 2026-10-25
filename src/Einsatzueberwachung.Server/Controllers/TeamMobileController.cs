@@ -33,6 +33,7 @@ public sealed class TeamMobileController : ControllerBase
     }
 
     [HttpGet("teams")]
+    [AllowAnonymous] // Team-Anmeldung per Master-Token, ohne Login der Einsatzleitung
     public IActionResult ListTeams([FromQuery] string master)
     {
         if (!_tokenService.ValidateMasterToken(master))
@@ -64,6 +65,7 @@ public sealed class TeamMobileController : ControllerBase
     }
 
     [HttpPost("select")]
+    [AllowAnonymous] // Team-Anmeldung per Master-Token, ohne Login der Einsatzleitung
     public async Task<IActionResult> SelectTeam([FromBody] TeamMobileSelectRequest request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.MasterToken) || string.IsNullOrWhiteSpace(request.TeamId))
@@ -101,6 +103,7 @@ public sealed class TeamMobileController : ControllerBase
     }
 
     [HttpPost("select-form")]
+    [AllowAnonymous] // Team-Anmeldung per Master-Token, ohne Login der Einsatzleitung
     [Consumes("application/x-www-form-urlencoded")]
     public async Task<IActionResult> SelectTeamForm([FromForm] string master, [FromForm] string teamId)
     {
@@ -111,6 +114,7 @@ public sealed class TeamMobileController : ControllerBase
     }
 
     [HttpPost("logout")]
+    [AllowAnonymous] // Team-Anmeldung per Master-Token, ohne Login der Einsatzleitung
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(TeamMobileAuth.AuthenticationScheme);

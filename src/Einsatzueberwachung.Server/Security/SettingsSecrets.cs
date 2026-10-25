@@ -12,8 +12,12 @@ public static class SettingsSecrets
 {
     private static readonly string[] SecretProperties = [nameof(AppSettings.GitHubToken), nameof(AppSettings.DiveraAccessKey)];
 
-    // Dateien im Datenverzeichnis, die nie ins Daten-Backup kommen (HMAC-Schluessel der Team-Cookies)
-    private static readonly HashSet<string> BackupExcludedFiles = new(StringComparer.OrdinalIgnoreCase) { "team-mobile-secret.bin" };
+    // Dateien im Datenverzeichnis, die nie ins Daten-Backup kommen (HMAC-Schluessel der Team-Cookies,
+    // Passwort-Hash und Einrichtungscode der Einsatzleitung – auf einem neuen Server wird neu eingerichtet)
+    private static readonly HashSet<string> BackupExcludedFiles = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "team-mobile-secret.bin", LeitungAuthStore.FileName, LeitungAuthStore.SetupCodeFileName,
+    };
 
     /// <summary>AppSettings als JSON ohne Zugangsdaten.</summary>
     public static byte[] SerializeWithoutSecrets(AppSettings settings) =>

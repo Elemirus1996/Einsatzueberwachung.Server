@@ -15,6 +15,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddControllers();
 builder.Services.AddSwagger();
 
+builder.Services.AddLeitungAuthentication();
 builder.Services.AddTeamMobileAuthentication(builder.Configuration);
 
 builder.Services.AddCompressionAndCaching();
@@ -67,9 +68,12 @@ app.UseAuthorization();
 
 app.UseAntiforgery();
 
-app.MapStaticAssets();
+// Ohne Anmeldung: statische Dateien (auch fuer Anmelde- und Team-Seite) und der lokale Healthcheck
+app.MapStaticAssets().AllowAnonymous();
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health").AllowAnonymous();
+
+app.MapLeitungEndpoints();
 
 app.MapControllers();
 
@@ -84,13 +88,23 @@ app.MapHub<Einsatzueberwachung.Server.Hubs.TeamMobileHub>("/hubs/team-mobile");
 
 app.MapDownloadEndpoints();
 
+// Seiten und Blazor-Verbindung selbst sind frei – welche Seite gerendert wird, entscheidet Routes.razor
+// (Team-Seiten ohne, alle anderen nur mit Anmeldung der Einsatzleitung)
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .AllowAnonymous();
 
 var publicAccess = app.Services.GetRequiredService<PublicAccess>();
 if (publicAccess.Port > 0)
 {
     app.Logger.LogInformation("Oeffentlicher Team-Zugang auf Port {Port}: dort nur Team-Seiten erreichbar", publicAccess.Port);
+}
+
+var leitungAuth = app.Services.GetRequiredService<LeitungAuthStore>();
+if (leitungAuth.SetupCode is { } setupCode)
+{
+    app.Logger.LogWarning("Passwort der Einsatzleitung noch nicht eingerichtet. Einrichtungscode: {Code} – im Browser unter {Path} eingeben.",
+        setupCode, LeitungAuth.LoginPath);
 }
 
 try

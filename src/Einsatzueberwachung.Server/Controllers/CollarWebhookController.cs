@@ -3,6 +3,7 @@
 
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Server.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Einsatzueberwachung.Server.Controllers;
@@ -23,6 +24,7 @@ public class CollarWebhookController : ControllerBase
     /// Empfängt eine neue GPS-Position von der externen Halsband-Software.
     /// </summary>
     [HttpPost("location")]
+    [AllowAnonymous] // LiveTracking-App; Absicherung per API-Schluessel folgt in 1.10 (Teil 2)
     public async Task<IActionResult> ReceiveLocation([FromBody] CollarLocationRequest request)
     {
         if (request is null)
@@ -88,6 +90,7 @@ public class CollarWebhookController : ControllerBase
     /// Gibt alle bekannten Halsbänder zurück.
     /// </summary>
     [HttpGet("collars")]
+    [AllowAnonymous] // Verbindungstest der LiveTracking-App; API-Schluessel folgt in 1.10 (Teil 2)
     public IActionResult GetCollars()
     {
         var collars = _trackingService.Collars;

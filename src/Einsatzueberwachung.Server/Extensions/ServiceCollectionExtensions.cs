@@ -64,6 +64,51 @@ internal static class ServiceCollectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddLeitungAuthentication(this IServiceCollection services)
+    {
+        services.AddSingleton(_ => LeitungAuthStore.ForDataDirectory());
+        services.AddSingleton<LoginLockout>();
+        services.AddScoped<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider, LeitungRevalidatingAuthStateProvider>();
+
+        // Standard-Anmeldung ist die der Einsatzleitung; die Team-Ansicht nutzt ihr eigenes Schema ausdruecklich
+        services.AddAuthentication(LeitungAuth.AuthenticationScheme)
+            .AddCookie(LeitungAuth.AuthenticationScheme, options =>
+            {
+                options.Cookie.Name = LeitungAuth.CookieName;
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.LoginPath = LeitungAuth.LoginPath;
+                options.AccessDeniedPath = LeitungAuth.LoginPath;
+                options.ExpireTimeSpan = TimeSpan.FromDays(14);
+                options.SlidingExpiration = true;
+                options.Events.OnValidatePrincipal = LeitungAuth.ValidatePrincipalAsync;
+                options.Events.OnRedirectToLogin = ctx =>
+                {
+                    // Schnittstellen bekommen 401 statt einer Weiterleitung auf die Anmeldeseite
+                    if (ctx.Request.Path.StartsWithSegments("/api") || ctx.Request.Path.StartsWithSegments("/hubs"))
+                    {
+                        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        return Task.CompletedTask;
+                    }
+                    ctx.Response.Redirect(ctx.RedirectUri);
+                    return Task.CompletedTask;
+                };
+            });
+
+        // Alles, was nicht ausdruecklich freigegeben ist ([AllowAnonymous] bzw. Team-Richtlinie), verlangt die
+        // Anmeldung der Einsatzleitung – Controller, Downloads, Hubs (Audit 2026-10-24)
+        services.AddAuthorization(options =>
+        {
+            options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder(LeitungAuth.AuthenticationScheme)
+                .RequireAuthenticatedUser()
+                .RequireClaim(LeitungAuth.RoleClaim)
+                .Build();
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddTeamMobileAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<TeamMobileOptions>(configuration.GetSection(TeamMobileOptions.SectionName));

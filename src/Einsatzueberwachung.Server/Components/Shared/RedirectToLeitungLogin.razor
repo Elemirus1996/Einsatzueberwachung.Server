@@ -1,0 +1,11 @@
+@using Einsatzueberwachung.Server.Security
+@inject NavigationManager Navigation
+
+@code {
+    // Ohne Anmeldung zur Login-Seite; die aktuelle Seite kommt als Ruecksprung mit
+    protected override void OnInitialized()
+    {
+        var relative = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+        Navigation.NavigateTo($"{LeitungAuth.LoginPath}?returnUrl={Uri.EscapeDataString(relative)}", forceLoad: true);
+    }
+}

@@ -128,6 +128,30 @@ Beide Umgebungsvariablen immer gemeinsam setzen: Lauscht Kestrel auf 5002, ohne 
 gesetzt ist, gilt der Port als intern. Fehlt umgekehrt der Port in `ASPNETCORE_URLS`, antwortet der oeffentliche Block mit
 502 – dann ist nichts oeffentlich erreichbar.
 
+### Anmeldung der Einsatzleitung (ab 1.10)
+
+Alle Seiten und Schnittstellen außer der Team-Ansicht verlangen eine Anmeldung mit dem gemeinsamen Passwort der Staffel.
+Die Anmeldung ist nur über das VPN erreichbar, nicht über den öffentlichen Team-Zugang.
+
+**Erstes Einrichten** (nach der Installation oder dem Update auf 1.10): Im Browser die Einsatzüberwachung öffnen – es
+erscheint „Erstes Einrichten“. Den Einrichtungscode zeigt der Server an:
+
+```bash
+sudo journalctl -u einsatzueberwachung-server.service | grep Einrichtungscode
+# oder
+sudo cat /opt/einsatzueberwachung/data/LEITUNG-EINRICHTUNGSCODE.txt
+```
+
+Code und neues Passwort (mindestens 10 Zeichen) eingeben – danach ist der Code verbraucht und die Datei gelöscht.
+
+- **Passwort ändern:** *Einstellungen → System → Passwort der Einsatzleitung*. Danach sind alle Geräte abgemeldet,
+  auch offene Seiten auf Tablets (spätestens nach einer Minute).
+- **Passwort vergessen:** auf dem Server `data/leitung-auth.json` löschen und den Dienst neu starten – es gibt dann einen
+  neuen Einrichtungscode.
+- Passwort-Hash und Einrichtungscode sind nicht im Daten-Backup enthalten; nach einer Wiederherstellung auf einem neuen
+  Server wird neu eingerichtet.
+- Nach 5 falschen Passwörtern ist die Anmeldung von dieser Adresse 5 Minuten gesperrt.
+
 ### Weitere Optionen
 
 - `Cors:AllowedOrigins` (z.B. `Cors__AllowedOrigins__0=https://andere-app.example`): fremde Webseiten, die die API im

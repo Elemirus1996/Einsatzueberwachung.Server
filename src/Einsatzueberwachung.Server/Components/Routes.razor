@@ -14,6 +14,11 @@
                 </div>
             </LayoutView>
         }
+        else if (!LeitungAccess.IsAnonymousPage(routeData.PageType) && !LeitungAuth.IsLeitung(_user))
+        {
+            @* Alle Seiten der Einsatzleitung nur nach Anmeldung – auch bei Navigation im Circuit *@
+            <Einsatzueberwachung.Server.Components.Shared.RedirectToLeitungLogin />
+        }
         else
         {
             <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
@@ -28,4 +33,14 @@
     /// und steckt signiert im Komponenten-Marker – der Browser kann ihn nicht aendern.
     /// </summary>
     [Parameter] public bool PublicOnly { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private System.Security.Claims.ClaimsPrincipal? _user;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Wird bei jeder Aenderung des Anmeldestatus neu gesetzt (z.B. Passwort geaendert → abgemeldet)
+        _user = AuthenticationState is null ? null : (await AuthenticationState).User;
+    }
 }
