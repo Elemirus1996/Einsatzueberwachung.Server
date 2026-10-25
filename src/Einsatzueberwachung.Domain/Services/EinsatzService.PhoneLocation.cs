@@ -9,7 +9,7 @@ namespace Einsatzueberwachung.Domain.Services
         // Aufgezeichneter GPS-Pfad pro Team (nur während IsRunning == true)
         private readonly Dictionary<string, List<TeamPhoneLocation>> _phoneTrackHistory = new();
 
-        public Task UpdateTeamPhoneLocationAsync(string teamId, double lat, double lng, double? accuracy = null)
+        public Task UpdateTeamPhoneLocationAsync(string teamId, double lat, double lng, double? accuracy = null, DateTime? timestampUtc = null)
         {
             if (string.IsNullOrWhiteSpace(teamId))
                 return Task.CompletedTask;
@@ -28,19 +28,32 @@ namespace Einsatzueberwachung.Domain.Services
             }
             if (team == null) return Task.CompletedTask;
 
+            // Zeitpunkt aus dem Puffer der Traccar-App (UTC) in die lokale Serverzeit umrechnen; ohne Angabe: jetzt
+            var now = GetServerNowLocal();
+            var timestamp = now;
+            if (timestampUtc.HasValue)
+            {
+                timestamp = timestampUtc.Value + (now - DateTime.UtcNow);
+                if (timestamp > now) timestamp = now;
+                if (timestamp < now.AddHours(-24)) return Task.CompletedTask;
+            }
+
             var loc = new TeamPhoneLocation
             {
                 Latitude = lat,
                 Longitude = lng,
-                Timestamp = GetServerNowLocal(),
+                Timestamp = timestamp,
                 Accuracy = accuracy
             };
 
+            bool isNewest;
             lock (_phoneLocationsLock)
             {
-                _phoneLocations[teamId] = loc;
+                // Nachgesendete aeltere Punkte ersetzen nicht die aktuelle Position
+                isNewest = !_phoneLocations.TryGetValue(teamId, out var latest) || loc.Timestamp >= latest.Timestamp;
+                if (isNewest) _phoneLocations[teamId] = loc;
 
-                // Punkt nur aufzeichnen wenn das Team aktiv sucht
+                // Punkt nur aufzeichnen wenn das Team aktiv sucht – zeitlich einsortiert
                 if (team.IsRunning)
                 {
                     if (!_phoneTrackHistory.TryGetValue(teamId, out var trackList))
@@ -48,9 +61,13 @@ namespace Einsatzueberwachung.Domain.Services
                         trackList = new List<TeamPhoneLocation>();
                         _phoneTrackHistory[teamId] = trackList;
                     }
-                    trackList.Add(loc);
+                    var index = trackList.Count;
+                    while (index > 0 && trackList[index - 1].Timestamp > loc.Timestamp) index--;
+                    trackList.Insert(index, loc);
                 }
             }
+
+            if (!isNewest) return Task.CompletedTask;
 
             try
             {

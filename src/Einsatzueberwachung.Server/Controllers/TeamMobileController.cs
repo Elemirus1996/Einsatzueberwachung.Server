@@ -150,6 +150,35 @@ public sealed class TeamMobileController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Positionen der App „Traccar Client“ (Hintergrund-GPS bei gesperrtem Handy). Die Geraete-ID ist das signierte,
+    /// einsatzgebundene Team-Token aus der Team-Ansicht – nach Einsatzende wertlos.
+    /// </summary>
+    [HttpPost("traccar")]
+    [HttpGet("traccar")]
+    [AllowAnonymous] // Anmeldung ueber das Team-Token in „id“
+    public async Task<IActionResult> PostTraccarPosition()
+    {
+        var form = Request.HasFormContentType ? await Request.ReadFormAsync() : null;
+        string? Value(string key) => form?[key].FirstOrDefault() ?? Request.Query[key].FirstOrDefault();
+
+        var position = TraccarProtocol.Parse(Value);
+        if (position is null)
+            return BadRequest(new { error = "id, lat und lon erforderlich." });
+
+        // Ungueltiges oder abgelaufenes Token: annehmen und verwerfen. Die App wuerde sonst ihren Puffer endlos
+        // wiederholen und den Akku leeren; die Team-Ansicht zeigt den Status ohnehin an.
+        if (!_tokenService.TryValidateTeamCookie(position.DeviceId, out var teamId)
+            || _einsatzService.Teams.All(t => t.TeamId != teamId))
+        {
+            _logger.LogInformation("Traccar-Position mit ungueltigem oder abgelaufenem Team-Token verworfen");
+            return Ok();
+        }
+
+        await _einsatzService.UpdateTeamPhoneLocationAsync(teamId, position.Latitude, position.Longitude, position.Accuracy, position.TimestampUtc);
+        return Ok();
+    }
+
     [HttpPost("status")]
     [Authorize(Policy = TeamMobileAuth.AuthorizationPolicy)]
     public async Task<IActionResult> PostStatus([FromBody] TeamMobileStatusRequest request)

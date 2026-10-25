@@ -147,7 +147,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         /// </summary>
         void ResetEinsatz();
 
-        Task UpdateTeamPhoneLocationAsync(string teamId, double lat, double lng, double? accuracy = null);
+        Task UpdateTeamPhoneLocationAsync(string teamId, double lat, double lng, double? accuracy = null, DateTime? timestampUtc = null);
 
         /// <summary>
         /// Gibt den aufgezeichneten GPS-Pfad eines laufenden Teams zurück (Telefon-Tracking).
