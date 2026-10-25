@@ -1043,6 +1043,112 @@
                 </div>
 
                 <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-shield-check me-1"></i>VPN-Geräte</h3>
+                    @if (!VpnDevices.IsAvailable)
+                    {
+                        <p class="cfg-help">
+                            Noch nicht eingerichtet. Auf dem Server einmalig <code>sudo bash deploy/scripts/setup-vpn.sh &lt;domain&gt;</code>
+                            ausführen (siehe DEPLOYMENT.md) – danach lassen sich hier Tablets, Handys und Laptops per QR-Code ins VPN bringen.
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="cfg-help">
+                            Neues Gerät anlegen → QR-Code mit der WireGuard-App scannen. Der QR-Code enthält den privaten Schlüssel,
+                            wird nur einmal angezeigt und nirgends gespeichert. Gesperrte Geräte kommen sofort nicht mehr ins VPN.
+                        </p>
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="vpn-endpoint">Adresse des VPN-Servers (Domain:Port)</label>
+                            <div class="cfg-copy-row">
+                                <input id="vpn-endpoint" class="cfg-input" @bind="_vpnEndpoint" placeholder="dein-einsatz.mywire.org:51820" />
+                                <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="SaveVpnEndpoint">
+                                    <i class="bi bi-check2"></i> Speichern
+                                </button>
+                            </div>
+                            @if (_vpnServer is { DnsEnabled: false })
+                            {
+                                <span class="cfg-help text-warning">
+                                    DNS im VPN ist nicht eingerichtet – Geräte erreichen die Einsatzüberwachung dann über
+                                    <code>@_vpnServer.ServerIp</code>, nicht über den Namen.
+                                </span>
+                            }
+                        </div>
+
+                        @if (_vpnDevices.Count > 0)
+                        {
+                            <table class="table table-sm align-middle">
+                                <thead><tr><th>Gerät</th><th>IP</th><th>Letzter Kontakt</th><th>Gültig bis</th><th></th></tr></thead>
+                                <tbody>
+                                    @foreach (var d in _vpnDevices)
+                                    {
+                                        <tr>
+                                            <td>@d.Device.Name</td>
+                                            <td><code>@d.Device.Ip</code></td>
+                                            <td>@(d.LastHandshakeUtc is { } h ? h.ToLocalTime().ToString("dd.MM. HH:mm") : "noch nie")</td>
+                                            <td>@(d.Device.ExpiresUtc is { } e ? e.ToLocalTime().ToString("dd.MM. HH:mm") : "unbegrenzt")</td>
+                                            <td class="text-end">
+                                                <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="() => RemoveVpnDeviceAsync(d.Device)">
+                                                    <i class="bi bi-slash-circle"></i> Sperren
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+
+                        @if (_vpnCreated is null)
+                        {
+                            <div class="cfg-field">
+                                <label class="cfg-label" for="vpn-name">Neues Gerät</label>
+                                <input id="vpn-name" class="cfg-input" @bind="_vpnName" maxlength="@Einsatzueberwachung.Server.Services.VpnDeviceService.MaxNameLength" placeholder="z. B. Tablet EL 2" />
+                            </div>
+                            <div class="cfg-field">
+                                <label class="cfg-label" for="vpn-validity">Gültigkeit</label>
+                                <select id="vpn-validity" class="cfg-input" @bind="_vpnValidityDays">
+                                    <option value="0">unbegrenzt</option>
+                                    <option value="1">1 Tag</option>
+                                    <option value="3">3 Tage (z. B. Übungswochenende)</option>
+                                    <option value="7">7 Tage</option>
+                                    <option value="30">30 Tage</option>
+                                </select>
+                            </div>
+                            <div class="cfg-field">
+                                <label class="cfg-label" for="vpn-password">Passwort der Einsatzleitung zur Bestätigung</label>
+                                <input id="vpn-password" type="password" class="cfg-input" autocomplete="current-password" @bind="_vpnPassword" />
+                            </div>
+                            <div class="cfg-actions">
+                                <button type="button" class="cfg-btn" disabled="@_vpnBusy" @onclick="CreateVpnDeviceAsync">
+                                    <i class="bi bi-qr-code"></i> QR-Code erzeugen
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="cfg-field">
+                                <strong>@_vpnCreated.Device.Name – @_vpnCreated.Device.Ip</strong>
+                                <img src="@_vpnQrDataUrl" alt="WireGuard-QR-Code" class="cfg-vpn-qr" />
+                                <span class="cfg-help">
+                                    In der WireGuard-App „+“ → „QR-Code scannen“. Laptop: Konfiguration herunterladen und in WireGuard importieren.
+                                </span>
+                                <div class="cfg-actions">
+                                    <a class="cfg-btn cfg-btn-ghost" href="@_vpnConfigDataUrl" download="@_vpnConfigFileName">
+                                        <i class="bi bi-download"></i> Konfiguration (.conf)
+                                    </a>
+                                    <button type="button" class="cfg-btn" @onclick="CloseVpnCreated">
+                                        <i class="bi bi-check2"></i> Fertig – QR-Code ausblenden
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_vpnMessage))
+                        {
+                            <span class="cfg-help @(_vpnError ? "text-danger" : "text-success")" role="status">@_vpnMessage</span>
+                        }
+                    }
+                </div>
+
+                <div class="cfg-section">
                     <div class="cfg-section-title-row">
                         <h3 class="cfg-sub-header"><i class="bi bi-arrow-repeat me-1"></i>Updates</h3>
                         @if (_updateStatus.UpdateAvailable)

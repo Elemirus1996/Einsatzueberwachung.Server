@@ -93,6 +93,30 @@ Beispielkonfiguration in `deploy/wireguard/wg0.conf.example`.
 
 Das VPN-Netz ist `10.10.0.0/24` und muss zu `allow 10.10.0.0/24` in `deploy/nginx/einsatzueberwachung.conf` passen.
 
+### VPN-Geräte per QR-Code und DNS im VPN (ab 1.10)
+
+Einmalig auf dem Server (WireGuard läuft als `wg0` auf demselben Rechner):
+
+```bash
+sudo bash deploy/scripts/setup-vpn.sh dein-einsatz.mywire.org
+```
+
+Das Skript
+- installiert das Hilfsprogramm `/usr/local/sbin/einsatz-wg-peer` (gehört root, für den Dienst nicht beschreibbar) und
+  erlaubt dem Dienstbenutzer per sudoers genau dieses Programm,
+- richtet mit `dnsmasq` einen DNS-Dienst **nur im VPN** ein: Die Domain zeigt dort auf `10.10.0.1`. Geräte im VPN rufen
+  so `https://dein-einsatz.mywire.org` mit gültigem Let's-Encrypt-Zertifikat auf – der öffentliche Nginx-Block erkennt sie
+  am Absender aus dem VPN-Netz und zeigt ihnen die volle Oberfläche, allen anderen nur die Team-Ansicht. Dafür die neue
+  `einsatzueberwachung-public.conf` übernehmen (`geo`/`map` am Anfang, `$einsatz_upstream`) und `nginx -t && systemctl reload nginx`.
+
+Ohne Domain-Argument wird nur das Hilfsprogramm eingerichtet (Geräte ohne DNS, Zugriff über `https://10.10.0.1`).
+
+Danach in der Einsatzüberwachung *Einstellungen → System → VPN-Geräte*: Adresse des VPN-Servers (`Domain:Port`)
+eintragen, Gerätename und Gültigkeit wählen, Passwort der Einsatzleitung bestätigen → QR-Code mit der WireGuard-App
+scannen. Der private Schlüssel steht nur im QR-Code bzw. der `.conf` und wird nirgends gespeichert. Abgelaufene Geräte
+entfernt der Server automatisch; „Sperren“ wirkt sofort. Geräte, die von Hand in `wg0.conf` eingetragen wurden, bleiben
+unverändert.
+
 ## 7. Nginx Anpassungen
 
 Anwendungskonfiguration in `deploy/nginx/einsatzueberwachung.conf`.

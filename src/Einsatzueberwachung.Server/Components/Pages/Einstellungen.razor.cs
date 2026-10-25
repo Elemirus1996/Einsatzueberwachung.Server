@@ -170,8 +170,9 @@ public partial class Einstellungen
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        // Zertifikat abfragen kann einige Sekunden dauern – nicht beim ersten Rendern blockieren
+        // Zertifikat abfragen und VPN-Status lesen kann einige Sekunden dauern – nicht beim ersten Rendern blockieren
         _ = LoadLiveTrackingCodeAsync();
+        _ = LoadVpnAsync();
         // BrowserPrefs aus localStorage laden (vom MainLayout ggf. bereits geladen)
         await BrowserPrefs.LoadAsync();
         _shortcuts = System.Text.Json.JsonSerializer.Deserialize<KeyboardShortcutPreferences>(
@@ -807,6 +808,131 @@ private async Task SetDesignModeAsync(bool darkMode)
     }
 
     [Inject] private LeitungAuthStore LeitungAuthStore { get; set; } = default!;
+    [Inject] private VpnDeviceService VpnDevices { get; set; } = default!;
+    [Inject] private VpnDeviceStore VpnDeviceStore { get; set; } = default!;
+
+    private sealed record VpnDeviceRow(VpnDevice Device, DateTime? LastHandshakeUtc);
+
+    private VpnServerInfo? _vpnServer;
+    private List<VpnDeviceRow> _vpnDevices = [];
+    private string _vpnEndpoint = string.Empty;
+    private string _vpnName = string.Empty;
+    private int _vpnValidityDays;
+    private string _vpnPassword = string.Empty;
+    private bool _vpnBusy;
+    private string _vpnMessage = string.Empty;
+    private bool _vpnError;
+    private VpnDeviceCreated? _vpnCreated;
+    private string _vpnQrDataUrl = string.Empty;
+    private string _vpnConfigDataUrl = string.Empty;
+    private string _vpnConfigFileName = string.Empty;
+
+    private async Task LoadVpnAsync()
+    {
+        if (!VpnDevices.IsAvailable) return;
+        try
+        {
+            _vpnServer = await VpnDevices.GetServerInfoAsync();
+            _vpnEndpoint = VpnDeviceStore.Endpoint;
+            if (string.IsNullOrWhiteSpace(_vpnEndpoint) && _vpnServer is not null)
+            {
+                // Vorschlag: oeffentlicher Name der Team-Ansicht + WireGuard-Port
+                var host = new Uri(string.IsNullOrWhiteSpace(_appSettings.MobileBaseUrl) ? Navigation.BaseUri
+                    : (_appSettings.MobileBaseUrl.Contains("://") ? _appSettings.MobileBaseUrl : "https://" + _appSettings.MobileBaseUrl)).Host;
+                _vpnEndpoint = $"{host}:{_vpnServer.ListenPort}";
+            }
+            var status = (await VpnDevices.GetStatusAsync()).ToDictionary(s => s.PublicKey, s => s.LastHandshakeUtc);
+            _vpnDevices = VpnDeviceStore.Devices
+                .Select(d => new VpnDeviceRow(d, status.GetValueOrDefault(d.PublicKey)))
+                .OrderBy(d => d.Device.Name)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            SetVpnMessage($"VPN-Status nicht lesbar: {ex.Message}", true);
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void SaveVpnEndpoint()
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(_vpnEndpoint.Trim(), @"^[A-Za-z0-9.\-]+:\d{1,5}$"))
+        {
+            SetVpnMessage("Bitte als Name:Port angeben, z. B. dein-einsatz.mywire.org:51820.", true);
+            return;
+        }
+        VpnDeviceStore.SetEndpoint(_vpnEndpoint);
+        SetVpnMessage("Adresse gespeichert.", false);
+    }
+
+    private async Task CreateVpnDeviceAsync()
+    {
+        // Der QR-Code enthaelt einen privaten Schluessel – deshalb das Passwort trotz Anmeldung noch einmal
+        if (!LeitungAuthStore.Verify(_vpnPassword))
+        {
+            SetVpnMessage("Das Passwort ist falsch.", true);
+            return;
+        }
+        _vpnPassword = string.Empty;
+        _vpnBusy = true;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(VpnDeviceStore.Endpoint)) SaveVpnEndpoint();
+            var now = DateTime.UtcNow;
+            DateTime? expires = _vpnValidityDays > 0 ? now.AddDays(_vpnValidityDays) : null;
+            _vpnCreated = await VpnDevices.CreateAsync(_vpnName, expires, now);
+            _vpnQrDataUrl = GenerateQrDataUrl(_vpnCreated.ClientConfig);
+            _vpnConfigDataUrl = "data:text/plain;charset=utf-8," + Uri.EscapeDataString(_vpnCreated.ClientConfig);
+            _vpnConfigFileName = "einsatz-" + new string(_vpnCreated.Device.Name.Select(c => char.IsAsciiLetterOrDigit(c) ? c : '-').ToArray()) + ".conf";
+            _vpnName = string.Empty;
+            SetVpnMessage(string.Empty, false);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            SetVpnMessage(ex.Message, true);
+        }
+        finally
+        {
+            _vpnBusy = false;
+        }
+    }
+
+    private async Task CloseVpnCreated()
+    {
+        // Privaten Schluessel nicht laenger als noetig im Speicher halten
+        _vpnCreated = null;
+        _vpnQrDataUrl = _vpnConfigDataUrl = string.Empty;
+        await LoadVpnAsync();
+    }
+
+    private async Task RemoveVpnDeviceAsync(VpnDevice device)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"„{device.Name}“ sperren? Das Gerät kommt danach nicht mehr ins VPN.")) return;
+        try
+        {
+            await VpnDevices.RemoveAsync(device.PublicKey);
+            SetVpnMessage($"„{device.Name}“ gesperrt.", false);
+        }
+        catch (InvalidOperationException ex)
+        {
+            SetVpnMessage(ex.Message, true);
+        }
+        await LoadVpnAsync();
+    }
+
+    private void SetVpnMessage(string message, bool isError)
+    {
+        _vpnMessage = message;
+        _vpnError = isError;
+    }
+
+    private static string GenerateQrDataUrl(string content)
+    {
+        using var generator = new QRCoder.QRCodeGenerator();
+        using var data = generator.CreateQrCode(content, QRCoder.QRCodeGenerator.ECCLevel.M);
+        var png = new QRCoder.PngByteQRCode(data).GetGraphic(6);
+        return $"data:image/png;base64,{Convert.ToBase64String(png)}";
+    }
 
     private string _pwCurrent = string.Empty;
     private string _pwNew = string.Empty;

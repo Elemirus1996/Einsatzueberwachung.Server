@@ -32,6 +32,21 @@ jobs:
       - name: Run Tests
         run: dotnet test src/Einsatzueberwachung.Tests/Einsatzueberwachung.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx" --results-directory TestResults
 
+      - name: VPN-Hilfsprogramm testen
+        run: bash deploy/scripts/test-einsatz-wg-peer.sh
+
+      - name: nginx-Vorlagen pruefen (nginx -t)
+        run: |
+          command -v nginx >/dev/null || (sudo apt-get update && sudo apt-get install -y nginx)
+          T="$(mktemp -d)"
+          openssl req -x509 -newkey rsa:2048 -nodes -keyout "$T/key.pem" -out "$T/cert.pem" -subj "/CN=test" -days 1 2>/dev/null
+          for f in deploy/nginx/*.conf; do
+            sed -e "s#/etc/letsencrypt/live/[^/]*/fullchain.pem#$T/cert.pem#; s#/etc/letsencrypt/live/[^/]*/privkey.pem#$T/key.pem#" \
+                -e "s#/etc/ssl/certs/einsatz.crt#$T/cert.pem#; s#/etc/ssl/private/einsatz.key#$T/key.pem#" "$f" > "$T/$(basename "$f")"
+          done
+          printf 'pid %s/nginx.pid;\nerror_log %s/error.log;\nevents {}\nhttp {\n  access_log off;\n  include %s/einsatzueberwachung*.conf;\n}\n' "$T" "$T" "$T" > "$T/nginx.conf"
+          sudo nginx -t -c "$T/nginx.conf"
+
       - name: Upload Test-Ergebnisse
         if: always()
         uses: actions/upload-artifact@v4
