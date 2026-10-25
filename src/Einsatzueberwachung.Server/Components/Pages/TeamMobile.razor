@@ -46,6 +46,13 @@ else
                     @if (_team.IsRunning) { <span class="badge bg-success ms-1">aktiv</span> }
                 </div>
             </div>
+            @if (!_einsatzEnded)
+            {
+                <button class="btn btn-sm @(_traccarPanelOpen ? "btn-warning" : "btn-light")" @onclick="() => _traccarPanelOpen = !_traccarPanelOpen"
+                        title="GPS bei gesperrtem Handy">
+                    <i class="bi bi-phone-vibrate"></i>
+                </button>
+            }
             <button class="btn btn-sm btn-light" @onclick="ToggleInfoPanel" title="Team-Info">
                 <i class="bi bi-info-circle"></i>
             </button>
@@ -85,6 +92,39 @@ else
                     <div class="col-12 col-sm-6"><strong>Hund:</strong> @(string.IsNullOrWhiteSpace(_team.DogName) ? "—" : _team.DogName)</div>
                     <div class="col-12 col-sm-6"><strong>Suchgebiet:</strong> @(string.IsNullOrWhiteSpace(_team.SearchAreaName) ? "—" : _team.SearchAreaName)</div>
                 </div>
+            </div>
+        }
+
+        @if (_traccarPanelOpen && !_einsatzEnded)
+        {
+            <div class="team-mobile-info-panel">
+                <div class="fw-semibold mb-1"><i class="bi bi-phone-vibrate me-1"></i>GPS auch bei gesperrtem Handy</div>
+                <p class="small mb-2">
+                    Im Browser stoppt das GPS, sobald das Handy gesperrt ist. Mit der kostenlosen App „Traccar Client“
+                    läuft der Laufweg im Hintergrund weiter – auch bei Funkloch, die Punkte werden nachgesendet.
+                </p>
+                <ol class="small ps-3 mb-2">
+                    <li class="mb-2">
+                        App einmalig installieren:
+                        <a href="@TraccarPlayStoreUrl" target="_blank" rel="noopener">Android</a> ·
+                        <a href="@TraccarAppStoreUrl" target="_blank" rel="noopener">iPhone</a>
+                    </li>
+                    <li class="mb-2">
+                        <a class="btn btn-sm btn-primary" href="@TraccarSetupLink">
+                            <i class="bi bi-gear me-1"></i>Mit diesem Einsatz verbinden
+                        </a>
+                        <div class="text-muted">In der App „OK“ tippen. Gilt nur für diesen Einsatz und dein Team.</div>
+                    </li>
+                    <li>
+                        <a class="btn btn-sm btn-success" href="org.traccar.client://action/start">
+                            <i class="bi bi-play-fill me-1"></i>Aufzeichnung starten
+                        </a>
+                        <a class="btn btn-sm btn-outline-secondary ms-1" href="org.traccar.client://action/stop">
+                            <i class="bi bi-stop-fill me-1"></i>Beenden
+                        </a>
+                        <div class="text-muted">Standort „Immer erlauben“ wählen, wenn die App fragt.</div>
+                    </li>
+                </ol>
             </div>
         }
 
@@ -209,6 +249,27 @@ else
     }
 
     private bool _authChecked;
+    private bool _traccarPanelOpen;
+
+    private const string TraccarPlayStoreUrl = "https://play.google.com/store/apps/details?id=org.traccar.client";
+    private const string TraccarAppStoreUrl = "https://apps.apple.com/app/traccar-client/id843156974";
+
+    /// <summary>
+    /// Richtet Traccar Client per Link ein (Adresse, einsatzgebundenes Team-Token als Geraete-ID, genaue Ortung alle
+    /// 10 s bzw. 5 m, Puffer und Wakelock an). Die App fragt vor dem Uebernehmen nach.
+    /// </summary>
+    private string TraccarSetupLink
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_teamId)) return "#";
+            var endpoint = Navigation.BaseUri.TrimEnd('/') + "/api/team-mobile/traccar";
+            var token = TokenService.IssueTeamCookieValue(_teamId);
+            return "org.traccar.client://?url=" + Uri.EscapeDataString(endpoint)
+                + "&id=" + Uri.EscapeDataString(token)
+                + "&accuracy=highest&interval=10&distance=5&angle=30&buffer=true&wakelock=true&stop_detection=false";
+        }
+    }
     private Team? _team;
     private bool _hasArea;
     private double? _areaCentroidLat;

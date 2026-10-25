@@ -92,6 +92,11 @@ Zusätzlich kann der Laufweg des Menschen (Hundeführer) über die mobile Team-A
 4. Beim Team-Stopp wird der Verlauf als `HumanTrack` zur abgeschlossenen Suche gespeichert.
 5. Der Verlauf erscheint in Karte und PDF-Bericht zusammen mit dem Halsband-Track.
 
+**GPS bei gesperrtem Handy (ab 1.10):** Im Browser stoppt das GPS, sobald das Handy gesperrt ist. Auf der Team-Seite
+richtet der Knopf mit dem Vibrations-Symbol die kostenlose App **Traccar Client** (Android/iOS) per Link ein – Adresse
+und ein Team-Token, das nur für diesen Einsatz gilt. Die App sendet dann im Hintergrund weiter, puffert bei Funkloch und
+sendet mit Originalzeit nach. Nach Einsatzende nimmt der Server das Token nicht mehr an.
+
 Details: [`docs/GPS_TRACKING_WORKFLOW.md`](docs/GPS_TRACKING_WORKFLOW.md)
 
 ---

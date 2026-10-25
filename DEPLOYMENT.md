@@ -128,6 +128,10 @@ Beide Umgebungsvariablen immer gemeinsam setzen: Lauscht Kestrel auf 5002, ohne 
 gesetzt ist, gilt der Port als intern. Fehlt umgekehrt der Port in `ASPNETCORE_URLS`, antwortet der oeffentliche Block mit
 502 – dann ist nichts oeffentlich erreichbar.
 
+**Hintergrund-GPS mit Traccar Client (ab 1.10):** Die Positionen kommen über `/api/team-mobile/traccar`. Bestehende
+Server übernehmen dafür aus der neuen `einsatzueberwachung-public.conf` die Zeile `limit_req_zone … traccar_zone` und
+den Block `location = /api/team-mobile/traccar` – sonst bremst die strenge Begrenzung der Team-Anmeldung die App aus.
+
 ### Anmeldung der Einsatzleitung (ab 1.10)
 
 Alle Seiten und Schnittstellen außer der Team-Ansicht verlangen eine Anmeldung mit dem gemeinsamen Passwort der Staffel.
