@@ -40,6 +40,25 @@ window.layoutTools.getSidebarCollapsed = function () {
     return value === "1" || value === "true";
 };
 
+// Aktuelle Position des Geraets (EL-Startseite: „Meinen Standort verwenden“). Braucht HTTPS.
+window.layoutTools.getCurrentPosition = function () {
+    return new Promise(function (resolve) {
+        if (!navigator.geolocation) {
+            resolve({ ok: false, error: "Dieses Gerät kann keinen Standort liefern." });
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            function (pos) {
+                resolve({ ok: true, lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy) });
+            },
+            function (err) {
+                var texte = { 1: "Standortfreigabe verweigert – in den Einstellungen des Browsers erlauben.", 2: "Standort nicht verfügbar.", 3: "Standort hat zu lange gedauert." };
+                resolve({ ok: false, error: texte[err.code] || err.message });
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+    });
+};
+
 // Handy (schmaler Bildschirm): beim ersten Aufruf der Startseite in dieser Sitzung zur EL-Ansicht wechseln
 window.layoutTools.shouldOpenElOnPhone = function () {
     if (!window.matchMedia("(max-width: 640px)").matches) return false;

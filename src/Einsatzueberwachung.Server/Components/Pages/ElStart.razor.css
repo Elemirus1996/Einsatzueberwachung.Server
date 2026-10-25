@@ -1,0 +1,336 @@
+/* ════════════════════════════════════════════════════════════════
+   EL-Startseite – gleiche Sprache wie der Funktisch (/el), aber fuer den Daumen:
+   grosse Flaechen (≥ 48 px), eine Spalte, Start-Knopf immer unten erreichbar.
+   ════════════════════════════════════════════════════════════════ */
+
+.els {
+    --funk-canvas:       #e6e3dc;
+    --funk-platte:       #faf7f0;
+    --funk-anthrazit:    #14181f;
+    --funk-on-anthrazit: #f0e9d8;
+    --funk-bezel:        rgba(20, 24, 31, 0.22);
+    --funk-bezel-stark:  rgba(20, 24, 31, 0.40);
+    --funk-inschrift:    #14181f;
+    --funk-vermerk:      #4a525e;
+    --einsatz-aktiv:     #2d7a4d;
+    --belastung-2:       color-mix(in srgb, var(--theme-primary) 86%, #7f1f19);
+    --funk-aktion:       color-mix(in srgb, var(--theme-primary) 72%, #16304d);
+
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    background: var(--funk-canvas);
+    color: var(--funk-inschrift);
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Menlo', monospace;
+    font-size: 15px;
+}
+
+[data-bs-theme="dark"] .els {
+    --funk-canvas:       #0a0d12;
+    --funk-platte:       #141a23;
+    --funk-anthrazit:    #050810;
+    --funk-on-anthrazit: #e6dfcc;
+    --funk-bezel:        rgba(232, 220, 195, 0.14);
+    --funk-bezel-stark:  rgba(232, 220, 195, 0.28);
+    --funk-inschrift:    #e6dfcc;
+    --funk-vermerk:      #98a0ad;
+    --einsatz-aktiv:     #5dc88a;
+    --belastung-2:       color-mix(in srgb, var(--theme-primary) 88%, #ea8e84);
+    --funk-aktion:       color-mix(in srgb, var(--theme-primary) 88%, #9bc3f1);
+}
+
+.els-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    background: var(--funk-anthrazit);
+    color: var(--funk-on-anthrazit);
+}
+
+.els-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    color: inherit;
+    font-size: 1.3rem;
+    text-decoration: none;
+}
+
+.els-title {
+    flex: 1;
+    margin: 0;
+    /* typography.css setzt alle h1 mit !important auf die Ueberschriftenfarbe – auf dem dunklen Kopf unlesbar */
+    color: var(--funk-on-anthrazit) !important;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.els-title:focus {
+    /* Blazor setzt beim Seitenwechsel den Fokus auf die Ueberschrift (Screenreader) – ohne sichtbaren Rahmen */
+    outline: none;
+}
+
+.els-clock {
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.els-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 16px 24px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.els-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.els-label {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--funk-vermerk);
+}
+
+.els-required {
+    margin-left: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--belastung-2);
+}
+
+.els-input {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    border: 1px solid var(--funk-bezel-stark);
+    border-radius: 6px;
+    background: var(--funk-platte);
+    color: var(--funk-inschrift);
+    /* 16 px verhindert das automatische Hineinzoomen in Eingabefelder unter iOS */
+    font: 16px/1.3 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.els-input:focus {
+    outline: 3px solid color-mix(in srgb, var(--funk-aktion) 45%, transparent);
+    outline-offset: 1px;
+}
+
+.els-input.is-missing,
+.els-tiles.is-missing .els-tile {
+    border-color: var(--belastung-2);
+}
+
+.els-textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+
+.els-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.els-tile {
+    min-height: 64px;
+    padding: 10px;
+    border: 2px solid var(--funk-bezel);
+    border-left: 6px solid var(--els-tile-color);
+    border-radius: 6px;
+    background: var(--funk-platte);
+    color: var(--funk-inschrift);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+}
+
+.els-tile.is-selected {
+    border-color: var(--els-tile-color);
+    background: color-mix(in srgb, var(--els-tile-color) 18%, var(--funk-platte));
+}
+
+.els-segment {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--funk-bezel-stark);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.els-segment-btn {
+    min-height: 52px;
+    border: 0;
+    background: var(--funk-platte);
+    color: var(--funk-inschrift);
+    font: inherit;
+    font-weight: 700;
+}
+
+.els-segment-btn + .els-segment-btn {
+    border-left: 1px solid var(--funk-bezel-stark);
+}
+
+.els-segment-btn.is-selected {
+    background: var(--funk-anthrazit);
+    color: var(--funk-on-anthrazit);
+}
+
+.els-segment-btn.is-selected.is-einsatz {
+    background: var(--belastung-2);
+    color: #fff;
+}
+
+.els-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 10px 16px;
+    border: 1px solid var(--funk-bezel-stark);
+    border-radius: 6px;
+    background: var(--funk-platte);
+    color: var(--funk-inschrift);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.els-btn:disabled {
+    opacity: 0.6;
+}
+
+.els-btn-block {
+    width: 100%;
+}
+
+.els-btn-primary {
+    background: var(--funk-aktion);
+    border-color: var(--funk-aktion);
+    color: #fff;
+}
+
+.els-divera {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    min-height: 56px;
+    padding: 10px 12px;
+    border: 2px solid var(--funk-bezel);
+    border-radius: 6px;
+    background: var(--funk-platte);
+    color: var(--funk-inschrift);
+    font: inherit;
+    text-align: left;
+}
+
+.els-divera.is-selected {
+    border-color: var(--einsatz-aktiv);
+}
+
+.els-divera-title {
+    font-weight: 700;
+}
+
+.els-divera-meta {
+    font-size: 0.8rem;
+    color: var(--funk-vermerk);
+}
+
+.els-hint,
+.els-status {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.els-hint.is-ok,
+.els-status.is-ok {
+    color: var(--einsatz-aktiv);
+}
+
+.els-hint.is-error,
+.els-status.is-error {
+    color: var(--belastung-2);
+    font-weight: 600;
+}
+
+.els-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--funk-bezel);
+    border-radius: 6px;
+    background: var(--funk-platte);
+}
+
+.els-more {
+    border: 1px solid var(--funk-bezel);
+    border-radius: 6px;
+    background: var(--funk-platte);
+}
+
+.els-more summary {
+    min-height: 48px;
+    padding: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.els-more-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 12px 12px;
+}
+
+.els-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--funk-bezel);
+    background: var(--funk-canvas);
+}
+
+.els-btn-start {
+    width: 100%;
+    min-height: 60px;
+    border: 0;
+    background: var(--belastung-2);
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+@media (min-width: 768px) {
+    /* Tablet: Inhalt mittig begrenzen, Szenarien nebeneinander */
+    .els-body,
+    .els-footer {
+        padding-left: max(16px, calc((100% - 640px) / 2));
+        padding-right: max(16px, calc((100% - 640px) / 2));
+    }
+
+    .els-tiles {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}

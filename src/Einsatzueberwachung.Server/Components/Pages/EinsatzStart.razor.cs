@@ -88,15 +88,7 @@ public partial class EinsatzStart
         _personal = personalTask.Result;
         var staffelSettings = settingsTask.Result;
 
-        if (!string.IsNullOrWhiteSpace(staffelSettings.StaffelName))
-        {
-            _model.StaffelName = staffelSettings.StaffelName;
-        }
-
-        _model.StaffelAdresse = staffelSettings.StaffelAdresse;
-        _model.StaffelTelefon = staffelSettings.StaffelTelefon;
-        _model.StaffelEmail = staffelSettings.StaffelEmail;
-        _model.StaffelLogoPfad = staffelSettings.StaffelLogoPfad;
+        EinsatzStartHelper.ApplyStaffel(_model, staffelSettings);
 
         var alarmBase = _model.AlarmierungsZeit ?? DateTime.Now;
         _alarmStartTime = alarmBase.ToString("HH:mm");
@@ -284,47 +276,13 @@ public partial class EinsatzStart
 
     private void ImportFromDivera(DiveraAlarm alarm)
     {
-        _model.Einsatzort = alarm.Address;
-
-        if (alarm.Lat.HasValue && alarm.Lng.HasValue)
-        {
-            _model.MapAddress = string.Format(
-                System.Globalization.CultureInfo.InvariantCulture,
-                "{0:F6},{1:F6}", alarm.Lat.Value, alarm.Lng.Value);
-            _model.ElwPosition = (alarm.Lat.Value, alarm.Lng.Value);
-            // GPS-Koordinaten sollen nicht durch späteren Auto-Sync vom Einsatzort überschrieben werden.
+        // GPS-Koordinaten sollen nicht durch späteren Auto-Sync vom Einsatzort überschrieben werden.
+        if (EinsatzStartHelper.ApplyDiveraAlarm(_model, alarm))
             _mapAddressUserDirty = true;
-        }
-        else
-        {
-            _model.MapAddress = alarm.Address;
-        }
         _diveraDrawerOpen = false;
 
-        _model.Stichwort = alarm.Title;
-        _model.Alarmiert = alarm.Caller;
-
-        _model.EinsatzNummer = !string.IsNullOrWhiteSpace(alarm.ForeignId)
-            ? alarm.ForeignId
-            : $"D-{alarm.Id}";
-
-        _model.IstEinsatz = true;
-
-        var lagetext = new System.Text.StringBuilder();
-        if (!string.IsNullOrWhiteSpace(alarm.Text))
-            lagetext.AppendLine(alarm.Text);
-        if (!string.IsNullOrWhiteSpace(alarm.Remark))
-        {
-            if (lagetext.Length > 0) lagetext.AppendLine();
-            lagetext.Append("Hinweis: ").Append(alarm.Remark);
-        }
-        _model.ExportPfad = lagetext.Length > 0 ? lagetext.ToString().Trim() : alarm.Title;
-
         if (alarm.Date != default)
-        {
-            _model.AlarmierungsZeit = alarm.Date;
             _alarmStartTime = alarm.Date.ToString("HH:mm");
-        }
 
         StateHasChanged();
     }
