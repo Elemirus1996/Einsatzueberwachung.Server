@@ -16,7 +16,7 @@ public static class SettingsSecrets
     // Passwort-Hash und Einrichtungscode der Einsatzleitung – auf einem neuen Server wird neu eingerichtet)
     private static readonly HashSet<string> BackupExcludedFiles = new(StringComparer.OrdinalIgnoreCase)
     {
-        "team-mobile-secret.bin", LeitungAuthStore.FileName, LeitungAuthStore.SetupCodeFileName,
+        "team-mobile-secret.bin", LeitungAuthStore.FileName, LeitungAuthStore.SetupCodeFileName, LiveTrackingAccess.FileName,
     };
 
     /// <summary>AppSettings als JSON ohne Zugangsdaten.</summary>

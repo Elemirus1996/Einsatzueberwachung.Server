@@ -170,6 +170,8 @@ public partial class Einstellungen
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
+        // Zertifikat abfragen kann einige Sekunden dauern – nicht beim ersten Rendern blockieren
+        _ = LoadLiveTrackingCodeAsync();
         // BrowserPrefs aus localStorage laden (vom MainLayout ggf. bereits geladen)
         await BrowserPrefs.LoadAsync();
         _shortcuts = System.Text.Json.JsonSerializer.Deserialize<KeyboardShortcutPreferences>(
@@ -827,6 +829,32 @@ private async Task SetDesignModeAsync(bool darkMode)
 
     // Die LiveTracking-App haengt /api/CollarWebhook/... selbst an – daher die Basisadresse ohne Schraegstrich am Ende
     private string LiveTrackingServerUrl => Navigation.BaseUri.TrimEnd('/');
+
+    [Inject] private LiveTrackingAccess LiveTrackingAccess { get; set; } = default!;
+
+    private string _liveTrackingCode = string.Empty;
+    private bool _liveTrackingNoFingerprint;
+
+    private async Task LoadLiveTrackingCodeAsync()
+    {
+        // Fingerabdruck des Zertifikats, das dieser Browser gerade sieht – genau das bekommt auch die App
+        var baseUri = new Uri(Navigation.BaseUri);
+        var fingerprint = await ServerCertificateProbe.GetSha256Async(baseUri);
+        _liveTrackingNoFingerprint = fingerprint is null && baseUri.Scheme == Uri.UriSchemeHttps;
+        _liveTrackingCode = LiveTrackingAccess.BuildConnectionCode(LiveTrackingServerUrl, fingerprint);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RegenerateLiveTrackingKeyAsync()
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm",
+            "Neuen API-Schlüssel erzeugen? Die LiveTracking-App verbindet sich danach erst wieder mit dem neuen Verbindungscode.");
+        if (!confirmed) return;
+
+        LiveTrackingAccess.Regenerate();
+        await LoadLiveTrackingCodeAsync();
+        _copyFeedback = "Neuer Schlüssel erzeugt – Verbindungscode in der App neu eintragen.";
+    }
 
     private string _copyFeedback = string.Empty;
 

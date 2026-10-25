@@ -3,6 +3,7 @@
 
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Server.Models;
+using Einsatzueberwachung.Server.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,7 +25,8 @@ public class CollarWebhookController : ControllerBase
     /// Empfängt eine neue GPS-Position von der externen Halsband-Software.
     /// </summary>
     [HttpPost("location")]
-    [AllowAnonymous] // LiveTracking-App; Absicherung per API-Schluessel folgt in 1.10 (Teil 2)
+    [AllowAnonymous] // kein Leitungs-Login, dafuer API-Schluessel der LiveTracking-App
+    [RequireLiveTrackingKey]
     public async Task<IActionResult> ReceiveLocation([FromBody] CollarLocationRequest request)
     {
         if (request is null)
@@ -71,12 +73,26 @@ public class CollarWebhookController : ControllerBase
             return BadRequest(new ErrorResponse("Coordinates.Lng ist ungültig."));
         }
 
+        // Zeitpunkt aus der App (Puffer nach Netzausfall); ohne Angabe gilt die Empfangszeit
+        var now = DateTime.UtcNow;
+        DateTime? timestampUtc = null;
+        if (request.Timestamp is { } sent)
+        {
+            if (sent.UtcDateTime < now - MaxBufferedAge)
+            {
+                return BadRequest(new ErrorResponse("Position ist älter als 24 Stunden und wird verworfen."));
+            }
+            // Uhren der Laptops gehen manchmal vor – Zukunft auf jetzt begrenzen
+            timestampUtc = sent.UtcDateTime > now ? now : sent.UtcDateTime;
+        }
+
         var location = await _trackingService.ReceiveLocationAsync(
             request.Id,
             request.CollarName ?? request.Id,
             request.Coordinates.Lat,
             request.Coordinates.Lng,
-            request.BatteryLevel);
+            request.BatteryLevel,
+            timestampUtc);
 
         return Ok(new
         {
@@ -90,7 +106,8 @@ public class CollarWebhookController : ControllerBase
     /// Gibt alle bekannten Halsbänder zurück.
     /// </summary>
     [HttpGet("collars")]
-    [AllowAnonymous] // Verbindungstest der LiveTracking-App; API-Schluessel folgt in 1.10 (Teil 2)
+    [AllowAnonymous] // Verbindungstest der LiveTracking-App
+    [RequireLiveTrackingKey]
     public IActionResult GetCollars()
     {
         var collars = _trackingService.Collars;
@@ -122,6 +139,7 @@ public class CollarWebhookController : ControllerBase
     public const int MaxIdLength = 64;
     public const int MaxNameLength = 64;
     public const int MaxCollars = 50;
+    public static readonly TimeSpan MaxBufferedAge = TimeSpan.FromHours(24);
 
     public static bool IsValidCollarId(string id) =>
         id.Length <= MaxIdLength && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.' or ':');
@@ -132,7 +150,8 @@ public class CollarWebhookController : ControllerBase
         string Id,
         string? CollarName,
         CoordinatesDto Coordinates,
-        int? BatteryLevel);
+        int? BatteryLevel,
+        DateTimeOffset? Timestamp = null);
 
     public sealed record CoordinatesDto(double Lat, double Lng);
 }

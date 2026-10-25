@@ -27,7 +27,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         /// <summary>Benachrichtigt Listener über einen neu gespeicherten Track-Snapshot</summary>
         void NotifySnapshotSaved(TeamTrackSnapshot snapshot);
         /// <summary>Neue GPS-Position von der externen Software empfangen</summary>
-        Task<CollarLocation> ReceiveLocationAsync(string collarId, string collarName, double latitude, double longitude, int? batteryLevel = null);
+        Task<CollarLocation> ReceiveLocationAsync(string collarId, string collarName, double latitude, double longitude, int? batteryLevel = null, DateTime? timestampUtc = null);
 
         /// <summary>Halsband einem Team zuordnen</summary>
         Task AssignCollarToTeamAsync(string collarId, string teamId);

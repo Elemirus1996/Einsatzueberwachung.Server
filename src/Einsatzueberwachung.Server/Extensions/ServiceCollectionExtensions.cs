@@ -68,6 +68,7 @@ internal static class ServiceCollectionExtensions
     {
         services.AddSingleton(_ => LeitungAuthStore.ForDataDirectory());
         services.AddSingleton<LoginLockout>();
+        services.AddSingleton(_ => LiveTrackingAccess.ForDataDirectory());
         services.AddScoped<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider, LeitungRevalidatingAuthStateProvider>();
 
         // Standard-Anmeldung ist die der Einsatzleitung; die Team-Ansicht nutzt ihr eigenes Schema ausdruecklich

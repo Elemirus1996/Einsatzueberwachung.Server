@@ -54,6 +54,8 @@
                     <Run Text="{Binding TotalLocationsSent, Mode=OneWay}"/>
                     <Run Text=" | Fehler: "/>
                     <Run Text="{Binding TotalLocationsFailed, Mode=OneWay}"/>
+                    <Run Text=" | Puffer: "/>
+                    <Run Text="{Binding PendingLocations, Mode=OneWay}"/>
                 </TextBlock>
             </StatusBarItem>
         </StatusBar>
@@ -71,7 +73,9 @@
             <!-- Connection Panel -->
             <GroupBox Grid.Row="0" Header="Server-Verbindung" Margin="0,0,0,10" Padding="10">
                 <StackPanel>
-                    <TextBlock Text="Einsatzüberwachung Server" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBlock Text="Einsatzüberwachung Server" FontWeight="Bold" Margin="0,0,0,2"/>
+                    <TextBlock Text="Verbindungscode aus Einstellungen → Integration → GPS-Livetracking einfügen"
+                               Foreground="Gray" FontSize="11" Margin="0,0,0,5"/>
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Content="{Binding ServerConnectButtonText}"
                                 Command="{Binding ConnectServerCommand}"

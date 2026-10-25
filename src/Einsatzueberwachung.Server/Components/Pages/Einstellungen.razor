@@ -941,32 +941,45 @@
                         <span class="cfg-help">Zum Aufrufen auf dem Windows-Rechner im ELW (muss im VPN sein).</span>
                     </div>
                     <div class="cfg-field">
-                        <label class="cfg-label" for="livetracking-server-url">Server-Adresse für die App</label>
+                        <label class="cfg-label" for="livetracking-code">Verbindungscode für die App</label>
                         <div class="cfg-copy-row">
-                            <input id="livetracking-server-url" class="cfg-input" readonly value="@LiveTrackingServerUrl" onfocus="this.select()" />
-                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick='() => CopyToClipboardAsync(LiveTrackingServerUrl, "Server-Adresse")'>
+                            <input id="livetracking-code" class="cfg-input" readonly value="@_liveTrackingCode" onfocus="this.select()" />
+                            <button type="button" class="cfg-btn cfg-btn-ghost" disabled="@string.IsNullOrEmpty(_liveTrackingCode)"
+                                    @onclick='() => CopyToClipboardAsync(_liveTrackingCode, "Verbindungscode")'>
                                 <i class="bi bi-copy"></i> Kopieren
                             </button>
                         </div>
                         <span class="cfg-help">
-                            Genau diese Adresse in der App in das Feld unter „Einsatzüberwachung Server“ eintragen und verbinden.
-                            Es ist dieselbe Adresse, über die du diese Seite gerade aufrufst.
+                            Enthält Server-Adresse (@LiveTrackingServerUrl), API-Schlüssel und Fingerabdruck des Server-Zertifikats.
+                            In der App in das Feld unter „Einsatzüberwachung Server“ einfügen und verbinden – auch bei einem selbst
+                            ausgestellten Zertifikat. Den Code wie ein Passwort behandeln.
                         </span>
                         @if (!string.IsNullOrEmpty(_copyFeedback))
                         {
                             <span class="cfg-help" role="status">@_copyFeedback</span>
+                        }
+                        @if (_liveTrackingNoFingerprint)
+                        {
+                            <span class="cfg-help text-warning" role="status">
+                                Der Fingerabdruck des Zertifikats konnte nicht ermittelt werden. Die App verbindet sich dann nur,
+                                wenn Windows dem Zertifikat vertraut.
+                            </span>
                         }
                     </div>
                     <ol class="cfg-steps">
                         <li>Den Windows-Rechner mit dem GPS-Empfänger (z. B. Garmin Alpha) ins VPN bringen.</li>
                         <li>ZIP über die Download-Adresse herunterladen und entpacken.</li>
                         <li><code>Einsatzueberwachung.LiveTracking.exe</code> starten.</li>
-                        <li>Die Server-Adresse oben in der App eintragen und auf „Verbinden“ klicken.</li>
+                        <li>Den Verbindungscode in der App einfügen und auf „Verbinden“ klicken.</li>
                     </ol>
-                    <p class="cfg-help">
-                        Zeigt der Browser beim Aufruf dieser Seite eine Zertifikatswarnung, lehnt auch die App die Verbindung ab.
-                        Dann bitte melden – eine Anbindung mit eigenem Zertifikat ist für Version 1.10 geplant.
-                    </p>
+                    <div class="cfg-actions">
+                        <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="RegenerateLiveTrackingKeyAsync">
+                            <i class="bi bi-arrow-repeat"></i> Neuen Schlüssel erzeugen
+                        </button>
+                    </div>
+                    <span class="cfg-help">
+                        Z. B. wenn ein Laptop verloren ging. Danach verbindet sich die App nur noch mit dem neuen Verbindungscode.
+                    </span>
                 </div>
 
                 <div class="cfg-section">
