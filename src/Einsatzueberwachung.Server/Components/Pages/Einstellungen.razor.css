@@ -491,6 +491,14 @@
     gap: 0.5rem;
 }
 
+/* QR-Code eines neuen VPN-Geraets: weisser Rand, damit Kameras ihn auch im Dunkel-Thema erkennen */
+::deep .cfg-vpn-qr {
+    max-width: 280px;
+    background: #fff;
+    padding: 8px;
+    border-radius: 4px;
+}
+
 /* Nur-Lesen-Feld mit Kopier-Knopf daneben (LiveTracking-Adressen) */
 ::deep .cfg-copy-row {
     display: flex;

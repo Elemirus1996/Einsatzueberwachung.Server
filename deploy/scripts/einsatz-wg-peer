@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# Hilfsprogramm der Einsatzueberwachung fuer VPN-Geraete (ab 1.10). Laeuft per sudo als root, deshalb:
+#  - liegt in /usr/local/sbin, gehoert root und ist fuer den Dienstbenutzer NICHT beschreibbar
+#  - nimmt keine freien Texte entgegen (keine Namen, keine Pfade) und prueft jedes Argument streng
+#  - private Schluessel werden nur einmal ausgegeben und nirgends gespeichert
+#
+# Befehle:
+#   info              oeffentlicher Schluessel, Port und Adresse des Servers
+#   add               neues Geraet: Schluesselpaar erzeugen, freie IP waehlen, Peer eintragen (auch dauerhaft)
+#   remove <pubkey>   Geraet sofort aussperren und aus der Konfiguration entfernen
+#   status            je Geraet: oeffentlicher Schluessel, IP, letzter Kontakt (Unix-Zeit)
+
+set -euo pipefail
+umask 077
+
+WG_IF="wg0"
+CONF_DIR="/etc/wireguard"
+FIRST_HOST=10
+LAST_HOST=250
+MARKER="# einsatzueberwachung"
+
+# Nur fuer automatische Tests ohne root: anderer Konfigurationsordner. Unter sudo/root wird das ignoriert.
+if [[ $EUID -ne 0 && -n "${EINSATZ_WG_TEST_CONF_DIR:-}" ]]; then
+	CONF_DIR="$EINSATZ_WG_TEST_CONF_DIR"
+fi
+CONF="$CONF_DIR/$WG_IF.conf"
+
+fail() { echo "fehler=$*" >&2; exit 1; }
+
+is_pubkey() { [[ "$1" =~ ^[A-Za-z0-9+/]{43}=$ ]]; }
+
+server_cidr() {
+	ip -4 -o addr show dev "$WG_IF" | awk '{print $4}' | head -n1
+}
+
+cmd_info() {
+	echo "public_key=$(wg show "$WG_IF" public-key)"
+	echo "listen_port=$(wg show "$WG_IF" listen-port)"
+	echo "address=$(server_cidr)"
+	# DNS im VPN (setup-vpn.sh): nur dann bekommen neue Geraete „DNS = <Server-IP>“ – ohne laufenden DNS-Dienst
+	# koennten sie mit eingeschaltetem VPN gar keine Namen mehr aufloesen
+	if [[ -f /etc/dnsmasq.d/einsatzueberwachung.conf ]] && systemctl is-active --quiet dnsmasq 2>/dev/null; then
+		echo "dns=yes"
+	else
+		echo "dns=no"
+	fi
+}
+
+cmd_add() {
+	local cidr base used ip host private public
+	cidr="$(server_cidr)"
+	[[ "$cidr" =~ ^([0-9]+\.[0-9]+\.[0-9]+)\.[0-9]+/24$ ]] || fail "VPN-Netz muss ein /24-Netz sein (gefunden: ${cidr:-keins})"
+	base="${BASH_REMATCH[1]}"
+
+	# Belegte Adressen: laufende Peers, Konfiguration und die Server-Adresse selbst
+	used="$( { wg show "$WG_IF" allowed-ips | tr '\t ,' '\n\n\n'; grep -E '^\s*(AllowedIPs|Address)\s*=' "$CONF" | sed 's/.*=//' | tr ', ' '\n\n'; } \
+		| sed 's#/.*##' | grep -E '^[0-9.]+$' || true)"
+	ip=""
+	for host in $(seq "$FIRST_HOST" "$LAST_HOST"); do
+		if ! grep -qxF "$base.$host" <<<"$used"; then ip="$base.$host"; break; fi
+	done
+	[[ -n "$ip" ]] || fail "keine freie Adresse im VPN-Netz"
+
+	private="$(wg genkey)"
+	public="$(wg pubkey <<<"$private")"
+	is_pubkey "$public" || fail "Schluessel konnte nicht erzeugt werden"
+
+	wg set "$WG_IF" peer "$public" allowed-ips "$ip/32"
+	printf '\n[Peer]\n%s %s\nPublicKey = %s\nAllowedIPs = %s/32\n' "$MARKER" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$public" "$ip" >>"$CONF"
+
+	echo "ip=$ip"
+	echo "public_key=$public"
+	echo "private_key=$private"
+}
+
+cmd_remove() {
+	local public="$1" tmp
+	is_pubkey "$public" || fail "ungueltiger oeffentlicher Schluessel"
+
+	wg set "$WG_IF" peer "$public" remove
+	# [Peer]-Bloecke einzeln puffern und den mit diesem Schluessel weglassen; [Interface] bleibt unveraendert
+	tmp="$(mktemp "$CONF_DIR/.$WG_IF.XXXXXX")"
+	# Vergleich als Text, nicht als Muster: Schluessel enthalten + und /
+	awk -v key="$public" '
+		function flush() { if (block != "" && !drop) printf "%s", block; block = ""; drop = 0 }
+		/^\[/ { flush() }
+		{
+			block = block $0 "\n"
+			line = $0
+			if (line ~ /^[ \t]*PublicKey[ \t]*=/) {
+				sub(/^[ \t]*PublicKey[ \t]*=[ \t]*/, "", line); sub(/[ \t\r]*$/, "", line)
+				if (line == key) drop = 1
+			}
+		}
+		END { flush() }
+	' "$CONF" >"$tmp"
+	chmod 600 "$tmp"
+	mv "$tmp" "$CONF"
+	echo "entfernt=$public"
+}
+
+cmd_status() {
+	# wg show dump: erste Zeile = Interface, danach je Peer: pubkey psk endpoint allowed-ips handshake rx tx keepalive
+	wg show "$WG_IF" dump | tail -n +2 | awk -F'\t' '{ split($4, a, "/"); print $1 "\t" a[1] "\t" $5 }'
+}
+
+case "${1:-}" in
+	info) [[ $# -eq 1 ]] || fail "info ohne Argumente"; cmd_info ;;
+	add) [[ $# -eq 1 ]] || fail "add ohne Argumente"; cmd_add ;;
+	remove) [[ $# -eq 2 ]] || fail "remove <pubkey>"; cmd_remove "$2" ;;
+	status) [[ $# -eq 1 ]] || fail "status ohne Argumente"; cmd_status ;;
+	*) fail "Befehl: info | add | remove <pubkey> | status" ;;
+esac

@@ -17,6 +17,7 @@ public static class SettingsSecrets
     private static readonly HashSet<string> BackupExcludedFiles = new(StringComparer.OrdinalIgnoreCase)
     {
         "team-mobile-secret.bin", LeitungAuthStore.FileName, LeitungAuthStore.SetupCodeFileName, LiveTrackingAccess.FileName,
+        Services.VpnDeviceStore.FileName,
     };
 
     /// <summary>AppSettings als JSON ohne Zugangsdaten.</summary>

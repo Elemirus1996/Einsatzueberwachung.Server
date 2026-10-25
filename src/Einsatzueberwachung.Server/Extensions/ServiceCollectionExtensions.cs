@@ -69,6 +69,12 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(_ => LeitungAuthStore.ForDataDirectory());
         services.AddSingleton<LoginLockout>();
         services.AddSingleton(_ => LiveTrackingAccess.ForDataDirectory());
+
+        // VPN-Geraete per QR-Code (1.10)
+        services.AddSingleton<IVpnPeerTool, SudoVpnPeerTool>();
+        services.AddSingleton(_ => VpnDeviceStore.ForDataDirectory());
+        services.AddSingleton<VpnDeviceService>();
+        services.AddHostedService<VpnDeviceCleanupService>();
         services.AddScoped<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider, LeitungRevalidatingAuthStateProvider>();
 
         // Standard-Anmeldung ist die der Einsatzleitung; die Team-Ansicht nutzt ihr eigenes Schema ausdruecklich
