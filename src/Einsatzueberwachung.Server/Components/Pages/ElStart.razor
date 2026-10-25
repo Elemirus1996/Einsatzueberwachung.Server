@@ -1,0 +1,147 @@
+@page "/el/start"
+@layout Layout.ElLayout
+@rendermode InteractiveServer
+@using Einsatzueberwachung.Domain.Models
+@using Einsatzueberwachung.Domain.Models.Enums
+
+<PageTitle>Einsatz starten</PageTitle>
+
+<div class="els">
+    <header class="els-header">
+        <a href="/el" class="els-back" aria-label="Zurück zur Einsatzleitung">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        <h1 class="els-title">Einsatz starten</h1>
+        <span class="els-clock">@_now.ToString("HH:mm")</span>
+    </header>
+
+    <main class="els-body">
+        @if (_einsatzBereitsAktiv)
+        {
+            <section class="els-card">
+                <p class="els-hint">Es läuft bereits ein Einsatz. Erst beenden, dann einen neuen starten.</p>
+                <a href="/el" class="els-btn els-btn-primary els-btn-block">Zur Einsatzleitung</a>
+            </section>
+        }
+        else
+        {
+            @if (_diveraAlarms.Count > 0)
+            {
+                <section class="els-section">
+                    <h2 class="els-label"><i class="bi bi-bell-fill"></i> Alarm aus Divera übernehmen</h2>
+                    @foreach (var alarm in _diveraAlarms)
+                    {
+                        <button type="button" class="els-divera @(_selectedDiveraId == alarm.Id ? "is-selected" : "")"
+                                @onclick="() => ImportFromDivera(alarm)">
+                            <span class="els-divera-title">@alarm.Title</span>
+                            <span class="els-divera-meta">@alarm.Address · @alarm.Date.ToString("HH:mm")</span>
+                        </button>
+                    }
+                </section>
+            }
+
+            <section class="els-section">
+                <h2 class="els-label">Szenario <span class="els-required">Pflicht</span></h2>
+                <div class="els-tiles @(_szenarioMissing ? "is-missing" : "")" role="radiogroup" aria-label="Szenario">
+                    @foreach (var sz in Szenarien)
+                    {
+                        var selected = _model.Szenario == sz;
+                        <button type="button" role="radio" aria-checked="@selected.ToString().ToLowerInvariant()"
+                                class="els-tile @(selected ? "is-selected" : "")"
+                                style="--els-tile-color:@sz.GetColorHex();"
+                                @onclick="() => SelectSzenario(sz)">
+                            @sz.GetDisplayName()
+                        </button>
+                    }
+                </div>
+            </section>
+
+            <section class="els-section">
+                <h2 class="els-label">Art</h2>
+                <div class="els-segment" role="radiogroup" aria-label="Art">
+                    <button type="button" role="radio" aria-checked="@_model.IstEinsatz.ToString().ToLowerInvariant()"
+                            class="els-segment-btn @(_model.IstEinsatz ? "is-selected is-einsatz" : "")"
+                            @onclick="() => _model.IstEinsatz = true">Einsatz</button>
+                    <button type="button" role="radio" aria-checked="@((!_model.IstEinsatz).ToString().ToLowerInvariant())"
+                            class="els-segment-btn @(!_model.IstEinsatz ? "is-selected" : "")"
+                            @onclick="() => _model.IstEinsatz = false">Übung</button>
+                </div>
+            </section>
+
+            <section class="els-section">
+                <label class="els-label" for="els-ort">Einsatzort <span class="els-required">Pflicht</span></label>
+                <input id="els-ort" class="els-input @(_einsatzortMissing ? "is-missing" : "")" @bind="_model.Einsatzort" @bind:event="oninput"
+                       placeholder="Straße, Ort oder Treffpunkt" autocomplete="off" enterkeyhint="next" />
+                <button type="button" class="els-btn els-btn-block" disabled="@_locating" @onclick="UseMyLocationAsync">
+                    <i class="bi @(_locating ? "bi-hourglass-split" : "bi-crosshair")"></i>
+                    @(_locating ? "Standort wird ermittelt…" : "Meinen Standort verwenden")
+                </button>
+                @if (!string.IsNullOrEmpty(_locationInfo))
+                {
+                    <p class="els-hint @(_locationError ? "is-error" : "is-ok")" role="status">@_locationInfo</p>
+                }
+            </section>
+
+            <section class="els-section">
+                <label class="els-label" for="els-stichwort">Stichwort</label>
+                <input id="els-stichwort" class="els-input" @bind="_model.Stichwort" placeholder="z. B. Vermisstensuche" enterkeyhint="next" />
+            </section>
+
+            <section class="els-section">
+                <label class="els-label" for="els-el">Einsatzleiter</label>
+                @if (EinsatzleiterOptions.Any())
+                {
+                    <select id="els-el" class="els-input" @onchange="e => SetEinsatzleiter(e.Value?.ToString())">
+                        <option value="">Aus Stammdaten wählen…</option>
+                        @foreach (var p in EinsatzleiterOptions)
+                        {
+                            <option value="@p.Id" selected="@(p.FullName == _model.Einsatzleiter)">@p.FullName</option>
+                        }
+                    </select>
+                }
+                <input class="els-input" @bind="_model.Einsatzleiter" placeholder="@(EinsatzleiterOptions.Any() ? "oder Name eintragen" : "Name eintragen")"
+                       aria-label="Einsatzleiter (Freitext)" />
+            </section>
+
+            <details class="els-more">
+                <summary>Weitere Angaben</summary>
+                <div class="els-more-body">
+                    <label class="els-label" for="els-zeit">Alarmiert um</label>
+                    <input id="els-zeit" class="els-input" type="time" @bind="_alarmTime" />
+
+                    <label class="els-label" for="els-nr">Einsatznummer</label>
+                    <input id="els-nr" class="els-input" @bind="_model.EinsatzNummer" placeholder="optional" />
+
+                    <label class="els-label" for="els-melder">Alarmiert durch</label>
+                    <input id="els-melder" class="els-input" @bind="_model.Alarmiert" placeholder="Polizei, Leitstelle, …" />
+
+                    <label class="els-label" for="els-fa">Führungsassistent</label>
+                    <input id="els-fa" class="els-input" @bind="_model.Fuehrungsassistent" list="els-fa-list" placeholder="optional" />
+                    <datalist id="els-fa-list">
+                        @foreach (var p in FuehrungsassistentOptions)
+                        {
+                            <option value="@p.FullName"></option>
+                        }
+                    </datalist>
+
+                    <label class="els-label" for="els-lage">Lage / Bemerkungen</label>
+                    <textarea id="els-lage" class="els-input els-textarea" @bind="_model.ExportPfad" rows="3"
+                              placeholder="Lagebeschreibung, Anfahrt, Hinweise…"></textarea>
+                </div>
+            </details>
+        }
+    </main>
+
+    @if (!_einsatzBereitsAktiv)
+    {
+        <footer class="els-footer">
+            @if (!string.IsNullOrEmpty(_status))
+            {
+                <p class="els-status @(_error ? "is-error" : "is-ok")" role="alert">@_status</p>
+            }
+            <button type="button" class="els-btn els-btn-start" disabled="@_busy" @onclick="StartAsync">
+                <i class="bi bi-play-circle-fill"></i> @(_busy ? "Wird gestartet…" : (_model.IstEinsatz ? "Einsatz starten" : "Übung starten"))
+            </button>
+        </footer>
+    }
+</div>
