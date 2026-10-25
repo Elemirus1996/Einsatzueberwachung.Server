@@ -47,6 +47,9 @@ jobs:
           printf 'pid %s/nginx.pid;\nerror_log %s/error.log;\nevents {}\nhttp {\n  access_log off;\n  include %s/einsatzueberwachung*.conf;\n}\n' "$T" "$T" "$T" > "$T/nginx.conf"
           sudo nginx -t -c "$T/nginx.conf"
 
+      - name: Oeffentliche nginx-Vorlage testen (Weiterleitung, Kopfzeilen, VPN)
+        run: bash deploy/scripts/test-nginx-public.sh
+
       - name: Upload Test-Ergebnisse
         if: always()
         uses: actions/upload-artifact@v4
