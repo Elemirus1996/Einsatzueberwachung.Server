@@ -978,3 +978,18 @@ main:has(.map-page-layout) {
     color: var(--ui-muted);
 }
 
+
+/* Knopf „Für Funkloch sichern“ (leaflet-interop.js) */
+.eu-offline-tiles {
+    min-height: 34px;
+    padding: 4px 10px;
+    background: #fff;
+    color: #14181f;
+    font: 600 13px/1.2 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    cursor: pointer;
+}
+
+.eu-offline-tiles:disabled {
+    cursor: progress;
+    opacity: 0.85;
+}

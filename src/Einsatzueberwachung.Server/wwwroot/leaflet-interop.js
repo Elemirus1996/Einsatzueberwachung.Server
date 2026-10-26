@@ -42,6 +42,90 @@ getSearchAreaId: function(layer) {
     return '';
 },
     
+// Kartenausschnitt fuer Funkloch sichern (1.11). Nur Strassen- und Topokarte und hoechstens Zoomstufe 16 – die
+// Nutzungsregeln von OpenStreetMap verbieten das Vorabladen groesserer Gebiete ab Stufe 17. Satellitenkacheln werden
+// nur gespeichert, wenn sie angesehen wurden (Service Worker), Google-Kacheln gar nicht.
+OFFLINE_MAX_ZOOM: 16,
+OFFLINE_MAX_TILES: 800,
+
+addOfflineTilesControl: function(map, allowedLayers) {
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+        return; // ohne Service Worker (z. B. ohne gueltiges Zertifikat) wird nichts gespeichert
+    }
+
+    const self = this;
+    const OfflineControl = L.Control.extend({
+        // Unten links: oben links liegt im eingebetteten Modus (EL-Ansicht) die eigene Werkzeugleiste
+        options: { position: 'bottomleft' },
+        onAdd: function() {
+            const button = L.DomUtil.create('button', 'leaflet-bar eu-offline-tiles');
+            button.type = 'button';
+            button.title = 'Sichtbares Gebiet auf diesem Gerät speichern – die Karte bleibt im Funkloch nutzbar';
+            button.textContent = '⤓ Für Funkloch sichern';
+            L.DomEvent.disableClickPropagation(button);
+            L.DomEvent.on(button, 'click', function() { self.saveVisibleTiles(map, allowedLayers, button); });
+            return button;
+        }
+    });
+    new OfflineControl().addTo(map);
+},
+
+offlineTileList: function(map, layer) {
+    const zoom = Math.round(map.getZoom());
+    // Sichtbares Gebiet plus Rand, eine Stufe groeber und eine feiner als die aktuelle Ansicht
+    const bounds = map.getBounds().pad(0.25);
+    const minZoom = Math.max(12, zoom - 1);
+    const maxZoom = Math.min(this.OFFLINE_MAX_ZOOM, zoom + 1, layer.options.maxZoom || this.OFFLINE_MAX_ZOOM);
+    const subdomains = layer.options.subdomains || 'abc';
+    const urls = [];
+    for (let z = minZoom; z <= maxZoom; z++) {
+        const nw = map.project(bounds.getNorthWest(), z).divideBy(256).floor();
+        const se = map.project(bounds.getSouthEast(), z).divideBy(256).floor();
+        for (let x = nw.x; x <= se.x; x++) {
+            for (let y = nw.y; y <= se.y; y++) {
+                const s = subdomains[Math.abs(x + y) % subdomains.length];
+                urls.push(L.Util.template(layer._url, L.extend({}, layer.options, { s: s, x: x, y: y, z: z, r: '' })));
+            }
+        }
+    }
+    return { zoom: zoom, urls: urls };
+},
+
+saveVisibleTiles: async function(map, allowedLayers, button) {
+    if (button.disabled) return;
+    const layer = allowedLayers.find((l) => map.hasLayer(l));
+    const reset = (text) => { button.textContent = text; setTimeout(() => { button.textContent = '⤓ Für Funkloch sichern'; }, 4000); };
+    if (!layer) { reset('Nur Straßen- oder Topokarte'); return; }
+
+    const list = this.offlineTileList(map, layer);
+    if (list.zoom < 12) { reset('Bitte näher heranzoomen'); return; }
+    if (list.urls.length > this.OFFLINE_MAX_TILES) { reset('Gebiet zu groß – näher heranzoomen'); return; }
+
+    button.disabled = true;
+    let done = 0;
+    let failed = 0;
+    const queue = list.urls.slice();
+    // Hoechstens 2 Anfragen gleichzeitig – schont Kachelserver und Mobilfunk
+    const worker = async () => {
+        while (queue.length > 0) {
+            const url = queue.shift();
+            try {
+                const r = await fetch(url, { mode: 'cors', credentials: 'omit' });
+                if (!r.ok) failed++;
+            } catch (e) {
+                failed++;
+            }
+            done++;
+            button.textContent = 'Sichere … ' + done + '/' + list.urls.length;
+        }
+    };
+    await Promise.all([worker(), worker()]);
+    button.disabled = false;
+    reset(failed === 0
+        ? '✓ ' + list.urls.length + ' Kacheln gesichert'
+        : '⚠ ' + (list.urls.length - failed) + '/' + list.urls.length + ' gesichert');
+},
+
 // Initialisiert eine neue Karte
 initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
     try {
@@ -102,6 +186,9 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             collapsed: false  // Immer ausgeklappt fuer bessere Sichtbarkeit
         });
         layerControl.addTo(map);
+
+        // Knopf „Für Funkloch sichern“: laedt das sichtbare Gebiet vorab in den Kachelspeicher des Service Workers
+        window.LeafletMap.addOfflineTilesControl(map, [osmLayer, topoLayer]);
         log('Layer Control hinzugeFuegt:', layerControl);
         
         // Koordinaten-Gitter Control (UTM und Lat/Lon)
