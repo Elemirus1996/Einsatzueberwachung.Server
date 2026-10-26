@@ -157,6 +157,52 @@ main {
     display: none;
 }
 
+/* Hinweis bei Verbindungsabbruch (Blazor setzt die Klassen components-reconnect-*). Schmale Leiste oben statt
+   blockierendem Dialog: der letzte Stand bleibt lesbar, bis die Verbindung zurueck ist. */
+.eu-reconnect {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3000;
+    padding: max(8px, env(safe-area-inset-top)) 16px 8px;
+    background: #b8821a;
+    color: #14181f;
+    font: 600 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.eu-reconnect > span {
+    display: none;
+}
+
+.eu-reconnect.components-reconnect-show,
+.eu-reconnect.components-reconnect-failed,
+.eu-reconnect.components-reconnect-rejected,
+.eu-reconnect.components-reconnect-retrying {
+    display: block;
+}
+
+.eu-reconnect.components-reconnect-show .eu-reconnect-show,
+.eu-reconnect.components-reconnect-retrying .eu-reconnect-show,
+.eu-reconnect.components-reconnect-failed .eu-reconnect-failed,
+.eu-reconnect.components-reconnect-rejected .eu-reconnect-rejected {
+    display: inline;
+}
+
+.eu-reconnect button {
+    margin-left: 8px;
+    min-height: 32px;
+    padding: 2px 12px;
+    border: 1px solid #14181f;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
 @media (max-width: 640px) {
     /* Handy: Seitenleiste wird zur Kopfleiste, der Inhalt bekommt den Rest des Bildschirms.
        Vorher nahm die ausgeklappte Navigation die ganze Hoehe ein und der Inhalt war nicht erreichbar. */

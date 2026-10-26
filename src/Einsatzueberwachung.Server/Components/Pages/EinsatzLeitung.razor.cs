@@ -171,6 +171,8 @@ public partial class EinsatzLeitung : IDisposable
         try
         {
             await JS.InvokeVoidAsync("elDashboard.startClock", "el-live-clock");
+            // Tablet/Handy: Bildschirm waehrend eines laufenden Einsatzes nicht automatisch sperren
+            await JS.InvokeVoidAsync("layoutTools.keepScreenOn", HasActiveEinsatz);
             _soundEnabled = await JS.InvokeAsync<bool>("elDashboard.getPref", "sound", false);
             _previousCriticalCount = _teamsCritical;
             _previousWarningCount = _teamsWarning;
@@ -919,6 +921,8 @@ public partial class EinsatzLeitung : IDisposable
         EinsatzService.VermisstenInfoChanged -= OnVermisstenChanged;
         EinsatzService.SzenarioChanged -= OnStateChangedDirect;
         EinsatzService.ElNotizAdded -= OnStateChangedDirect;
+        // Beim Verlassen der EL-Ansicht darf der Bildschirm wieder sperren (Verbindung evtl. schon weg – egal)
+        _ = JS.InvokeVoidAsync("layoutTools.keepScreenOn", false).AsTask().ContinueWith(_ => { }, TaskScheduler.Default);
         _autoSaveCts?.Cancel();
         _autoSaveCts?.Dispose();
         _weatherTimer?.Dispose();
