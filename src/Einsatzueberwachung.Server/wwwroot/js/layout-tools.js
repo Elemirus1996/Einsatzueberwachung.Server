@@ -35,6 +35,12 @@ window.layoutTools.scrollToElement = function (elementId) {
     }
 };
 
+// Element nur so weit scrollen, dass es sichtbar ist (z. B. aufgeklappte Archivdetails unter dem Eintrag)
+window.layoutTools.scrollIntoViewNearest = function (elementId) {
+    const el = document.getElementById(elementId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
 window.layoutTools.getSidebarCollapsed = function () {
     const value = localStorage.getItem("einsatz.sidebarCollapsed");
     return value === "1" || value === "true";

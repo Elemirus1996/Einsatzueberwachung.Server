@@ -157,21 +157,118 @@
                             <td>@item.Einsatzleiter</td>
                             <td>@item.Ergebnis</td>
                             <td class="d-flex flex-wrap gap-2">
-                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowDetailsAsync(item.Id)">Details</button>
+                                <button class="btn btn-sm @(_selected?.Id == item.Id ? "btn-primary" : "btn-outline-primary")" @onclick="() => ToggleDetailsAsync(item.Id)"
+                                        aria-expanded="@((_selected?.Id == item.Id).ToString().ToLowerInvariant())">@(_selected?.Id == item.Id ? "Details zu" : "Details")</button>
                                 <button class="btn btn-sm btn-outline-success" @onclick="() => NavigateToExport(item.Id)" title="Als .einsatz-export.json herunterladen">
                                     <i class="bi bi-download me-1"></i>Exportieren
                                 </button>
                                 <button class="btn btn-sm btn-outline-secondary" @onclick="() => PromptDelete(item)">Loeschen</button>
                             </td>
                         </tr>
+                        @if (_selected?.Id == item.Id)
+                        {
+                            @* Details direkt unter dem gewaehlten Einsatz statt am Seitenende *@
+                            <tr class="archive-detail-row" id="archiv-details">
+                                <td colspan="6">@DetailsCard</td>
+                            </tr>
+                        }
                     }
                 </tbody>
             </table>
         </div>
+    }
 
+@* Track-Detail-Popup *@
+@if (_archiveTrackPopup != null)
+{
+    <button type="button" class="modal-backdrop modal-backdrop-action show" style="z-index: 2000;" @onclick='() => _archiveTrackPopup = null' aria-label="Dialog schließen"></button>
+    <div class="modal show d-block" style="z-index: 2001;" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="background:@_archiveTrackPopup.Color; width:10px; height:20px; border-radius:3px; display:inline-block; flex-shrink:0;"></span>
+                        <h6 class="modal-title mb-0">@_archiveTrackPopup.TeamName</h6>
+                    </div>
+                    <button type="button" class="btn-close" @onclick='() => _archiveTrackPopup = null'></button>
+                </div>
+                <div class="modal-body py-2">
+                    <table class="table table-sm table-borderless mb-2">
+                        <tbody>
+                            <tr><td class="text-muted">Team</td><td><strong>@_archiveTrackPopup.TeamName</strong></td></tr>
+                            <tr><td class="text-muted">Bezeichnung</td><td>@_archiveTrackPopup.DisplayLabel</td></tr>
+                            <tr><td class="text-muted">Suchgebiet</td><td>@(string.IsNullOrEmpty(_archiveTrackPopup.SearchAreaName) ? "–" : _archiveTrackPopup.SearchAreaName)</td></tr>
+                            <tr><td class="text-muted">Beginn</td><td>@(_archiveTrackPopup.Points.FirstOrDefault()?.Timestamp.ToLocalTime().ToString("HH:mm:ss") ?? "–")</td></tr>
+                            <tr><td class="text-muted">Ende</td><td>@(_archiveTrackPopup.Points.LastOrDefault()?.Timestamp.ToLocalTime().ToString("HH:mm:ss") ?? "–")</td></tr>
+                            <tr><td class="text-muted">Dauer</td><td>@_archiveTrackPopup.FormattedDuration</td></tr>
+                            <tr><td class="text-muted">Strecke</td><td>@_archiveTrackPopup.FormattedDistance</td></tr>
+                            <tr><td class="text-muted">Punkte</td><td>@_archiveTrackPopup.Points.Count</td></tr>
+                        </tbody>
+                    </table>
+                    @if (_archiveTrackPopup.Points.Count > 0)
+                    {
+                        <div class="archive-track-points-wrap">
+                            <table class="table table-sm mb-0 archive-track-points-table">
+                                <thead>
+                                    <tr><th>#</th><th>Zeit</th><th>Lat</th><th>Lng</th></tr>
+                                </thead>
+                                <tbody>
+                                    @for (var pi = 0; pi < _archiveTrackPopup.Points.Count; pi++)
+                                    {
+                                        var pt = _archiveTrackPopup.Points[pi];
+                                        <tr>
+                                            <td class="text-muted">@(pi + 1)</td>
+                                            <td>@pt.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
+                                            <td class="font-monospace">@pt.Latitude.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                            <td class="font-monospace">@pt.Longitude.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer py-2">
+                    <button class="btn btn-sm btn-outline-success" @onclick="DownloadArchiveTrackGpxAsync">
+                        <i class="bi bi-download me-1"></i>GPX herunterladen
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary" @onclick='() => _archiveTrackPopup = null'>Schlie&#xDF;en</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+    @if (_deleteCandidate is not null)
+    {
+        <div class="modal-overlay">
+            <button type="button" class="modal-overlay-dismiss" @onclick="CancelDelete" aria-label="Dialog schließen"></button>
+            <div class="modal-modern" @onclick:stopPropagation="true">
+                <div class="modal-modern-header">
+                    <h3 class="mb-0">Archiv-Eintrag loeschen</h3>
+                </div>
+                <div class="modal-modern-body">
+                    <p class="mb-2">
+                        Soll der archivierte Einsatz <strong>@_deleteCandidate.EinsatzNummer</strong>
+                        vom <strong>@_deleteCandidate.EinsatzDatum.ToString("dd.MM.yyyy HH:mm")</strong> wirklich geloescht werden?
+                    </p>
+                    <p class="text-muted mb-0">Diese Aktion kann nicht rueckgaengig gemacht werden.</p>
+                </div>
+                <div class="modal-modern-footer">
+                    <button class="btn btn-outline-secondary" @onclick="CancelDelete">Abbrechen</button>
+                    <button class="btn btn-primary" @onclick="ConfirmDeleteAsync">Endgueltig loeschen</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private RenderFragment DetailsCard => __builder =>
+    {
         @if (_selected is not null)
         {
-            <div class="card mt-3 filter-card">
+            <div class="card filter-card archive-detail-card">
                 <div class="card-header">
                     <strong>Archivdetails: @_selected.EinsatzNummer</strong>
                     <div class="d-flex gap-2 flex-wrap">
@@ -345,90 +442,5 @@
                 </div>
             </div>
         }
-    }
-
-@* Track-Detail-Popup *@
-@if (_archiveTrackPopup != null)
-{
-    <button type="button" class="modal-backdrop modal-backdrop-action show" style="z-index: 2000;" @onclick='() => _archiveTrackPopup = null' aria-label="Dialog schließen"></button>
-    <div class="modal show d-block" style="z-index: 2001;" tabindex="-1">
-        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header py-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <span style="background:@_archiveTrackPopup.Color; width:10px; height:20px; border-radius:3px; display:inline-block; flex-shrink:0;"></span>
-                        <h6 class="modal-title mb-0">@_archiveTrackPopup.TeamName</h6>
-                    </div>
-                    <button type="button" class="btn-close" @onclick='() => _archiveTrackPopup = null'></button>
-                </div>
-                <div class="modal-body py-2">
-                    <table class="table table-sm table-borderless mb-2">
-                        <tbody>
-                            <tr><td class="text-muted">Team</td><td><strong>@_archiveTrackPopup.TeamName</strong></td></tr>
-                            <tr><td class="text-muted">Bezeichnung</td><td>@_archiveTrackPopup.DisplayLabel</td></tr>
-                            <tr><td class="text-muted">Suchgebiet</td><td>@(string.IsNullOrEmpty(_archiveTrackPopup.SearchAreaName) ? "–" : _archiveTrackPopup.SearchAreaName)</td></tr>
-                            <tr><td class="text-muted">Beginn</td><td>@(_archiveTrackPopup.Points.FirstOrDefault()?.Timestamp.ToLocalTime().ToString("HH:mm:ss") ?? "–")</td></tr>
-                            <tr><td class="text-muted">Ende</td><td>@(_archiveTrackPopup.Points.LastOrDefault()?.Timestamp.ToLocalTime().ToString("HH:mm:ss") ?? "–")</td></tr>
-                            <tr><td class="text-muted">Dauer</td><td>@_archiveTrackPopup.FormattedDuration</td></tr>
-                            <tr><td class="text-muted">Strecke</td><td>@_archiveTrackPopup.FormattedDistance</td></tr>
-                            <tr><td class="text-muted">Punkte</td><td>@_archiveTrackPopup.Points.Count</td></tr>
-                        </tbody>
-                    </table>
-                    @if (_archiveTrackPopup.Points.Count > 0)
-                    {
-                        <div class="archive-track-points-wrap">
-                            <table class="table table-sm mb-0 archive-track-points-table">
-                                <thead>
-                                    <tr><th>#</th><th>Zeit</th><th>Lat</th><th>Lng</th></tr>
-                                </thead>
-                                <tbody>
-                                    @for (var pi = 0; pi < _archiveTrackPopup.Points.Count; pi++)
-                                    {
-                                        var pt = _archiveTrackPopup.Points[pi];
-                                        <tr>
-                                            <td class="text-muted">@(pi + 1)</td>
-                                            <td>@pt.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
-                                            <td class="font-monospace">@pt.Latitude.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)</td>
-                                            <td class="font-monospace">@pt.Longitude.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </div>
-                <div class="modal-footer py-2">
-                    <button class="btn btn-sm btn-outline-success" @onclick="DownloadArchiveTrackGpxAsync">
-                        <i class="bi bi-download me-1"></i>GPX herunterladen
-                    </button>
-                    <button type="button" class="btn btn-sm btn-secondary" @onclick='() => _archiveTrackPopup = null'>Schlie&#xDF;en</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    };
 }
-
-    @if (_deleteCandidate is not null)
-    {
-        <div class="modal-overlay">
-            <button type="button" class="modal-overlay-dismiss" @onclick="CancelDelete" aria-label="Dialog schließen"></button>
-            <div class="modal-modern" @onclick:stopPropagation="true">
-                <div class="modal-modern-header">
-                    <h3 class="mb-0">Archiv-Eintrag loeschen</h3>
-                </div>
-                <div class="modal-modern-body">
-                    <p class="mb-2">
-                        Soll der archivierte Einsatz <strong>@_deleteCandidate.EinsatzNummer</strong>
-                        vom <strong>@_deleteCandidate.EinsatzDatum.ToString("dd.MM.yyyy HH:mm")</strong> wirklich geloescht werden?
-                    </p>
-                    <p class="text-muted mb-0">Diese Aktion kann nicht rueckgaengig gemacht werden.</p>
-                </div>
-                <div class="modal-modern-footer">
-                    <button class="btn btn-outline-secondary" @onclick="CancelDelete">Abbrechen</button>
-                    <button class="btn btn-primary" @onclick="ConfirmDeleteAsync">Endgueltig loeschen</button>
-                </div>
-            </div>
-        </div>
-    }
-</div>
-
