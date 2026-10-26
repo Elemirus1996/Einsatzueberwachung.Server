@@ -1,3 +1,4 @@
+using Einsatzueberwachung.Domain.Models.Divera;
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Services;
@@ -75,6 +76,7 @@ public partial class Einstellungen
         Erscheinungsbild,
         Tastenkuerzel,
         Integration,
+        Divera,
         System,
         Wartung
     }
@@ -87,9 +89,8 @@ public partial class Einstellungen
         && !string.IsNullOrWhiteSpace(_staffelSettings.StaffelTelefon)
         && !string.IsNullOrWhiteSpace(_staffelSettings.StaffelEmail);
 
-    private int IntegrationActiveCount =>
-        (_appSettings.DiveraEnabled && !string.IsNullOrWhiteSpace(_appSettings.DiveraAccessKey) ? 1 : 0)
-        + 1; // GPS-Livetracking immer "verfügbar" (Download-Link), zählt als 1
+    // Divera hat einen eigenen Bereich; GPS-Livetracking ist immer „verfügbar“ (Download-Link)
+    private int IntegrationActiveCount => 1;
 
     private bool UpdateAvailable => _updateStatus.UpdateAvailable;
 
@@ -1075,6 +1076,59 @@ private async Task SetDesignModeAsync(bool darkMode)
         catch (Exception ex)
         {
             SetPdfLogoStatus($"PDF-Logo konnte nicht entfernt werden: {ex.Message}", true);
+        }
+    }
+
+    // ── Divera: Status-Zuordnung und Kanal-Prüfung ──────────────────────
+    private bool _diveraStatusBusy;
+    private bool _diveraKanalBusy;
+    private IReadOnlyList<string> _diveraKanalZeilen = [];
+
+    private string DiveraZuordnungWert(int statusId) =>
+        _appSettings.DiveraStatusZuordnung.TryGetValue(statusId, out var bedeutung) ? bedeutung.ToString() : string.Empty;
+
+    private void SetDiveraZuordnung(int statusId, string? wert)
+    {
+        if (Enum.TryParse<DiveraRueckmeldung>(wert, out var bedeutung) && bedeutung != DiveraRueckmeldung.Unbekannt)
+            _appSettings.DiveraStatusZuordnung[statusId] = bedeutung;
+        else
+            _appSettings.DiveraStatusZuordnung.Remove(statusId);
+    }
+
+    // Farbe aus Divera nur als Hex-Wert in den Stil uebernehmen
+    private static string DiveraFarbeCss(string? farbe)
+    {
+        var hex = (farbe ?? string.Empty).TrimStart('#');
+        return hex.Length is 3 or 6 && hex.All(Uri.IsHexDigit) ? "#" + hex : "transparent";
+    }
+
+    private async Task LadeDiveraStatusAsync()
+    {
+        _diveraStatusBusy = true;
+        try
+        {
+            await SettingsService.SaveAppSettingsAsync(_appSettings);
+            await DiveraService.RefreshConfigurationAsync();
+            await DiveraService.PullAllAsync();
+        }
+        finally
+        {
+            _diveraStatusBusy = false;
+        }
+    }
+
+    private async Task PruefeDiveraKanalAsync()
+    {
+        _diveraKanalBusy = true;
+        try
+        {
+            await SettingsService.SaveAppSettingsAsync(_appSettings);
+            await DiveraService.RefreshConfigurationAsync();
+            _diveraKanalZeilen = await DiveraService.PruefeEinsatzChatAsync();
+        }
+        finally
+        {
+            _diveraKanalBusy = false;
         }
     }
 

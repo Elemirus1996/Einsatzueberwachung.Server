@@ -105,17 +105,9 @@
                                         }
                                         <div class="d-flex gap-2 flex-wrap mt-1">
                                             <span class="badge bg-success">@alarm.CountKomme geantwortet</span>
-                                            @if (alarm.Count30Min > 0)
+                                            @foreach (var gruppe in alarm.Rueckmeldungen)
                                             {
-                                                <span class="badge bg-success">@alarm.Count30Min 30 Min</span>
-                                            }
-                                            @if (alarm.Count1Std > 0)
-                                            {
-                                                <span class="badge bg-warning text-dark">@alarm.Count1Std 1 Std</span>
-                                            }
-                                            @if (alarm.CountNichtEinsatzbereit > 0)
-                                            {
-                                                <span class="badge bg-danger">@alarm.CountNichtEinsatzbereit nicht einsatzbereit</span>
+                                                <span class="badge @gruppe.BadgeCss">@gruppe.Anzahl @gruppe.Name</span>
                                             }
                                             @if (alarm.CountKeineAntwort > 0)
                                             {
@@ -144,9 +136,10 @@
                     <div class="card-body p-0">
                         <div class="p-3 border-bottom bg-body-tertiary">
                             <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <span class="badge bg-success">30 Min: @Members30Minutes.Count</span>
-                                <span class="badge bg-warning text-dark">1 Std: @MembersOneHour.Count</span>
-                                <span class="badge bg-danger">Nicht einsatzbereit: @MembersNotReady.Count</span>
+                                @foreach (var gruppe in CurrentAlarm?.Rueckmeldungen ?? [])
+                                {
+                                    <span class="badge @gruppe.BadgeCss">@gruppe.Name: @gruppe.Anzahl</span>
+                                }
                                 <span class="badge bg-secondary">Gesamt Antworten: @CurrentAlarmResponses.Count</span>
                             </div>
                         </div>

@@ -17,6 +17,10 @@ public partial class EinsatzLeitung : IDisposable
     [Inject] private IRadioService Radio { get; set; } = default!;
     [Inject] private IMasterDataService MasterDataService { get; set; } = default!;
     [Inject] private TeamSucheService TeamSuche { get; set; } = default!;
+    [Inject] private IDiveraService Divera { get; set; } = default!;
+
+    // Knopf „Foto“ nur, wenn in Einstellungen → Divera eingeschaltet
+    private bool _fotoAktiv;
 
     private string _activeTab = "uebersicht";
     private string _noteFilter = "alle";
@@ -144,6 +148,12 @@ public partial class EinsatzLeitung : IDisposable
     // Push-Toast
     private readonly List<PushToastItem> _pushToasts = new();
     private DateTime _pageOpenedAt = DateTime.Now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Divera.LadeEinstellungenAsync();
+        _fotoAktiv = Divera.FotosSenden;
+    }
 
     protected override void OnInitialized()
     {

@@ -1,37 +1,29 @@
-﻿namespace Einsatzueberwachung.Domain.Models.Divera
+namespace Einsatzueberwachung.Domain.Models.Divera
 {
     public class DiveraUcrEntry
     {
         public int MemberId { get; set; }
         public string MemberName { get; set; } = string.Empty;
-        /// <summary>Org-spezifische Status-ID (z.B. 56298) oder 0 fuer keine Antwort</summary>
+        /// <summary>Status-ID der eigenen Divera-Einheit oder 0 fuer keine Antwort</summary>
         public int Status { get; set; }
-        /// <summary>Status-Name aus StatusDefinitions (z.B. "30 Minuten", "In 1 Std."). Leer wenn unbekannt.</summary>
+        /// <summary>Status-Name aus den Status-Definitionen der Einheit (z.B. "30 Minuten"). Leer wenn unbekannt.</summary>
         public string StatusName { get; set; } = string.Empty;
+        /// <summary>Hex-Farbe des Status aus Divera</summary>
+        public string StatusColor { get; set; } = string.Empty;
+        /// <summary>Bedeutung (aus Farbe oder Zuordnung in den Divera-Einstellungen)</summary>
+        public DiveraRueckmeldung Bedeutung { get; set; }
 
         public string StatusText => Status switch
         {
             0 => "Keine Rückmeldung",
-            56296 => string.IsNullOrWhiteSpace(StatusName) ? "30 Minuten" : StatusName,
-            56297 => string.IsNullOrWhiteSpace(StatusName) ? "1 Stunde" : StatusName,
-            56298 => string.IsNullOrWhiteSpace(StatusName) ? "Nicht einsatzbereit" : StatusName,
-            // Pull/all liefert ggf. 1/2/3 fuer einfache Faelle
-            1 => string.IsNullOrWhiteSpace(StatusName) ? "Kommt" : StatusName,
-            2 => string.IsNullOrWhiteSpace(StatusName) ? "Kommt nicht" : StatusName,
-            3 => string.IsNullOrWhiteSpace(StatusName) ? "Kommt später" : StatusName,
-            // Org-spezifische Status-IDs (z.B. 56298): StatusName nutzen wenn bekannt, sonst "Hat geantwortet"
-            _ => string.IsNullOrWhiteSpace(StatusName) ? "Hat geantwortet" : StatusName
+            _ when !string.IsNullOrWhiteSpace(StatusName) => StatusName,
+            // Aeltere Schnittstelle liefert ggf. 1/2/3 ohne Definition
+            1 => "Kommt",
+            2 => "Kommt nicht",
+            3 => "Kommt später",
+            _ => "Hat geantwortet"
         };
 
-        public string StatusBadgeCss => Status switch
-        {
-            0 => "bg-secondary",
-            56296 => "bg-success",
-            56297 => "bg-warning text-dark",
-            56298 => "bg-danger",
-            2 => "bg-danger",
-            3 => "bg-warning text-dark",
-            _ => "bg-success"  // 1 = Kommt, alle org-spezifischen = als geantwortet = gruen
-        };
+        public string StatusBadgeCss => Status == 0 ? "bg-secondary" : DiveraStatusFarbe.BadgeCss(Bedeutung);
     }
 }
