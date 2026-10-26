@@ -986,7 +986,9 @@ public partial class EinsatzMonitor
         if (!resumingFromManualPause && team != null && !team.IsDroneTeam && !team.IsSupportTeam && string.IsNullOrEmpty(team.CollarId))
         {
             _collarSelectTeamId = teamId;
-            _collarSelectCollarId = string.Empty;
+            // Zuletzt von diesem Team benutztes Halsband vorauswaehlen, wenn es frei ist
+            _collarSelectCollarId = TeamSuche.CollarOptions(teamId).FirstOrDefault(c =>
+                c.Id == TeamSucheService.LastCollarId(EinsatzService.CurrentEinsatz.TrackSnapshots ?? [], teamId))?.Id ?? string.Empty;
             _showCollarSelectModal = true;
             return;
         }

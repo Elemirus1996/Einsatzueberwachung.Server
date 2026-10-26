@@ -290,9 +290,46 @@ public partial class EinsatzLeitung : IDisposable
     private async Task StartTeamAsync(string teamId)
     {
         if (_busyTeamId is not null) return;
+
+        // Nach „Stopp“ ist das Halsband frei – ohne Rueckfrage liefe die neue Suche ohne Track
+        if (TeamSuche.NeedsCollarChoice(teamId))
+        {
+            _collarChoiceTeamId = teamId;
+            _collarChoiceOptions = TeamSuche.CollarOptions(teamId);
+            _collarChoiceLastId = TeamSucheService.LastCollarId(EinsatzService.CurrentEinsatz.TrackSnapshots ?? [], teamId);
+            return;
+        }
+
+        await StartTeamWithCollarAsync(teamId, null);
+    }
+
+    private async Task StartTeamWithCollarAsync(string teamId, string? collarId)
+    {
+        CloseCollarChoice();
         _busyTeamId = teamId;
-        try { await TeamSuche.StartAsync(teamId); }
+        try { await TeamSuche.StartWithCollarAsync(teamId, collarId); }
+        catch (InvalidOperationException ex)
+        {
+            // z. B. Hund laeuft bereits in einem anderen Team
+            var item = new PushToastItem { Title = "Start nicht möglich", Body = ex.Message, Icon = "bi-exclamation-triangle-fill" };
+            _pushToasts.Add(item);
+            _ = AutoDismissToastAsync(item.Id);
+        }
         finally { _busyTeamId = null; }
+    }
+
+    // ── Halsband-Rueckfrage beim Start ───────────────────────────
+    private string? _collarChoiceTeamId;
+    private IReadOnlyList<Collar> _collarChoiceOptions = [];
+    private string? _collarChoiceLastId;
+
+    private Team? CollarChoiceTeam => EinsatzService.Teams.FirstOrDefault(t => t.TeamId == _collarChoiceTeamId);
+
+    private void CloseCollarChoice()
+    {
+        _collarChoiceTeamId = null;
+        _collarChoiceOptions = [];
+        _collarChoiceLastId = null;
     }
 
     private async Task PauseTeamAsync(string teamId)

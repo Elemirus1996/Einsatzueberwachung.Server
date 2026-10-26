@@ -889,6 +889,38 @@
         </div>
     }
 
+    @* ── Halsband-Rueckfrage beim Start einer neuen Suche ──────────── *@
+    @if (CollarChoiceTeam is { } choiceTeam)
+    {
+        <button type="button" class="el-modal-backdrop" @onclick="CloseCollarChoice" aria-label="Dialog schließen"></button>
+        <div class="el-modal" role="dialog" aria-modal="true" aria-labelledby="el-collar-title">
+            <div class="el-modal-head">
+                <i class="bi bi-broadcast-pin"></i>
+                <span id="el-collar-title">@choiceTeam.TeamName – Halsband?</span>
+                <button class="el-modal-close" @onclick="CloseCollarChoice" title="Abbrechen">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="el-modal-body">
+                <p class="el-collar-hint">Ohne Halsband wird für diese Suche kein Track aufgezeichnet.</p>
+                @foreach (var collar in _collarChoiceOptions)
+                {
+                    <button class="el-btn el-collar-option @(collar.Id == _collarChoiceLastId ? "el-btn-primary" : "")"
+                            @onclick="() => StartTeamWithCollarAsync(choiceTeam.TeamId, collar.Id)">
+                        <i class="bi bi-play-fill"></i> Mit @collar.CollarName starten
+                        @if (collar.Id == _collarChoiceLastId)
+                        {
+                            <span class="el-collar-badge">zuletzt</span>
+                        }
+                    </button>
+                }
+                <button class="el-btn el-btn-ghost el-collar-option" @onclick="() => StartTeamWithCollarAsync(choiceTeam.TeamId, null)">
+                    Ohne Halsband starten
+                </button>
+            </div>
+        </div>
+    }
+
     @* ── Funk-Modal ─────────────────────────────────────────────── *@
     @if (_funkOpen)
     {

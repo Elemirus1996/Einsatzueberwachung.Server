@@ -100,6 +100,28 @@ public class TraccarEndpointTests
     }
 
     [Fact]
+    public async Task TeamHandy_PufferPositionMitZeitstempelWirdZeitlichEinsortiert()
+    {
+        var (einsatz, tokens, team) = await RunningTeamAsync();
+        var controller = new TeamMobileController(tokens, einsatz, new CollarTrackingService(einsatz), NullLogger<TeamMobileController>.Instance);
+        var http = new DefaultHttpContext
+        {
+            User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(
+                [new System.Security.Claims.Claim(Einsatzueberwachung.Server.Security.TeamMobileAuth.TeamIdClaim, team.TeamId)], "Test"))
+        };
+        controller.ControllerContext = new ControllerContext { HttpContext = http };
+        var jetzt = DateTimeOffset.UtcNow;
+
+        // Live-Punkt, danach ein im Funkloch gepufferter, 5 Minuten aelterer Punkt
+        await controller.PostLocation(new TeamPhoneLocationRequest { Lat = 51.2, Lng = 7.0, Timestamp = jetzt.ToUnixTimeMilliseconds() });
+        await controller.PostLocation(new TeamPhoneLocationRequest { Lat = 51.1, Lng = 7.0, Timestamp = jetzt.AddMinutes(-5).ToUnixTimeMilliseconds() });
+
+        var verlauf = einsatz.GetPhoneTrackHistory(team.TeamId);
+        Assert.Equal([51.1, 51.2], verlauf.Select(p => p.Latitude));
+        Assert.True(verlauf[1].Timestamp - verlauf[0].Timestamp >= TimeSpan.FromMinutes(4.9));
+    }
+
+    [Fact]
     public async Task GueltigesTeamToken_SpeichertPositionImLaufweg()
     {
         var (einsatz, tokens, team) = await RunningTeamAsync();

@@ -140,7 +140,10 @@ public sealed class TeamMobileController : ControllerBase
 
         try
         {
-            await _einsatzService.UpdateTeamPhoneLocationAsync(teamId, request.Lat, request.Lng, request.Accuracy);
+            var timestampUtc = request.Timestamp.HasValue
+                ? TraccarProtocol.ParseTimestamp(request.Timestamp.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                : null;
+            await _einsatzService.UpdateTeamPhoneLocationAsync(teamId, request.Lat, request.Lng, request.Accuracy, timestampUtc);
         }
         catch (Exception ex)
         {
@@ -286,4 +289,7 @@ public sealed class TeamPhoneLocationRequest
     public double Lat { get; set; }
     public double Lng { get; set; }
     public double? Accuracy { get; set; }
+
+    /// <summary>Messzeitpunkt (ms seit 1970, UTC). Gesetzt bei Positionen, die das Handy im Funkloch gepuffert hat.</summary>
+    public long? Timestamp { get; set; }
 }

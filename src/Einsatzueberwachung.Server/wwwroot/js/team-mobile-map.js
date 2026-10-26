@@ -306,7 +306,7 @@ window.teamMobileMap = (function () {
                 const lng = pos.coords.longitude;
                 setUserPosition(lat, lng);
                 appendUserTrackPoint(lat, lng);
-                postLocation(lat, lng);
+                postLocation(lat, lng, pos.coords.accuracy, pos.timestamp);
                 if (dotNetRef) {
                     dotNetRef.invokeMethodAsync('OnUserLocation', lat, lng).catch(() => {});
                 }
@@ -345,7 +345,7 @@ window.teamMobileMap = (function () {
                 const lng = pos.coords.longitude;
                 setUserPosition(lat, lng);
                 appendUserTrackPoint(lat, lng);
-                postLocation(lat, lng);
+                postLocation(lat, lng, pos.coords.accuracy, pos.timestamp);
                 if (ref) {
                     ref.invokeMethodAsync('OnUserLocation', lat, lng).catch(() => {});
                 }
@@ -375,22 +375,62 @@ window.teamMobileMap = (function () {
         } catch (e) { return null; }
     }
 
-    function postLocation(lat, lng) {
+    // Positionen ans Einsatz-System. Im Funkloch bleiben sie mit Messzeitpunkt im Handy und werden der Reihe nach
+    // nachgesendet, sobald wieder Netz da ist – der Laufweg hat dann keine Luecke (1.11.1).
+    const LOCATION_QUEUE_KEY = 'einsatz.teamLocationQueue';
+    const LOCATION_QUEUE_MAX = 3000;
+    let locationFlushing = false;
+    let locationRetryTimer = null;
+
+    function loadLocationQueue() {
+        try { return JSON.parse(localStorage.getItem(LOCATION_QUEUE_KEY)) || []; } catch (e) { return []; }
+    }
+
+    function saveLocationQueue(list) {
+        try { localStorage.setItem(LOCATION_QUEUE_KEY, JSON.stringify(list.slice(-LOCATION_QUEUE_MAX))); } catch (e) { /* voll/gesperrt */ }
+    }
+
+    function postLocation(lat, lng, accuracy, timestamp) {
+        const list = loadLocationQueue();
+        list.push({ lat, lng, accuracy: accuracy ?? null, timestamp: timestamp || Date.now() });
+        saveLocationQueue(list);
+        flushLocations();
+    }
+
+    function flushLocations() {
+        if (locationFlushing) return;
+        const list = loadLocationQueue();
+        if (list.length === 0) return;
+        locationFlushing = true;
+        const point = list[0];
         fetch('/api/team-mobile/location', {
             method: 'POST',
             credentials: 'same-origin',
+            redirect: 'manual',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lat, lng })
+            body: JSON.stringify(point)
         })
             .then(response => {
-                if (!response.ok) {
-                    console.warn('TeamMobile location upload failed', response.status);
-                }
+                // Angekommen oder endgueltig abgelehnt (abgemeldet, Einsatz beendet, ungueltig): aus dem Puffer nehmen
+                const done = response.ok || response.type === 'opaqueredirect' || (response.status >= 400 && response.status < 500);
+                if (!response.ok) console.warn('TeamMobile location upload failed', response.status);
+                return done;
             })
-            .catch(err => {
-                console.warn('TeamMobile location upload error', err);
+            .catch(() => false) // kein Netz: spaeter erneut
+            .then(done => {
+                locationFlushing = false;
+                if (done) {
+                    saveLocationQueue(loadLocationQueue().filter(p => p.timestamp !== point.timestamp || p.lat !== point.lat || p.lng !== point.lng));
+                    flushLocations();
+                } else {
+                    clearTimeout(locationRetryTimer);
+                    locationRetryTimer = setTimeout(flushLocations, 10000);
+                }
             });
     }
+
+    window.addEventListener('online', flushLocations);
+    flushLocations(); // Reste aus einem frueheren Funkloch
 
     return {
         init, renderSearchArea, setDogPosition, setTrack, appendTrackPoint,
