@@ -265,6 +265,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IArchivService, ArchivService>();
         services.AddSingleton<EinsatzAbschlussService>();
         services.AddSingleton<TeamSucheService>();
+        services.AddSingleton<ElOutboxService>();
         services.AddSingleton<IEinsatzMergeService, EinsatzMergeService>();
         services.AddSingleton<IEinsatzExportService, EinsatzExportService>();
         services.AddSingleton<IAuditLogService, AuditLogService>();

@@ -33,6 +33,8 @@
             font-weight: 700;
         }
         .status { font-size: 0.85rem; color: #98a0ad; margin-top: 12px; }
+        button.secondary { display: block; margin: 12px auto 0; background: transparent; border: 1px solid #c9c2b0; color: #f0e9d8; }
+        .hint { font-size: 0.85rem; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -42,8 +44,11 @@
         <p>Funkloch oder VPN aus? Die Daten liegen sicher auf dem Server – sobald die Verbindung zurück ist, geht es
             hier automatisch weiter.</p>
         <button type="button" onclick="location.reload()">Jetzt erneut versuchen</button>
+        <button type="button" class="secondary" onclick="elOutbox.open()">Funk / Notiz erfassen</button>
+        <p class="hint">Einträge bleiben auf diesem Gerät und werden nachgesendet, sobald die Verbindung zurück ist.</p>
         <div class="status" id="status" aria-live="polite">Neuer Versuch in 10 s …</div>
     </main>
+    <script src="/js/el-outbox.js"></script>
     <script>
         // Alle 10 Sekunden pruefen, ob der Server wieder erreichbar ist, und dann neu laden
         var seconds = 10;
@@ -53,9 +58,15 @@
             if (seconds > 0) { status.textContent = 'Neuer Versuch in ' + seconds + ' s …'; return; }
             seconds = 10;
             status.textContent = 'Prüfe Verbindung …';
-            fetch('/health', { cache: 'no-store' }).then(function (r) { if (r.ok) location.reload(); }).catch(function () { });
+            fetch('/health', { cache: 'no-store' }).then(function (r) { if (r.ok) reloadUnlessTyping(); }).catch(function () { });
         }, 1000);
-        window.addEventListener('online', function () { location.reload(); });
+        window.addEventListener('online', reloadUnlessTyping);
+
+        // Nicht neu laden, solange gerade ein Funkspruch/eine Notiz erfasst wird – sonst ginge der Text verloren
+        function reloadUnlessTyping() {
+            if (document.querySelector('dialog[open]')) return;
+            location.reload();
+        }
     </script>
 </body>
 </html>

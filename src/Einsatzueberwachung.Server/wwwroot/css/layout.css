@@ -192,6 +192,17 @@ main {
     display: inline;
 }
 
+/* Funk/Notiz erfassen nur, solange keine Verbindung besteht (nicht beim Neuladen) */
+.eu-reconnect .eu-reconnect-outbox {
+    display: none;
+}
+
+.eu-reconnect.components-reconnect-show .eu-reconnect-outbox,
+.eu-reconnect.components-reconnect-retrying .eu-reconnect-outbox,
+.eu-reconnect.components-reconnect-failed .eu-reconnect-outbox {
+    display: inline-block;
+}
+
 .eu-reconnect button {
     margin-left: 8px;
     min-height: 32px;

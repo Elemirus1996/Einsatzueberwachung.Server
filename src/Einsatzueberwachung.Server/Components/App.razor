@@ -178,6 +178,11 @@
         <span class="eu-reconnect-show"><i class="bi bi-wifi-off"></i> Verbindung unterbrochen – wird wiederhergestellt …</span>
         <span class="eu-reconnect-failed"><i class="bi bi-wifi-off"></i> Keine Verbindung – neuer Versuch läuft
             <button type="button" onclick="Blazor.reconnect()">Jetzt versuchen</button></span>
+        @if (IsPwa)
+        {
+            @* Funkloch: Funk/Notiz auf dem Geraet erfassen, wird automatisch nachgesendet (js/el-outbox.js) *@
+            <button type="button" class="eu-reconnect-outbox" onclick="elOutbox.open()">Funk / Notiz erfassen</button>
+        }
         <span class="eu-reconnect-rejected"><i class="bi bi-arrow-clockwise"></i> Sitzung abgelaufen – Seite wird neu geladen …</span>
     </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -189,6 +194,10 @@
     <script src="@Assets["leaflet-interop.js"]"></script>
     <script src="_framework/blazor.web.js" autostart="false"></script>
     <script src="@Assets["js/app-start.js"]"></script>
+    @if (IsPwa)
+    {
+        <script src="@Assets["js/el-outbox.js"]"></script>
+    }
     <script src="@Assets["js/einsatz-map.js"]"></script>
     <script src="@Assets["js/keyboard-shortcuts.js"]"></script>
     <script src="@Assets["js/clock.js"]"></script>

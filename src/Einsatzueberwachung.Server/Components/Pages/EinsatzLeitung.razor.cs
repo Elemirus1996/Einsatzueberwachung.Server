@@ -169,6 +169,7 @@ public partial class EinsatzLeitung : IDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        await SyncOutboxTeamsAsync();
         if (!firstRender) return;
         try
         {
@@ -245,6 +246,20 @@ public partial class EinsatzLeitung : IDisposable
             if (diff.TotalMinutes < 1) return $"Gespeichert vor {(int)diff.TotalSeconds}s";
             return $"Gespeichert {_lastAutoSavedAt.Value:HH:mm}";
         }
+    }
+
+    // ── Funkloch-Puffer: Teamnamen fuer die Empfaengerliste des Offline-Dialogs (js/el-outbox.js) ──
+    private string _outboxTeamsKey = string.Empty;
+
+    private async Task SyncOutboxTeamsAsync()
+    {
+        var names = EinsatzService.Teams.Select(t => t.TeamName).Where(n => !string.IsNullOrWhiteSpace(n)).OrderBy(n => n).ToArray();
+        var key = string.Join('\n', names);
+        if (key == _outboxTeamsKey) return;
+        _outboxTeamsKey = key;
+        try { await JS.InvokeVoidAsync("elOutbox.setTeams", (object)names); }
+        catch (JSException) { /* Skript (noch) nicht geladen */ }
+        catch (JSDisconnectedException) { }
     }
 
     // ── EL-Notizen ───────────────────────────────────────────────
