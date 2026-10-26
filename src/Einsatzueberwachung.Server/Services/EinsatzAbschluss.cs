@@ -97,8 +97,16 @@ public sealed class EinsatzAbschlussService
         }
     }
 
-    public static DateTime ResolveEndTime(TimeOnly? endzeit, DateTime now) =>
-        endzeit.HasValue ? now.Date.Add(endzeit.Value.ToTimeSpan()) : now;
+    /// <summary>
+    /// Gewaehlte Uhrzeit als Einsatzende. Liegt sie nach der aktuellen Uhrzeit, war sie gestern (Abschluss kurz nach
+    /// Mitternacht, Ende z. B. 23:50) – ein Ende in der Zukunft gibt es nicht.
+    /// </summary>
+    public static DateTime ResolveEndTime(TimeOnly? endzeit, DateTime now)
+    {
+        if (!endzeit.HasValue) return now;
+        var ende = now.Date.Add(endzeit.Value.ToTimeSpan());
+        return ende > now ? ende.AddDays(-1) : ende;
+    }
 
     /// <summary>Personal und Hunde, die in Teams eingeteilt sind, fuer die Vor-Ort-Liste vorauswaehlen.</summary>
     public static (HashSet<string> PersonalIds, HashSet<string> HundeIds) PreselectVorOrt(

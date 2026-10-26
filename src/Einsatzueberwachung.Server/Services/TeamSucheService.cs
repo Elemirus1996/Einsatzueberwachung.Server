@@ -49,6 +49,49 @@ public sealed class TeamSucheService
         await _einsatzService.StartTeamTimerAsync(teamId);
     }
 
+    /// <summary>
+    /// Hundeteam startet eine neue Suche ohne Halsband, obwohl freie Halsbaender da sind – dann nachfragen, sonst
+    /// laeuft die Suche ohne Track (Stopp gibt das Halsband frei).
+    /// </summary>
+    public bool NeedsCollarChoice(string teamId)
+    {
+        var team = _einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
+        return team is { IsManuallyPaused: false, IsDroneTeam: false, IsSupportTeam: false }
+            && string.IsNullOrEmpty(team.CollarId)
+            && _collarTrackingService.GetAvailableCollars().Count > 0;
+    }
+
+    /// <summary>Freie Halsbaender, das zuletzt von diesem Team benutzte zuerst.</summary>
+    public IReadOnlyList<Collar> CollarOptions(string teamId) =>
+        OrderCollarOptions(_collarTrackingService.GetAvailableCollars(), _einsatzService.CurrentEinsatz.TrackSnapshots ?? [], teamId);
+
+    public static IReadOnlyList<Collar> OrderCollarOptions(IEnumerable<Collar> available, IEnumerable<TeamTrackSnapshot> snapshots, string teamId)
+    {
+        var lastUsed = LastCollarId(snapshots, teamId);
+        return available
+            .OrderByDescending(c => c.Id == lastUsed)
+            .ThenBy(c => c.CollarName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public static string? LastCollarId(IEnumerable<TeamTrackSnapshot> snapshots, string teamId) =>
+        snapshots
+            .Where(s => s.TeamId == teamId && s.TrackType == TrackType.CollarTrack && !string.IsNullOrEmpty(s.CollarId))
+            .OrderByDescending(s => s.CapturedAt)
+            .Select(s => s.CollarId)
+            .FirstOrDefault();
+
+    /// <summary>Halsband zuweisen (falls gewaehlt) und die Suche starten.</summary>
+    public async Task StartWithCollarAsync(string teamId, string? collarId)
+    {
+        if (!string.IsNullOrEmpty(collarId))
+        {
+            await _collarTrackingService.AssignCollarToTeamAsync(collarId, teamId);
+        }
+
+        await StartAsync(teamId);
+    }
+
     public async Task StopAsync(string teamId)
     {
         var team = _einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);

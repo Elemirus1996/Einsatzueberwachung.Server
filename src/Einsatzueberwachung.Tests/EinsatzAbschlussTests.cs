@@ -27,6 +27,53 @@ public class EinsatzAbschlussTests
     }
 
     [Fact]
+    public void ResolveEndTime_KurzNachMitternachtGewaehltesEndeVonGestern()
+    {
+        var kurzNachMitternacht = new DateTime(2026, 10, 27, 0, 20, 0);
+
+        Assert.Equal(new DateTime(2026, 10, 26, 23, 50, 0), EinsatzAbschlussService.ResolveEndTime(new TimeOnly(23, 50), kurzNachMitternacht));
+        Assert.Equal(new DateTime(2026, 10, 27, 0, 10, 0), EinsatzAbschlussService.ResolveEndTime(new TimeOnly(0, 10), kurzNachMitternacht));
+    }
+
+    [Fact]
+    public void CollarOptions_ZuletztBenutztesHalsbandZuerst()
+    {
+        var frei = new[] { new Collar("C-1", "Alpha"), new Collar("C-2", "Bravo"), new Collar("C-3", "Charlie") };
+        var tracks = new[]
+        {
+            new TeamTrackSnapshot { TeamId = "t1", CollarId = "C-1", TrackType = TrackType.CollarTrack, CapturedAt = Jetzt.AddHours(-2) },
+            new TeamTrackSnapshot { TeamId = "t1", CollarId = "C-3", TrackType = TrackType.CollarTrack, CapturedAt = Jetzt.AddHours(-1) },
+            new TeamTrackSnapshot { TeamId = "t2", CollarId = "C-2", TrackType = TrackType.CollarTrack, CapturedAt = Jetzt }
+        };
+
+        Assert.Equal("C-3", TeamSucheService.LastCollarId(tracks, "t1"));
+        Assert.Equal(["C-3", "C-1", "C-2"], TeamSucheService.OrderCollarOptions(frei, tracks, "t1").Select(c => c.Id));
+        Assert.Null(TeamSucheService.LastCollarId(tracks, "t-ohne"));
+    }
+
+    [Fact]
+    public async Task TeamSuche_NachStoppFragtNeueSucheNachHalsband()
+    {
+        var einsatz = new EinsatzService();
+        var collars = new CollarTrackingService(einsatz);
+        var suche = new TeamSucheService(einsatz, collars, new FesteZeit(Jetzt));
+        var team = await einsatz.AddTeamAsync(new Team { TeamName = "Rex" });
+        await collars.AssignCollarToTeamAsync("C-1", team.TeamId);
+
+        Assert.False(suche.NeedsCollarChoice(team.TeamId)); // Halsband zugewiesen
+        await suche.StartAsync(team.TeamId);
+        await collars.ReceiveLocationAsync("C-1", "Halsband 1", 49.0, 8.0);
+        await suche.StopAsync(team.TeamId);
+
+        Assert.True(suche.NeedsCollarChoice(team.TeamId)); // Stopp hat das Halsband freigegeben
+        Assert.Equal("C-1", suche.CollarOptions(team.TeamId)[0].Id);
+
+        await suche.StartWithCollarAsync(team.TeamId, "C-1");
+        Assert.Equal("C-1", team.CollarId);
+        Assert.True(team.IsRunning);
+    }
+
+    [Fact]
     public void PreselectVorOrt_WaehltEingeteiltePersonenUndHunde()
     {
         var personal = new List<PersonalEntry>
