@@ -1,0 +1,142 @@
+@page "/el/beenden"
+@layout Layout.ElLayout
+@rendermode InteractiveServer
+@using Einsatzueberwachung.Server.Services
+
+<PageTitle>Einsatz beenden</PageTitle>
+
+<div class="els">
+    <header class="els-header">
+        <a href="/el" class="els-back" aria-label="Zurück zur Einsatzleitung">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        <h1 class="els-title">Einsatz beenden</h1>
+        <span class="els-clock">@_now.ToString("HH:mm")</span>
+    </header>
+
+    <main class="els-body">
+        @if (_ergebnis is not null)
+        {
+            <section class="els-card" role="status">
+                <p class="els-hint is-ok"><i class="bi bi-check-circle-fill"></i> Einsatz abgeschlossen und archiviert
+                    @(string.IsNullOrWhiteSpace(_ergebnis.Archiviert.EinsatzNummer) ? "" : $"als {_ergebnis.Archiviert.EinsatzNummer}").</p>
+                @if (_ergebnis.Pdf.Success)
+                {
+                    <p class="els-hint">Der Bericht (PDF) liegt auf dem Server und steht im Archiv bereit.</p>
+                }
+                else
+                {
+                    <p class="els-hint is-error">PDF konnte nicht erzeugt werden: @_ergebnis.Pdf.ErrorMessage – im Archiv erneut erzeugen.</p>
+                }
+                <a href="/el" class="els-btn els-btn-primary els-btn-block">Zur Einsatzleitung</a>
+            </section>
+        }
+        else if (!_einsatzAktiv)
+        {
+            <section class="els-card">
+                <p class="els-hint">Es läuft kein Einsatz.</p>
+                <a href="/el" class="els-btn els-btn-primary els-btn-block">Zur Einsatzleitung</a>
+            </section>
+        }
+        else
+        {
+            @if (_laufendeTeams > 0)
+            {
+                <p class="els-warn" role="note">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    @(_laufendeTeams == 1 ? "1 Team ist" : $"{_laufendeTeams} Teams sind") noch im Einsatz – die Uhren werden beim Beenden gestoppt.
+                </p>
+            }
+
+            <section class="els-section">
+                <h2 class="els-label">Ergebnis <span class="els-required">Pflicht</span></h2>
+                <div class="els-choices @(_ergebnisFehlt ? "is-missing" : "")" role="radiogroup" aria-label="Ergebnis">
+                    @foreach (var option in EinsatzAbschlussService.ErgebnisOptionen)
+                    {
+                        var selected = _ergebnisWahl == option;
+                        <button type="button" role="radio" aria-checked="@selected.ToString().ToLowerInvariant()"
+                                class="els-choice @(selected ? "is-selected" : "")"
+                                @onclick="() => SelectErgebnis(option)">
+                            @ErgebnisText(option)
+                        </button>
+                    }
+                </div>
+            </section>
+
+            <section class="els-section">
+                <label class="els-label" for="elb-ende">Ende</label>
+                <input id="elb-ende" class="els-input" type="time" @bind="_endzeit" />
+            </section>
+
+            <section class="els-section">
+                <label class="els-label" for="elb-bem">Bemerkungen</label>
+                <textarea id="elb-bem" class="els-input els-textarea" rows="3" @bind="_bemerkungen"
+                          placeholder="Zusatzinformationen zum Abschluss…"></textarea>
+            </section>
+
+            <section class="els-section">
+                <h2 class="els-label">Vor Ort</h2>
+                <details class="els-more">
+                    <summary>Personal (@_personalIds.Count)</summary>
+                    <div class="els-more-body">
+                        @if (!ActivePersonnel.Any())
+                        {
+                            <p class="els-hint">Kein aktives Personal in den Stammdaten.</p>
+                        }
+                        @foreach (var person in ActivePersonnel)
+                        {
+                            <label class="els-check">
+                                <input type="checkbox" checked="@_personalIds.Contains(person.Id)"
+                                       @onchange="e => Toggle(_personalIds, person.Id, e)" />
+                                <span>@person.FullName</span>
+                            </label>
+                        }
+                    </div>
+                </details>
+                <details class="els-more">
+                    <summary>Hunde (@_hundeIds.Count)</summary>
+                    <div class="els-more-body">
+                        @if (!ActiveDogs.Any())
+                        {
+                            <p class="els-hint">Keine aktiven Hunde in den Stammdaten.</p>
+                        }
+                        @foreach (var dog in ActiveDogs)
+                        {
+                            <label class="els-check">
+                                <input type="checkbox" checked="@_hundeIds.Contains(dog.Id)"
+                                       @onchange="e => Toggle(_hundeIds, dog.Id, e)" />
+                                <span>@dog.Name</span>
+                            </label>
+                        }
+                    </div>
+                </details>
+                <p class="els-hint">Vorausgewählt: alle, die in Teams eingeteilt sind.</p>
+            </section>
+
+            <section class="els-section">
+                <label class="els-check">
+                    <input type="checkbox" @bind="_tracksImPdf" disabled="@(_trackCount == 0)" />
+                    <span>GPS-Tracks in den Bericht übernehmen
+                        <small>(@(_trackCount == 0 ? "keine Tracks vorhanden" : $"{_trackCount} Track(s)"))</small></span>
+                </label>
+                <label class="els-check @(_pruefungFehlt ? "is-missing" : "")">
+                    <input type="checkbox" @bind="_ressourcenGeprueft" />
+                    <span>Alle Teams sind zurück, Personal und Hunde sind geprüft.</span>
+                </label>
+            </section>
+        }
+    </main>
+
+    @if (_einsatzAktiv && _ergebnis is null)
+    {
+        <footer class="els-footer">
+            @if (!string.IsNullOrEmpty(_status))
+            {
+                <p class="els-status is-error" role="alert">@_status</p>
+            }
+            <button type="button" class="els-btn els-btn-start" disabled="@_busy" @onclick="BeendenAsync">
+                <i class="bi bi-stop-circle-fill"></i> @(_busy ? "Wird abgeschlossen…" : "Einsatz beenden")
+            </button>
+        </footer>
+    }
+</div>

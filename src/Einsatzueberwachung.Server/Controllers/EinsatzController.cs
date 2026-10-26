@@ -1,6 +1,7 @@
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Server.Models;
+using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Einsatzueberwachung.Server.Controllers;
@@ -12,11 +13,13 @@ public class EinsatzController : ControllerBase
 {
     private readonly IEinsatzService _einsatzService;
     private readonly ITimeService _timeService;
+    private readonly TeamSucheService _teamSuche;
 
-    public EinsatzController(IEinsatzService einsatzService, ITimeService timeService)
+    public EinsatzController(IEinsatzService einsatzService, ITimeService timeService, TeamSucheService teamSuche)
     {
         _einsatzService = einsatzService;
         _timeService = timeService;
+        _teamSuche = teamSuche;
     }
 
     [HttpGet("current")]
@@ -100,7 +103,7 @@ public class EinsatzController : ControllerBase
     {
         try
         {
-            await _einsatzService.StartTeamTimerAsync(teamId);
+            await _teamSuche.StartAsync(teamId);
             return Ok(new { message = "Timer gestartet", teamId });
         }
         catch (InvalidOperationException ex)
@@ -113,7 +116,7 @@ public class EinsatzController : ControllerBase
     [HttpPost("teams/{teamId}/stop")]
     public async Task<IActionResult> StopTeamTimer(string teamId)
     {
-        await _einsatzService.StopTeamTimerAsync(teamId);
+        await _teamSuche.StopAsync(teamId);
         return Ok(new { message = "Timer gestoppt", teamId });
     }
 

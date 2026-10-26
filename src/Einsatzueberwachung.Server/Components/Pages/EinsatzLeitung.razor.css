@@ -2448,3 +2448,16 @@
 @media (min-width: 900px) and (orientation: landscape) {
     .el-tabbar { display: flex !important; }
 }
+
+/* ── Einsatz beenden (Einstieg zu /el/beenden) ─────────────────── */
+.el-abschluss {
+    margin-top: var(--s4, 24px);
+}
+
+.el-abschluss-btn {
+    width: 100%;
+    min-height: 48px;
+    text-decoration: none;
+    color: var(--belastung-2, #a72920);
+    border-color: color-mix(in srgb, var(--belastung-2, #a72920) 50%, transparent);
+}

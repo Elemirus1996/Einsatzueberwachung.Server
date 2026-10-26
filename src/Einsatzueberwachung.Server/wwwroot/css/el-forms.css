@@ -1,6 +1,7 @@
 /* ════════════════════════════════════════════════════════════════
-   EL-Startseite – gleiche Sprache wie der Funktisch (/el), aber fuer den Daumen:
-   grosse Flaechen (≥ 48 px), eine Spalte, Start-Knopf immer unten erreichbar.
+   Formularseiten der EL-Ansicht (/el/start, /el/beenden) – gleiche Sprache wie der Funktisch (/el),
+   aber fuer den Daumen: grosse Flaechen (≥ 48 px), eine Spalte, Hauptknopf immer unten erreichbar.
+   Global statt komponentengebunden, damit beide Seiten dieselben Klassen nutzen (Praefix els-).
    ════════════════════════════════════════════════════════════════ */
 
 .els {
@@ -322,6 +323,76 @@
     text-transform: uppercase;
 }
 
+/* ── Einsatz beenden (/el/beenden) ─────────────────────────────── */
+
+.els-choices {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.els-choice {
+    min-height: 52px;
+    padding: 10px 12px;
+    border: 2px solid var(--funk-bezel);
+    border-radius: 6px;
+    background: var(--funk-platte);
+    color: var(--funk-inschrift);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+}
+
+.els-choice.is-selected {
+    border-color: var(--funk-anthrazit);
+    background: var(--funk-anthrazit);
+    color: var(--funk-on-anthrazit);
+}
+
+.els-choices.is-missing .els-choice,
+.els-check.is-missing {
+    border-color: var(--belastung-2);
+}
+
+.els-check {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 8px 12px;
+    border: 1px solid var(--funk-bezel);
+    border-radius: 6px;
+    background: var(--funk-platte);
+    font: 15px/1.3 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.els-check input {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    accent-color: var(--funk-aktion);
+}
+
+.els-check small {
+    color: var(--funk-vermerk);
+}
+
+.els-warn {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-left: 4px solid var(--belastung-2);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--belastung-2) 12%, var(--funk-platte));
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.els-section > .els-more + .els-more {
+    margin-top: 0;
+}
+
 @media (min-width: 768px) {
     /* Tablet: Inhalt mittig begrenzen, Szenarien nebeneinander */
     .els-body,
@@ -332,5 +403,9 @@
 
     .els-tiles {
         grid-template-columns: repeat(4, 1fr);
+    }
+
+    .els-choices {
+        grid-template-columns: 1fr 1fr;
     }
 }

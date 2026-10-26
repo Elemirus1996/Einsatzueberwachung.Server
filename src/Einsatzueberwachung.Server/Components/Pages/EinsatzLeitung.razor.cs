@@ -1,3 +1,4 @@
+using Einsatzueberwachung.Server.Services;
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
@@ -15,6 +16,7 @@ public partial class EinsatzLeitung : IDisposable
     [Inject] private IWeatherService Weather { get; set; } = default!;
     [Inject] private IRadioService Radio { get; set; } = default!;
     [Inject] private IMasterDataService MasterDataService { get; set; } = default!;
+    [Inject] private TeamSucheService TeamSuche { get; set; } = default!;
 
     private string _activeTab = "uebersicht";
     private string _noteFilter = "alle";
@@ -274,7 +276,7 @@ public partial class EinsatzLeitung : IDisposable
     {
         if (_busyTeamId is not null) return;
         _busyTeamId = teamId;
-        try { await EinsatzService.StartTeamTimerAsync(teamId); }
+        try { await TeamSuche.StartAsync(teamId); }
         finally { _busyTeamId = null; }
     }
 
@@ -290,7 +292,7 @@ public partial class EinsatzLeitung : IDisposable
     {
         if (_busyTeamId is not null) return;
         _busyTeamId = teamId;
-        try { await EinsatzService.StopTeamTimerAsync(teamId); }
+        try { await TeamSuche.StopAsync(teamId); }
         finally { _busyTeamId = null; }
     }
 

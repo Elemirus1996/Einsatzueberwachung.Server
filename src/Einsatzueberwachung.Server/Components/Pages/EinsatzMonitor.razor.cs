@@ -16,8 +16,8 @@ public partial class EinsatzMonitor
     [Inject] IEinsatzService EinsatzService { get; set; } = default!;
     [Inject] IMasterDataService MasterDataService { get; set; } = default!;
     [Inject] IWeatherService WeatherService { get; set; } = default!;
-    [Inject] IArchivService ArchivService { get; set; } = default!;
-    [Inject] IPdfExportService PdfExportService { get; set; } = default!;
+    [Inject] EinsatzAbschlussService EinsatzAbschluss { get; set; } = default!;
+    [Inject] TeamSucheService TeamSuche { get; set; } = default!;
     [Inject] ISettingsService SettingsService { get; set; } = default!;
     [Inject] ITimeService TimeService { get; set; } = default!;
     [Inject] ICollarTrackingService CollarTrackingService { get; set; } = default!;
@@ -85,16 +85,7 @@ public partial class EinsatzMonitor
     private readonly HashSet<string> _selectedPersonnelIds = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _selectedDogIds = new(StringComparer.OrdinalIgnoreCase);
 
-    private static readonly string[] _closeMissionResultOptions =
-    {
-        "Person gefunden - lebend",
-        "Person gefunden - verstorben",
-        "Person anderweitig gefunden",
-        "Abbruch - Wetter",
-        "Abbruch - Dunkelheit",
-        "Suche erfolglos abgeschlossen",
-        "Uebung abgeschlossen"
-    };
+    private static IReadOnlyList<string> _closeMissionResultOptions => EinsatzAbschlussService.ErgebnisOptionen;
 
     private List<string> _quickNoteTemplates = new();
 
@@ -936,52 +927,16 @@ public partial class EinsatzMonitor
 
     private void PreselectVorOrtChecklists()
     {
-        var personnelByName = ActivePersonnel
-            .Where(person => !string.IsNullOrWhiteSpace(person.FullName))
-            .ToDictionary(person => person.FullName.Trim(), person => person.Id, StringComparer.OrdinalIgnoreCase);
-
-        var dogsByName = ActiveDogs
-            .Where(dog => !string.IsNullOrWhiteSpace(dog.Name))
-            .ToDictionary(dog => dog.Name.Trim(), dog => dog.Id, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var team in EinsatzService.Teams)
-        {
-            if (!string.IsNullOrWhiteSpace(team.HundefuehrerName)
-                && personnelByName.TryGetValue(team.HundefuehrerName.Trim(), out var fuehrerId))
-            {
-                _selectedPersonnelIds.Add(fuehrerId);
-            }
-
-            foreach (var helferName in team.HelferNames)
-            {
-                if (!string.IsNullOrWhiteSpace(helferName)
-                    && personnelByName.TryGetValue(helferName.Trim(), out var helferId))
-                {
-                    _selectedPersonnelIds.Add(helferId);
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(team.DogName)
-                && dogsByName.TryGetValue(team.DogName.Trim(), out var dogId))
-            {
-                _selectedDogIds.Add(dogId);
-            }
-        }
+        var (personalIds, hundeIds) = EinsatzAbschlussService.PreselectVorOrt(EinsatzService.Teams, ActivePersonnel, ActiveDogs);
+        _selectedPersonnelIds.UnionWith(personalIds);
+        _selectedDogIds.UnionWith(hundeIds);
     }
 
     private async Task ConfirmCloseMissionAsync()
     {
-        _closeMissionModalError = string.Empty;
-
-        if (string.IsNullOrWhiteSpace(_closeMissionResult))
+        _closeMissionModalError = EinsatzAbschlussService.Validate(_closeMissionResult, _closeMissionChecklistConfirmed) ?? string.Empty;
+        if (_closeMissionModalError.Length > 0)
         {
-            _closeMissionModalError = "Bitte ein Ergebnis auswaehlen.";
-            return;
-        }
-
-        if (!_closeMissionChecklistConfirmed)
-        {
-            _closeMissionModalError = "Bitte die Pruefung der Ressourcen bestaetigen.";
             return;
         }
 
@@ -989,21 +944,15 @@ public partial class EinsatzMonitor
 
         try
         {
-            await EinsatzService.EndEinsatzAsync();
-
-            var snapshot = BuildArchiveSnapshot();
-            snapshot.EinsatzEnde = ResolveSelectedEndTime();
-
-            var archived = await ArchivService.ArchiveEinsatzAsync(
-                snapshot,
+            var (archived, pdfExport) = await EinsatzAbschluss.AbschliessenAsync(new EinsatzAbschlussAnfrage(
+                EinsatzService.CurrentEinsatz.EinsatzDatum,
                 _closeMissionResult,
-                _closeMissionRemarks.Trim(),
+                _closeMissionRemarks,
+                _closeMissionEndTime,
+                _closeMissionIncludeTracks,
                 SelectedPersonnelNames,
-                SelectedDogNames);
+                SelectedDogNames));
 
-            var pdfExport = await PdfExportService.ExportArchivedEinsatzToPdfAsync(archived, _closeMissionIncludeTracks);
-
-            EinsatzService.ResetEinsatz();
             _showCloseMissionModal = false;
 
             _closeMissionStatusIsError = !pdfExport.Success;
@@ -1025,47 +974,6 @@ public partial class EinsatzMonitor
         }
     }
 
-    private DateTime ResolveSelectedEndTime()
-    {
-        if (_closeMissionEndTime.HasValue)
-        {
-            var baseDate = TimeService.Now.Date;
-            return baseDate.Add(_closeMissionEndTime.Value.ToTimeSpan());
-        }
-
-        return TimeService.Now;
-    }
-
-    private EinsatzData BuildArchiveSnapshot()
-    {
-        var current = EinsatzService.CurrentEinsatz;
-        return new EinsatzData
-        {
-            Einsatzleiter = current.Einsatzleiter,
-            Fuehrungsassistent = current.Fuehrungsassistent,
-            Alarmiert = current.Alarmiert,
-            Einsatzort = current.Einsatzort,
-            MapAddress = current.MapAddress,
-            ExportPfad = current.ExportPfad,
-            IstEinsatz = current.IstEinsatz,
-            AnzahlTeams = EinsatzService.Teams.Count,
-            EinsatzDatum = current.EinsatzDatum,
-            EinsatzEnde = current.EinsatzEnde,
-            EinsatzNummer = current.EinsatzNummer,
-            StaffelName = current.StaffelName,
-            StaffelAdresse = current.StaffelAdresse,
-            StaffelTelefon = current.StaffelTelefon,
-            StaffelEmail = current.StaffelEmail,
-            StaffelLogoPfad = current.StaffelLogoPfad,
-            AlarmierungsZeit = current.AlarmierungsZeit,
-            ElwPosition = current.ElwPosition,
-            Teams = EinsatzService.Teams.ToList(),
-            SearchAreas = current.SearchAreas.ToList(),
-            GlobalNotesEntries = EinsatzService.GlobalNotes.ToList(),
-            TrackSnapshots = current.TrackSnapshots.ToList()
-        };
-    }
-
     private async Task StartTeamAsync(string teamId)
     {
         var team = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
@@ -1083,15 +991,9 @@ public partial class EinsatzMonitor
             return;
         }
 
-        // Bei Suchstart: Halsband-History löschen für frischen Track
-        if (!resumingFromManualPause && team != null && !string.IsNullOrEmpty(team.CollarId))
-        {
-            CollarTrackingService.ClearCollarHistory(team.CollarId);
-        }
-
         try
         {
-            await EinsatzService.StartTeamTimerAsync(teamId);
+            await TeamSuche.StartAsync(teamId);
         }
         catch (InvalidOperationException ex)
         {
@@ -1107,117 +1009,7 @@ public partial class EinsatzMonitor
 
     private async Task StopTeamAsync(string teamId)
     {
-        var team = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
-        TeamTrackSnapshot? collarSnapshot = null;
-        TeamTrackSnapshot? humanSnapshot = null;
-
-        if (team?.CollarId != null)
-        {
-            var history = CollarTrackingService.GetLocationHistory(team.CollarId);
-            if (history.Count > 0)
-            {
-                var searchArea = EinsatzService.CurrentEinsatz.SearchAreas
-                    .FirstOrDefault(a => a.Id == team.SearchAreaId);
-                var color = searchArea?.Color ?? "#FF4444";
-
-                collarSnapshot = new TeamTrackSnapshot
-                {
-                    CollarId = team.CollarId,
-                    CollarName = team.CollarName ?? team.CollarId,
-                    TeamId = team.TeamId,
-                    TeamName = team.TeamName,
-                    SearchAreaName = team.SearchAreaName,
-                    Color = color,
-                    CapturedAt = DateTime.Now,
-                    TrackType = TrackType.CollarTrack,
-                    Points = history.Select(loc => new TrackPoint
-                    {
-                        Latitude = loc.Latitude,
-                        Longitude = loc.Longitude,
-                        Timestamp = loc.Timestamp
-                    }).ToList()
-                };
-            }
-        }
-
-        // Mensch-Laufweg (HumanTrack) aus Telefon-GPS aufzeichnen
-        if (team != null)
-        {
-            var phoneHistory = EinsatzService.GetPhoneTrackHistory(team.TeamId);
-            if (phoneHistory.Count >= 2)
-            {
-                var searchArea = EinsatzService.CurrentEinsatz.SearchAreas
-                    .FirstOrDefault(a => a.Id == team.SearchAreaId);
-                var humanColor = searchArea?.Color ?? "#1976D2";
-
-                humanSnapshot = new TeamTrackSnapshot
-                {
-                    CollarId = string.Empty,
-                    // CollarName wird hier als generischer Anzeigename im Snapshot verwendet —
-                    // für HumanTrack-Einträge enthält dieses Feld den Hundeführer-Namen (oder Team-Namen).
-                    CollarName = string.IsNullOrWhiteSpace(team.HundefuehrerName) ? team.TeamName : team.HundefuehrerName,
-                    TeamId = team.TeamId,
-                    TeamName = team.TeamName,
-                    SearchAreaName = team.SearchAreaName,
-                    Color = humanColor,
-                    CapturedAt = DateTime.Now,
-                    TrackType = Einsatzueberwachung.Domain.Models.Enums.TrackType.HumanTrack,
-                    Points = phoneHistory.Select(loc => new TrackPoint
-                    {
-                        Latitude = loc.Latitude,
-                        Longitude = loc.Longitude,
-                        Timestamp = loc.Timestamp
-                    }).ToList()
-                };
-            }
-        }
-
-        // Collar- und Human-Track derselben Team-Suche in eine gemeinsame Episode gruppieren.
-        if (team != null && (collarSnapshot != null || humanSnapshot != null))
-        {
-            var starts = new List<DateTime>();
-            var ends = new List<DateTime>();
-
-            if (collarSnapshot != null)
-            {
-                starts.Add(collarSnapshot.Points.Count > 0 ? collarSnapshot.Points[0].Timestamp : collarSnapshot.CapturedAt);
-                ends.Add(collarSnapshot.Points.Count > 0 ? collarSnapshot.Points[^1].Timestamp : collarSnapshot.CapturedAt);
-            }
-
-            if (humanSnapshot != null)
-            {
-                starts.Add(humanSnapshot.Points.Count > 0 ? humanSnapshot.Points[0].Timestamp : humanSnapshot.CapturedAt);
-                ends.Add(humanSnapshot.Points.Count > 0 ? humanSnapshot.Points[^1].Timestamp : humanSnapshot.CapturedAt);
-            }
-
-            var search = await EinsatzService.CreateCompletedSearchAsync(
-                team.TeamId,
-                starts.Min(),
-                ends.Max(),
-                team.SearchAreaId);
-
-            if (collarSnapshot != null)
-            {
-                await EinsatzService.AddTrackToCompletedSearchAsync(search.Id, collarSnapshot);
-
-                // Live-Track von der Karte entfernen — der Snapshot-Track ersetzt ihn
-                CollarTrackingService.ClearCollarHistory(collarSnapshot.CollarId);
-            }
-
-            if (humanSnapshot != null)
-            {
-                await EinsatzService.AddTrackToCompletedSearchAsync(search.Id, humanSnapshot);
-                EinsatzService.ClearPhoneTrackHistory(team.TeamId);
-            }
-        }
-
-        // Halsband nach dem Stopp automatisch freigeben (übergabe an nächstes Team möglich)
-        if (team?.CollarId != null)
-        {
-            await CollarTrackingService.UnassignCollarAsync(team.CollarId);
-        }
-
-        await EinsatzService.StopTeamTimerAsync(teamId);
+        await TeamSuche.StopAsync(teamId);
     }
 
     private async Task ResetTeamAsync(string teamId)

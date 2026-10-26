@@ -263,6 +263,8 @@ internal static class ServiceCollectionExtensions
             sp.GetRequiredService<IStaticMapRenderer>()));
         services.AddSingleton<IExcelExportService, ExcelExportService>();
         services.AddSingleton<IArchivService, ArchivService>();
+        services.AddSingleton<EinsatzAbschlussService>();
+        services.AddSingleton<TeamSucheService>();
         services.AddSingleton<IEinsatzMergeService, EinsatzMergeService>();
         services.AddSingleton<IEinsatzExportService, EinsatzExportService>();
         services.AddSingleton<IAuditLogService, AuditLogService>();
