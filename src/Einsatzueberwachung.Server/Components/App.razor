@@ -5,11 +5,22 @@
 @inject Einsatzueberwachung.Server.Security.PublicAccess PublicAccess
 
 <!DOCTYPE html>
-<html lang="de" data-bs-theme="light">
+<html lang="de" data-bs-theme="light" data-pwa="@(IsPwa ? "1" : "0")">
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    @if (IsPwa)
+    {
+        @* Als App installierbar (Startseite /el); nicht im oeffentlichen Team-Zugang *@
+        <link rel="manifest" href="manifest.webmanifest" />
+        <meta name="theme-color" content="#14181f" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Einsatzleitung" />
+        <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    }
     <base href="/" />
     <script>
         (function () {
@@ -161,6 +172,13 @@
     <CascadingAuthenticationState>
         <Routes PublicOnly="@PublicAccess.IsPublicRequest(HttpContext)" />
     </CascadingAuthenticationState>
+    @* Hinweis bei Verbindungsabbruch (z. B. Funkloch) statt des blockierenden Standard-Dialogs *@
+    <div id="components-reconnect-modal" class="eu-reconnect" role="status" aria-live="polite">
+        <span class="eu-reconnect-show"><i class="bi bi-wifi-off"></i> Verbindung unterbrochen – wird wiederhergestellt …</span>
+        <span class="eu-reconnect-failed"><i class="bi bi-wifi-off"></i> Keine Verbindung – neuer Versuch läuft
+            <button type="button" onclick="Blazor.reconnect()">Jetzt versuchen</button></span>
+        <span class="eu-reconnect-rejected"><i class="bi bi-arrow-clockwise"></i> Sitzung abgelaufen – Seite wird neu geladen …</span>
+    </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
@@ -168,7 +186,8 @@
     <script src="@Assets["js/leaflet-grid.js"]"></script>
     <script src="@Assets["js/leaflet-grid-control.js"]"></script>
     <script src="@Assets["leaflet-interop.js"]"></script>
-    <script src="_framework/blazor.web.js"></script>
+    <script src="_framework/blazor.web.js" autostart="false"></script>
+    <script src="@Assets["js/app-start.js"]"></script>
     <script src="@Assets["js/einsatz-map.js"]"></script>
     <script src="@Assets["js/keyboard-shortcuts.js"]"></script>
     <script src="@Assets["js/clock.js"]"></script>
@@ -187,6 +206,9 @@
 
 @code {
     [CascadingParameter] private HttpContext? HttpContext { get; set; }
+
+    // App-Funktionen (Manifest, Service Worker) nur fuer die Einsatzleitung, nicht im oeffentlichen Team-Zugang
+    private bool IsPwa => !PublicAccess.IsPublicRequest(HttpContext);
 
     private string _serverThemeModeJson = "\"Manual\"";
     private bool _serverThemeDark;

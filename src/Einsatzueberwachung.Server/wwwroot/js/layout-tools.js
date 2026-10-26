@@ -40,6 +40,29 @@ window.layoutTools.getSidebarCollapsed = function () {
     return value === "1" || value === "true";
 };
 
+// Bildschirm anlassen (Screen Wake Lock), solange in der EL-Ansicht ein Einsatz laeuft. Der Browser gibt die Sperre
+// beim Wechsel in den Hintergrund frei – beim Zurueckkehren wird sie neu angefordert.
+(function () {
+    var wanted = false;
+    var lock = null;
+
+    function request() {
+        if (!wanted || lock || !('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+        navigator.wakeLock.request('screen').then(function (l) {
+            lock = l;
+            lock.addEventListener('release', function () { lock = null; });
+        }).catch(function () { /* z. B. Energiesparmodus – dann eben nicht */ });
+    }
+
+    document.addEventListener('visibilitychange', request);
+
+    window.layoutTools.keepScreenOn = function (on) {
+        wanted = !!on;
+        if (wanted) request();
+        else if (lock) { lock.release(); lock = null; }
+    };
+})();
+
 // Aktuelle Position des Geraets (EL-Startseite: „Meinen Standort verwenden“). Braucht HTTPS.
 window.layoutTools.getCurrentPosition = function () {
     return new Promise(function (resolve) {
