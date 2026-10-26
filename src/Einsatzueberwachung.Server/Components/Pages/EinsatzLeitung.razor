@@ -880,6 +880,14 @@
                 <i class="bi bi-broadcast"></i>
                 <span>Funk</span>
             </button>
+            @if (_fotoAktiv)
+            {
+                @* Reines JS (js/el-foto.js): Kamera oeffnen und senden geht auch ohne Blazor-Verbindung *@
+                <button class="el-taster" title="Foto an den Divera-Einsatz-Chat" onclick="elFoto.aufnehmen()">
+                    <i class="bi bi-camera-fill"></i>
+                    <span>Foto</span>
+                </button>
+            }
             <button class="el-taster @(_soundEnabled ? "el-taster-on" : "")"
                     title="@(_soundEnabled ? "Akustischer Alarm: AN" : "Akustischer Alarm: AUS")"
                     @onclick="ToggleSoundAsync">

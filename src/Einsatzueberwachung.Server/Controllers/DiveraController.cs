@@ -1,5 +1,7 @@
+using Einsatzueberwachung.Domain.Services;
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
+using Einsatzueberwachung.Domain.Models.Divera;
 using Einsatzueberwachung.Server.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -107,6 +109,64 @@ public class DiveraController : ControllerBase
         return Ok(raw);
     }
 
+    /// <summary>
+    /// Foto der Einsatzleitung (EL-Ansicht, Knopf „Foto“) in den Messenger-Chat des Divera-Einsatzes senden.
+    /// Das Bild wird im Browser verkleinert; hier nur Groesse und Bildformat pruefen und weiterreichen.
+    /// </summary>
+    [HttpPost("foto")]
+    [RequestSizeLimit(DiveraFotoLimit)]
+    [RequestFormLimits(MultipartBodyLengthLimit = DiveraFotoLimit)]
+    public async Task<IActionResult> SendFoto(IFormFile? foto, [FromForm] string? text)
+    {
+        await _diveraService.LadeEinstellungenAsync();
+        if (!_diveraService.FotosSenden)
+            return Conflict(new ErrorResponse("Fotos an Divera sind in den Einstellungen nicht eingeschaltet."));
+
+        var einsatz = _einsatzService.CurrentEinsatz;
+        if (string.IsNullOrWhiteSpace(einsatz.Einsatzort) || einsatz.EinsatzEnde is not null)
+            return Conflict(new ErrorResponse("Kein laufender Einsatz."));
+
+        if (foto is null || foto.Length == 0 || foto.Length > DiveraService.MaxFotoBytes)
+            return BadRequest(new ErrorResponse("Foto fehlt oder ist größer als 10 MB."));
+        if (text is { Length: > 500 })
+            return BadRequest(new ErrorResponse("Text ist zu lang (höchstens 500 Zeichen)."));
+
+        byte[] bild;
+        using (var stream = new MemoryStream())
+        {
+            await foto.CopyToAsync(stream);
+            bild = stream.ToArray();
+        }
+
+        var contentType = BildFormat(bild);
+        if (contentType is null)
+            return BadRequest(new ErrorResponse("Nur JPEG-, PNG- oder WebP-Fotos."));
+
+        var alarmId = EinsatzAlarmId(einsatz.DiveraAlarmId, await _diveraService.GetActiveAlarmsAsync());
+        if (alarmId is null)
+            return Conflict(new ErrorResponse("Der Einsatz ist mit keinem Divera-Alarm verknüpft. Einsatz über „Alarm aus Divera übernehmen“ starten."));
+
+        var dateiname = $"EL-{_timeService.Now:yyyyMMdd-HHmmss}{(contentType == "image/png" ? ".png" : contentType == "image/webp" ? ".webp" : ".jpg")}";
+        var ergebnis = await _diveraService.SendeFotoAnEinsatzChatAsync(alarmId.Value, bild, dateiname, contentType, text);
+        _logger.LogInformation("Divera-Foto fuer Alarm {AlarmId}: {Erfolg}", alarmId, ergebnis.Erfolg);
+        return ergebnis.Erfolg ? Ok(new { message = ergebnis.Meldung }) : StatusCode(StatusCodes.Status502BadGateway, new ErrorResponse(ergebnis.Meldung));
+    }
+
+    private const long DiveraFotoLimit = 12 * 1024 * 1024;
+
+    /// <summary>Alarm des Einsatzes; ohne Verknuepfung nur dann, wenn genau ein Divera-Alarm offen ist.</summary>
+    public static int? EinsatzAlarmId(int? verknuepft, IReadOnlyList<DiveraAlarm> offeneAlarme) =>
+        verknuepft ?? (offeneAlarme.Count == 1 ? offeneAlarme[0].Id : null);
+
+    /// <summary>Bildformat an den ersten Bytes erkennen (nicht am Dateinamen/Content-Type des Browsers).</summary>
+    public static string? BildFormat(byte[] b)
+    {
+        if (b.Length > 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF) return "image/jpeg";
+        if (b.Length > 8 && b[0] == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47) return "image/png";
+        if (b.Length > 12 && b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F' && b[8] == 'W' && b[9] == 'E' && b[10] == 'B' && b[11] == 'P') return "image/webp";
+        return null;
+    }
+
     /// <summary>Alarm als neuen Einsatz importieren.</summary>
     [HttpPost("import/{alarmId:int}")]
     public async Task<IActionResult> ImportAlarmAsEinsatz(int alarmId)
@@ -119,6 +179,7 @@ public class DiveraController : ControllerBase
         var einsatzData = new EinsatzData
         {
             EinsatzNummer = $"D-{alarm.Id}",
+            DiveraAlarmId = alarm.Id,
             Einsatzort = alarm.Address,
             MapAddress = alarm.Address,
             Stichwort = alarm.Title,

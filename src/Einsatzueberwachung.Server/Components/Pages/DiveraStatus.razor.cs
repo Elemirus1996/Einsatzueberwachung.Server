@@ -7,40 +7,19 @@ namespace Einsatzueberwachung.Server.Components.Pages;
 public partial class DiveraStatus : IDisposable
 {
     [Inject] private IDiveraService DiveraService { get; set; } = default!;
-    [Inject] private IMasterDataService MasterDataService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private List<DiveraAlarm> _alarms = new();
     private List<DiveraMember> _members = new();
-    private Dictionary<int, string> _personalByDiveraId = new();
     private bool _loading;
     private bool _connectionOk;
     private string? _errorMessage;
     private DateTime? _lastUpdated;
     private CancellationTokenSource? _pollingCts;
 
-    private const int Status30Minutes = 56296;
-    private const int StatusOneHour = 56297;
-    private const int StatusNotReady = 56298;
+    private DiveraAlarm? CurrentAlarm => _alarms.OrderByDescending(alarm => alarm.Date).FirstOrDefault();
 
-    private List<DiveraUcrEntry> CurrentAlarmResponses => _alarms
-        .OrderByDescending(alarm => alarm.Date)
-        .FirstOrDefault()?.UcrDetails ?? new List<DiveraUcrEntry>();
-
-    private List<DiveraUcrEntry> Members30Minutes => CurrentAlarmResponses
-        .Where(response => response.Status == Status30Minutes)
-        .OrderBy(response => GetUcrDisplayName(response))
-        .ToList();
-
-    private List<DiveraUcrEntry> MembersOneHour => CurrentAlarmResponses
-        .Where(response => response.Status == StatusOneHour)
-        .OrderBy(response => GetUcrDisplayName(response))
-        .ToList();
-
-    private List<DiveraUcrEntry> MembersNotReady => CurrentAlarmResponses
-        .Where(response => response.Status == StatusNotReady)
-        .OrderBy(response => GetUcrDisplayName(response))
-        .ToList();
+    private List<DiveraUcrEntry> CurrentAlarmResponses => CurrentAlarm?.UcrDetails ?? new List<DiveraUcrEntry>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,15 +75,6 @@ public partial class DiveraStatus : IDisposable
         {
             _alarms = await DiveraService.GetActiveAlarmsAsync();
 
-            var personalList = await MasterDataService.GetPersonalListAsync();
-            _personalByDiveraId = personalList
-                .Where(p => p.DiveraUserId.HasValue)
-                .ToDictionary(p => p.DiveraUserId!.Value, p => p.FullName);
-            foreach (var alarm in _alarms)
-                foreach (var ucr in alarm.UcrDetails)
-                    if (_personalByDiveraId.TryGetValue(ucr.MemberId, out var realName) && !string.IsNullOrWhiteSpace(realName))
-                        ucr.MemberName = realName;
-
             var pull = await DiveraService.PullAllAsync();
 
             _connectionOk = _alarms.Any() || pull != null;
@@ -138,19 +108,8 @@ public partial class DiveraStatus : IDisposable
         _pollingCts?.Dispose();
     }
 
-    private string GetMemberDisplayName(DiveraMember member)
-    {
-        if (_personalByDiveraId.TryGetValue(member.Id, out var name) && !string.IsNullOrWhiteSpace(name))
-            return name;
-        return member.FullName;
-    }
+    // Namen kommen aufgeloest aus dem Divera-Dienst (Stammdaten „Divera Benutzer-ID“ vor Divera-Namen)
+    private static string GetMemberDisplayName(DiveraMember member) => member.FullName;
 
-    private string GetUcrDisplayName(DiveraUcrEntry response)
-    {
-        if (!string.IsNullOrWhiteSpace(response.MemberName) && !response.MemberName.StartsWith("#"))
-            return response.MemberName;
-        if (_personalByDiveraId.TryGetValue(response.MemberId, out var name) && !string.IsNullOrWhiteSpace(name))
-            return name;
-        return response.MemberName;
-    }
+    private static string GetUcrDisplayName(DiveraUcrEntry response) => response.MemberName;
 }

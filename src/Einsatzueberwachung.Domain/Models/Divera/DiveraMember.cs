@@ -9,7 +9,9 @@ namespace Einsatzueberwachung.Domain.Models.Divera
         public int Id { get; set; }
         public string Firstname { get; set; } = string.Empty;
         public string Lastname { get; set; } = string.Empty;
-        public string FullName => $"{Firstname} {Lastname}".Trim();
+        /// <summary>Name aus den Stammdaten (Feld „Divera Benutzer-ID“) – hat Vorrang vor dem Namen aus Divera</summary>
+        public string? StammdatenName { get; set; }
+        public string FullName => !string.IsNullOrWhiteSpace(StammdatenName) ? StammdatenName : $"{Firstname} {Lastname}".Trim();
         public int StatusId { get; set; }
 
         /// <summary>Name des Status aus Divera status_sorter (z.B. "30 Minuten", "1 Stunde")</summary>
@@ -21,50 +23,20 @@ namespace Einsatzueberwachung.Domain.Models.Divera
         public List<int> QualificationIds { get; set; } = new();
 
         // Verfuegbarkeit wird aus der Hex-Farbe abgeleitet, nicht aus festen IDs
-        public bool IsVerfuegbar => IsGreenColor(StatusColor);
-        public bool IsBedingtVerfuegbar => IsYellowColor(StatusColor);
-        public bool IsNichtVerfuegbar => IsRedColor(StatusColor);
+        public bool IsVerfuegbar => DiveraStatusFarbe.IsGreen(StatusColor);
+        public bool IsBedingtVerfuegbar => DiveraStatusFarbe.IsYellow(StatusColor);
+        public bool IsNichtVerfuegbar => DiveraStatusFarbe.IsRed(StatusColor);
 
         /// <summary>Bootstrap-Badge-CSS aus Hex-Farbe abgeleitet</summary>
         public string StatusBadgeCss => StatusColor switch
         {
-            _ when IsGreenColor(StatusColor) => "bg-success",
-            _ when IsYellowColor(StatusColor) => "bg-warning text-dark",
-            _ when IsRedColor(StatusColor) => "bg-danger",
+            _ when DiveraStatusFarbe.IsGreen(StatusColor) => "bg-success",
+            _ when DiveraStatusFarbe.IsYellow(StatusColor) => "bg-warning text-dark",
+            _ when DiveraStatusFarbe.IsRed(StatusColor) => "bg-danger",
             _ => "bg-secondary"
         };
 
         /// <summary>Zeigt den echten Divera-Statusnamen aus der API</summary>
         public string StatusText => string.IsNullOrWhiteSpace(StatusName) ? "Unbekannt" : StatusName;
-
-        // --- Hilfsmethoden zur Farb-Analyse ---
-
-        private static bool ParseHex(string hex, out int r, out int g, out int b)
-        {
-            r = g = b = 0;
-            hex = (hex ?? string.Empty).TrimStart('#');
-            if (hex.Length < 6) return false;
-            return int.TryParse(hex[..2], NumberStyles.HexNumber, null, out r)
-                && int.TryParse(hex[2..4], NumberStyles.HexNumber, null, out g)
-                && int.TryParse(hex[4..6], NumberStyles.HexNumber, null, out b);
-        }
-
-        private static bool IsGreenColor(string hex)
-        {
-            if (!ParseHex(hex, out int r, out int g, out int b)) return false;
-            return g > r && g > b && g > 80;
-        }
-
-        private static bool IsYellowColor(string hex)
-        {
-            if (!ParseHex(hex, out int r, out int g, out int b)) return false;
-            return r > 150 && g > 150 && b < 100;
-        }
-
-        private static bool IsRedColor(string hex)
-        {
-            if (!ParseHex(hex, out int r, out int g, out int b)) return false;
-            return r > g && r > b && r > 80;
-        }
     }
 }

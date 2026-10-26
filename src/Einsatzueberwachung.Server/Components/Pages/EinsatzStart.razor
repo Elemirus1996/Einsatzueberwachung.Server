@@ -258,7 +258,7 @@
     </EditForm>
 
     <!-- DIVERA FOOTER-STRIP -->
-    @if (DiveraService.IsConfigured && _diveraAlarms.Any() && !_diveraDrawerOpen)
+    @if (DiveraService.AlarmeUebernehmen && _diveraAlarms.Any() && !_diveraDrawerOpen)
     {
         <button type="button" class="es-divera-strip" @onclick="ToggleDiveraDrawer">
             <i class="bi bi-broadcast-pin"></i>
@@ -318,17 +318,9 @@
                                 </div>
                                 <div class="d-flex flex-wrap gap-1 mt-2">
                                     <span class="badge bg-secondary">@alarm.CountKomme geantwortet</span>
-                                    @if (alarm.Count30Min > 0)
+                                    @foreach (var gruppe in alarm.Rueckmeldungen)
                                     {
-                                        <span class="badge bg-success">@alarm.Count30Min · 30 Min</span>
-                                    }
-                                    @if (alarm.Count1Std > 0)
-                                    {
-                                        <span class="badge bg-warning text-dark">@alarm.Count1Std · 1 Std</span>
-                                    }
-                                    @if (alarm.CountNichtEinsatzbereit > 0)
-                                    {
-                                        <span class="badge bg-danger">@alarm.CountNichtEinsatzbereit · n.e.</span>
+                                        <span class="badge @gruppe.BadgeCss">@gruppe.Anzahl · @gruppe.Name</span>
                                     }
                                 </div>
                             </button>

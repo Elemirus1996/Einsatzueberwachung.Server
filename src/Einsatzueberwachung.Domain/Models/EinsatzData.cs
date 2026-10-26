@@ -1,4 +1,4 @@
-﻿// Quelle: WPF-Projekt Models/EinsatzData.cs
+// Quelle: WPF-Projekt Models/EinsatzData.cs
 // Zentrale Einsatzdaten (Einsatzleiter, Ort, Teams, Funksprüche, Suchgebiete)
 
 using System;
@@ -16,6 +16,8 @@ namespace Einsatzueberwachung.Domain.Models
         public string Fuehrungsassistent { get; set; }
         public string Alarmiert { get; set; }
         public string Stichwort { get; set; }
+        /// <summary>Divera-Alarm, aus dem der Einsatz uebernommen wurde (Einsatz-Chat fuer Fotos der EL)</summary>
+        public int? DiveraAlarmId { get; set; }
         public string Einsatzort { get; set; }
         public string MapAddress { get; set; }
         public string ExportPfad { get; set; }

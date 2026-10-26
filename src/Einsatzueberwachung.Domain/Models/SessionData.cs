@@ -1,4 +1,4 @@
-﻿// Quelle: WPF-Projekt Models/SessionData.cs
+// Quelle: WPF-Projekt Models/SessionData.cs
 // Session-/Stammdaten für die Anwendung (Personal, Hunde, Einstellungen)
 
 using System.Collections.Generic;
@@ -132,6 +132,20 @@ namespace Einsatzueberwachung.Domain.Models
         /// <summary>Poll-Intervall wenn ein Alarm aktiv ist (Standard: 60 = 1 Minute)</summary>
         public int DiveraPollIntervalActiveSeconds { get; set; }
 
+        // Divera-Funktionen einzeln schaltbar (Einstellungen → Divera)
+        /// <summary>Aktive Divera-Alarme auf den Startseiten zur Übernahme anbieten</summary>
+        public bool DiveraAlarmeUebernehmen { get; set; }
+        /// <summary>Rückmeldungen und Personalstatus (Seite „Divera 24/7“) anzeigen</summary>
+        public bool DiveraStatusAnzeigen { get; set; }
+        /// <summary>Fotos der Einsatzleitung (/el) in den Messenger-Chat des Divera-Einsatzes senden</summary>
+        public bool DiveraFotosSenden { get; set; }
+
+        /// <summary>
+        /// Bedeutung einzelner Divera-Status (Status-ID der eigenen Einheit → Kommt/Später/Kommt nicht). Ohne Eintrag
+        /// wird die Bedeutung aus der Farbe des Status abgeleitet.
+        /// </summary>
+        public Dictionary<int, Divera.DiveraRueckmeldung> DiveraStatusZuordnung { get; set; } = new();
+
         /// <summary>Zeitpunkt des letzten Daten-Backups (ZIP-Download). Null = noch nie.</summary>
         public DateTime? LastBackupAt { get; set; }
 
@@ -202,6 +216,9 @@ namespace Einsatzueberwachung.Domain.Models
             DiveraBaseUrl = "https://app.divera247.com/api/v2";
             DiveraPollIntervalIdleSeconds = 600;  // 10 Minuten bei Ruhe
             DiveraPollIntervalActiveSeconds = 60; // 1 Minute bei aktivem Alarm
+            DiveraAlarmeUebernehmen = true;
+            DiveraStatusAnzeigen = true;
+            DiveraFotosSenden = false;
 
             MobileBaseUrl = string.Empty;
         }
