@@ -25,6 +25,7 @@ public partial class EinsatzArchiv
     private string _status = string.Empty;
     private string _trendView = "monat";
     private ArchivedEinsatz? _selected;
+    private bool _scrollToDetails;
     private ArchivedEinsatz? _deleteCandidate;
     private TeamTrackSnapshot? _archiveTrackPopup;
     private readonly HashSet<string> _revertingMergeId = new();
@@ -59,9 +60,26 @@ public partial class EinsatzArchiv
         _loading = false;
     }
 
-    private async Task ShowDetailsAsync(string id)
+    private async Task ToggleDetailsAsync(string id)
     {
+        if (_selected?.Id == id)
+        {
+            _selected = null;
+            return;
+        }
+
         _selected = await ArchivService.GetByIdAsync(id);
+        _scrollToDetails = _selected is not null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_scrollToDetails)
+        {
+            _scrollToDetails = false;
+            // Details sichtbar machen, ohne den gewaehlten Einsatz aus dem Blick zu schieben
+            await JSRuntime.InvokeVoidAsync("layoutTools.scrollIntoViewNearest", "archiv-details");
+        }
     }
 
     private void CloseDetails()

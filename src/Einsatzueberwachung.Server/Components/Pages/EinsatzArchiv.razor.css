@@ -51,3 +51,15 @@
 .archive-track-points-table {
     font-size: 0.72rem;
 }
+
+/* -- Details direkt unter dem gewaehlten Einsatz ----------------------- */
+
+.archive-detail-row > td {
+    padding: 0 8px 12px;
+    background: var(--ui-surface-2);
+}
+
+.archive-detail-card {
+    margin: 0;
+    border-left: 4px solid var(--theme-primary);
+}
