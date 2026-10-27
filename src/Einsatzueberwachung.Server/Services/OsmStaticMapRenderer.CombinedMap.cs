@@ -132,7 +132,7 @@ public sealed partial class OsmStaticMapRenderer
                 if (elwPosition.HasValue)
                     DrawMarker(canvas, new SKPoint(ToX(elwPosition.Value.Longitude), ToY(elwPosition.Value.Latitude)), new SKColor(220, 20, 60), "ELW");
 
-                DrawAttribution(canvas, width, height, "© OpenStreetMap © CARTO");
+                DrawAttribution(canvas, width, height, OsmAttribution);
                 return EncodeAsPng(outputBitmap);
             }
         }
