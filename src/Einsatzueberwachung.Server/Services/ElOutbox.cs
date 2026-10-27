@@ -20,11 +20,11 @@ public sealed class ElOutboxService
 
     public static string? Validate(ElOutboxEntry entry)
     {
-        if (string.IsNullOrWhiteSpace(entry.Id) || entry.Id.Length > 64) return "Ungueltige ID.";
+        if (string.IsNullOrWhiteSpace(entry.Id) || entry.Id.Length > 64) return "Ungültige ID.";
         if (entry.Kind is not ("funk" or "notiz")) return "Unbekannte Art.";
         if (string.IsNullOrWhiteSpace(entry.Text)) return "Text darf nicht leer sein.";
         if (entry.Text.Length > MaxTextLength) return "Text ist zu lang.";
-        if (entry.Recipient is { Length: > MaxRecipientLength }) return "Empfaenger ist zu lang.";
+        if (entry.Recipient is { Length: > MaxRecipientLength }) return "Empfänger ist zu lang.";
         return null;
     }
 

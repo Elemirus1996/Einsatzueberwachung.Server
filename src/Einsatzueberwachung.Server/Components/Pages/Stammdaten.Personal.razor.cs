@@ -44,7 +44,7 @@ public partial class Stammdaten
             ResetPersonalForm();
         }
 
-        _status = "Personal geloescht.";
+        _status = "Personal gelöscht.";
         await RefreshAsync();
     }
 

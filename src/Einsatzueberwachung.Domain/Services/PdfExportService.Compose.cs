@@ -606,7 +606,7 @@ namespace Einsatzueberwachung.Domain.Services
 
                 column.Item().PaddingTop(10).Background(bgColor).Padding(15).Column(col =>
                 {
-                    col.Item().Text(einsatz.Ergebnis ?? "Kein Ergebnis angegeben")
+                    col.Item().Text(string.IsNullOrEmpty(einsatz.Ergebnis) ? "Kein Ergebnis angegeben" : ErgebnisText.Anzeige(einsatz.Ergebnis))
                         .FontSize(14)
                         .Bold()
                         .FontColor(textColor);
@@ -636,7 +636,7 @@ namespace Einsatzueberwachung.Domain.Services
                         col.Item().Text($"Personal vor Ort ({einsatz.PersonalNamen.Count})").Bold().FontSize(10);
                         if (einsatz.PersonalNamen.Count == 0)
                         {
-                            col.Item().Text("Keine Eintraege").Italic().FontSize(9);
+                            col.Item().Text("Keine Einträge").Italic().FontSize(9);
                         }
                         else
                         {
@@ -652,7 +652,7 @@ namespace Einsatzueberwachung.Domain.Services
                         col.Item().Text($"Hunde vor Ort ({einsatz.HundeNamen.Count})").Bold().FontSize(10);
                         if (einsatz.HundeNamen.Count == 0)
                         {
-                            col.Item().Text("Keine Eintraege").Italic().FontSize(9);
+                            col.Item().Text("Keine Einträge").Italic().FontSize(9);
                         }
                         else
                         {

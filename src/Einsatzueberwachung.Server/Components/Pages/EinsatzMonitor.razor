@@ -315,7 +315,7 @@
                                     <div class="notes-list">
                                         @if (EinsatzService.GlobalNotes.Count == 0)
                                         {
-                                            <p class="text-muted mb-0">Noch keine Eintraege.</p>
+                                            <p class="text-muted mb-0">Noch keine Einträge.</p>
                                         }
                                         else
                                         {
@@ -678,7 +678,7 @@
             </div>
             <div class="modal-modern-body">
                 <div class="alert alert-warning py-2 mb-3">
-                    Nach dem Beenden wird der Einsatz archiviert, ein PDF erzeugt und das System fuer den naechsten Einsatz vorbereitet.
+                    Nach dem Beenden wird der Einsatz archiviert, ein PDF erzeugt und das System für den nächsten Einsatz vorbereitet.
                 </div>
 
                 @if (!string.IsNullOrWhiteSpace(_closeMissionModalError))
@@ -690,10 +690,10 @@
                     <div class="col-12 col-md-8">
                         <label class="form-label">Ergebnis</label>
                         <select class="form-select" @bind="_closeMissionResult">
-                            <option value="">-- Bitte waehlen --</option>
+                            <option value="">-- Bitte wählen --</option>
                             @foreach (var option in _closeMissionResultOptions)
                             {
-                                <option value="@option">@option</option>
+                                <option value="@option">@ErgebnisText.Anzeige(option)</option>
                             }
                         </select>
                     </div>
@@ -709,7 +709,7 @@
                         <label class="form-check mb-0">
                             <input class="form-check-input" type="checkbox" @bind="_closeMissionIncludeTracks" />
                             <span class="form-check-label">
-                                <i class="bi bi-geo-alt me-1"></i>GPS-Livetracking der PDF hinzufuegen
+                                <i class="bi bi-geo-alt me-1"></i>GPS-Livetracking dem PDF hinzufügen
                                 @if (_closeMissionTrackCount > 0)
                                 {
                                     <span class="badge bg-info ms-1">@_closeMissionTrackCount Track(s)</span>
@@ -793,7 +793,7 @@
 
                 <label class="form-check mt-3">
                     <input class="form-check-input" type="checkbox" @bind="_closeMissionChecklistConfirmed" />
-                    <span class="form-check-label">Ich habe die eingesetzten Ressourcen und Beteiligten geprueft.</span>
+                    <span class="form-check-label">Ich habe die eingesetzten Ressourcen und Beteiligten geprüft.</span>
                 </label>
             </div>
             <div class="modal-modern-footer">
@@ -874,7 +874,7 @@
         <div class="modal-modern modal-modern--640" @onclick:stopPropagation="true">
             <div class="modal-modern-header">
                 <h3><i class="bi bi-pencil-square me-2"></i>Einsatz bearbeiten</h3>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseEditEinsatzModal">Schliessen</button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseEditEinsatzModal">Schließen</button>
             </div>
             <div class="modal-modern-body">
                 @if (!string.IsNullOrWhiteSpace(_editEinsatzMessage))
@@ -887,7 +887,7 @@
                         <label class="form-label">Typ</label>
                         <select class="form-select" @bind="_editEinsatzForm.IstEinsatz">
                             <option value="true">Einsatz</option>
-                            <option value="false">Uebung</option>
+                            <option value="false">Übung</option>
                         </select>
                     </div>
                     <div class="col-md-4">
@@ -906,7 +906,7 @@
                     </div>
                     <div class="col-12">
                         <label class="form-label">Karten-Adresse</label>
-                        <input class="form-control" @bind="_editEinsatzForm.MapAddress" placeholder="Adresse fuer Kartensuche" />
+                        <input class="form-control" @bind="_editEinsatzForm.MapAddress" placeholder="Adresse für Kartensuche" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Alarmiert durch (Melder)</label>
@@ -930,7 +930,7 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Fuerungsassistent</label>
+                        <label class="form-label">Führungsassistent</label>
                         <div class="input-group">
                             <select class="form-select" @onchange="e => _editEinsatzForm.Fuehrungsassistent = e.Value?.ToString() ?? _editEinsatzForm.Fuehrungsassistent">
                                 <option value="">- aus Stammdaten -</option>
@@ -965,7 +965,7 @@
         <div class="modal-modern modal-modern--lg" @onclick:stopPropagation="true">
             <div class="modal-modern-header">
                 <h3><i class="bi bi-person-exclamation me-2"></i>Vermissteninfo</h3>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseVermisstenModal">Schliessen</button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseVermisstenModal">Schließen</button>
             </div>
             <div class="modal-modern-body">
 
@@ -1148,7 +1148,7 @@
         <div class="modal-modern" @onclick:stopPropagation="true">
             <div class="modal-modern-header">
                 <h3>@(_editingTeamId is null ? "Team anlegen" : "Team bearbeiten")</h3>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseTeamModal">Schliessen</button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseTeamModal">Schließen</button>
             </div>
             <div class="modal-modern-body">
                 @if (!string.IsNullOrWhiteSpace(_teamFormMessage))
@@ -1176,7 +1176,7 @@
                         <div class="col-12">
                             <label class="form-label">Hund</label>
                             <select class="form-select" @bind="_teamForm.DogId" @bind:after="OnDogChangedAsync">
-                                <option value="">Hund auswaehlen</option>
+                                <option value="">Hund auswählen</option>
                                 @foreach (var dog in AvailableDogs)
                                 {
                                     <option value="@dog.Id">@dog.Name (@dog.SpecializationsShortDisplay)</option>
@@ -1185,9 +1185,9 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Hundefuehrer</label>
+                            <label class="form-label">Hundeführer</label>
                             <select class="form-select" @bind="_teamForm.HundefuehrerId" @bind:after="OnHandlerChangedAsync">
-                                <option value="">Hundefuehrer auswaehlen</option>
+                                <option value="">Hundeführer auswählen</option>
                                 @foreach (var person in HundefuehrerOptions)
                                 {
                                     <option value="@person.Id">@person.FullName</option>
@@ -1198,7 +1198,7 @@
                         <div class="col-md-6">
                             <label class="form-label">Helfer 1</label>
                             <select class="form-select" @bind="_teamForm.HelferId">
-                                <option value="">Helfer auswaehlen</option>
+                                <option value="">Helfer auswählen</option>
                                 @foreach (var person in HelferOptions)
                                 {
                                     <option value="@person.Id">@person.FullName</option>
@@ -1231,7 +1231,7 @@
                         <div class="col-12">
                             <label class="form-label">Drohne</label>
                             <select class="form-select" @bind="_teamForm.DroneId" @bind:after="OnDroneChangedAsync">
-                                <option value="">Drohne auswaehlen</option>
+                                <option value="">Drohne auswählen</option>
                                 @foreach (var drone in AvailableDrones)
                                 {
                                     <option value="@drone.Id">@drone.DisplayName (@drone.FullDescription)</option>
@@ -1242,7 +1242,7 @@
                         <div class="col-md-6">
                             <label class="form-label">Pilot</label>
                             <select class="form-select" @bind="_teamForm.HundefuehrerId">
-                                <option value="">Pilot auswaehlen</option>
+                                <option value="">Pilot auswählen</option>
                                 @foreach (var person in DrohnenpilotOptions)
                                 {
                                     <option value="@person.Id">@person.FullName</option>
@@ -1251,9 +1251,9 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">Unterstuetzung</label>
+                            <label class="form-label">Unterstützung</label>
                             <select class="form-select" @bind="_teamForm.HelferId">
-                                <option value="">Person auswaehlen</option>
+                                <option value="">Person auswählen</option>
                                 @foreach (var person in ActivePersonnel)
                                 {
                                     <option value="@person.Id">@person.FullName</option>
@@ -1264,9 +1264,9 @@
                     else
                     {
                         <div class="col-md-6">
-                            <label class="form-label">Leitung / Fuehrung</label>
+                            <label class="form-label">Leitung / Führung</label>
                             <select class="form-select" @bind="_teamForm.HundefuehrerId">
-                                <option value="">Person auswaehlen</option>
+                                <option value="">Person auswählen</option>
                                 @foreach (var person in ActivePersonnel)
                                 {
                                     <option value="@person.Id">@person.FullName</option>
@@ -1277,7 +1277,7 @@
                         <div class="col-md-6">
                             <label class="form-label">Zweite Person</label>
                             <select class="form-select" @bind="_teamForm.HelferId">
-                                <option value="">Person auswaehlen</option>
+                                <option value="">Person auswählen</option>
                                 @foreach (var person in ActivePersonnel)
                                 {
                                     <option value="@person.Id">@person.FullName</option>
@@ -1330,7 +1330,7 @@
                 </div>
             </div>
             <div class="modal-modern-footer">
-                <button class="btn btn-primary" @onclick="SaveTeamAsync">@(_editingTeamId is null ? "Team speichern" : "Aenderungen speichern")</button>
+                <button class="btn btn-primary" @onclick="SaveTeamAsync">@(_editingTeamId is null ? "Team speichern" : "Änderungen speichern")</button>
                 <button class="btn btn-outline-secondary" @onclick="ResetTeamForm">Formular leeren</button>
             </div>
         </div>
@@ -1354,7 +1354,7 @@
                 else
                 {
                     <div class="mb-3">
-                        <label class="form-label">Empfaenger</label>
+                        <label class="form-label">Empfänger</label>
                         <select class="form-select" @bind="_teamMessageTargetId">
                             @foreach (var t in EinsatzService.Teams.OrderBy(t => t.TeamName))
                             {
@@ -1377,7 +1377,7 @@
             </div>
             <div class="modal-modern-footer">
                 <button class="btn btn-warning" @onclick="SendTeamMessage" disabled="@(EinsatzService.Teams.Count == 0)">Senden</button>
-                <button class="btn btn-outline-secondary" @onclick="CloseTeamMessageModal">Schliessen</button>
+                <button class="btn btn-outline-secondary" @onclick="CloseTeamMessageModal">Schließen</button>
             </div>
         </div>
     </div>
@@ -1415,12 +1415,12 @@
                         <input type="text" class="form-control text-center" readonly value="@_teamMobileFullUrl" onclick="this.select()" />
                     </div>
                     <p class="small text-muted mt-3 mb-0">
-                        <i class="bi bi-info-circle me-1"></i>Der Code wird beim Einsatz-Ende automatisch ungueltig.
+                        <i class="bi bi-info-circle me-1"></i>Der Code wird beim Einsatz-Ende automatisch ungültig.
                     </p>
                 }
             </div>
             <div class="modal-modern-footer">
-                <button class="btn btn-outline-secondary" @onclick="CloseTeamMobileModal">Schliessen</button>
+                <button class="btn btn-outline-secondary" @onclick="CloseTeamMobileModal">Schließen</button>
             </div>
         </div>
     </div>

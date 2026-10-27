@@ -43,7 +43,7 @@ public partial class Stammdaten
             ResetDroneForm();
         }
 
-        _status = "Drohne geloescht.";
+        _status = "Drohne gelöscht.";
         await RefreshAsync();
     }
 

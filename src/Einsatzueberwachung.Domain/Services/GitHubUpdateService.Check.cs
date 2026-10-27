@@ -12,7 +12,7 @@ namespace Einsatzueberwachung.Domain.Services
             SetStatus(status =>
             {
                 status.IsChecking = true;
-                status.LastMessage = "Pruefe auf neue Version...";
+                status.LastMessage = "Prüfe auf neue Version …";
             });
 
             try
@@ -44,7 +44,7 @@ namespace Einsatzueberwachung.Domain.Services
                     {
                         status.LastCheckedAt = Ortszeit.Jetzt;
                         status.LastError = message;
-                        status.LastMessage = "Update-Pruefung fehlgeschlagen";
+                        status.LastMessage = "Update-Prüfung fehlgeschlagen";
                     });
 
                     return new UpdateCheckResult { Success = false, ErrorMessage = message, CheckedAt = Ortszeit.Jetzt };
@@ -95,7 +95,7 @@ namespace Einsatzueberwachung.Domain.Services
                     status.LastError = null;
                     status.LastMessage = result.UpdateAvailable
                         ? (result.IsInstallable
-                            ? $"Update verfuegbar: {CurrentVersion} -> {result.LatestVersion}"
+                            ? $"Update verfügbar: {CurrentVersion} -> {result.LatestVersion}"
                             : $"Neue Version erkannt ({result.LatestVersion}), aber kein Linux-Installer im Release")
                         : "System ist aktuell";
                 });
@@ -121,7 +121,7 @@ namespace Einsatzueberwachung.Domain.Services
                 {
                     status.LastCheckedAt = Ortszeit.Jetzt;
                     status.LastError = ex.Message;
-                    status.LastMessage = "Update-Pruefung fehlgeschlagen";
+                    status.LastMessage = "Update-Prüfung fehlgeschlagen";
                 });
                 return new UpdateCheckResult { Success = false, ErrorMessage = ex.Message, CheckedAt = Ortszeit.Jetzt };
             }

@@ -174,7 +174,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
             if (isSecondWarning)
             {
                 _criticalWarningTitle = $"{team.TeamName} hat kritische Warnstufe erreicht";
-                _criticalWarningMessage = $"Timer: {team.ElapsedTime:hh\\:mm\\:ss} - Bitte Teamstatus pruefen.";
+                _criticalWarningMessage = $"Timer: {team.ElapsedTime:hh\\:mm\\:ss} - Bitte Teamstatus prüfen.";
                 _showCriticalWarningPopup = true;
             }
 
@@ -182,7 +182,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
             {
                 Title   = isSecondWarning ? "Kritische Warnstufe erreicht" : "Erste Warnstufe erreicht",
                 Message = isSecondWarning
-                    ? $"{team.TeamName} - Timer: {team.ElapsedTime:hh\\:mm\\:ss} - Bitte Teamstatus pruefen."
+                    ? $"{team.TeamName} - Timer: {team.ElapsedTime:hh\\:mm\\:ss} - Bitte Teamstatus prüfen."
                     : $"{team.TeamName} - Timer: {team.ElapsedTime:hh\\:mm\\:ss}",
                 Level          = isSecondWarning ? WarningLevel.Critical : WarningLevel.Warning,
                 TeamId         = team.TeamId,

@@ -38,7 +38,7 @@
     }
     else if (_weather is null)
     {
-        <p class="text-muted">Keine Wetterdaten verfuegbar.</p>
+        <p class="text-muted">Keine Wetterdaten verfügbar.</p>
     }
     else
     {
@@ -110,20 +110,20 @@
                     <div class="card-body">
                         @if (_flugwetter is null)
                         {
-                            <p class="text-muted mb-0">Keine Flugwetterdaten verfuegbar.</p>
+                            <p class="text-muted mb-0">Keine Flugwetterdaten verfügbar.</p>
                         }
                         else
                         {
                             <div class="weather-detail-list">
                                 <div class="weather-detail-row"><span>Windgeschwindigkeit</span><strong>@_flugwetter.Windgeschwindigkeit.ToString("0") km/h</strong></div>
-                                <div class="weather-detail-row"><span>Windboeen</span><strong>@_flugwetter.Windboeen.ToString("0") km/h</strong></div>
+                                <div class="weather-detail-row"><span>Windböen</span><strong>@_flugwetter.Windboeen.ToString("0") km/h</strong></div>
                                 <div class="weather-detail-row"><span>Sichtweite</span><strong>@_flugwetter.Sichtweite.ToString("0.0") km</strong></div>
                                 <div class="weather-detail-row"><span>Wolkenuntergrenze</span><strong>@_flugwetter.WolkenuntergrenzeFuss ft</strong></div>
                                 <div class="weather-detail-row"><span>QNH</span><strong>@_flugwetter.QNH hPa</strong></div>
                             </div>
 
                             <div class="alert @(_flugwetter.IstDrohnenflugMoeglich ? "alert-success" : "alert-danger") mt-3 mb-0">
-                                <strong>@(_flugwetter.IstDrohnenflugMoeglich ? "Drohnenflug moeglich" : "Drohnenflug kritisch"):</strong>
+                                <strong>@(_flugwetter.IstDrohnenflugMoeglich ? "Drohnenflug möglich" : "Drohnenflug kritisch"):</strong>
                                 @_flugwetter.DrohnenflugHinweis
                             </div>
                         }
@@ -203,7 +203,7 @@
                 _weather = null;
                 _forecast = null;
                 _flugwetter = null;
-                _errorMessage = "Der Ort konnte nicht aufgeloest werden.";
+                _errorMessage = "Der Ort konnte nicht aufgelöst werden.";
                 return;
             }
 

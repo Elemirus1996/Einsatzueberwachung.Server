@@ -10,7 +10,7 @@ namespace Einsatzueberwachung.Domain.Services
         public async Task<UpdateInstallResult> InstallLatestAsync(CancellationToken cancellationToken = default)
         {
             if (!await _updateGate.WaitAsync(0, cancellationToken))
-                return new UpdateInstallResult { Success = false, Message = "Es laeuft bereits ein Update-Prozess." };
+                return new UpdateInstallResult { Success = false, Message = "Es läuft bereits ein Update-Prozess." };
 
             try
             {
@@ -24,7 +24,7 @@ namespace Einsatzueberwachung.Domain.Services
                 var check = await CheckForUpdatesAsync();
                 if (!check.Success)
                 {
-                    var message = check.ErrorMessage ?? "Update-Pruefung fehlgeschlagen.";
+                    var message = check.ErrorMessage ?? "Update-Prüfung fehlgeschlagen.";
                     SetStatus(status => { status.LastError = message; status.LastMessage = message; });
                     return new UpdateInstallResult { Success = false, Message = message };
                 }
@@ -204,7 +204,7 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 Success = true,
                 InstalledVersion = targetVersion,
-                Message = "Update bereitgestellt. Fuer automatisches Anwenden bitte EINSATZUEBERWACHUNG_UPDATE_APPLY_CMD konfigurieren."
+                Message = "Update bereitgestellt. Für automatisches Anwenden bitte EINSATZUEBERWACHUNG_UPDATE_APPLY_CMD konfigurieren."
             };
         }
     }

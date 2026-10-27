@@ -71,8 +71,7 @@ public partial class ElBeenden : IDisposable
     }
 
     // Gespeichert wird der Text wie im Monitor; angezeigt mit Umlauten
-    private static string ErgebnisText(string option) =>
-        option.Replace("Uebung", "Übung").Replace(" - ", " – ");
+    private static string ErgebnisText(string option) => Einsatzueberwachung.Domain.Services.ErgebnisText.Anzeige(option);
 
     private void SelectErgebnis(string option)
     {

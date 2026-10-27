@@ -1,0 +1,132 @@
+@* Suchgebiet aus Koordinatenliste anlegen bzw. als Liste ausgeben (#96).
+   Ohne Gebiet: Einfuegen → OnUebernehmen(GeoJSON) → normaler Dialog „Neues Suchgebiet“. Mit Gebiet: Ausgabe zum Kopieren. *@
+@inject IJSRuntime JS
+
+<div class="modal-backdrop show"></div>
+<div class="modal show d-block" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-list-ol me-2"></i>@(Gebiet is null ? "Suchgebiet aus Koordinaten" : $"Koordinaten: {Gebiet.Name}")
+                </h5>
+                <button type="button" class="btn-close" aria-label="Schließen" @onclick="OnClose"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label" for="koord-format">Format</label>
+                    <select id="koord-format" class="form-select" @bind="_format" @bind:after="Aktualisieren">
+                        @foreach (var (format, name) in KoordinatenListe.Formate)
+                        {
+                            if (Gebiet is not null && format == KoordinatenFormat.Automatisch) continue;
+                            <option value="@format">@name</option>
+                        }
+                    </select>
+                </div>
+
+                @if (Gebiet is null)
+                {
+                    <label class="form-label" for="koord-text">Koordinatenliste einfügen</label>
+                    <textarea id="koord-text" class="form-control font-monospace" rows="7" @bind="_text" @bind:event="oninput" @bind:after="Aktualisieren"
+                              placeholder="51.70913193,10.53388506 51.70927299,10.53274747 …&#10;oder je Zeile: 32U 612345 5732123"></textarea>
+                    <div class="form-text">
+                        Punkte durch Leerzeichen, Zeilenumbruch oder Semikolon trennen, Dezimaltrennzeichen ist der Punkt.
+                        Der Endpunkt darf dem Startpunkt entsprechen.
+                    </div>
+
+                    @if (_ergebnis is { } e)
+                    {
+                        <div class="alert alert-success mt-3 mb-0 py-2">
+                            <i class="bi bi-check-circle me-1"></i>
+                            <strong>@e.Punkte.Count Punkte</strong> erkannt · @KoordinatenListe.Name(e.ErkanntesFormat) · Fläche @_flaeche
+                        </div>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(_text) && _fehler is not null)
+                    {
+                        <div class="alert alert-warning mt-3 mb-0 py-2"><i class="bi bi-exclamation-triangle me-1"></i>@_fehler</div>
+                    }
+                }
+                else
+                {
+                    <textarea class="form-control font-monospace" rows="7" readonly value="@_ausgabe" @onfocus="MarkierenAsync" id="koord-ausgabe"></textarea>
+                    @if (_kopiertHinweis is not null)
+                    {
+                        <div class="form-text">@_kopiertHinweis</div>
+                    }
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" @onclick="OnClose">Schließen</button>
+                @if (Gebiet is null)
+                {
+                    <button type="button" class="btn btn-primary" disabled="@(_ergebnis is null)" @onclick="UebernehmenAsync">
+                        <i class="bi bi-arrow-right-circle me-1"></i>Weiter zu Name und Team
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-primary" @onclick="KopierenAsync">
+                        <i class="bi bi-clipboard me-1"></i>Kopieren
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>Gebiet fuer die Ausgabe; null = neues Gebiet einlesen</summary>
+    [Parameter] public SearchArea? Gebiet { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<string> OnUebernehmen { get; set; }
+
+    private KoordinatenFormat _format = KoordinatenFormat.Automatisch;
+    private string _text = "";
+    private string? _fehler;
+    private KoordinatenListe.Ergebnis? _ergebnis;
+    private string _flaeche = "";
+    private string _ausgabe = "";
+    private string? _kopiertHinweis;
+
+    protected override void OnParametersSet()
+    {
+        if (Gebiet is not null && _format == KoordinatenFormat.Automatisch) _format = KoordinatenFormat.BreiteLaenge;
+        Aktualisieren();
+    }
+
+    private void Aktualisieren()
+    {
+        _kopiertHinweis = null;
+        if (Gebiet is not null)
+        {
+            _ausgabe = KoordinatenListe.Ausgeben(Gebiet.Coordinates ?? new(), _format);
+            return;
+        }
+
+        _ergebnis = KoordinatenListe.Einlesen(_text, _format, out _fehler);
+        _flaeche = _ergebnis is null ? "" : new SearchArea { Coordinates = _ergebnis.Punkte }.FormattedArea;
+    }
+
+    private Task UebernehmenAsync() =>
+        _ergebnis is null ? Task.CompletedTask : OnUebernehmen.InvokeAsync(KoordinatenListe.AlsGeoJson(_ergebnis.Punkte));
+
+    private async Task KopierenAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _ausgabe);
+            _kopiertHinweis = "In die Zwischenablage kopiert.";
+        }
+        catch
+        {
+            // Zwischenablage nur bei HTTPS/localhost – dann von Hand kopieren
+            await MarkierenAsync();
+            _kopiertHinweis = "Kopieren nicht möglich – Text ist markiert, bitte mit Strg+C kopieren.";
+        }
+    }
+
+    private async Task MarkierenAsync()
+    {
+        try { await JS.InvokeVoidAsync("layoutTools.selectText", "koord-ausgabe"); } catch { /* egal */ }
+    }
+}

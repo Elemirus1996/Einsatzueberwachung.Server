@@ -278,7 +278,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                     showArea: true,
                     drawError: {
                         color: '#e74c3c',
-                        message: '<strong>Fehler!</strong> Polygone duerfen sich nicht ueberschneiden.'
+                        message: '<strong>Fehler!</strong> Linien dürfen sich nicht überschneiden.'
                     },
                     shapeOptions: {
                         color: '#3388ff',

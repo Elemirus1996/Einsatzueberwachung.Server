@@ -162,9 +162,9 @@ namespace Einsatzueberwachung.Domain.Services
                 "thunderstorm" => "Gewitter",
                 "clear-day" => "Sonnig",
                 "clear-night" => "Klar",
-                "partly-cloudy-day" => "Teilweise bewoelkt",
-                "partly-cloudy-night" => "Teilweise bewoelkt",
-                "cloudy" => "Bewoelkt",
+                "partly-cloudy-day" => "Teilweise bewölkt",
+                "partly-cloudy-night" => "Teilweise bewölkt",
+                "cloudy" => "Bewölkt",
                 "wind" => "Windig",
                 _ => condition
             };

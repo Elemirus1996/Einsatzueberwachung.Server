@@ -204,7 +204,7 @@ public partial class EinsatzStart
 
         if (!TryPrepareAlarmTime())
         {
-            _status = "Alarmzeit ungueltig. Bitte Format HH:mm verwenden.";
+            _status = "Alarmzeit ungültig. Bitte Format HH:mm verwenden.";
             _error = true;
             return;
         }

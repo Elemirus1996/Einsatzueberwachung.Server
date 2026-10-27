@@ -89,6 +89,8 @@
                                          OnZoomToArea="ZoomToArea"
                                          OnEdit="EditSearchArea"
                                          OnDownloadGpx="DownloadGpx"
+                                         OnAddFromCoordinates="KoordinatenImportOeffnen"
+                                         OnShowCoordinates="KoordinatenAnzeigen"
                                          OnDelete="DeleteSearchArea"
                                          OnNavigateToTeam="NavigateToTeamInMonitor" />
                     }
@@ -514,6 +516,11 @@
             </div>
         </div>
     </div>
+}
+
+@if (_koordDialogOffen)
+{
+    <KoordinatenDialog Gebiet="_koordDialogGebiet" OnClose="() => _koordDialogOffen = false" OnUebernehmen="KoordinatenUebernehmen" />
 }
 
 @if (_showDialog)

@@ -44,7 +44,7 @@ public partial class Stammdaten
             ResetDogForm();
         }
 
-        _status = "Hund geloescht.";
+        _status = "Hund gelöscht.";
         await RefreshAsync();
     }
 
