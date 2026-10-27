@@ -1,3 +1,4 @@
+@inject ITimeService TimeService
 @* Team card — zones: identity+timer | context strip | actions | expand *@
 @inject NavigationManager Navigation
 <div id="team-@Team.TeamId"
@@ -132,6 +133,23 @@
         </div>
     }
 
+    @* ── Handy des Teams (Traccar/Team-Seite): Alter der letzten Position und Akku ── *@
+    @if (LastPhoneLocation is not null)
+    {
+        <div class="tc-ctx">
+            <span class="tc-ctx-chip @(PhoneVeraltet ? "tc-ctx-chip--warn" : "")" title="Letzte Position vom Handy des Teams">
+                <i class="bi bi-phone"></i>
+                <span>Handy @HandyAlterText</span>
+                @if (LastPhoneLocation.BatteryPercent is int akku)
+                {
+                    <span class="@(akku < 20 ? "text-danger fw-semibold" : "tc-ctx-muted")" title="Akku des Handys">
+                        <i class="bi @(akku < 20 ? "bi-battery" : akku < 60 ? "bi-battery-half" : "bi-battery-full")"></i> @akku %
+                    </span>
+                }
+            </span>
+        </div>
+    }
+
     @* ── Zone 3: Actions ─────────────────────────────────────────── *@
     <div class="tc-foot">
         <div class="tc-controls">
@@ -262,6 +280,17 @@
     [Parameter] public IReadOnlyList<DroneEntry> DroneList { get; set; } = Array.Empty<DroneEntry>();
     [Parameter] public bool IsExpanded { get; set; }
     [Parameter] public CollarLocation? LastCollarLocation { get; set; }
+    [Parameter] public TeamPhoneLocation? LastPhoneLocation { get; set; }
+
+    // Laufende Suche und seit 3 Minuten nichts vom Handy: Chip hervorheben (Warnung kommt aus dem Warnzentrum)
+    private bool PhoneVeraltet => Team.IsRunning && HandyAlter > TimeSpan.FromMinutes(3);
+
+    // Handy-Zeitstempel sind Ortszeit der Staffel (ITimeService) – nicht als UTC lesen
+    private TimeSpan HandyAlter => LastPhoneLocation is null ? TimeSpan.Zero
+        : TimeService.Now - LastPhoneLocation.Timestamp is var d && d > TimeSpan.Zero ? d : TimeSpan.Zero;
+
+    private string HandyAlterText => HandyAlter.TotalSeconds < 60 ? "gerade eben"
+        : HandyAlter.TotalMinutes < 60 ? $"vor {(int)HandyAlter.TotalMinutes} Min." : $"vor {(int)HandyAlter.TotalHours} Std.";
     [Parameter] public IReadOnlyList<GlobalNotesEntry> LatestNoteEntries { get; set; } = Array.Empty<GlobalNotesEntry>();
     [Parameter] public IReadOnlyList<TeamTrackSnapshot> CompletedSearches { get; set; } = Array.Empty<TeamTrackSnapshot>();
     [Parameter] public EventCallback<string> OnStart { get; set; }

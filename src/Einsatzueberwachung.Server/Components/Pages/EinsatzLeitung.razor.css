@@ -843,6 +843,8 @@
 }
 
 .bahn-meta-item { display: inline-flex; align-items: center; gap: 4px; }
+/* Handy: lange nichts gehoert oder Akku knapp */
+.bahn-meta-warn { color: var(--belastung-2); font-weight: 700; }
 
 .bahn-elapsed {
     font-family: inherit;

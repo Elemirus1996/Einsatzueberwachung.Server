@@ -28,7 +28,7 @@
                                id="masterInput" />
                     </div>
                 </form>
-                <button type="button" class="btn btn-primary w-100" onclick="document.location.href='/team/login/' + (document.getElementById('masterInput').value || '').trim().toUpperCase()">
+                <button type="button" class="btn btn-primary w-100" onclick="document.location.href='/team/login/' + (document.getElementById('masterInput').value || '').replace(/\s+/g, '').toUpperCase()">
                     <i class="bi bi-arrow-right-circle me-1"></i>Weiter
                 </button>
                 @if (!string.IsNullOrEmpty(Master))

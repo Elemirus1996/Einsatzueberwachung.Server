@@ -18,6 +18,7 @@ public partial class EinsatzMonitor
     [Inject] IWeatherService WeatherService { get; set; } = default!;
     [Inject] EinsatzAbschlussService EinsatzAbschluss { get; set; } = default!;
     [Inject] TeamSucheService TeamSuche { get; set; } = default!;
+    [CascadingParameter(Name = "LeitungsGeraet")] private string? Geraet { get; set; }
     [Inject] ISettingsService SettingsService { get; set; } = default!;
     [Inject] ITimeService TimeService { get; set; } = default!;
     [Inject] ICollarTrackingService CollarTrackingService { get; set; } = default!;
@@ -1178,7 +1179,7 @@ public partial class EinsatzMonitor
             existingTeam.TeamName,
             "Team",
             GlobalNotesEntryType.System,
-            "Einsatzleitung");
+            LeitungsGeraetNamen.Absender(Geraet));
 
         SetTeamFormMessage("Team wurde aktualisiert.", false);
         ResetTeamForm();
@@ -1535,15 +1536,16 @@ public partial class EinsatzMonitor
 
     private (string SourceId, string SourceName, string CreatedBy) ResolveSelectedSource(string sourceId)
     {
+        var leitung = LeitungsGeraetNamen.Absender(Geraet);
         if (string.IsNullOrWhiteSpace(sourceId) || sourceId == "einsatzleitung")
         {
-            return ("einsatzleitung", "Einsatzleitung", "Einsatzleitung");
+            return ("einsatzleitung", leitung, leitung);
         }
 
         var selectedTeam = EinsatzService.Teams.FirstOrDefault(team => team.TeamId == sourceId);
         if (selectedTeam is null)
         {
-            return ("einsatzleitung", "Einsatzleitung", "Einsatzleitung");
+            return ("einsatzleitung", leitung, leitung);
         }
 
         return (selectedTeam.TeamId, selectedTeam.TeamName, selectedTeam.TeamName);

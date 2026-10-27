@@ -1078,6 +1078,50 @@ private async Task SetDesignModeAsync(bool darkMode)
         }
     }
 
+    // ── Traccar testen ────────────────────────────────────────────────
+    [Inject] private TraccarTestService TraccarTest { get; set; } = default!;
+    [Inject] private Microsoft.Extensions.Options.IOptionsMonitor<TeamMobileOptions> TeamMobileOptionen { get; set; } = default!;
+    private string? _traccarTestKennung;
+    private string _traccarTestEndpoint = string.Empty;
+    private string _traccarTestLink = string.Empty;
+    private string _traccarTestQr = string.Empty;
+    private bool _traccarTestAbonniert;
+
+    private void NeuerTraccarTest()
+    {
+        // Oeffentliche Adresse (wie im Team-QR-Code), sonst die Adresse dieser Seite
+        var basis = !string.IsNullOrWhiteSpace(_appSettings.MobileBaseUrl) ? _appSettings.MobileBaseUrl
+            : !string.IsNullOrWhiteSpace(TeamMobileOptionen.CurrentValue.PublicBaseUrl) ? TeamMobileOptionen.CurrentValue.PublicBaseUrl!
+            : Navigation.BaseUri;
+        _traccarTestEndpoint = basis.TrimEnd('/') + "/api/team-mobile/traccar";
+        _traccarTestKennung = TraccarTest.NeueKennung(DateTime.UtcNow);
+        _traccarTestLink = TraccarTestService.EinrichtungsLink(_traccarTestEndpoint, _traccarTestKennung);
+        _traccarTestQr = GenerateQrDataUrl(_traccarTestLink);
+        if (!_traccarTestAbonniert)
+        {
+            TraccarTest.Geaendert += OnTraccarTestEmpfang;
+            _traccarTestAbonniert = true;
+        }
+    }
+
+    private void OnTraccarTestEmpfang() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        if (_traccarTestAbonniert) TraccarTest.Geaendert -= OnTraccarTestEmpfang;
+    }
+
+    // ── Systemzustand (Zertifikat, Backup, Speicher, Divera, Uhr) ─────────
+    [Inject] private SystemZustandService SystemZustand { get; set; } = default!;
+    private bool _systemPruefBusy;
+
+    private async Task PruefeSystemAsync()
+    {
+        _systemPruefBusy = true;
+        try { await SystemZustand.PruefenAsync(); }
+        finally { _systemPruefBusy = false; }
+    }
+
     private async Task TestDiveraConnectionAsync()
     {
         _diveraTestBusy = true;

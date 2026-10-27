@@ -9,7 +9,7 @@ namespace Einsatzueberwachung.Domain.Services
         // Aufgezeichneter GPS-Pfad pro Team (nur während IsRunning == true)
         private readonly Dictionary<string, List<TeamPhoneLocation>> _phoneTrackHistory = new();
 
-        public Task UpdateTeamPhoneLocationAsync(string teamId, double lat, double lng, double? accuracy = null, DateTime? timestampUtc = null)
+        public Task UpdateTeamPhoneLocationAsync(string teamId, double lat, double lng, double? accuracy = null, DateTime? timestampUtc = null, int? batteryPercent = null)
         {
             if (string.IsNullOrWhiteSpace(teamId))
                 return Task.CompletedTask;
@@ -46,7 +46,8 @@ namespace Einsatzueberwachung.Domain.Services
                 Latitude = lat,
                 Longitude = lng,
                 Timestamp = timestamp,
-                Accuracy = accuracy
+                Accuracy = accuracy,
+                BatteryPercent = batteryPercent is >= 0 and <= 100 ? batteryPercent : null
             };
 
             bool isNewest;

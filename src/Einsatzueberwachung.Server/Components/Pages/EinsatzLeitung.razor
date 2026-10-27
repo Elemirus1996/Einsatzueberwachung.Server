@@ -86,6 +86,8 @@
         </div>
     </div>
 
+    <Einsatzueberwachung.Server.Components.Shared.ZertifikatHinweis />
+
     @* ── Lagestreifen ─────────────────────────────────────────── *@
     <div class="el-statusbar @StatusbarClass">
         <div class="el-statusbar-left">
@@ -983,6 +985,16 @@
                         @if (!string.IsNullOrWhiteSpace(team.SearchAreaName))
                         {
                             <span class="bahn-meta-item"><i class="bi bi-geo-alt"></i> @team.SearchAreaName</span>
+                        }
+                        @if (EinsatzService.PhoneLocations.GetValueOrDefault(team.TeamId) is { } handy)
+                        {
+                            var alter = TimeService.Now - handy.Timestamp;
+                            <span class="bahn-meta-item @(alter > TimeSpan.FromMinutes(3) || handy.BatteryPercent < 20 ? "bahn-meta-warn" : "")"
+                                  title="Handy des Teams: letzte Position und Akku">
+                                <i class="bi bi-phone"></i>
+                                @(alter.TotalMinutes < 1 ? "jetzt" : $"vor {(int)alter.TotalMinutes} Min")
+                                @if (handy.BatteryPercent is int akku) { <text>· @akku %</text> }
+                            </span>
                         }
                     </div>
                 </div>

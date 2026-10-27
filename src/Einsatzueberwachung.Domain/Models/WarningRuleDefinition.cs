@@ -64,6 +64,27 @@ namespace Einsatzueberwachung.Domain.Models
                 Label = "Halsband-Akku niedrig",
                 Description = "Wird ausgelöst, wenn ein zugewiesenes Halsband während aktiver Suche den Akkustand 1/3 meldet.",
                 DefaultLevel = WarningLevel.Warning
+            },
+            new WarningRuleDefinition
+            {
+                Source = Sources.PhoneNoSignal,
+                Label = "Handy des Teams sendet nicht",
+                Description = "Wird ausgelöst, wenn das Handy eines Teams (Traccar oder Team-Seite) während aktiver Suche länger als das eingestellte Zeitfenster keine Position schickt – nur bei Teams, deren Handy im Einsatz schon gesendet hat.",
+                DefaultLevel = WarningLevel.Warning
+            },
+            new WarningRuleDefinition
+            {
+                Source = Sources.PhoneLowBattery,
+                Label = "Handy-Akku niedrig",
+                Description = "Wird ausgelöst, wenn das Handy eines Teams während aktiver Suche weniger als 20 % Akku meldet (Traccar Client).",
+                DefaultLevel = WarningLevel.Warning
+            },
+            new WarningRuleDefinition
+            {
+                Source = Sources.ServerCertificate,
+                Label = "Zertifikat der öffentlichen Adresse",
+                Description = "Wird ausgelöst, wenn das Zertifikat der öffentlichen Adresse ungültig ist oder in weniger als 14 Tagen abläuft – ohne gültiges Zertifikat senden Traccar und Team-Handys nichts.",
+                DefaultLevel = WarningLevel.Critical
             }
         ];
 
@@ -76,6 +97,9 @@ namespace Einsatzueberwachung.Domain.Models
             public const string CollarOutOfBounds = "CollarOutOfBounds";
             public const string CollarNoSignal    = "CollarNoSignal";
             public const string CollarLowBattery  = "CollarLowBattery";
+            public const string PhoneNoSignal     = "PhoneNoSignal";
+            public const string PhoneLowBattery   = "PhoneLowBattery";
+            public const string ServerCertificate = "ServerCertificate";
         }
     }
 }

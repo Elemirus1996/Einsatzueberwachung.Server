@@ -287,6 +287,15 @@
 }
 
 
+/* Handy-Chip: seit Minuten keine Position waehrend der Suche */
+.tc-ctx-chip--warn {
+    background: var(--warning-soft);
+    border-color: var(--warning-border);
+    color: var(--warning-color);
+    font-weight: 600;
+}
+
+
 /* Clickable chips (search area + GPS collar) */
 .tc-ctx-chip--link {
     cursor: pointer;

@@ -18,14 +18,17 @@ public sealed class TeamMobileController : ControllerBase
     private readonly ITeamMobileTokenService _tokenService;
     private readonly IEinsatzService _einsatzService;
     private readonly ICollarTrackingService _collarTrackingService;
+    private readonly TraccarTestService _traccarTest;
     private readonly ILogger<TeamMobileController> _logger;
 
     public TeamMobileController(
         ITeamMobileTokenService tokenService,
         IEinsatzService einsatzService,
         ICollarTrackingService collarTrackingService,
-        ILogger<TeamMobileController> logger)
+        ILogger<TeamMobileController> logger,
+        TraccarTestService? traccarTest = null)
     {
+        _traccarTest = traccarTest ?? new TraccarTestService();
         _tokenService = tokenService;
         _einsatzService = einsatzService;
         _collarTrackingService = collarTrackingService;
@@ -163,7 +166,8 @@ public sealed class TeamMobileController : ControllerBase
     public async Task<IActionResult> PostTraccarPosition()
     {
         TraccarProtocol.Position? position;
-        if (Request.ContentType?.StartsWith("application/json", StringComparison.OrdinalIgnoreCase) == true)
+        var istJson = Request.ContentType?.StartsWith("application/json", StringComparison.OrdinalIgnoreCase) == true;
+        if (istJson)
         {
             // Neuere Traccar-Client-Apps senden JSON (hoechstens 64 KB lesen)
             using var reader = new StreamReader(Request.Body);
@@ -184,6 +188,14 @@ public sealed class TeamMobileController : ControllerBase
             return BadRequest(new { error = "id, lat und lon erforderlich." });
         }
 
+        // Traccar-Test aus den Einstellungen (Test-Kennung, kein Einsatz noetig)
+        if (position.DeviceId.StartsWith(TraccarTestService.Praefix, StringComparison.Ordinal)
+            && _traccarTest.TryVermerke(position.DeviceId, position.Latitude, position.Longitude, position.Accuracy,
+                position.BatteryPercent, istJson ? "JSON" : "Formular", DateTime.UtcNow))
+        {
+            return Ok();
+        }
+
         // Ungueltiges oder abgelaufenes Token: annehmen und verwerfen. Die App wuerde sonst ihren Puffer endlos
         // wiederholen und den Akku leeren; die Team-Ansicht zeigt den Status ohnehin an.
         if (!_tokenService.TryValidateTeamCookie(position.DeviceId, out var teamId)
@@ -193,7 +205,7 @@ public sealed class TeamMobileController : ControllerBase
             return Ok();
         }
 
-        await _einsatzService.UpdateTeamPhoneLocationAsync(teamId, position.Latitude, position.Longitude, position.Accuracy, position.TimestampUtc);
+        await _einsatzService.UpdateTeamPhoneLocationAsync(teamId, position.Latitude, position.Longitude, position.Accuracy, position.TimestampUtc, position.BatteryPercent);
         return Ok();
     }
 

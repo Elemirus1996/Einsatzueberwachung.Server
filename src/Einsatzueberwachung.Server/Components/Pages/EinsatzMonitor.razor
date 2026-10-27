@@ -235,6 +235,7 @@
                                                           DroneList="_droneList"
                                                           IsExpanded="_expandedTeamIds.Contains(team.TeamId)"
                                                           LastCollarLocation="GetLastCollarLocation(team)"
+                                                          LastPhoneLocation="EinsatzService.PhoneLocations.GetValueOrDefault(team.TeamId)"
                                                           LatestNoteEntries="GetLatestTeamNoteEntries(team, 3)"
                                                           CompletedSearches="GetCompletedSearches(team, 5)"
                                                           OnStart="StartTeamAsync"
@@ -1392,6 +1393,12 @@
                         Teams scannen diesen QR-Code mit dem Smartphone, um sich auf <strong>/team/login</strong> anzumelden.
                     </p>
                     <img src="@_teamMobileQrDataUrl" alt="QR-Code" class="monitor-qr-image" />
+                    @if (!string.IsNullOrEmpty(TeamMobileTokenService.CurrentMasterToken))
+                    {
+                        @* Zum Vorlesen per Funk oder Abtippen auf /team/login, wenn ein Handy den QR-Code nicht scannt *@
+                        <div class="monitor-team-code" aria-label="Anmelde-Code">@TeamCodeLesbar(TeamMobileTokenService.CurrentMasterToken)</div>
+                        <div class="small text-muted">Anmelde-Code – auf <strong>/team/login</strong> eintippen</div>
+                    }
                     <div class="mt-3">
                         <input type="text" class="form-control text-center" readonly value="@_teamMobileFullUrl" onclick="this.select()" />
                     </div>

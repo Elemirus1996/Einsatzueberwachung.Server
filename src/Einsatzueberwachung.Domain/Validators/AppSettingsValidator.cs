@@ -26,5 +26,9 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
         RuleFor(s => s.CollarNoSignalTimeoutSeconds)
             .InclusiveBetween(10, 600)
             .WithMessage("Kein-Signal-Zeitfenster muss zwischen 10 und 600 Sekunden liegen");
+
+        RuleFor(s => s.PhoneNoSignalTimeoutSeconds)
+            .InclusiveBetween(60, 1800)
+            .WithMessage("Handy-Funkstille muss zwischen 1 und 30 Minuten liegen");
     }
 }

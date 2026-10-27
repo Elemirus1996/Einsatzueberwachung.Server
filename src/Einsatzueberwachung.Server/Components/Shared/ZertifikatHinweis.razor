@@ -1,0 +1,24 @@
+@* Hinweis, wenn das Zertifikat der oeffentlichen Adresse ablaeuft oder ungueltig ist (SystemZustandService).
+   Ohne gueltiges Zertifikat senden Traccar und Team-Handys nichts – Browser zeigen nur eine wegklickbare Warnung. *@
+@using Einsatzueberwachung.Server.Services
+@inject SystemZustandService SystemZustand
+@implements IDisposable
+
+@if (SystemZustand.Aktuell?.Zertifikat is { } z && z.Kritisch(DateTime.UtcNow))
+{
+    <div class="alert alert-danger d-flex align-items-start gap-2 m-2 py-2 small" role="alert">
+        <i class="bi bi-shield-exclamation fs-5"></i>
+        <div class="flex-grow-1">
+            <strong>Zertifikat:</strong> @SystemZustandService.ZertifikatText(z, DateTime.UtcNow)
+            <a href="/einstellungen?tab=system" class="alert-link ms-1">Systemzustand</a>
+        </div>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => SystemZustand.Geaendert += OnGeaendert;
+
+    private void OnGeaendert() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => SystemZustand.Geaendert -= OnGeaendert;
+}

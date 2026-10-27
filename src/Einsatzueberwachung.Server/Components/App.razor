@@ -1,4 +1,4 @@
-﻿@using System.Text.Json
+@using System.Text.Json
 @using Einsatzueberwachung.Domain.Interfaces
 @using Einsatzueberwachung.Domain.Models
 @inject ISettingsService SettingsService
@@ -171,7 +171,7 @@
 
 <body>
     <CascadingAuthenticationState>
-        <Routes PublicOnly="@PublicAccess.IsPublicRequest(HttpContext)" />
+        <Routes PublicOnly="@PublicAccess.IsPublicRequest(HttpContext)" Geraet="@LeitungsGeraet" />
     </CascadingAuthenticationState>
     @* Hinweis bei Verbindungsabbruch (z. B. Funkloch) statt des blockierenden Standard-Dialogs *@
     <div id="components-reconnect-modal" class="eu-reconnect" role="status" aria-live="polite">
@@ -219,6 +219,11 @@
 
     // App-Funktionen (Manifest, Service Worker) nur fuer die Einsatzleitung, nicht im oeffentlichen Team-Zugang
     private bool IsPwa => !PublicAccess.IsPublicRequest(HttpContext);
+
+    [Inject] private Einsatzueberwachung.Server.Services.LeitungsGeraetNamen GeraeteNamen { get; set; } = default!;
+
+    // Leitungsplatz (VPN-Geraetename) fuer „Einsatzleitung · Tablet EL“ im Funkstammbuch
+    private string? LeitungsGeraet => IsPwa ? GeraeteNamen.NameFuer(HttpContext?.Connection.RemoteIpAddress) : null;
 
     private string _serverThemeModeJson = "\"Manual\"";
     private bool _serverThemeDark;
