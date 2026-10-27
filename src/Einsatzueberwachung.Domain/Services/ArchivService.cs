@@ -30,7 +30,7 @@ namespace Einsatzueberwachung.Domain.Services
             _archivFilePath = Path.Combine(_archivDirectory, "einsatz_archiv.json");
         }
 
-        private DateTime Now => _timeService?.Now ?? DateTime.Now;
+        private DateTime Now => _timeService?.Now ?? Ortszeit.Jetzt;
 
         private async Task EnsureLoadedAsync()
         {

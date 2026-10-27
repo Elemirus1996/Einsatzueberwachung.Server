@@ -50,7 +50,7 @@ namespace Einsatzueberwachung.Domain.Services
             if (string.IsNullOrWhiteSpace(text)) return;
 
             var notes = await GetNotesAsync();
-            var entry = new HomeNoteEntry(Guid.NewGuid().ToString(), text.Trim(), DateTime.Now);
+            var entry = new HomeNoteEntry(Guid.NewGuid().ToString(), text.Trim(), Ortszeit.Jetzt);
 
             await _lock.WaitAsync();
             try

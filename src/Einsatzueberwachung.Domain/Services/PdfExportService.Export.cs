@@ -17,7 +17,7 @@ namespace Einsatzueberwachung.Domain.Services
             try
             {
                 var staffelInfo = await ResolveStaffelInfoAsync(einsatzData);
-                var filename = $"Einsatzbericht_{einsatzData.EinsatzNummer}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+                var filename = $"Einsatzbericht_{einsatzData.EinsatzNummer}_{Ortszeit.Jetzt:yyyyMMdd_HHmmss}.pdf";
                 var einsatzPath = AppPathResolver.GetReportDirectory();
                 var filePath = Path.Combine(einsatzPath, filename);
                 var tracks = includeTracks ? einsatzData.TrackSnapshots : null;

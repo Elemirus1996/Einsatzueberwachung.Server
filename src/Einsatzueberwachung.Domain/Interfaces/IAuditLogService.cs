@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Interfaces
 {
@@ -16,7 +17,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
     public class AuditLogEntry
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        public DateTime Timestamp { get; set; } = DateTime.Now;
+        public DateTime Timestamp { get; set; } = Ortszeit.Jetzt;
         public string Aktion { get; set; } = string.Empty;
         public string Details { get; set; } = string.Empty;
         public string? TeamName { get; set; }

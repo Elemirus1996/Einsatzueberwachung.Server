@@ -3,6 +3,7 @@
 // damit mehrere Teams mit demselben Hund denselben Pausenstatus sehen.
 
 using System;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -14,7 +15,7 @@ namespace Einsatzueberwachung.Domain.Models
         public TimeSpan RunTimeBeforePause { get; set; }
         public int RequiredPauseMinutes { get; set; }
 
-        public TimeSpan PausedDuration => DateTime.Now - PauseStartTime;
+        public TimeSpan PausedDuration => Ortszeit.Jetzt - PauseStartTime;
 
         public int RemainingPauseMinutes =>
             Math.Max(0, RequiredPauseMinutes - (int)PausedDuration.TotalMinutes);

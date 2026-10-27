@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -31,7 +32,7 @@ namespace Einsatzueberwachung.Domain.Models
             Notes = string.Empty;
             Coordinates = new List<(double, double)>();
             GeoJsonData = string.Empty;
-            CreatedAt = DateTime.Now;
+            CreatedAt = Ortszeit.Jetzt;
         }
 
         public double AreaInSquareMeters

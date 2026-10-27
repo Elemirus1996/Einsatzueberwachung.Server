@@ -29,7 +29,7 @@ namespace Einsatzueberwachung.Domain.Services
 
             var entry = new AuditLogEntry
             {
-                Timestamp = DateTime.Now,
+                Timestamp = Ortszeit.Jetzt,
                 Aktion = aktion,
                 Details = details,
                 TeamName = teamName,

@@ -198,8 +198,8 @@
                             <tr><td class="text-muted">Team</td><td><strong>@_archiveTrackPopup.TeamName</strong></td></tr>
                             <tr><td class="text-muted">Bezeichnung</td><td>@_archiveTrackPopup.DisplayLabel</td></tr>
                             <tr><td class="text-muted">Suchgebiet</td><td>@(string.IsNullOrEmpty(_archiveTrackPopup.SearchAreaName) ? "–" : _archiveTrackPopup.SearchAreaName)</td></tr>
-                            <tr><td class="text-muted">Beginn</td><td>@(_archiveTrackPopup.Points.FirstOrDefault()?.Timestamp.ToLocalTime().ToString("HH:mm:ss") ?? "–")</td></tr>
-                            <tr><td class="text-muted">Ende</td><td>@(_archiveTrackPopup.Points.LastOrDefault()?.Timestamp.ToLocalTime().ToString("HH:mm:ss") ?? "–")</td></tr>
+                            <tr><td class="text-muted">Beginn</td><td>@(Ortszeit.AusUtc(_archiveTrackPopup.Points.FirstOrDefault()?.Timestamp)?.ToString("HH:mm:ss") ?? "–")</td></tr>
+                            <tr><td class="text-muted">Ende</td><td>@(Ortszeit.AusUtc(_archiveTrackPopup.Points.LastOrDefault()?.Timestamp)?.ToString("HH:mm:ss") ?? "–")</td></tr>
                             <tr><td class="text-muted">Dauer</td><td>@_archiveTrackPopup.FormattedDuration</td></tr>
                             <tr><td class="text-muted">Strecke</td><td>@_archiveTrackPopup.FormattedDistance</td></tr>
                             <tr><td class="text-muted">Punkte</td><td>@_archiveTrackPopup.Points.Count</td></tr>
@@ -218,7 +218,7 @@
                                         var pt = _archiveTrackPopup.Points[pi];
                                         <tr>
                                             <td class="text-muted">@(pi + 1)</td>
-                                            <td>@pt.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
+                                            <td>@Ortszeit.AusUtc(pt.Timestamp).ToString("HH:mm:ss")</td>
                                             <td class="font-monospace">@pt.Latitude.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)</td>
                                             <td class="font-monospace">@pt.Longitude.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)</td>
                                         </tr>

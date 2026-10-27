@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Einsatzueberwachung.Domain.Models.Enums;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -48,7 +49,7 @@ namespace Einsatzueberwachung.Domain.Models
         public GlobalNotesEntry()
         {
             Id = Guid.NewGuid().ToString();
-            Timestamp = DateTime.Now;
+            Timestamp = Ortszeit.Jetzt;
             Text = string.Empty;
             Type = GlobalNotesEntryType.Manual;
             SourceTeamId = string.Empty;

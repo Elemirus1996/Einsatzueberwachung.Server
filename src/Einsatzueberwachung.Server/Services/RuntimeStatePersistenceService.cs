@@ -3,20 +3,22 @@ using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Server.Data;
 using Microsoft.EntityFrameworkCore;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Server.Services;
 
 public sealed class RuntimeStatePersistenceService : BackgroundService
 {
     private const int RuntimeStateRowId = 1;
-    private const int MaxPersistedCollarHistoryPoints = 2000;
-    private const int MaxPersistedPhoneHistoryPoints = 2000;
 
     private readonly IDbContextFactory<RuntimeDbContext> _dbContextFactory;
     private readonly IEinsatzService _einsatzService;
     private readonly ICollarTrackingService _collarTrackingService;
     private readonly ILogger<RuntimeStatePersistenceService> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
+    // Verlaeufe laufender Suchen ohne Obergrenze, Punkt fuer Punkt (#89)
+    private readonly TrackPunktSpeicher<CollarLocation> _halsbandPunkte;
+    private readonly TrackPunktSpeicher<TeamPhoneLocation> _handyPunkte;
 
     private volatile bool _isDirty;
 
@@ -38,6 +40,8 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
         _jsonOptions.Converters.Add(new CoordinateTupleConverter());
         _jsonOptions.Converters.Add(new NullableCoordinateTupleConverter());
         _jsonOptions.Converters.Add(new CoordinateTupleListConverter());
+        _halsbandPunkte = new("collar", p => p.Timestamp, p => (p.Latitude, p.Longitude), _jsonOptions);
+        _handyPunkte = new("phone", p => p.Timestamp, p => (p.Latitude, p.Longitude), _jsonOptions);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -85,6 +89,7 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
         await db.Database.EnsureCreatedAsync(cancellationToken);
+        await TrackPunktSpeicher<CollarLocation>.TabelleAnlegenAsync(db, cancellationToken);
     }
 
     private async Task RestoreRuntimeStateAsync(CancellationToken cancellationToken)
@@ -107,6 +112,20 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
 
         await _einsatzService.ImportRuntimeSnapshotAsync(snapshot);
         await RestoreCollarAssignmentsAsync();
+
+        // Verlaeufe aus der Punkt-Tabelle; Datenbestaende vor 1.11.7 stehen noch (gekuerzt) im Schnappschuss
+        var halsband = await _halsbandPunkte.LadenAsync(db, cancellationToken);
+        var handy = await _handyPunkte.LadenAsync(db, cancellationToken);
+        if (halsband.Count > 0 || handy.Count > 0)
+        {
+            snapshot.CollarLocationHistory = halsband;
+            snapshot.PhoneTrackHistory = handy;
+        }
+        else if (snapshot.CollarLocationHistory.Count > 0 || snapshot.PhoneTrackHistory.Count > 0)
+        {
+            _isDirty = true; // beim naechsten Takt in die Punkt-Tabelle uebernehmen
+        }
+
         RestoreCollarLocationHistory(snapshot);
         RestorePhoneTrackHistory(snapshot);
         await MigrateLegacyFunkToRadioAsync(db, cancellationToken);
@@ -242,7 +261,7 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
 
         if (value.Kind == DateTimeKind.Unspecified)
         {
-            return DateTime.SpecifyKind(value, DateTimeKind.Local).ToUniversalTime();
+            return Ortszeit.NachUtc(value);
         }
 
         return value.ToUniversalTime();
@@ -252,20 +271,9 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
     {
         var snapshot = _einsatzService.ExportRuntimeSnapshot();
 
-        // Halsband-Positionsverlauf der laufenden Suche einschließen
-        foreach (var collar in _collarTrackingService.Collars)
-        {
-            var history = _collarTrackingService.GetLocationHistory(collar.Id);
-            if (history.Count > 0)
-                snapshot.CollarLocationHistory[collar.Id] = TrimHistory(history, MaxPersistedCollarHistoryPoints);
-        }
-
-        // Telefon-GPS-Verlauf der laufenden Suche einschließen
-        foreach (var kvp in _einsatzService.GetAllPhoneTrackHistories())
-        {
-            if (kvp.Value.Count > 0)
-                snapshot.PhoneTrackHistory[kvp.Key] = TrimHistory(kvp.Value, MaxPersistedPhoneHistoryPoints);
-        }
+        // Verlaeufe laufender Suchen liegen nicht im Schnappschuss, sondern in runtime_track_points
+        snapshot.CollarLocationHistory.Clear();
+        snapshot.PhoneTrackHistory.Clear();
 
         var json = JsonSerializer.Serialize(snapshot, _jsonOptions);
 
@@ -289,14 +297,13 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
         }
 
         await db.SaveChangesAsync(cancellationToken);
-    }
 
-    private static List<T> TrimHistory<T>(IReadOnlyList<T> points, int maxPoints)
-    {
-        if (points.Count <= maxPoints)
-            return points.ToList();
-
-        return points.Skip(points.Count - maxPoints).ToList();
+        // Halsbaender: auch solche, die (noch) nicht in Collars stehen, aber Verlauf haben – sonst wuerden ihre
+        // Punkte nach einer Wiederherstellung geloescht
+        var halsbandIds = _collarTrackingService.Collars.Select(c => c.Id).Union(_halsbandPunkte.GespeicherteSchluessel).ToList();
+        var halsbandVerlaeufe = halsbandIds.ToDictionary(id => id, id => _collarTrackingService.GetLocationHistory(id));
+        await _halsbandPunkte.AbgleichenAsync(db, halsbandVerlaeufe, cancellationToken);
+        await _handyPunkte.AbgleichenAsync(db, _einsatzService.GetAllPhoneTrackHistories(), cancellationToken);
     }
 
     // WICHTIG: Wird ein neues Event zu IEinsatzService hinzugefügt, das persistenten Zustand verändert,

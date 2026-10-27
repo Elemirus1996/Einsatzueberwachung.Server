@@ -78,7 +78,7 @@ public static class GpxBuilder
     /// <summary>Gibt den Dateinamen für das GPX eines Suchgebiets zurück.</summary>
     public static string SearchAreaFileName(SearchArea area, DateTime? date = null)
     {
-        var dateStamp = (date ?? DateTime.Now).ToString("ddMM", Inv);
+        var dateStamp = (date ?? Ortszeit.Jetzt).ToString("ddMM", Inv);
         var areaName = area.Name.Replace(" ", "_");
         var availableNameLength = GarminFileNameLength - dateStamp.Length - 1;
         var shortenedAreaName = areaName.Substring(0, Math.Min(areaName.Length, availableNameLength));
@@ -164,7 +164,7 @@ public static class GpxBuilder
         var name = XmlEscape(marker.Label);
         sb.AppendLine($"  <wpt lat=\"{lat}\" lon=\"{lon}\">");
         sb.AppendLine($"    <name>{name}</name>");
-        sb.AppendLine($"    <time>{marker.CreatedAt.ToUniversalTime():yyyy-MM-ddTHH:mm:ssZ}</time>");
+        sb.AppendLine($"    <time>{Ortszeit.NachUtc(marker.CreatedAt):yyyy-MM-ddTHH:mm:ssZ}</time>");
         sb.AppendLine("  </wpt>");
     }
 }

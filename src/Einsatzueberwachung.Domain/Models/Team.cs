@@ -4,6 +4,7 @@
 
 using System;
 using Einsatzueberwachung.Domain.Models.Enums;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -114,7 +115,7 @@ namespace Einsatzueberwachung.Domain.Models
         public int PauseMinutesLongRun { get; set; } = 180;
 
         public TimeSpan PausedDuration => IsPausing && PauseStartTime.HasValue
-            ? DateTime.Now - PauseStartTime.Value
+            ? Ortszeit.Jetzt - PauseStartTime.Value
             : TimeSpan.Zero;
 
         public int RemainingPauseMinutes => IsPausing
@@ -149,7 +150,7 @@ namespace Einsatzueberwachung.Domain.Models
             IsSecondWarning = false;
             FirstWarningMinutes = 45;
             SecondWarningMinutes = 60;
-            CreatedAt = DateTime.Now;
+            CreatedAt = Ortszeit.Jetzt;
             Notes = string.Empty;
             IsDroneTeam = false;
             DroneType = string.Empty;
@@ -165,7 +166,7 @@ namespace Einsatzueberwachung.Domain.Models
         {
             if (!IsRunning)
             {
-                var t = now ?? DateTime.Now;
+                var t = now ?? Ortszeit.Jetzt;
                 // Pausen-Zustand für neuen Lauf zurücksetzen
                 IsPausing = false;
                 IsManuallyPaused = false;
@@ -185,7 +186,7 @@ namespace Einsatzueberwachung.Domain.Models
         {
             if (!IsRunning) return;
 
-            var t = now ?? DateTime.Now;
+            var t = now ?? Ortszeit.Jetzt;
             ElapsedTime = t - StartTime;
             IsRunning = false;
             IsManuallyPaused = true;
@@ -231,7 +232,7 @@ namespace Einsatzueberwachung.Domain.Models
         {
             RunTimeBeforePause = ElapsedTime;
             RequiredPauseMinutes = ElapsedTime.TotalMinutes <= pauseThreshold ? pauseShort : pauseLong;
-            PauseStartTime = now ?? DateTime.Now;
+            PauseStartTime = now ?? Ortszeit.Jetzt;
             IsPausing = true;
         }
 

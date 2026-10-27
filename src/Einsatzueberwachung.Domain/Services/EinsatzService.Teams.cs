@@ -81,7 +81,7 @@ namespace Einsatzueberwachung.Domain.Services
                 _dogPauses.Remove(team.DogId);
             }
 
-            team.StartTimer(_timeService?.Now ?? DateTime.Now);
+            team.StartTimer(_timeService?.Now ?? Ortszeit.Jetzt);
             ClearPhoneTrackHistory(teamId);
         }
 
@@ -90,7 +90,7 @@ namespace Einsatzueberwachung.Domain.Services
             var team = await GetTeamByIdAsync(teamId);
             if (team == null) return;
 
-            team.PauseTimer(_timeService?.Now ?? DateTime.Now);
+            team.PauseTimer(_timeService?.Now ?? Ortszeit.Jetzt);
         }
 
         public async Task StopTeamTimerAsync(string teamId)

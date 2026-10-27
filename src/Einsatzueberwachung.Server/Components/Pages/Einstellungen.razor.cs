@@ -269,7 +269,7 @@ public partial class Einstellungen
             if (TimeSpan.TryParse(prefs.DarkModeStartTime, out var start)
                 && TimeSpan.TryParse(prefs.DarkModeEndTime, out var end))
             {
-                var now = DateTime.Now.TimeOfDay;
+                var now = Ortszeit.Jetzt.TimeOfDay;
                 prefs.IsDarkMode = start < end
                     ? now >= start && now < end
                     : now >= start || now < end;

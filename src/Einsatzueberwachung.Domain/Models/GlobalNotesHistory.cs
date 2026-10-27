@@ -2,6 +2,7 @@
 // Ermöglicht Nachvollziehbarkeit aller Änderungen
 
 using System;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -21,7 +22,7 @@ namespace Einsatzueberwachung.Domain.Models
             NoteId = string.Empty;
             OldText = string.Empty;
             NewText = string.Empty;
-            ChangedAt = DateTime.Now;
+            ChangedAt = Ortszeit.Jetzt;
             ChangedBy = "System";
             ChangeReason = string.Empty;
         }

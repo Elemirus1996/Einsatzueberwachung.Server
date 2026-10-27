@@ -8,6 +8,7 @@ using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Server.Components.Pages;
 
@@ -577,7 +578,7 @@ public partial class EinsatzMonitor
 
             _monitorWeather = weather;
             _monitorForecast = forecast;
-            _monitorWeatherLoadedAtLocal = DateTime.Now;
+            _monitorWeatherLoadedAtLocal = Ortszeit.Jetzt;
             _monitorWeatherUsingFallback = false;
         }
         catch
@@ -1453,7 +1454,7 @@ public partial class EinsatzMonitor
 
         var selectedSource = string.IsNullOrWhiteSpace(_newNoteSourceId) ? "einsatzleitung" : _newNoteSourceId;
         var (sourceId, sourceName, createdBy) = ResolveSelectedSource(selectedSource);
-        var noteText = $"[{DateTime.Now:HH:mm}] {shortText.Trim()}";
+        var noteText = $"[{Ortszeit.Jetzt:HH:mm}] {shortText.Trim()}";
 
         await EinsatzService.AddGlobalNoteWithSourceAsync(
             noteText,

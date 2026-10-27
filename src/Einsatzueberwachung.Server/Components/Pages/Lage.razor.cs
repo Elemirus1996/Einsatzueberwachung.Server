@@ -2,6 +2,7 @@ using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Server.Components.Pages;
 
@@ -19,7 +20,7 @@ public partial class Lage : IAsyncDisposable
 
     private DotNetObjectReference<Lage>? _dotNetReference;
     private System.Threading.Timer? _clockTimer;
-    private DateTime _now = DateTime.Now;
+    private DateTime _now = Ortszeit.Jetzt;
     private bool _mapInitialized;
 
     // Standardposition (Speyer) als Fallback
@@ -78,7 +79,7 @@ public partial class Lage : IAsyncDisposable
 
         _clockTimer = new System.Threading.Timer(_ =>
         {
-            _now = DateTime.Now;
+            _now = Ortszeit.Jetzt;
             RecomputeHeader();
             _ = InvokeAsync(StateHasChanged);
         }, null, 1000, 1000);

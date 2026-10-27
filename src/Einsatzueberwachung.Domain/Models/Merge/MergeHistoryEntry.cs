@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models.Merge
 {
@@ -18,7 +19,7 @@ namespace Einsatzueberwachung.Domain.Models.Merge
         public string MergeId { get; set; } = Guid.NewGuid().ToString();
 
         /// <summary>Zeitpunkt der Zusammenführung.</summary>
-        public DateTime MergedAt { get; set; } = DateTime.Now;
+        public DateTime MergedAt { get; set; } = Ortszeit.Jetzt;
 
         /// <summary>Optionaler Label-Name für diesen Import (z. B. "Staffel Nord"). Kann leer sein.</summary>
         public string Label { get; set; } = string.Empty;

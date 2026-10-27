@@ -98,7 +98,7 @@ namespace Einsatzueberwachung.Domain.Services
             if (DateTime.TryParseExact(input, AlarmTimeFormats, DeCulture, DateTimeStyles.None, out var parsedTimeOnly))
             {
                 var now = GetServerNowLocal();
-                parsed = new DateTime(now.Year, now.Month, now.Day, parsedTimeOnly.Hour, parsedTimeOnly.Minute, parsedTimeOnly.Second, DateTimeKind.Local);
+                parsed = new DateTime(now.Year, now.Month, now.Day, parsedTimeOnly.Hour, parsedTimeOnly.Minute, parsedTimeOnly.Second, DateTimeKind.Unspecified);
                 if (parsed > now.AddMinutes(1))
                     parsed = parsed.AddDays(-1);
                 return true;

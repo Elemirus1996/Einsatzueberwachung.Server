@@ -148,7 +148,7 @@ namespace Einsatzueberwachung.Domain.Services
 
                 var result = new DiveraPullResponse
                 {
-                    LastUpdated = DateTime.Now
+                    LastUpdated = Ortszeit.Jetzt
                 };
 
                 if (dataElement.TryGetProperty("cluster", out var clusterEl) &&

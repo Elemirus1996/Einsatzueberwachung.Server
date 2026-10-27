@@ -2,6 +2,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Interfaces
 {
@@ -38,7 +39,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
     /// </summary>
     public class FlugwetterData
     {
-        public DateTime Zeitpunkt { get; set; } = DateTime.Now;
+        public DateTime Zeitpunkt { get; set; } = Ortszeit.Jetzt;
         public string StationsName { get; set; } = string.Empty;
         public string StationsId { get; set; } = string.Empty;
         public double Entfernung { get; set; } // km zur angefragten Position
@@ -130,7 +131,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
     /// </summary>
     public class WeatherData
     {
-        public DateTime Zeitpunkt { get; set; } = DateTime.Now;
+        public DateTime Zeitpunkt { get; set; } = Ortszeit.Jetzt;
         public double Temperatur { get; set; } // in Celsius
         public double GefuehlteTemperatur { get; set; } // Wind Chill / Heat Index
         public int Luftfeuchtigkeit { get; set; } // in Prozent
@@ -196,7 +197,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
     public class WeatherForecast
     {
         public WeatherData[] StundenVorhersage { get; set; } = Array.Empty<WeatherData>();
-        public DateTime LetzteAktualisierung { get; set; } = DateTime.Now;
+        public DateTime LetzteAktualisierung { get; set; } = Ortszeit.Jetzt;
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models.Divera;
 using Microsoft.AspNetCore.Components;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Server.Components.Pages;
 
@@ -119,7 +120,7 @@ public partial class DiveraStatus : IDisposable
                 .ThenBy(m => m.Lastname)
                 .ThenBy(m => m.Firstname)
                 .ToList() ?? new();
-            _lastUpdated = pull?.LastUpdated ?? (_alarms.Any() ? DateTime.Now : null);
+            _lastUpdated = pull?.LastUpdated ?? (_alarms.Any() ? Ortszeit.Jetzt : null);
         }
         catch (Exception ex)
         {

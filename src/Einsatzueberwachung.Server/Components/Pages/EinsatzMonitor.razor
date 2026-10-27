@@ -426,7 +426,7 @@
                                                         @foreach (var item in forecastItems)
                                                         {
                                                             <div class="forecast-item @GetForecastRiskClass(item)">
-                                                                <div class="small fw-bold">@item.Zeitpunkt.ToLocalTime().ToString("HH:mm")</div>
+                                                                <div class="small fw-bold">@Ortszeit.AusUtc(item.Zeitpunkt).ToString("HH:mm")</div>
                                                                 <div class="small">@item.Temperatur.ToString("0")°</div>
                                                                 <div class="small text-muted">@item.Niederschlag.ToString("0.0") mm</div>
                                                             </div>

@@ -157,8 +157,8 @@
 
     private static string FormatAge(DateTime timestamp)
     {
-        // Timestamp ist Server-Lokalzeit (GetServerNowLocal), daher DateTime.Now verwenden
-        var seconds = (int)(DateTime.Now - timestamp).TotalSeconds;
+        // Timestamp ist Ortszeit (GetServerNowLocal), daher Ortszeit.Jetzt verwenden
+        var seconds = (int)(Ortszeit.Jetzt - timestamp).TotalSeconds;
         if (seconds < 5)  return "gerade eben";
         if (seconds < 60) return $"vor {seconds}s";
         var minutes = seconds / 60;

@@ -18,7 +18,7 @@ namespace Einsatzueberwachung.Domain.Services
             WriteIndented = false
         };
 
-        private DateTime Now => _timeService?.Now ?? DateTime.Now;
+        private DateTime Now => _timeService?.Now ?? Ortszeit.Jetzt;
 
         public EinsatzMergeService(
             IEinsatzService einsatzService,

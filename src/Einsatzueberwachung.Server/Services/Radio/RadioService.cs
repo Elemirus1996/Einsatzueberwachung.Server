@@ -4,6 +4,7 @@ using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Server.Services.Radio;
 
@@ -106,7 +107,7 @@ public sealed class RadioService : IRadioService
 
     private static RadioMessageDto ToDto(RadioMessageEntity entity)
     {
-        var timestamp = DateTime.SpecifyKind(entity.TimestampUtc, DateTimeKind.Utc).ToLocalTime();
+        var timestamp = Ortszeit.AusUtc(DateTime.SpecifyKind(entity.TimestampUtc, DateTimeKind.Utc));
         var replies = entity.Replies
             .OrderBy(x => x.TimestampUtc)
             .Select(ToReplyDto)
@@ -125,7 +126,7 @@ public sealed class RadioService : IRadioService
 
     private static RadioReplyDto ToReplyDto(RadioReplyEntity entity)
     {
-        var timestamp = DateTime.SpecifyKind(entity.TimestampUtc, DateTimeKind.Utc).ToLocalTime();
+        var timestamp = Ortszeit.AusUtc(DateTime.SpecifyKind(entity.TimestampUtc, DateTimeKind.Utc));
 
         return new RadioReplyDto(
             entity.Id,

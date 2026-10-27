@@ -153,7 +153,7 @@
                             @foreach (var item in _forecast.StundenVorhersage.Take(12))
                             {
                                 <tr>
-                                    <td>@item.Zeitpunkt.ToLocalTime().ToString("HH:mm")</td>
+                                    <td>@Ortszeit.AusUtc(item.Zeitpunkt).ToString("HH:mm")</td>
                                     <td>@item.Temperatur.ToString("0.0") °C</td>
                                     <td>@item.Windgeschwindigkeit.ToString("0") km/h</td>
                                     <td>@item.Niederschlag.ToString("0.0") mm</td>
@@ -217,7 +217,7 @@
             }
             else
             {
-                _lastLoadedLocal = DateTime.Now;
+                _lastLoadedLocal = Ortszeit.Jetzt;
             }
         }
         finally

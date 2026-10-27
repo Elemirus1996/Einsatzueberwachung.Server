@@ -1,11 +1,12 @@
 using System;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
     public class ElNotizEntry
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        public DateTime Timestamp { get; set; } = DateTime.Now;
+        public DateTime Timestamp { get; set; } = Ortszeit.Jetzt;
         public string Text { get; set; } = string.Empty;
         public string Prefix { get; set; } = string.Empty;
 

@@ -2,6 +2,7 @@
 // Teil des Thread-Systems für erweiterte Kommunikation
 
 using System;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -30,7 +31,7 @@ namespace Einsatzueberwachung.Domain.Models
             Text = string.Empty;
             SourceTeamId = string.Empty;
             SourceTeamName = string.Empty;
-            Timestamp = DateTime.Now;
+            Timestamp = Ortszeit.Jetzt;
             CreatedBy = "System";
         }
 

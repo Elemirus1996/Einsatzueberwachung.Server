@@ -2,6 +2,7 @@
 // Eine Suche kann maximal einen Halsband-Track (CollarTrack) und einen Mensch-Laufweg (HumanTrack) enthalten.
 
 using Einsatzueberwachung.Domain.Models.Enums;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -31,6 +32,6 @@ namespace Einsatzueberwachung.Domain.Models
         public bool CanAddHumanTrack => Tracks.All(t => t.TrackType != TrackType.HumanTrack);
 
         public string FormattedTimeRange =>
-            $"{SearchStart.ToLocalTime():dd.MM.yyyy HH:mm} – {SearchEnd.ToLocalTime():HH:mm}";
+            $"{Ortszeit.AusUtc(SearchStart):dd.MM.yyyy HH:mm} – {Ortszeit.AusUtc(SearchEnd):HH:mm}";
     }
 }

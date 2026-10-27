@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Einsatzueberwachung.Domain.Models.Enums;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -19,7 +20,7 @@ namespace Einsatzueberwachung.Domain.Models
         public string TeamName { get; set; } = string.Empty;
         public string SearchAreaName { get; set; } = string.Empty;
         public string Color { get; set; } = "#FF4444";
-        public DateTime CapturedAt { get; set; } = DateTime.Now;
+        public DateTime CapturedAt { get; set; } = Ortszeit.Jetzt;
 
         /// <summary>
         /// Unterscheidet Halsband-Track von importiertem Mensch-Laufweg.
