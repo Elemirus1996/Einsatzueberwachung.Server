@@ -17,6 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Beim Release wuerde sonst der Tag (detached HEAD) ausgecheckt – der Push auf main schlug fehl
+          ref: main
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -36,4 +38,4 @@ jobs:
           fi
           git commit -m "docs: changelog aktualisiert für ${{ github.event.release.tag_name || 'manuell' }}"
           git pull --rebase origin main
-          git push origin main
+          git push origin HEAD:main
