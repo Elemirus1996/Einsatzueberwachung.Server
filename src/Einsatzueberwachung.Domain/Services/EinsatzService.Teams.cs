@@ -99,6 +99,7 @@ namespace Einsatzueberwachung.Domain.Services
             if (team == null) return;
 
             team.StopTimer();
+            if (team.IsSucheBeendet) PhonePositionAusblenden(teamId);
 
             if (team.IsPausing && !string.IsNullOrWhiteSpace(team.DogId) && team.PauseStartTime.HasValue)
             {

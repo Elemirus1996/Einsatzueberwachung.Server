@@ -95,6 +95,23 @@ else
             </div>
         }
 
+        @if (_traccarHinweis is not null && !_einsatzEnded)
+        {
+            @* Suche beendet/gestartet: Traccar laeuft unabhaengig vom Browser und laesst sich nur per Tipp steuern *@
+            <div class="alert @(_traccarHinweis == "stop" ? "alert-warning" : "alert-success") d-flex align-items-center gap-2 m-2 mb-0 py-2" role="alert">
+                <i class="bi @(_traccarHinweis == "stop" ? "bi-stop-circle-fill" : "bi-play-circle-fill") fs-4"></i>
+                <div class="flex-grow-1 small fw-semibold">
+                    @(_traccarHinweis == "stop" ? "Suche beendet – Traccar jetzt stoppen (spart Akku)." : "Suche gestartet – Traccar-Aufzeichnung starten.")
+                </div>
+                <a class="btn btn-sm @(_traccarHinweis == "stop" ? "btn-dark" : "btn-success")"
+                   href="@(_traccarHinweis == "stop" ? "org.traccar.client://action/stop" : "org.traccar.client://action/start")"
+                   @onclick="() => _traccarHinweis = null">
+                    @(_traccarHinweis == "stop" ? "Traccar stoppen" : "Traccar starten")
+                </a>
+                <button type="button" class="btn-close" aria-label="Hinweis schließen" @onclick="() => _traccarHinweis = null"></button>
+            </div>
+        }
+
         @if (_traccarPanelOpen && !_einsatzEnded)
         {
             <div class="team-mobile-info-panel">
@@ -110,13 +127,13 @@ else
                         <a href="@TraccarAppStoreUrl" target="_blank" rel="noopener">iPhone</a>
                     </li>
                     <li class="mb-2">
-                        <a class="btn btn-sm btn-primary" href="@TraccarSetupLink">
+                        <a class="btn btn-sm btn-primary" href="@TraccarSetupLink" @onclick="TraccarGenutztAsync">
                             <i class="bi bi-gear me-1"></i>Mit diesem Einsatz verbinden
                         </a>
                         <div class="text-muted">In der App „OK“ tippen. Gilt nur für diesen Einsatz und dein Team.</div>
                     </li>
                     <li>
-                        <a class="btn btn-sm btn-success" href="org.traccar.client://action/start">
+                        <a class="btn btn-sm btn-success" href="org.traccar.client://action/start" @onclick="TraccarGenutztAsync">
                             <i class="bi bi-play-fill me-1"></i>Aufzeichnung starten
                         </a>
                         <a class="btn btn-sm btn-outline-secondary ms-1" href="org.traccar.client://action/stop">
@@ -250,6 +267,12 @@ else
 
     private bool _authChecked;
     private bool _traccarPanelOpen;
+
+    // Traccar-Hinweis bei Ende/Start einer Suche (nur wenn auf diesem Handy Traccar eingerichtet/gestartet wurde)
+    private bool _traccarGenutzt;
+    private string? _traccarHinweis; // "stop" | "start"
+    private bool? _warLaufend;
+    private bool _warKurzpause;
 
     private const string TraccarPlayStoreUrl = "https://play.google.com/store/apps/details?id=org.traccar.client";
     private const string TraccarAppStoreUrl = "https://apps.apple.com/app/traccar-client/id843156974";
@@ -426,6 +449,7 @@ else
 
         _selfRef = DotNetObjectReference.Create(this);
         try { await JS.InvokeVoidAsync("teamMobileMap.startWatchingUser", _selfRef); } catch { /* ignore */ }
+        try { _traccarGenutzt = await JS.InvokeAsync<bool>("teamTraccar.genutzt"); } catch { /* ignore */ }
 
         // Direkt an Domain-Events andocken
         _collarHandler = OnCollarLocation;
@@ -438,12 +462,41 @@ else
         _uiTimer = new System.Timers.Timer(1000) { AutoReset = true };
         _uiTimer.Elapsed += async (_, _) =>
         {
-            try { _now = DateTime.Now; await InvokeAsync(StateHasChanged); }
+            try { _now = DateTime.Now; await InvokeAsync(() => { PruefeTraccarHinweis(); StateHasChanged(); }); }
             catch { /* circuit kann zwischenzeitlich weg sein */ }
         };
         _uiTimer.Start();
 
         StateHasChanged();
+    }
+
+    private async Task TraccarGenutztAsync()
+    {
+        _traccarGenutzt = true;
+        try { await JS.InvokeVoidAsync("teamTraccar.merken"); } catch { /* ignore */ }
+    }
+
+    /// <summary>
+    /// Wechsel laufend → beendet: „Traccar stoppen“; beendet/bereit → laufend: „Traccar starten“.
+    /// Kurzpause und Weiter nach Kurzpause zeigen nichts (der Laufweg laeuft dort weiter).
+    /// </summary>
+    private void PruefeTraccarHinweis()
+    {
+        if (_team is null) return;
+        var laeuft = _team.IsRunning;
+        if (_warLaufend is bool vorher && vorher != laeuft && _traccarGenutzt)
+        {
+            if (!laeuft && _team.IsSucheBeendet) ZeigeTraccarHinweis("stop");
+            else if (laeuft && !_warKurzpause) ZeigeTraccarHinweis("start");
+        }
+        _warLaufend = laeuft;
+        _warKurzpause = _team.IsManuallyPaused;
+    }
+
+    private void ZeigeTraccarHinweis(string art)
+    {
+        _traccarHinweis = art;
+        _ = JS.InvokeVoidAsync("teamTraccar.vibrieren").AsTask().ContinueWith(_ => { }, TaskScheduler.Default);
     }
 
     [JSInvokable]

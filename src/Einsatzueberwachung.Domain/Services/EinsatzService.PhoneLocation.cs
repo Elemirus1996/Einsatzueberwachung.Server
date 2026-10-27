@@ -28,6 +28,9 @@ namespace Einsatzueberwachung.Domain.Services
             }
             if (team == null) return Task.CompletedTask;
 
+            // Nach beendeter Suche nichts mehr als „live“ zeigen (Traccar sendet evtl. weiter, bis es gestoppt wird)
+            if (team.IsSucheBeendet) return Task.CompletedTask;
+
             // Zeitpunkt aus dem Puffer der Traccar-App (UTC) in die lokale Serverzeit umrechnen; ohne Angabe: jetzt
             var now = GetServerNowLocal();
             var timestamp = now;
@@ -80,6 +83,28 @@ namespace Einsatzueberwachung.Domain.Services
                 // Subscriber-Fehler dürfen den Request-Pfad nicht abbrechen
             }
             return Task.CompletedTask;
+        }
+
+        public event Action<string>? TeamPhoneLocationRemoved;
+
+        /// <summary>Aktuelle Handy-Position eines Teams verwerfen (Suche beendet) und Karten benachrichtigen.</summary>
+        private void PhonePositionAusblenden(string teamId)
+        {
+            bool entfernt;
+            lock (_phoneLocationsLock)
+            {
+                entfernt = _phoneLocations.Remove(teamId);
+            }
+
+            if (!entfernt) return;
+            try
+            {
+                TeamPhoneLocationRemoved?.Invoke(teamId);
+            }
+            catch
+            {
+                // Subscriber-Fehler dürfen den Stopp nicht abbrechen
+            }
         }
 
         public IReadOnlyList<TeamPhoneLocation> GetPhoneTrackHistory(string teamId)

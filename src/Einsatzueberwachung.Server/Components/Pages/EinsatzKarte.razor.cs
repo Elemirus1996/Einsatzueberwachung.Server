@@ -266,6 +266,7 @@ public partial class EinsatzKarte
                 CollarTrackingService.CollarHistoryCleared += OnCollarHistoryCleared;
                 CollarTrackingService.TrackSnapshotSaved += OnTrackSnapshotSaved;
                 EinsatzService.TeamPhoneLocationChanged += OnTeamPhoneLocationChanged;
+                EinsatzService.TeamPhoneLocationRemoved += OnTeamPhoneLocationRemoved;
                 EinsatzService.TeamPhoneTrackPointAdded += OnTeamPhoneTrackPointAdded;
                 EinsatzService.TrackSnapshotAdded += OnTrackSnapshotSaved;
 
@@ -1131,6 +1132,22 @@ public partial class EinsatzKarte
         });
     }
 
+    // Suche beendet: Handy nicht mehr als live zeigen (Traccar sendet evtl. weiter)
+    private void OnTeamPhoneLocationRemoved(string teamId)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                if (!_mapInitialized) return;
+                await JSRuntime.InvokeVoidAsync("PhoneTracking.removeMarker", "einsatzMap", teamId);
+                StateHasChanged();
+            }
+            catch (ObjectDisposedException) { }
+            catch (JSDisconnectedException) { }
+        });
+    }
+
     private void OnTeamPhoneTrackPointAdded(string teamId, string teamName, TeamPhoneLocation location)
     {
         // Immer aktualisieren: Live-Track sollte auch angezeigt werden wenn bereits sichtbar
@@ -1568,6 +1585,7 @@ public partial class EinsatzKarte
             CollarTrackingService.CollarHistoryCleared -= OnCollarHistoryCleared;
             CollarTrackingService.TrackSnapshotSaved -= OnTrackSnapshotSaved;
             EinsatzService.TeamPhoneLocationChanged -= OnTeamPhoneLocationChanged;
+            EinsatzService.TeamPhoneLocationRemoved -= OnTeamPhoneLocationRemoved;
             EinsatzService.TeamPhoneTrackPointAdded -= OnTeamPhoneTrackPointAdded;
             EinsatzService.TrackSnapshotAdded -= OnTrackSnapshotSaved;
             await JSRuntime.InvokeVoidAsync("LeafletMap.dispose", "einsatzMap");

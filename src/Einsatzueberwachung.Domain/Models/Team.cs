@@ -1,4 +1,4 @@
-﻿// Quelle: WPF-Projekt Models/Team.cs
+// Quelle: WPF-Projekt Models/Team.cs
 // Repräsentiert ein Team (Hund+Hundeführer+Helfer oder Drohnenteam) mit Timer und Warnungen
 // Hinweis: Timer-Logik wird zentral durch TeamTimerService gesteuert (ein Timer für alle Teams)
 
@@ -176,6 +176,13 @@ namespace Einsatzueberwachung.Domain.Models
             IsManuallyPaused = true;
             TimerPaused?.Invoke(this);
         }
+
+        /// <summary>
+        /// Suche beendet (Stopp), aber noch nicht wieder gestartet oder auf „Bereit“ gesetzt. Das Handy des Teams gilt
+        /// dann nicht mehr als „live“ – auch wenn Traccar noch sendet. Kurzpause zaehlt nicht als beendet.
+        /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool IsSucheBeendet => !IsRunning && !IsManuallyPaused && (ElapsedTime > TimeSpan.Zero || IsPausing);
 
         public void StopTimer()
         {

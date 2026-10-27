@@ -441,3 +441,17 @@ window.teamMobileMap = (function () {
         getAreaCentroid, postLocation, setOptions
     };
 })();
+
+// Traccar-Hinweis auf der Team-Seite (1.11.4): merkt sich auf dem Handy, ob das Team Traccar nutzt – nur dann
+// erscheint bei Ende/Start einer Suche der Hinweis „Traccar stoppen/starten“, mit kurzem Vibrieren.
+window.teamTraccar = {
+    genutzt: function () {
+        try { return localStorage.getItem('einsatz.traccarGenutzt') === '1'; } catch (e) { return false; }
+    },
+    merken: function () {
+        try { localStorage.setItem('einsatz.traccarGenutzt', '1'); } catch (e) { /* privater Modus */ }
+    },
+    vibrieren: function () {
+        try { if (navigator.vibrate) navigator.vibrate([250, 120, 250]); } catch (e) { /* nicht unterstuetzt (iPhone) */ }
+    }
+};
