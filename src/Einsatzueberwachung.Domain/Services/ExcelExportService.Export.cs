@@ -130,7 +130,7 @@ namespace Einsatzueberwachung.Domain.Services
                 ("Alarmiert", einsatz.Alarmiert),
                 ("Einsatzleiter", einsatz.Einsatzleiter),
                 ("Führungsassistent", einsatz.Fuehrungsassistent),
-                ("Exportiert am", DateTime.Now.ToString("dd.MM.yyyy HH:mm"))
+                ("Exportiert am", Ortszeit.Jetzt.ToString("dd.MM.yyyy HH:mm"))
             };
 
             int r = 3;

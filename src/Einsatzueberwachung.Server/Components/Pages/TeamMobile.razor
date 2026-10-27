@@ -299,7 +299,7 @@ else
     private double? _areaCentroidLng;
     private double? _distanceToAreaKm;
     private DateTime? _lastUpdate;
-    private DateTime _now = DateTime.Now;
+    private DateTime _now = Ortszeit.Jetzt;
     private bool _einsatzEnded;
     private string? _teamId;
     private bool _infoPanelOpen;
@@ -462,7 +462,7 @@ else
         _uiTimer = new System.Timers.Timer(1000) { AutoReset = true };
         _uiTimer.Elapsed += async (_, _) =>
         {
-            try { _now = DateTime.Now; await InvokeAsync(() => { PruefeTraccarHinweis(); StateHasChanged(); }); }
+            try { _now = Ortszeit.Jetzt; await InvokeAsync(() => { PruefeTraccarHinweis(); StateHasChanged(); }); }
             catch { /* circuit kann zwischenzeitlich weg sein */ }
         };
         _uiTimer.Start();

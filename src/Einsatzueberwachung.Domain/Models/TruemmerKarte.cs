@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -14,7 +15,7 @@ namespace Einsatzueberwachung.Domain.Models
         public string ImageRelativePath { get; set; } = string.Empty;
         public int ImageWidthPx { get; set; }
         public int ImageHeightPx { get; set; }
-        public DateTime UploadedAt { get; set; } = DateTime.Now;
+        public DateTime UploadedAt { get; set; } = Ortszeit.Jetzt;
     }
 
     /// <summary>

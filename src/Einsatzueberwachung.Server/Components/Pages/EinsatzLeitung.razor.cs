@@ -6,6 +6,7 @@ using Einsatzueberwachung.Server.Components;
 using Einsatzueberwachung.Server.Services.Radio;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Server.Components.Pages;
 
@@ -88,7 +89,7 @@ public partial class EinsatzLeitung : IDisposable
         await FlushPendingAutoSaveAsync();
         _vi = new VermisstenInfo { Id = Guid.NewGuid() };
         await EinsatzService.UpsertVermisstenAsync(_vi);
-        _lastAutoSavedAt = DateTime.Now;
+        _lastAutoSavedAt = Ortszeit.Jetzt;
     }
 
     private async Task RemoveCurrentVermisstenAsync()
@@ -114,7 +115,7 @@ public partial class EinsatzLeitung : IDisposable
         try
         {
             await EinsatzService.UpsertVermisstenAsync(_vi);
-            _lastAutoSavedAt = DateTime.Now;
+            _lastAutoSavedAt = Ortszeit.Jetzt;
         }
         catch { /* swallow */ }
     }
@@ -145,7 +146,7 @@ public partial class EinsatzLeitung : IDisposable
 
     // Push-Toast
     private readonly List<PushToastItem> _pushToasts = new();
-    private DateTime _pageOpenedAt = DateTime.Now;
+    private DateTime _pageOpenedAt = Ortszeit.Jetzt;
 
     protected override void OnInitialized()
     {
@@ -198,7 +199,7 @@ public partial class EinsatzLeitung : IDisposable
         await EinsatzService.UpsertVermisstenAsync(_vi);
         _saveMessage = "Gespeichert.";
         _saveIsError = false;
-        _lastAutoSavedAt = DateTime.Now;
+        _lastAutoSavedAt = Ortszeit.Jetzt;
         await InvokeAsync(StateHasChanged);
         await Task.Delay(2000);
         _saveMessage = string.Empty;
@@ -221,7 +222,7 @@ public partial class EinsatzLeitung : IDisposable
                 if (token.IsCancellationRequested) return;
                 if (_vi.Id != snapshotId) return; // anderer Vermisster aktiv
                 await EinsatzService.UpsertVermisstenAsync(_vi);
-                _lastAutoSavedAt = DateTime.Now;
+                _lastAutoSavedAt = Ortszeit.Jetzt;
                 _autoSavePending = false;
                 _saveIsError = false;
                 await InvokeAsync(StateHasChanged);
@@ -243,7 +244,7 @@ public partial class EinsatzLeitung : IDisposable
         {
             if (_autoSavePending) return "Speichere…";
             if (_lastAutoSavedAt is null) return string.Empty;
-            var diff = DateTime.Now - _lastAutoSavedAt.Value;
+            var diff = Ortszeit.Jetzt - _lastAutoSavedAt.Value;
             if (diff.TotalSeconds < 5) return "Gespeichert";
             if (diff.TotalMinutes < 1) return $"Gespeichert vor {(int)diff.TotalSeconds}s";
             return $"Gespeichert {_lastAutoSavedAt.Value:HH:mm}";
@@ -492,7 +493,7 @@ public partial class EinsatzLeitung : IDisposable
                 data = await Weather.GetCurrentWeatherByAddressAsync(_e.Einsatzort);
             }
             _weather = data;
-            _weatherLoadedAt = DateTime.Now;
+            _weatherLoadedAt = Ortszeit.Jetzt;
             await InvokeAsync(StateHasChanged);
         }
         catch { /* schluck */ }
@@ -556,7 +557,7 @@ public partial class EinsatzLeitung : IDisposable
         public string Title { get; init; } = string.Empty;
         public string Body { get; init; } = string.Empty;
         public string Icon { get; init; } = "bi-broadcast";
-        public DateTime CreatedAt { get; init; } = DateTime.Now;
+        public DateTime CreatedAt { get; init; } = Ortszeit.Jetzt;
     }
 
     // ── Belastungs-Tachometer ────────────────────────────────────

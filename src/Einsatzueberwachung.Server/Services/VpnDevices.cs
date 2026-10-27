@@ -198,7 +198,7 @@ public sealed class VpnDeviceService(IVpnPeerTool tool, VpnDeviceStore store, IA
         var peer = await tool.AddAsync();
         var device = new VpnDevice { Name = name, PublicKey = peer.PublicKey, Ip = peer.Ip, CreatedUtc = nowUtc, ExpiresUtc = expiresUtc };
         store.Add(device);
-        audit.Log("VPN-Gerät angelegt", $"{name} ({peer.Ip})" + (expiresUtc is { } e ? $", gültig bis {e.ToLocalTime():dd.MM.yyyy HH:mm}" : ""));
+        audit.Log("VPN-Gerät angelegt", $"{name} ({peer.Ip})" + (expiresUtc is { } e ? $", gültig bis {Ortszeit.AusUtc(e):dd.MM.yyyy HH:mm}" : ""));
 
         return new VpnDeviceCreated(device, BuildClientConfig(peer, server, store.Endpoint));
     }

@@ -20,7 +20,7 @@ namespace Einsatzueberwachung.Domain.Services
             QuestPDF.Settings.License = LicenseType.Community;
         }
 
-        private DateTime Now => _timeService?.Now ?? DateTime.Now;
+        private DateTime Now => _timeService?.Now ?? Ortszeit.Jetzt;
 
         private void AddTableRow(TableDescriptor table, string label, string value)
         {

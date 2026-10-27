@@ -168,7 +168,7 @@ namespace Einsatzueberwachung.Domain.Services
         public string GetFileName(EinsatzExportPacket packet)
         {
             var safeNr = MakeSafeFileName(packet.EinsatzNummer);
-            var timestamp = packet.ExportedAt.ToLocalTime().ToString("yyyyMMdd_HHmm");
+            var timestamp = Ortszeit.AusUtc(packet.ExportedAt).ToString("yyyyMMdd_HHmm");
 
             if (!string.IsNullOrWhiteSpace(packet.Label))
             {

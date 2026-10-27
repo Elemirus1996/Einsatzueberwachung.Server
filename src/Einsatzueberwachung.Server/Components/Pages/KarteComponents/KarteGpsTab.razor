@@ -213,8 +213,8 @@
                             <tr><td class="text-muted">Typ</td><td>@(_detailSnapshot.TrackType == TrackType.HumanTrack ? "Mensch-Laufweg" : "Halsband-Track")</td></tr>
                             <tr><td class="text-muted">Bezeichnung</td><td>@_detailSnapshot.DisplayLabel</td></tr>
                             <tr><td class="text-muted">Suchgebiet</td><td>@(string.IsNullOrEmpty(_detailSnapshot.SearchAreaName) ? "–" : _detailSnapshot.SearchAreaName)</td></tr>
-                            <tr><td class="text-muted">Beginn</td><td>@(_detailSnapshot.Points.FirstOrDefault()?.Timestamp.ToLocalTime().ToString("HH:mm:ss") ?? "–")</td></tr>
-                            <tr><td class="text-muted">Ende</td><td>@(_detailSnapshot.Points.LastOrDefault()?.Timestamp.ToLocalTime().ToString("HH:mm:ss") ?? "–")</td></tr>
+                            <tr><td class="text-muted">Beginn</td><td>@(Ortszeit.AusUtc(_detailSnapshot.Points.FirstOrDefault()?.Timestamp)?.ToString("HH:mm:ss") ?? "–")</td></tr>
+                            <tr><td class="text-muted">Ende</td><td>@(Ortszeit.AusUtc(_detailSnapshot.Points.LastOrDefault()?.Timestamp)?.ToString("HH:mm:ss") ?? "–")</td></tr>
                             <tr><td class="text-muted">Dauer</td><td>@_detailSnapshot.FormattedDuration</td></tr>
                             <tr><td class="text-muted">Strecke</td><td>@_detailSnapshot.FormattedDistance</td></tr>
                             <tr><td class="text-muted">Punkte</td><td>@_detailSnapshot.Points.Count</td></tr>
@@ -233,7 +233,7 @@
                                         var pt = _detailSnapshot.Points[pi];
                                         <tr>
                                             <td class="text-muted">@(pi + 1)</td>
-                                            <td>@pt.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
+                                            <td>@Ortszeit.AusUtc(pt.Timestamp).ToString("HH:mm:ss")</td>
                                             <td class="font-monospace">@pt.Latitude.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)</td>
                                             <td class="font-monospace">@pt.Longitude.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)</td>
                                         </tr>
@@ -452,8 +452,8 @@
                                 <strong>@_parsedPoints.Count</strong> Punkte gefunden
                                 @if (_parsedPoints.Count > 0 && _parsedPoints[0].Timestamp != DateTime.MinValue)
                                 {
-                                    <text> · @_parsedPoints[0].Timestamp.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                                    bis @_parsedPoints[^1].Timestamp.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</text>
+                                    <text> · @Ortszeit.AusUtc(_parsedPoints[0].Timestamp).ToString("dd.MM.yyyy HH:mm")
+                                    bis @Ortszeit.AusUtc(_parsedPoints[^1].Timestamp).ToString("dd.MM.yyyy HH:mm")</text>
                                 }
                             </p>
                         </div>
@@ -501,7 +501,7 @@
                                             var excluded = _filteredPoints != null && !_filteredPoints.Contains(pt);
                                             <tr class="@(excluded ? "table-secondary opacity-50 text-decoration-line-through" : "")">
                                                 <td class="text-muted">@(pi + 1)</td>
-                                                <td>@(pt.Timestamp == DateTime.MinValue ? "–" : pt.Timestamp.ToLocalTime().ToString("HH:mm:ss"))</td>
+                                                <td>@(pt.Timestamp == DateTime.MinValue ? "–" : Ortszeit.AusUtc(pt.Timestamp).ToString("HH:mm:ss"))</td>
                                                 <td class="font-monospace">@pt.Latitude.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)</td>
                                                 <td class="font-monospace">@pt.Longitude.ToString("F5", System.Globalization.CultureInfo.InvariantCulture)</td>
                                                 <td>@(excluded ? "✗" : "")</td>
@@ -813,8 +813,8 @@
         // damit kein inkonsistentes Start > Ende angezeigt wird.
         if (_parsedPoints.Count > 0 && _parsedPoints[0].Timestamp != DateTime.MinValue)
         {
-            _importNewSearchStart = _parsedPoints[0].Timestamp.ToLocalTime();
-            _importNewSearchEnd = _parsedPoints[^1].Timestamp.ToLocalTime();
+            _importNewSearchStart = Ortszeit.AusUtc(_parsedPoints[0].Timestamp);
+            _importNewSearchEnd = Ortszeit.AusUtc(_parsedPoints[^1].Timestamp);
         }
         else
         {
@@ -854,10 +854,10 @@
         if (_parsedPoints == null) return;
         var (start, end) = GetEffectiveTimeFilter();
         // p.Timestamp is always Kind=Utc (from GpxParser). Normalize filter bounds to UTC
-        // so that Kind=Local or Kind=Unspecified values (e.g. from .ToLocalTime() or user input)
+        // so that Kind=Local or Kind=Unspecified values (e.g. from Ortszeit.AusUtc or user input)
         // are correctly compared without raw-tick mismatch across time zones.
-        var startUtc = start.HasValue ? start.Value.ToUniversalTime() : (DateTime?)null;
-        var endUtc   = end.HasValue   ? end.Value.ToUniversalTime()   : (DateTime?)null;
+        var startUtc = start.HasValue ? Ortszeit.NachUtc(start.Value) : (DateTime?)null;
+        var endUtc   = end.HasValue   ? Ortszeit.NachUtc(end.Value)   : (DateTime?)null;
         var timeFiltered = GpxParser.ApplyTimeFilter(_parsedPoints, startUtc, endUtc);
         var skipStart = Math.Max(0, Math.Min(_truncateStart, timeFiltered.Count));
         var skipEnd = Math.Max(0, Math.Min(_truncateEnd, timeFiltered.Count - skipStart));
@@ -914,9 +914,9 @@
                 CollarId = _importTrackType == TrackType.CollarTrack ? (team.CollarId ?? string.Empty) : string.Empty,
                 CollarName = _importTrackType == TrackType.CollarTrack ? (team.CollarName ?? string.Empty) : string.Empty,
                 Color = _importColor,
-                CapturedAt = DateTime.Now,
+                CapturedAt = Ortszeit.Jetzt,
                 TrackType = _importTrackType,
-                ImportedAt = DateTime.Now,
+                ImportedAt = Ortszeit.Jetzt,
                 Points = _filteredPoints
             };
 

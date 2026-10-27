@@ -31,6 +31,7 @@ namespace Einsatzueberwachung.Domain.Services
             lock (_lock)
             {
                 _timeZone = LoadTimeZone();
+                Ortszeit.Zone = _timeZone;
             }
         }
 
@@ -39,7 +40,11 @@ namespace Einsatzueberwachung.Domain.Services
             if (_timeZone is not null) return _timeZone;
             lock (_lock)
             {
-                _timeZone ??= LoadTimeZone();
+                if (_timeZone is null)
+                {
+                    _timeZone = LoadTimeZone();
+                    Ortszeit.Zone = _timeZone;
+                }
                 return _timeZone;
             }
         }

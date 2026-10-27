@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Domain.Models.Merge;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -95,7 +96,7 @@ namespace Einsatzueberwachung.Domain.Models
             IstEinsatz = true;
             Szenario = EinsatzSzenarioType.Unbestimmt;
             AnzahlTeams = 1;
-            EinsatzDatum = DateTime.Now;
+            EinsatzDatum = Ortszeit.Jetzt;
             EinsatzEnde = null;
             EinsatzNummer = string.Empty;
             StaffelName = string.Empty;
@@ -130,7 +131,7 @@ namespace Einsatzueberwachung.Domain.Models
                 if (!AlarmierungsZeit.HasValue)
                     return null;
 
-                var endTime = EinsatzEnde ?? DateTime.Now;
+                var endTime = EinsatzEnde ?? Ortszeit.Jetzt;
                 return endTime - AlarmierungsZeit.Value;
             }
         }

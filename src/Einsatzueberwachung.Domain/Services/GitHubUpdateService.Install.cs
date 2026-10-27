@@ -88,7 +88,7 @@ namespace Einsatzueberwachung.Domain.Services
                     status.CurrentVersion = check.LatestVersion;
                     status.LatestVersion = check.LatestVersion;
                     status.UpdateAvailable = false;
-                    status.LastInstalledAt = DateTime.Now;
+                    status.LastInstalledAt = Ortszeit.Jetzt;
                     status.LastMessage = applyResult.Message;
                 });
 

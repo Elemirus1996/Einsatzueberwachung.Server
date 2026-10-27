@@ -50,7 +50,7 @@ public sealed class TeamMobileTokenService : ITeamMobileTokenService, IDisposabl
     public void BroadcastTeamMessage(string teamId, string message)
     {
         if (string.IsNullOrWhiteSpace(teamId) || string.IsNullOrWhiteSpace(message)) return;
-        TeamMessageBroadcasted?.Invoke(teamId, message, DateTime.Now);
+        TeamMessageBroadcasted?.Invoke(teamId, message, Ortszeit.Jetzt);
     }
 
     public bool ValidateMasterToken(string token)

@@ -69,7 +69,7 @@ public sealed class TruemmerKartenSpeicher
             ImageRelativePath = Path.Combine("truemmer", einsatzId, storedName).Replace('\\', '/'),
             ImageWidthPx = width,
             ImageHeightPx = height,
-            UploadedAt = DateTime.Now
+            UploadedAt = Ortszeit.Jetzt
         };
         await _einsatzService.AddTruemmerKarteAsync(karte);
         return (karte, null);

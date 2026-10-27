@@ -35,6 +35,9 @@ builder.Services.AddRelayHostedServices();
 
 var app = builder.Build();
 
+// Eingestellte Zeitzone sofort laden – Ortszeit.Jetzt (Modelle, Komponenten) nutzt sie vom ersten Zeitstempel an
+app.Services.GetRequiredService<Einsatzueberwachung.Domain.Interfaces.ITimeService>().Refresh();
+
 // Forwarded Headers MUSS als erstes kommen (Nginx!)
 app.UseForwardedHeaders();
 

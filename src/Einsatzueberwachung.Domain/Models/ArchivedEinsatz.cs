@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Domain.Models.Merge;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -21,7 +22,7 @@ namespace Einsatzueberwachung.Domain.Models
         /// <summary>
         /// Zeitpunkt der Archivierung
         /// </summary>
-        public DateTime ArchivedAt { get; set; } = DateTime.Now;
+        public DateTime ArchivedAt { get; set; } = Ortszeit.Jetzt;
 
         // === Einsatz-Grunddaten ===
         public string Einsatzleiter { get; set; } = string.Empty;
@@ -101,7 +102,7 @@ namespace Einsatzueberwachung.Domain.Models
         /// </summary>
         public static ArchivedEinsatz FromEinsatzData(EinsatzData data, string ergebnis = "", string bemerkungen = "", DateTime? now = null)
         {
-            var _now = now ?? DateTime.Now;
+            var _now = now ?? Ortszeit.Jetzt;
             var archived = new ArchivedEinsatz
             {
                 ArchivedAt = _now,

@@ -17,7 +17,7 @@ public static class DownloadEndpoints
         {
             var einsatz = einsatzService.CurrentEinsatz;
             var fileNamePart = string.IsNullOrWhiteSpace(einsatz.EinsatzNummer)
-                ? $"einsatzbericht-{DateTime.Now:yyyyMMdd-HHmmss}"
+                ? $"einsatzbericht-{Ortszeit.Jetzt:yyyyMMdd-HHmmss}"
                 : $"einsatzbericht-{einsatz.EinsatzNummer}";
 
             var bytes = await pdfExportService.ExportEinsatzToPdfBytesAsync(
@@ -126,7 +126,7 @@ public static class DownloadEndpoints
             }
 
             var fileNamePart = string.IsNullOrWhiteSpace(einsatz.EinsatzNummer)
-                ? $"einsatz-karte-{DateTime.Now:yyyyMMdd-HHmmss}"
+                ? $"einsatz-karte-{Ortszeit.Jetzt:yyyyMMdd-HHmmss}"
                 : $"einsatz-karte-{einsatz.EinsatzNummer}";
             return Results.File(bytes, "application/pdf", $"{fileNamePart}.pdf");
         });
@@ -153,7 +153,7 @@ public static class DownloadEndpoints
         app.MapGet("/downloads/einsatz-archiv.json", async (IArchivService archivService) =>
         {
             var bytes = await archivService.ExportAllAsJsonAsync();
-            return Results.File(bytes, "application/json", $"einsatz-archiv-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+            return Results.File(bytes, "application/json", $"einsatz-archiv-{Ortszeit.Jetzt:yyyyMMdd-HHmmss}.json");
         });
 
         app.MapGet("/downloads/einsatz-bericht.xlsx", async (IEinsatzService einsatzService, IExcelExportService excelExportService) =>
@@ -162,7 +162,7 @@ public static class DownloadEndpoints
             var teams = einsatzService.Teams;
             var notes = einsatzService.GlobalNotes;
             var fileNamePart = string.IsNullOrWhiteSpace(einsatz.EinsatzNummer)
-                ? $"einsatzbericht-{DateTime.Now:yyyyMMdd-HHmmss}"
+                ? $"einsatzbericht-{Ortszeit.Jetzt:yyyyMMdd-HHmmss}"
                 : einsatz.EinsatzNummer.Replace("/", "-").Replace(" ", "_");
             var bytes = await excelExportService.ExportEinsatzAsync(einsatz, teams, notes);
             return Results.File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{fileNamePart}.xlsx");
@@ -237,7 +237,7 @@ public static class DownloadEndpoints
                 return Results.NotFound();
             }
 
-            var fileName = $"einsatzueberwachung-data-backup-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+            var fileName = $"einsatzueberwachung-data-backup-{Ortszeit.Jetzt:yyyyMMdd-HHmmss}.zip";
 
             return Results.Stream(async responseStream =>
             {
@@ -288,7 +288,7 @@ public static class DownloadEndpoints
             {
                 if (File.Exists(zipPath))
                 {
-                    var fileName = $"einsatzueberwachung-livetracking-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+                    var fileName = $"einsatzueberwachung-livetracking-{Ortszeit.Jetzt:yyyyMMdd-HHmmss}.zip";
                     return Results.File(File.ReadAllBytes(zipPath), "application/zip", fileName);
                 }
             }
@@ -321,7 +321,7 @@ public static class DownloadEndpoints
                 }
             }
 
-            var bundledFileName = $"einsatzueberwachung-livetracking-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+            var bundledFileName = $"einsatzueberwachung-livetracking-{Ortszeit.Jetzt:yyyyMMdd-HHmmss}.zip";
             return Results.File(memoryStream.ToArray(), "application/zip", bundledFileName);
         });
 

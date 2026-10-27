@@ -9,6 +9,7 @@ using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Server.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Server.Services;
 
@@ -310,7 +311,7 @@ public sealed class CollarTrackingRelayService : IHostedService
     private DateTime NormalizeSeenTimestamp(DateTime timestamp, DateTime now, string collarId)
     {
         var seenAt = timestamp.Kind == DateTimeKind.Utc
-            ? timestamp.ToLocalTime()
+            ? Ortszeit.AusUtc(timestamp)
             : timestamp;
 
         if (seenAt > now)

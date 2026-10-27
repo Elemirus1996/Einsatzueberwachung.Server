@@ -12,7 +12,7 @@ namespace Einsatzueberwachung.Domain.Services
                 Text = text,
                 Type = type,
                 SourceTeamId = teamId,
-                Timestamp = _timeService?.Now ?? DateTime.Now
+                Timestamp = _timeService?.Now ?? Ortszeit.Jetzt
             };
 
             if (!string.IsNullOrWhiteSpace(teamId))
@@ -74,7 +74,7 @@ namespace Einsatzueberwachung.Domain.Services
                 SourceTeamId = sourceTeamId,
                 SourceTeamName = sourceTeamName,
                 SourceType = sourceType,
-                Timestamp = _timeService?.Now ?? DateTime.Now,
+                Timestamp = _timeService?.Now ?? Ortszeit.Jetzt,
                 CreatedBy = createdBy,
                 Replies = new List<GlobalNotesReply>()
             };
@@ -95,12 +95,12 @@ namespace Einsatzueberwachung.Domain.Services
                 NoteId = noteId,
                 OldText = note.Text,
                 NewText = newText,
-                ChangedAt = _timeService?.Now ?? DateTime.Now,
+                ChangedAt = _timeService?.Now ?? Ortszeit.Jetzt,
                 ChangedBy = updatedBy
             });
 
             note.Text = newText;
-            note.UpdatedAt = _timeService?.Now ?? DateTime.Now;
+            note.UpdatedAt = _timeService?.Now ?? Ortszeit.Jetzt;
             note.UpdatedBy = updatedBy;
 
             EinsatzChanged?.Invoke();
@@ -135,7 +135,7 @@ namespace Einsatzueberwachung.Domain.Services
                 Text = text,
                 SourceTeamId = sourceTeamId,
                 SourceTeamName = sourceTeamName,
-                Timestamp = _timeService?.Now ?? DateTime.Now,
+                Timestamp = _timeService?.Now ?? Ortszeit.Jetzt,
                 CreatedBy = createdBy
             };
 
@@ -157,7 +157,7 @@ namespace Einsatzueberwachung.Domain.Services
                 throw new InvalidOperationException($"Antwort mit ID {replyId} nicht gefunden");
 
             reply.Text = newText;
-            reply.UpdatedAt = _timeService?.Now ?? DateTime.Now;
+            reply.UpdatedAt = _timeService?.Now ?? Ortszeit.Jetzt;
             reply.UpdatedBy = updatedBy;
 
             EinsatzChanged?.Invoke();
@@ -206,7 +206,7 @@ namespace Einsatzueberwachung.Domain.Services
                     $"Im Szenario '{_currentEinsatz.Szenario.GetDisplayName()}' ist nur eine vermisste Person zulässig.");
             }
 
-            info.ZuletztAktualisiert = _timeService?.Now ?? DateTime.Now;
+            info.ZuletztAktualisiert = _timeService?.Now ?? Ortszeit.Jetzt;
 
             // Beim ersten Anlegen ohne Checkliste das Default-Template für das aktuelle Szenario anhängen.
             if (info.Checkliste is null
@@ -269,7 +269,7 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 Text = text.Trim(),
                 Prefix = prefix,
-                Timestamp = _timeService?.Now ?? DateTime.Now
+                Timestamp = _timeService?.Now ?? Ortszeit.Jetzt
             };
             _currentEinsatz.ElNotizen ??= new List<ElNotizEntry>();
             _currentEinsatz.ElNotizen.Insert(0, entry);

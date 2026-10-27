@@ -2,6 +2,7 @@
 // Kann per Mausklick oder durch Eingabe von Dezimal-/UTM-Koordinaten erstellt werden
 
 using System;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Domain.Models
 {
@@ -36,7 +37,7 @@ namespace Einsatzueberwachung.Domain.Models
             Label = string.Empty;
             Description = string.Empty;
             Color = "#2196F3";
-            CreatedAt = DateTime.Now;
+            CreatedAt = Ortszeit.Jetzt;
             UtmZone = string.Empty;
         }
 

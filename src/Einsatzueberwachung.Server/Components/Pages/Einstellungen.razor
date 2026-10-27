@@ -951,7 +951,7 @@
                                 {
                                     <p class="cfg-inline-status is-ok mt-2">
                                         <i class="bi bi-check-circle"></i>
-                                        Position empfangen um @empfang.EmpfangenUtc.ToLocalTime().ToString("HH:mm:ss") (@empfang.Format@(empfang.BatteryPercent is int akku ? $", Akku {akku} %" : "")@(empfang.Accuracy is double genau ? $", ± {genau:0} m" : "")) – Traccar funktioniert.
+                                        Position empfangen um @Ortszeit.AusUtc(empfang.EmpfangenUtc).ToString("HH:mm:ss") (@empfang.Format@(empfang.BatteryPercent is int akku ? $", Akku {akku} %" : "")@(empfang.Accuracy is double genau ? $", ± {genau:0} m" : "")) – Traccar funktioniert.
                                     </p>
                                 }
                                 else
@@ -1081,12 +1081,12 @@
                                 }
                                 else
                                 {
-                                    @($"{z.Host}: gültig bis {z.GueltigBisUtc?.ToLocalTime():dd.MM.yyyy} (noch {z.TageRest(nowUtc)} Tage)")
+                                    @($"{z.Host}: gültig bis {Ortszeit.AusUtc(z.GueltigBisUtc):dd.MM.yyyy} (noch {z.TageRest(nowUtc)} Tage)")
                                 }
                             </dd>
                             <dt>Letztes Backup</dt>
-                            <dd class="@(zustand.LetztesBackup is null || DateTime.Now - zustand.LetztesBackup > TimeSpan.FromDays(7) ? "is-bad" : "is-ok")">
-                                @(zustand.LetztesBackup is { } b ? $"{b:dd.MM.yyyy HH:mm} (vor {(int)(DateTime.Now - b).TotalDays} Tagen)" : "noch nie")
+                            <dd class="@(zustand.LetztesBackup is null || Ortszeit.Jetzt - zustand.LetztesBackup > TimeSpan.FromDays(7) ? "is-bad" : "is-ok")">
+                                @(zustand.LetztesBackup is { } b ? $"{b:dd.MM.yyyy HH:mm} (vor {(int)(Ortszeit.Jetzt - b).TotalDays} Tagen)" : "noch nie")
                             </dd>
                             <dt>Freier Speicher</dt>
                             <dd class="@(zustand.FreierSpeicherBytes < SystemZustandService.SpeicherWarnBytes ? "is-bad" : "is-ok")">
@@ -1101,7 +1101,7 @@
                                 App: @zustand.AppZeit.ToString("dd.MM.yyyy HH:mm") (@zustand.AppZeitzone) · Server-Zeitzone: @zustand.ServerZeitzone
                             </dd>
                             <dt>Geprüft</dt>
-                            <dd class="text-muted">@zustand.GeprueftUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm") · automatisch alle 6 Stunden</dd>
+                            <dd class="text-muted">@Ortszeit.AusUtc(zustand.GeprueftUtc).ToString("dd.MM.yyyy HH:mm") · automatisch alle 6 Stunden</dd>
                         </dl>
                     }
                 </div>
@@ -1188,8 +1188,8 @@
                                         <tr>
                                             <td>@d.Device.Name</td>
                                             <td><code>@d.Device.Ip</code></td>
-                                            <td>@(d.LastHandshakeUtc is { } h ? h.ToLocalTime().ToString("dd.MM. HH:mm") : "noch nie")</td>
-                                            <td>@(d.Device.ExpiresUtc is { } e ? e.ToLocalTime().ToString("dd.MM. HH:mm") : "unbegrenzt")</td>
+                                            <td>@(d.LastHandshakeUtc is { } h ? Ortszeit.AusUtc(h).ToString("dd.MM. HH:mm") : "noch nie")</td>
+                                            <td>@(d.Device.ExpiresUtc is { } e ? Ortszeit.AusUtc(e).ToString("dd.MM. HH:mm") : "unbegrenzt")</td>
                                             <td class="text-end">
                                                 <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="() => RemoveVpnDeviceAsync(d.Device)">
                                                     <i class="bi bi-slash-circle"></i> Sperren

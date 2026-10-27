@@ -21,7 +21,7 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 Text = $"Einsatz gestartet: {einsatzData.EinsatzTyp} - {einsatzData.Einsatzort}",
                 Type = GlobalNotesEntryType.EinsatzUpdate,
-                Timestamp = _timeService?.Now ?? DateTime.Now
+                Timestamp = _timeService?.Now ?? Ortszeit.Jetzt
             };
             _globalNotes.Add(startNote);
 
@@ -52,13 +52,13 @@ namespace Einsatzueberwachung.Domain.Services
             foreach (var team in _teams)
                 team.StopTimer();
 
-            _currentEinsatz.EinsatzEnde = _timeService?.Now ?? DateTime.Now;
+            _currentEinsatz.EinsatzEnde = _timeService?.Now ?? Ortszeit.Jetzt;
 
             var endNote = new GlobalNotesEntry
             {
                 Text = "Einsatz beendet",
                 Type = GlobalNotesEntryType.EinsatzUpdate,
-                Timestamp = _timeService?.Now ?? DateTime.Now
+                Timestamp = _timeService?.Now ?? Ortszeit.Jetzt
             };
             _globalNotes.Add(endNote);
             NoteAdded?.Invoke(endNote);
@@ -85,7 +85,7 @@ namespace Einsatzueberwachung.Domain.Services
 
             _currentEinsatz = new EinsatzData
             {
-                EinsatzDatum = _timeService?.Now ?? DateTime.Now,
+                EinsatzDatum = _timeService?.Now ?? Ortszeit.Jetzt,
                 IstEinsatz = true,
                 VermisstenInfo = null,
                 ElNotizen = new List<ElNotizEntry>()
@@ -129,7 +129,7 @@ namespace Einsatzueberwachung.Domain.Services
 
             foreach (var team in snapshot.Teams ?? new List<Team>())
             {
-                team.StartzeitWiederherstellen(_timeService?.Now ?? DateTime.Now);
+                team.StartzeitWiederherstellen(_timeService?.Now ?? Ortszeit.Jetzt);
                 _teams.Add(team);
                 team.TimerStarted += Team_TimerStarted;
                 team.TimerStopped += Team_TimerStopped;

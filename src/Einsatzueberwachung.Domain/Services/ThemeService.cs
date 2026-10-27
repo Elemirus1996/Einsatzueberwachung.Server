@@ -84,7 +84,7 @@ namespace Einsatzueberwachung.Domain.Services
                 var appSettings = await _settingsService.GetAppSettingsAsync();
                 if (appSettings?.ThemeMode == "Scheduled")
                 {
-                    var now = (_timeService?.Now ?? DateTime.Now).TimeOfDay;
+                    var now = (_timeService?.Now ?? Ortszeit.Jetzt).TimeOfDay;
                     var start = appSettings.DarkModeStartTime;
                     var end = appSettings.DarkModeEndTime;
 

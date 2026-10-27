@@ -29,7 +29,7 @@ namespace Einsatzueberwachung.Domain.Services
             _httpClient.Timeout = TimeSpan.FromSeconds(10);
         }
 
-        private DateTime Now => _timeService?.Now ?? DateTime.Now;
+        private DateTime Now => _timeService?.Now ?? Ortszeit.Jetzt;
 
         public async Task<WeatherData?> GetCurrentWeatherByAddressAsync(string address)
         {

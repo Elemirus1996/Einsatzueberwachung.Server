@@ -42,12 +42,12 @@ namespace Einsatzueberwachung.Domain.Services
 
                     SetStatus(status =>
                     {
-                        status.LastCheckedAt = DateTime.Now;
+                        status.LastCheckedAt = Ortszeit.Jetzt;
                         status.LastError = message;
                         status.LastMessage = "Update-Pruefung fehlgeschlagen";
                     });
 
-                    return new UpdateCheckResult { Success = false, ErrorMessage = message, CheckedAt = DateTime.Now };
+                    return new UpdateCheckResult { Success = false, ErrorMessage = message, CheckedAt = Ortszeit.Jetzt };
                 }
 
                 var json = await response.Content.ReadAsStringAsync();
@@ -80,7 +80,7 @@ namespace Einsatzueberwachung.Domain.Services
                     ReleaseUrl = downloadUrl,
                     InstallerUrl = installerUrl,
                     ReleaseNotes = releaseNotes,
-                    CheckedAt = DateTime.Now,
+                    CheckedAt = Ortszeit.Jetzt,
                     UpdateAvailable = newerVersionAvailable,
                     IsInstallable = !string.IsNullOrWhiteSpace(installerUrl)
                 };
@@ -119,11 +119,11 @@ namespace Einsatzueberwachung.Domain.Services
                 _logger.LogError(ex, "Fehler beim Prüfen auf Updates");
                 SetStatus(status =>
                 {
-                    status.LastCheckedAt = DateTime.Now;
+                    status.LastCheckedAt = Ortszeit.Jetzt;
                     status.LastError = ex.Message;
                     status.LastMessage = "Update-Pruefung fehlgeschlagen";
                 });
-                return new UpdateCheckResult { Success = false, ErrorMessage = ex.Message, CheckedAt = DateTime.Now };
+                return new UpdateCheckResult { Success = false, ErrorMessage = ex.Message, CheckedAt = Ortszeit.Jetzt };
             }
             finally
             {

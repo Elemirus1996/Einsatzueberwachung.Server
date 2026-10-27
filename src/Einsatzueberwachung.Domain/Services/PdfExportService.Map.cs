@@ -306,7 +306,7 @@ namespace Einsatzueberwachung.Domain.Services
                 row.AutoItem().AlignRight().Column(col =>
                 {
                     col.Item().AlignRight().Text("EINSATZKARTE").FontSize(11).Bold().FontColor(Colors.White);
-                    col.Item().AlignRight().Text($"Stand: {DateTime.Now:dd.MM.yyyy HH:mm} Uhr").FontSize(8).FontColor(Colors.Grey.Lighten2);
+                    col.Item().AlignRight().Text($"Stand: {Ortszeit.Jetzt:dd.MM.yyyy HH:mm} Uhr").FontSize(8).FontColor(Colors.Grey.Lighten2);
                 });
             });
         }
@@ -386,7 +386,7 @@ namespace Einsatzueberwachung.Domain.Services
                     }
                 });
 
-                col.Item().PaddingTop(10).Text($"Erstellt: {DateTime.Now:dd.MM.yyyy HH:mm} Uhr  |  {areas.Count} Suchgebiet{(areas.Count == 1 ? "" : "e")}")
+                col.Item().PaddingTop(10).Text($"Erstellt: {Ortszeit.Jetzt:dd.MM.yyyy HH:mm} Uhr  |  {areas.Count} Suchgebiet{(areas.Count == 1 ? "" : "e")}")
                    .FontSize(8).FontColor(Colors.Grey.Darken1);
             });
         }

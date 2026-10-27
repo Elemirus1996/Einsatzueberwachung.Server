@@ -3,6 +3,7 @@ using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Server.Data;
 using Microsoft.EntityFrameworkCore;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Server.Services;
 
@@ -260,7 +261,7 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
 
         if (value.Kind == DateTimeKind.Unspecified)
         {
-            return DateTime.SpecifyKind(value, DateTimeKind.Local).ToUniversalTime();
+            return Ortszeit.NachUtc(value);
         }
 
         return value.ToUniversalTime();

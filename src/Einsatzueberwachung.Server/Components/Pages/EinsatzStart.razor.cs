@@ -6,6 +6,7 @@ using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Server.Components.Pages;
 
@@ -29,12 +30,12 @@ public partial class EinsatzStart
 
     private EinsatzData _model = new()
     {
-        EinsatzDatum = DateTime.Now,
+        EinsatzDatum = Ortszeit.Jetzt,
         AnzahlTeams = 1
     };
 
     private List<PersonalEntry> _personal = new();
-    private string _alarmStartTime = DateTime.Now.ToString("HH:mm");
+    private string _alarmStartTime = Ortszeit.Jetzt.ToString("HH:mm");
     private DateTime? _clientNow;
     private string _status = string.Empty;
     private bool _error;
@@ -90,7 +91,7 @@ public partial class EinsatzStart
 
         EinsatzStartHelper.ApplyStaffel(_model, staffelSettings);
 
-        var alarmBase = _model.AlarmierungsZeit ?? DateTime.Now;
+        var alarmBase = _model.AlarmierungsZeit ?? Ortszeit.Jetzt;
         _alarmStartTime = alarmBase.ToString("HH:mm");
 
         await LoadDiveraAlarmsAsync();
@@ -212,7 +213,7 @@ public partial class EinsatzStart
         _status = string.Empty;
         try
         {
-            _model.EinsatzDatum = _clientNow ?? DateTime.Now;
+            _model.EinsatzDatum = _clientNow ?? Ortszeit.Jetzt;
             await EinsatzService.StartEinsatzAsync(_model);
             _status = "Einsatz wurde gestartet.";
             _error = false;
@@ -232,7 +233,7 @@ public partial class EinsatzStart
 
     private bool TryPrepareAlarmTime()
     {
-        var now = _clientNow ?? DateTime.Now;
+        var now = _clientNow ?? Ortszeit.Jetzt;
 
         if (string.IsNullOrWhiteSpace(_alarmStartTime))
         {
