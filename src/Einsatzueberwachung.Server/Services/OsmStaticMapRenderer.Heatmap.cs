@@ -9,8 +9,10 @@ public sealed partial class OsmStaticMapRenderer
         List<SearchAreaCoverageResult> coverageResults,
         (double Latitude, double Longitude)? elwPosition,
         int width = 1200,
-        int height = 780)
+        int height = 780,
+        Einsatzueberwachung.Domain.Models.Enums.MapTileType tileType = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets)
     {
+        var kacheln = GetSearchAreaTileConfig(tileType);
         var validResults = coverageResults.Where(r => r.Cells.Count > 0).ToList();
         if (validResults.Count == 0)
             return null;
@@ -53,7 +55,7 @@ public sealed partial class OsmStaticMapRenderer
             var minTileY = (int)Math.Floor(absCropTop / TileSize);
             var maxTileY = (int)Math.Floor(absCropBottom / TileSize);
 
-            var tiles = await DownloadTilesAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, ct);
+            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, kacheln.UrlTemplates, ct);
             var (fullBitmap, _, _) = AssembleTileMosaic(tiles, minTileX, minTileY, maxTileX, maxTileY, TileSize);
 
             using (fullBitmap)
@@ -108,7 +110,7 @@ public sealed partial class OsmStaticMapRenderer
                 if (elwPosition.HasValue)
                     DrawMarker(canvas, new SKPoint(ToX(elwPosition.Value.Longitude), ToY(elwPosition.Value.Latitude)), new SKColor(220, 20, 60), "ELW");
 
-                DrawAttribution(canvas, width, height, OsmAttribution);
+                DrawAttribution(canvas, width, height, kacheln.Attribution);
                 return EncodeAsPng(outputBitmap);
             }
         }

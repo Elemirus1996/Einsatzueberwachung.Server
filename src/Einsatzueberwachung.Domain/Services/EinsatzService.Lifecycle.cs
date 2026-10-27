@@ -129,6 +129,7 @@ namespace Einsatzueberwachung.Domain.Services
 
             foreach (var team in snapshot.Teams ?? new List<Team>())
             {
+                team.StartzeitWiederherstellen(_timeService?.Now ?? DateTime.Now);
                 _teams.Add(team);
                 team.TimerStarted += Team_TimerStarted;
                 team.TimerStopped += Team_TimerStopped;

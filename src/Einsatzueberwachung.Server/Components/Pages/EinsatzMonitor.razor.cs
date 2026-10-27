@@ -72,6 +72,7 @@ public partial class EinsatzMonitor
     private bool _closeMissionChecklistConfirmed;
     private bool _closingMission;
     private bool _closeMissionIncludeTracks;
+    private Einsatzueberwachung.Domain.Models.Enums.MapTileType _closeMissionKartenart = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets;
     private string _closeMissionResult = string.Empty;
     private TimeOnly? _closeMissionEndTime;
     private string _closeMissionRemarks = string.Empty;
@@ -952,7 +953,8 @@ public partial class EinsatzMonitor
                 _closeMissionEndTime,
                 _closeMissionIncludeTracks,
                 SelectedPersonnelNames,
-                SelectedDogNames));
+                SelectedDogNames,
+                _closeMissionKartenart));
 
             _showCloseMissionModal = false;
 

@@ -339,6 +339,8 @@ public partial class EinsatzKarte
                 }
 
                 _mapInitialized = true;
+                _abdeckungTimer = new System.Threading.Timer(_ => _ = InvokeAsync(SendeAbdeckungAsync), null,
+                    TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(20));
             }
             catch (Exception ex)
             {
@@ -1575,8 +1577,29 @@ public partial class EinsatzKarte
         await InvokeAsync(StateHasChanged);
     }
 
+    // ── Abdeckung live (Prozent je Suchgebiet + abgesuchte Flaechen) ──
+    [Inject] private LiveAbdeckungService LiveAbdeckung { get; set; } = default!;
+    private System.Threading.Timer? _abdeckungTimer;
+
+    private async Task SendeAbdeckungAsync()
+    {
+        if (!_mapInitialized) return;
+        try
+        {
+            var abdeckung = await Task.Run(() => LiveAbdeckung.Aktuell());
+            await JSRuntime.InvokeVoidAsync("LeafletMap.setCoverage", "einsatzMap", abdeckung);
+        }
+        catch (JSDisconnectedException) { }
+        catch (ObjectDisposedException) { }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Abdeckung konnte nicht aktualisiert werden");
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
+        _abdeckungTimer?.Dispose();
         try
         {
             MissionTopbar.ClearContent(this);

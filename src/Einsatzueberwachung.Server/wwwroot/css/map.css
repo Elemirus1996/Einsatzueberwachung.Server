@@ -993,3 +993,32 @@ main:has(.map-page-layout) {
     cursor: progress;
     opacity: 0.85;
 }
+
+/* Abdeckung live: Beschriftung „x % abgesucht“ und Schalter (leaflet-interop.js) */
+.eu-coverage-label {
+    padding: 2px 8px;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(20, 24, 31, 0.78);
+    color: #fff;
+    font: 700 12px/1.3 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    box-shadow: none;
+}
+
+.eu-coverage-label::before {
+    display: none;
+}
+
+.eu-coverage-toggle {
+    min-height: 34px;
+    padding: 4px 10px;
+    background: #fff;
+    color: #14181f;
+    font: 600 13px/1.2 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    cursor: pointer;
+}
+
+.eu-coverage-toggle.is-active {
+    background: #2d7a4d;
+    color: #fff;
+}

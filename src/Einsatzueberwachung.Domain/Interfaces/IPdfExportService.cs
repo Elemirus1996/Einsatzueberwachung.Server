@@ -1,4 +1,4 @@
-﻿// Service-Interface für PDF-Export von Einsatzberichten
+// Service-Interface für PDF-Export von Einsatzberichten
 // Quelle: Abgeleitet von WPF Services/PdfExportService.cs und ViewModels/PdfExportViewModel.cs
 
 using System.Collections.Generic;
@@ -21,6 +21,9 @@ namespace Einsatzueberwachung.Domain.Interfaces
         /// </summary>
         Task<PdfExportResult> ExportArchivedEinsatzToPdfAsync(ArchivedEinsatz archivedEinsatz);
         Task<PdfExportResult> ExportArchivedEinsatzToPdfAsync(ArchivedEinsatz archivedEinsatz, bool includeTracks);
+        /// <summary>Bericht mit Auswahl: Kartenart, Teams, Tracks</summary>
+        Task<PdfExportResult> ExportArchivedEinsatzToPdfAsync(ArchivedEinsatz archivedEinsatz, PdfBerichtOptionen optionen);
+        Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz, PdfBerichtOptionen optionen);
         
         /// <summary>
         /// Exportiert einen archivierten Einsatz als PDF-Byte-Array (für Browser-Download)

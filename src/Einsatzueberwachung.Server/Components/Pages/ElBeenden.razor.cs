@@ -32,6 +32,7 @@ public partial class ElBeenden : IDisposable
     private TimeOnly? _endzeit;
     private string _bemerkungen = string.Empty;
     private bool _tracksImPdf;
+    private Einsatzueberwachung.Domain.Models.Enums.MapTileType _kartenart = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets;
     private bool _ressourcenGeprueft;
 
     private bool _ergebnisFehlt;
@@ -110,7 +111,8 @@ public partial class ElBeenden : IDisposable
                 _endzeit,
                 _tracksImPdf,
                 SelectedNames(ActivePersonnel, _personalIds, p => p.Id, p => p.FullName),
-                SelectedNames(ActiveDogs, _hundeIds, d => d.Id, d => d.Name)));
+                SelectedNames(ActiveDogs, _hundeIds, d => d.Id, d => d.Name),
+                _kartenart));
         }
         catch (Exception ex)
         {

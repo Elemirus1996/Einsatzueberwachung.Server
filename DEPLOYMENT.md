@@ -163,16 +163,24 @@ Prüfanfragen unter `http://<domain>/.well-known/acme-challenge/` erreicht. Die 
 enthält dafür einen eigenen Port-80-Block und liefert den Pfad aus `/var/www/certbot`. Läuft das Zertifikat ab,
 zeigen Browser nur eine Warnung (wegklickbar), **Apps wie Traccar Client senden dann gar nichts mehr**.
 
-Einmalig auf den Webroot-Weg umstellen:
+Einmalig auf den Webroot-Weg umstellen und den Knopf **„Jetzt erneuern“** freischalten (ab 1.11.6):
 
 ```bash
-sudo mkdir -p /var/www/certbot
 # neue einsatzueberwachung-public.conf übernehmen, dann:
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot certonly --webroot -w /var/www/certbot -d dein-einsatz.mywire.org      --cert-name dein-einsatz.mywire.org --force-renewal --deploy-hook "systemctl reload nginx"
+sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.mywire.org
 sudo certbot renew --dry-run           # muss „Congratulations, all simulated renewals succeeded“ melden
 systemctl list-timers | grep certbot   # automatische Verlängerung aktiv?
 ```
+
+Das Skript legt `/var/www/certbot` und `/etc/einsatzueberwachung/zertifikat.conf` an, stellt das Zertifikat einmal über
+den Webroot neu aus und installiert das root-eigene Hilfsprogramm `/usr/local/sbin/einsatz-zertifikat`. Der Dienstbenutzer
+darf per sudoers (`/etc/sudoers.d/einsatzueberwachung-zertifikat`) nur genau `einsatz-zertifikat erneuern` und `info`
+aufrufen; Domain und Webroot kommen aus der root-eigenen Konfiguration, nicht aus der App.
+
+Danach erscheint neben dem Hinweis „Zertifikat abgelaufen/läuft ab“ (Startseite, `/el`, Einstellungen → System) der Knopf
+„Jetzt erneuern“. Er erneuert nur, wenn das Zertifikat fällig (< 30 Tage) oder abgelaufen ist, lädt nginx neu und
+vermerkt den Vorgang im Audit-Log. Schlägt er fehl, ist meist Port 80 von außen nicht erreichbar.
 
 Prüfen, bis wann das Zertifikat gilt: `sudo certbot certificates`.
 

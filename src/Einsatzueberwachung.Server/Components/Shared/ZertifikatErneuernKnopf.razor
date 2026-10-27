@@ -1,0 +1,53 @@
+@* Knopf „Jetzt erneuern“ neben einem abgelaufenen/ablaufenden Zertifikat (Startseite, /el, Einstellungen → System).
+   Ohne eingerichtetes Hilfsprogramm nur ein Hinweis auf setup-zertifikat.sh. *@
+@using Einsatzueberwachung.Server.Services
+@inject ZertifikatErneuerung Erneuerung
+@implements IDisposable
+
+<span class="zert-erneuern d-inline-flex flex-wrap align-items-center gap-2 ms-2">
+    @if (Erneuerung.IsAvailable)
+    {
+        <button type="button" class="btn btn-sm btn-light border" @onclick="ErneuernAsync" disabled="@Erneuerung.Laeuft">
+            @if (Erneuerung.Laeuft)
+            {
+                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span><text>Wird erneuert …</text>
+            }
+            else
+            {
+                <i class="bi bi-arrow-clockwise me-1"></i><text>Jetzt erneuern</text>
+            }
+        </button>
+    }
+    else
+    {
+        <span class="text-muted small">Erneuern-Knopf: einmalig <code>setup-zertifikat.sh</code> auf dem Server ausführen.</span>
+    }
+    @if (_antwort is { } a)
+    {
+        <span class="small @(a.Erfolgreich ? "text-success" : "text-danger")" role="status">
+            @a.Text
+            @if (!a.Erfolgreich && !string.IsNullOrWhiteSpace(a.Ausgabe))
+            {
+                <details class="d-inline"><summary>Details</summary><pre class="small mb-0 text-wrap">@a.Ausgabe</pre></details>
+            }
+        </span>
+    }
+</span>
+
+@code {
+    [CascadingParameter(Name = "LeitungsGeraet")] private string? Geraet { get; set; }
+
+    private ZertifikatErneuerungsAntwort? _antwort;
+
+    protected override void OnInitialized() => Erneuerung.Geaendert += OnGeaendert;
+
+    private async Task ErneuernAsync()
+    {
+        _antwort = null;
+        _antwort = await Erneuerung.ErneuernAsync(LeitungsGeraetNamen.Absender(Geraet));
+    }
+
+    private void OnGeaendert() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Erneuerung.Geaendert -= OnGeaendert;
+}

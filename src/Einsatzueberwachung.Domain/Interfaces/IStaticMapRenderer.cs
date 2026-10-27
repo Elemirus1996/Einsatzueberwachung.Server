@@ -18,7 +18,8 @@ public interface IStaticMapRenderer
         string trackColor,
         string? areaColor,
         int width = 800,
-        int height = 450);
+        int height = 450,
+        MapTileType tileType = MapTileType.Streets);
 
     /// <summary>
     /// Rendert eine kombinierte Karte mit allen GPS-Tracks, Suchgebieten und optionalem ELW-Marker.
@@ -61,5 +62,6 @@ public interface IStaticMapRenderer
         List<SearchAreaCoverageResult> coverageResults,
         (double Latitude, double Longitude)? elwPosition,
         int width = 1200,
-        int height = 780);
+        int height = 780,
+        MapTileType tileType = MapTileType.Streets);
 }

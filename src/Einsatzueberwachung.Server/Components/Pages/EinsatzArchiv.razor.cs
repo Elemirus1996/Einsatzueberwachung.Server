@@ -25,6 +25,38 @@ public partial class EinsatzArchiv
     private string _status = string.Empty;
     private string _trendView = "monat";
     private ArchivedEinsatz? _selected;
+
+    // PDF mit Auswahl (Kartenart, Teams, Tracks)
+    private bool _pdfAuswahlOffen;
+    private Einsatzueberwachung.Domain.Models.Enums.MapTileType _pdfKartenart = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets;
+    private bool _pdfMitTracks = true;
+    private readonly HashSet<string> _pdfTeamsAus = new(StringComparer.Ordinal);
+
+    private List<(string TeamId, string TeamName)> TeamsMitTracks => _selected?.TrackSnapshots
+        .Where(t => t.Points.Count >= 2 && !string.IsNullOrEmpty(t.TeamId))
+        .GroupBy(t => t.TeamId)
+        .Select(g => (g.Key, g.First().TeamName))
+        .OrderBy(t => t.Item2)
+        .ToList() ?? new();
+
+    private void SetPdfTeam(string teamId, bool drin)
+    {
+        if (drin) _pdfTeamsAus.Remove(teamId);
+        else _pdfTeamsAus.Add(teamId);
+    }
+
+    private string PdfAuswahlUrl
+    {
+        get
+        {
+            if (_selected is null) return "#";
+            var url = $"{GetArchivedPdfDownloadUrl(_selected.Id)}?karte={_pdfKartenart}";
+            if (!_pdfMitTracks) return url + "&tracks=0";
+            if (_pdfTeamsAus.Count > 0)
+                url += "&teams=" + Uri.EscapeDataString(string.Join(',', TeamsMitTracks.Select(t => t.TeamId).Where(id => !_pdfTeamsAus.Contains(id))));
+            return url;
+        }
+    }
     private bool _scrollToDetails;
     private ArchivedEinsatz? _deleteCandidate;
     private TeamTrackSnapshot? _archiveTrackPopup;
@@ -69,6 +101,8 @@ public partial class EinsatzArchiv
         }
 
         _selected = await ArchivService.GetByIdAsync(id);
+        _pdfAuswahlOffen = false;
+        _pdfTeamsAus.Clear();
         _scrollToDetails = _selected is not null;
     }
 
