@@ -3,1000 +3,642 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Einsatzüberwachung — Rettungshundestaffeln</title>
-  <meta name="description" content="Einsatzüberwachung.Server — Blazor Server Einsatzleit-Anwendung für Rettungshundestaffeln. Live-GPS, SignalR, Mobile PWA, Linux/VPN-Betrieb." />
-  <meta property="og:title" content="Einsatzüberwachung für Rettungshundestaffeln" />
-  <meta property="og:description" content="Moderne Einsatzleit-Software: GPS-Tracking, Live-Karte, Funksprüche, Mobile PWA." />
+  <title>Einsatzüberwachung – Lagebild für Rettungshundestaffeln</title>
+  <meta name="description" content="Einsatzleitsystem für Rettungshundestaffeln: Teams und Suchzeiten, GPS-Halsbänder und Team-Handys live auf der Karte, Abdeckung der Suchgebiete, Funk, Notizen und PDF-Bericht. Open Source, eigener Linux-Server, VPN." />
+  <meta property="og:title" content="Einsatzüberwachung – Lagebild für Rettungshundestaffeln" />
+  <meta property="og:description" content="Teams, Hunde und Suchgebiete live auf einer Karte. Open Source, auf dem eigenen Server." />
   <meta property="og:type" content="website" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <meta name="color-scheme" content="light dark" />
   <style>
     :root {
-      --bg-base: #0d1117;
-      --bg-surface: #161b22;
-      --bg-card: #1c2128;
-      --bg-card-hover: #22272e;
-      --border: #30363d;
-      --border-subtle: #21262d;
-      --accent: #f97316;
-      --accent-dim: rgba(249, 115, 22, 0.15);
-      --accent-glow: rgba(249, 115, 22, 0.35);
-      --blue: #58a6ff;
-      --green: #3fb950;
-      --purple: #bc8cff;
-      --red: #f85149;
-      --yellow: #d29922;
-      --text-primary: #e6edf3;
-      --text-secondary: #8b949e;
-      --text-muted: #484f58;
-      --radius-sm: 6px;
-      --radius-md: 12px;
-      --radius-lg: 20px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-      --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
-      --shadow-lg: 0 8px 40px rgba(0,0,0,0.7);
+      --primary: #a72920;
+      --primary-ink: #8d211a;
+      --signal: #e3000f;
+      --ok: #3f9f50;
+      --warn: #d97706;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-2: #eef3fb;
+      --border: #d5deea;
+      --ink: #1f2937;
+      --muted: #5b6b7f;
+      --heading: #163253;
+      --code-bg: #0f1a2b;
+      --code-ink: #dbe4f0;
+      --map-bg: #e6ece3;
+      --map-line: #c9d3c4;
+      --radius: 10px;
+      --font: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+      --mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primary: #e0574c;
+        --primary-ink: #f07a70;
+        --bg: #05070c;
+        --surface: #12151c;
+        --surface-2: #1a1d24;
+        --border: #2a303b;
+        --ink: #e8edf6;
+        --muted: #9aa4b5;
+        --heading: #f2f5fa;
+        --code-bg: #0b0e14;
+        --map-bg: #1b2420;
+        --map-line: #2a3631;
+      }
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+    *, *::before, *::after { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
     body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg-base);
-      color: var(--text-primary);
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-
-    /* ── GRID BACKGROUND ── */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(249,115,22,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(249,115,22,0.03) 1px, transparent 1px);
-      background-size: 48px 48px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* ── NAV ── */
-    nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      background: rgba(13,17,23,0.85);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border-subtle);
-      padding: 0 2rem;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .nav-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      font-size: 1rem;
-      color: var(--text-primary);
-      text-decoration: none;
-    }
-    .nav-logo .dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent-glow);
-      animation: pulse-dot 2s infinite;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.3); opacity: 0.7; }
-    }
-    .nav-links {
-      display: flex;
-      gap: 2rem;
-      list-style: none;
-    }
-    .nav-links a {
-      color: var(--text-secondary);
-      text-decoration: none;
-      font-size: 0.875rem;
-      transition: color 0.2s;
-    }
-    .nav-links a:hover { color: var(--text-primary); }
-    .nav-cta {
-      background: var(--accent);
-      color: #fff !important;
-      padding: 0.4rem 1rem;
-      border-radius: var(--radius-sm);
-      font-weight: 600 !important;
-      transition: background 0.2s, box-shadow 0.2s !important;
-    }
-    .nav-cta:hover {
-      background: #ea6c0a !important;
-      box-shadow: 0 0 12px var(--accent-glow) !important;
-    }
-
-    /* ── HERO ── */
-    .hero {
-      position: relative;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 120px 2rem 80px;
-      z-index: 1;
-    }
-    .hero-bg-glow {
-      position: absolute;
-      top: 10%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 700px;
-      height: 400px;
-      background: radial-gradient(ellipse, rgba(249,115,22,0.12) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--accent-dim);
-      border: 1px solid rgba(249,115,22,0.3);
-      color: var(--accent);
-      font-size: 0.78rem;
-      font-weight: 600;
-      padding: 0.3rem 0.9rem;
-      border-radius: 100px;
-      margin-bottom: 1.5rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    .hero h1 {
-      font-size: clamp(2.4rem, 6vw, 4.5rem);
-      font-weight: 800;
-      line-height: 1.1;
-      letter-spacing: -0.03em;
-      margin-bottom: 1.25rem;
-    }
-    .hero h1 span {
-      background: linear-gradient(135deg, var(--accent), #fbbf24);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .hero-sub {
-      font-size: clamp(1rem, 2.5vw, 1.25rem);
-      color: var(--text-secondary);
-      max-width: 600px;
-      margin: 0 auto 2.5rem;
-      line-height: 1.7;
-    }
-    .hero-actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 3rem;
-    }
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--accent);
-      color: #fff;
-      padding: 0.75rem 1.75rem;
-      border-radius: var(--radius-sm);
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 0.95rem;
-      transition: all 0.2s;
-      box-shadow: 0 0 20px var(--accent-glow);
-    }
-    .btn-primary:hover {
-      background: #ea6c0a;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 24px var(--accent-glow);
-    }
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: transparent;
-      color: var(--text-primary);
-      padding: 0.75rem 1.75rem;
-      border-radius: var(--radius-sm);
-      text-decoration: none;
-      font-weight: 500;
-      font-size: 0.95rem;
-      border: 1px solid var(--border);
-      transition: all 0.2s;
-    }
-    .btn-secondary:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      transform: translateY(-2px);
-    }
-    .hero-stats {
-      display: flex;
-      justify-content: center;
-      gap: 2.5rem;
-      flex-wrap: wrap;
-    }
-    .hero-stat {
-      text-align: center;
-    }
-    .hero-stat .val {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-    .hero-stat .lbl {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    /* ── SECTIONS ── */
-    section { position: relative; z-index: 1; }
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 2rem;
-    }
-    .section-header {
-      text-align: center;
-      margin-bottom: 3.5rem;
-    }
-    .section-label {
-      display: inline-block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 0.75rem;
-    }
-    .section-header h2 {
-      font-size: clamp(1.8rem, 4vw, 2.6rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-    .section-header p {
-      color: var(--text-secondary);
-      margin-top: 0.75rem;
-      font-size: 1.05rem;
-    }
-
-    /* ── FEATURES GRID ── */
-    #features { padding: 100px 0; }
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.25rem;
-    }
-    .feature-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 1.75rem;
-      transition: all 0.25s;
-      position: relative;
-      overflow: hidden;
-    }
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      opacity: 0;
-      transition: opacity 0.25s;
-    }
-    .feature-card:hover {
-      border-color: rgba(249,115,22,0.25);
-      background: var(--bg-card-hover);
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
-    }
-    .feature-card:hover::before { opacity: 1; }
-    .feature-icon {
-      width: 44px; height: 44px;
-      border-radius: var(--radius-sm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.3rem;
-      margin-bottom: 1rem;
-    }
-    .feature-card h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-    }
-    .feature-card p {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-
-    /* ── TECH STACK ── */
-    #tech { padding: 100px 0; background: linear-gradient(180deg, transparent, rgba(22,27,34,0.6), transparent); }
-    .tech-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-    }
-    .tech-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 1.5rem 1.25rem;
-      text-align: center;
-      transition: all 0.2s;
-    }
-    .tech-card:hover {
-      border-color: var(--border);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-sm);
-    }
-    .tech-icon { font-size: 2rem; margin-bottom: 0.6rem; }
-    .tech-card .tech-name {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    .tech-card .tech-detail {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 0.2rem;
-    }
-
-    /* ── ARCHITECTURE ── */
-    #architektur { padding: 100px 0; }
-    .arch-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 3rem;
-      align-items: start;
-    }
-    @media (max-width: 768px) { .arch-grid { grid-template-columns: 1fr; } }
-    .arch-desc h3 { font-size: 1.4rem; font-weight: 600; margin-bottom: 1rem; }
-    .arch-desc p { color: var(--text-secondary); line-height: 1.7; margin-bottom: 1rem; font-size: 0.95rem; }
-    .arch-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
-    .arch-list li {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-    }
-    .arch-list li::before {
-      content: '›';
-      color: var(--accent);
-      font-weight: 700;
-      font-size: 1rem;
-    }
-    .code-block {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 1.5rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
-      line-height: 1.8;
-      overflow-x: auto;
-    }
-    .code-block .line { display: flex; gap: 0.75rem; }
-    .code-block .ln { color: var(--text-muted); user-select: none; min-width: 1.5rem; text-align: right; }
-    .code-block .kw { color: #ff7b72; }
-    .code-block .st { color: #a5d6ff; }
-    .code-block .cm { color: var(--text-muted); }
-    .code-block .fn { color: #d2a8ff; }
-    .code-block .ty { color: #79c0ff; }
-    .code-block .nu { color: #79c0ff; }
-
-    /* ── DEPLOYMENT ── */
-    #deployment { padding: 100px 0; }
-    .deploy-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.25rem;
-    }
-    .deploy-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 1.75rem;
-      position: relative;
-    }
-    .deploy-card .badge {
-      position: absolute;
-      top: 1rem; right: 1rem;
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.2rem 0.6rem;
-      border-radius: 100px;
-    }
-    .badge-green { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
-    .badge-blue  { background: rgba(88,166,255,0.15); color: var(--blue);  border: 1px solid rgba(88,166,255,0.3); }
-    .badge-purple{ background: rgba(188,140,255,0.15); color: var(--purple);border: 1px solid rgba(188,140,255,0.3); }
-    .deploy-card h3 { font-size: 1rem; font-weight: 600; margin: 0.75rem 0 0.5rem; }
-    .deploy-card p  { font-size: 0.85rem; color: var(--text-secondary); }
-    .deploy-icon    { font-size: 1.75rem; }
-
-    /* ── CTA ── */
-    #cta {
-      padding: 120px 0;
-      text-align: center;
-    }
-    .cta-box {
-      background: var(--bg-card);
-      border: 1px solid rgba(249,115,22,0.2);
-      border-radius: var(--radius-lg);
-      padding: 4rem 2rem;
-      position: relative;
-      overflow: hidden;
-      max-width: 720px;
-      margin: 0 auto;
-    }
-    .cta-box::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse at 50% 0%, rgba(249,115,22,0.08), transparent 60%);
-      pointer-events: none;
-    }
-    .cta-box h2 {
-      font-size: clamp(1.6rem, 4vw, 2.2rem);
-      font-weight: 700;
-      margin-bottom: 1rem;
-    }
-    .cta-box p {
-      color: var(--text-secondary);
-      margin-bottom: 2rem;
-      font-size: 1.05rem;
-    }
-
-    /* ── FOOTER ── */
-    footer {
-      border-top: 1px solid var(--border-subtle);
-      padding: 2.5rem 2rem;
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      position: relative;
-      z-index: 1;
-    }
-    footer a { color: var(--text-secondary); text-decoration: none; }
-    footer a:hover { color: var(--accent); }
-
-    /* ── SCROLL REVEAL ── */
-    .reveal {
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* ── VERSIONSHISTORIE ── */
-    .changelog-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-      max-width: 860px;
-      margin: 0 auto;
-    }
-    .changelog-entry {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 1.5rem 2rem;
-      position: relative;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .changelog-entry:hover {
-      border-color: rgba(249,115,22,0.4);
-      background: var(--bg-card-hover);
-    }
-    .changelog-entry::before {
-      content: '';
-      position: absolute;
-      left: 0; top: 1.25rem; bottom: 1.25rem;
-      width: 3px;
-      background: var(--accent);
-      border-radius: 0 3px 3px 0;
-      opacity: 0.6;
-    }
-    .changelog-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      margin-bottom: 0.6rem;
-    }
-    .changelog-version {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--accent);
-      background: var(--accent-dim);
-      border: 1px solid rgba(249,115,22,0.3);
-      padding: 0.15rem 0.65rem;
-      border-radius: 100px;
-    }
-    .changelog-date {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .changelog-name {
-      font-weight: 600;
-      font-size: 1rem;
-      color: var(--text-primary);
-      flex: 1;
-      min-width: 200px;
-    }
-    .changelog-body {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      line-height: 1.7;
-      margin-top: 0.5rem;
-    }
-    .changelog-body ul {
-      padding-left: 1.25rem;
       margin: 0;
+      font-family: var(--font);
+      font-size: 17px;
+      line-height: 1.6;
+      color: var(--ink);
+      background: var(--bg);
     }
-    .changelog-body li { margin-bottom: 0.25rem; }
-    .changelog-body h4 {
-      color: var(--text-primary);
-      font-size: 0.875rem;
-      margin: 0.75rem 0 0.35rem;
-    }
-    .changelog-empty {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.875rem;
-      padding: 2rem;
-    }
+    a { color: var(--primary-ink); }
+    a:hover { color: var(--primary); }
+    h1, h2, h3 { color: var(--heading); line-height: 1.2; margin: 0; }
+    p { margin: 0; }
+    code { font-family: var(--mono); font-size: 0.88em; }
 
-    /* ── RESPONSIVE NAV ── */
-    @media (max-width: 640px) {
-      .nav-links { display: none; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    @media (max-width: 600px) { .wrap { padding: 0 16px; } }
+
+    /* ── Kopfzeile ── */
+    header.top {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
     }
+    header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--heading); text-decoration: none; }
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: 6px; background: var(--primary);
+      display: grid; place-items: center; color: #fff; font-size: 15px;
+    }
+    nav.links { display: flex; gap: 24px; align-items: center; font-size: 15px; }
+    nav.links a { color: var(--muted); text-decoration: none; }
+    nav.links a:hover { color: var(--heading); }
+    nav.links a.gh { color: var(--heading); font-weight: 600; }
+    @media (max-width: 760px) { nav.links a:not(.gh) { display: none; } }
+
+    /* ── Hero ── */
+    .hero { padding: 72px 0 64px; }
+    .hero .wrap { display: grid; grid-template-columns: 1fr 1.05fr; gap: 56px; align-items: center; }
+    @media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; gap: 40px; } .hero { padding-top: 48px; } }
+    .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary-ink); margin-bottom: 14px; }
+    .hero h1 { font-size: clamp(2.1rem, 4.6vw, 3.3rem); letter-spacing: -0.02em; margin-bottom: 18px; }
+    .hero .lead { font-size: 1.12rem; color: var(--muted); max-width: 34em; margin-bottom: 28px; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 8px;
+      font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid transparent;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-ink); color: #fff; }
+    .btn-ghost { border-color: var(--border); color: var(--heading); background: var(--surface); }
+    .btn-ghost:hover { border-color: var(--muted); color: var(--heading); }
+    .facts { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 28px; font-size: 14px; color: var(--muted); }
+    .facts span::before { content: "✓"; color: var(--ok); font-weight: 700; margin-right: 6px; }
+
+    /* ── Lagebild-Vorschau ── */
+    .lage {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      box-shadow: 0 18px 50px -24px rgba(16, 32, 64, 0.35); overflow: hidden;
+    }
+    .lage-bar {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted);
+    }
+    .lage-bar strong { color: var(--heading); }
+    .live { display: inline-flex; align-items: center; gap: 6px; color: var(--signal); font-weight: 600; }
+    .live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--signal); }
+    .lage-body { display: grid; grid-template-columns: 1fr 1.25fr; }
+    @media (max-width: 520px) { .lage-body { grid-template-columns: 1fr; } }
+    .teams { list-style: none; margin: 0; padding: 8px; border-right: 1px solid var(--border); }
+    @media (max-width: 520px) { .teams { border-right: 0; border-bottom: 1px solid var(--border); } }
+    .team { display: grid; grid-template-columns: 6px 1fr auto; gap: 10px; align-items: center; padding: 9px 8px; border-radius: 8px; }
+    .team + .team { margin-top: 2px; }
+    .team .bar { width: 6px; height: 34px; border-radius: 3px; }
+    .team .name { font-weight: 600; font-size: 14px; color: var(--heading); }
+    .team .meta { font-size: 12px; color: var(--muted); }
+    .team .time { font-family: var(--mono); font-size: 14px; font-weight: 600; }
+    .team.is-warn { background: color-mix(in srgb, var(--warn) 10%, transparent); }
+    .team.is-warn .time { color: var(--warn); }
+    .map { position: relative; min-height: 250px; background: var(--map-bg); }
+    .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .cov-label {
+      position: absolute; left: 14px; top: 12px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 3px 9px; font-size: 12px; font-weight: 600; color: var(--heading);
+    }
+    .cov-label b { color: var(--ok); }
+
+    /* ── Abschnitte ── */
+    section.block { padding: 72px 0; border-top: 1px solid var(--border); }
+    section.block.alt { background: var(--surface); }
+    .head { max-width: 46em; margin-bottom: 40px; }
+    .head h2 { font-size: clamp(1.6rem, 3.2vw, 2.2rem); letter-spacing: -0.01em; margin-bottom: 10px; }
+    .head p { color: var(--muted); font-size: 1.05rem; }
+
+    /* Ablauf */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; counter-reset: step; }
+    @media (max-width: 820px) { .steps { grid-template-columns: 1fr; } }
+    .step { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+    section.block:not(.alt) .step { background: var(--surface); }
+    .step::before {
+      counter-increment: step; content: counter(step);
+      display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+      background: var(--primary); color: #fff; font-weight: 700; font-size: 14px; margin-bottom: 14px;
+    }
+    .step h3 { font-size: 1.1rem; margin-bottom: 8px; }
+    .step p { color: var(--muted); font-size: 15px; }
+
+    /* Funktionsgruppen */
+    .groups { display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px 56px; }
+    @media (max-width: 820px) { .groups { grid-template-columns: 1fr; gap: 32px; } }
+    .group h3 { font-size: 1.05rem; display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 2px solid var(--primary); margin-bottom: 6px; }
+    .group dl { margin: 0; }
+    .group dt { font-weight: 600; color: var(--heading); margin-top: 14px; font-size: 15.5px; }
+    .group dd { margin: 2px 0 0; color: var(--muted); font-size: 15px; }
+
+    /* Sicherheit */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+    @media (max-width: 860px) { .split { grid-template-columns: 1fr; gap: 32px; } }
+    .checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+    .checklist li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; }
+    .checklist li::before { content: "✓"; color: var(--ok); font-weight: 700; }
+    .checklist strong { color: var(--heading); }
+    .diagram { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+    .diagram svg { width: 100%; height: auto; display: block; }
+    .diagram text { font-family: var(--font); fill: var(--ink); }
+    .diagram .sub { fill: var(--muted); }
+
+    /* Installation */
+    pre.code {
+      background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius); padding: 20px 22px;
+      font-family: var(--mono); font-size: 14px; line-height: 1.75; overflow-x: auto; margin: 0;
+    }
+    pre.code .c { color: #7d8ba1; }
+    .note { margin-top: 16px; color: var(--muted); font-size: 15px; }
+
+    /* Versionshistorie (Eintraege erzeugt docs/generate_changelog.py) */
+    .changelog-list { display: grid; gap: 10px; max-width: 860px; }
+    .changelog-entry { min-width: 0; overflow-wrap: anywhere; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .changelog-entry summary {
+      display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; padding: 14px 18px; cursor: pointer; list-style: none;
+    }
+    .changelog-entry summary::-webkit-details-marker { display: none; }
+    .changelog-entry summary::after { content: "+"; margin-left: auto; color: var(--muted); font-weight: 600; }
+    .changelog-entry[open] summary::after { content: "–"; }
+    .changelog-version { font-family: var(--mono); font-weight: 600; color: var(--primary-ink); }
+    .changelog-date { font-size: 14px; color: var(--muted); }
+    .changelog-name { font-weight: 600; color: var(--heading); }
+    .changelog-body { padding: 0 18px 16px; font-size: 15px; color: var(--ink); border-top: 1px solid var(--border); }
+    .changelog-body h4 { margin: 14px 0 4px; font-size: 15px; color: var(--heading); }
+    .changelog-body ul { margin: 4px 0; padding-left: 20px; }
+    .changelog-body li { margin: 3px 0; }
+    .changelog-body p { margin: 8px 0; }
+    .changelog-body pre { max-width: 100%; overflow-wrap: normal; background: var(--code-bg); color: var(--code-ink); padding: 12px 14px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+    .changelog-empty { color: var(--muted); }
+    .more { margin-top: 18px; }
+
+    footer { border-top: 1px solid var(--border); padding: 32px 0; color: var(--muted); font-size: 14px; }
+    footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    footer a { color: var(--muted); }
   </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <a href="#" class="nav-logo">
-    <span class="dot"></span>
-    Einsatzüberwachung
-  </a>
-  <ul class="nav-links">
-    <li><a href="#features">Features</a></li>
-    <li><a href="#tech">Tech-Stack</a></li>
-    <li><a href="#architektur">Architektur</a></li>
-    <li><a href="#deployment">Deployment</a></li>
-    <li><a href="#versionshistorie">Versionshistorie</a></li>
-    <li><a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server" class="nav-cta">GitHub</a></li>
-  </ul>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-bg-glow"></div>
-  <div>
-    <div class="hero-badge">🐕 Open Source · Rettungshundestaffeln</div>
-    <h1>Einsatz&shy;überwachung<br /><span>in Echtzeit</span></h1>
-    <p class="hero-sub">
-      Professionelle Einsatzleit-Software für Such&shy;hundestaffeln —
-      mit GPS-Live-Tracking, interaktiver Karte, Funk&shy;sprüchen und mobiler PWA.
-    </p>
-    <div class="hero-actions">
-      <a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server" class="btn-primary">
-        ⭐ GitHub ansehen
-      </a>
-      <a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server/releases" class="btn-secondary">
-        📦 Releases
-      </a>
-    </div>
-    <div class="hero-stats">
-      <div class="hero-stat"><div class="val">.NET 9</div><div class="lbl">Blazor Server</div></div>
-      <div class="hero-stat"><div class="val">SignalR</div><div class="lbl">Live-Updates</div></div>
-      <div class="hero-stat"><div class="val">PWA</div><div class="lbl">Mobile Ready</div></div>
-      <div class="hero-stat"><div class="val">VPN</div><div class="lbl">Sicher & Privat</div></div>
-    </div>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><span class="brand-mark" aria-hidden="true">🐕</span>Einsatzüberwachung</a>
+    <nav class="links" aria-label="Seitennavigation">
+      <a href="#ablauf">Im Einsatz</a>
+      <a href="#funktionen">Funktionen</a>
+      <a href="#sicherheit">Sicherheit</a>
+      <a href="#installation">Installation</a>
+      <a href="#versionshistorie">Neu</a>
+      <a class="gh" href="https://github.com/Elemirus1996/Einsatzueberwachung.Server">GitHub</a>
+    </nav>
   </div>
-</section>
+</header>
 
-<!-- FEATURES -->
-<section id="features">
-  <div class="container">
-    <div class="section-header reveal">
-      <span class="section-label">Funktionen</span>
-      <h2>Alles für den Sucheinsatz</h2>
-      <p>Von der Einsatzplanung bis zur Nachbereitung — vollständig digital.</p>
-    </div>
-    <div class="features-grid">
-
-      <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(249,115,22,0.12);color:var(--accent);">🗺️</div>
-        <h3>Live-Karte mit GPS-Tracking</h3>
-        <p>Interaktive Leaflet.js-Karte mit Echtzeit-Positionen aller Teams und GPS-Halsbänder über WebSocket/SignalR.</p>
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Open Source für Rettungshundestaffeln</p>
+        <h1>Das ganze Lagebild auf einen Blick.</h1>
+        <p class="lead">
+          Teams und Suchzeiten, Hunde und Hundeführer live auf der Karte, die Abdeckung jedes Suchgebiets,
+          Funk und Notizen. Danach ein vollständiger Bericht. Auf eurem eigenen Server, für die Einsatzleitung nur im VPN.
+        </p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://github.com/Elemirus1996/Einsatzueberwachung.Server/releases/latest">Neueste Version</a>
+          <a class="btn btn-ghost" href="https://github.com/Elemirus1996/Einsatzueberwachung.Server">Quellcode ansehen</a>
+        </div>
+        <div class="facts"><span>Kostenlos (MIT)</span><span>Eigener Server</span><span>Tablet &amp; Handy</span></div>
       </div>
 
-      <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(88,166,255,0.12);color:var(--blue);">📡</div>
-        <h3>SignalR Echtzeit-Updates</h3>
-        <p>Alle Statusänderungen, Notizen, Funk&shy;sprüche und Positions&shy;daten werden sofort auf allen Geräten synchronisiert.</p>
-      </div>
-
-      <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(63,185,80,0.12);color:var(--green);">📱</div>
-        <h3>Mobile PWA</h3>
-        <p>Vollständig responsive Benutzeroberfläche — als Progressive Web App direkt auf mobilen Endgeräten installierbar.</p>
-      </div>
-
-      <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(188,140,255,0.12);color:var(--purple);">🎙️</div>
-        <h3>Funksprüche & Threads</h3>
-        <p>Strukturierte Funkspruch-Dokumentation mit Antwort-Threads, Zeitstempeln und Team-Zuordnung.</p>
-      </div>
-
-      <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(249,115,22,0.12);color:var(--accent);">🐕</div>
-        <h3>Team- & Hundeverwaltung</h3>
-        <p>Übersichtliche Verwaltung aller Teams, Hundeführer und Suchhunde inklusive Status und Einsatzhistorie.</p>
-      </div>
-
-      <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(248,81,73,0.12);color:var(--red);">🔔</div>
-        <h3>Divera 24/7 Integration</h3>
-        <p>Direkte Anbindung an Divera 24/7 für automatische Alarmierung und Einsatz&shy;übernahme.</p>
-      </div>
-
-      <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(210,153,34,0.12);color:var(--yellow);">📄</div>
-        <h3>PDF-Karten-Export</h3>
-        <p>Statischer Karten-Export mit OSM/Carto-Tiles als druckfähiges PDF für Offline-Nutzung im Gelände.</p>
-      </div>
-
-      <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(63,185,80,0.12);color:var(--green);">🏋️</div>
-        <h3>Trainings-Modul</h3>
-        <p>Separate Trainer-Authentifizierung und Trainings-API für die Integration mit der externen Trainings-App.</p>
-      </div>
-
-      <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(88,166,255,0.12);color:var(--blue);">🔄</div>
-        <h3>Auto-Updates via GitHub</h3>
-        <p>Integriertes Update-Management — neue Versionen direkt über den eingebauten Update-Controller einspielen.</p>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- TECH STACK -->
-<section id="tech">
-  <div class="container">
-    <div class="section-header reveal">
-      <span class="section-label">Tech-Stack</span>
-      <h2>Moderner, stabiler Stack</h2>
-      <p>Bewährte Technologien — produktionsreif auf Linux.</p>
-    </div>
-    <div class="tech-grid">
-      <div class="tech-card reveal"><div class="tech-icon">🔷</div><div class="tech-name">Blazor Server</div><div class="tech-detail">.NET 9</div></div>
-      <div class="tech-card reveal"><div class="tech-icon">🗄️</div><div class="tech-name">SQLite + EF Core</div><div class="tech-detail">Runtime State</div></div>
-      <div class="tech-card reveal"><div class="tech-icon">⚡</div><div class="tech-name">SignalR</div><div class="tech-detail">WebSocket Echtzeit</div></div>
-      <div class="tech-card reveal"><div class="tech-icon">🗺️</div><div class="tech-name">Leaflet.js</div><div class="tech-detail">OSM / Carto Tiles</div></div>
-      <div class="tech-card reveal"><div class="tech-icon">🎨</div><div class="tech-name">Bootstrap 5.3</div><div class="tech-detail">Dark Mode</div></div>
-      <div class="tech-card reveal"><div class="tech-icon">🐧</div><div class="tech-name">Ubuntu 22/24 LTS</div><div class="tech-detail">systemd + Nginx</div></div>
-      <div class="tech-card reveal"><div class="tech-icon">🔒</div><div class="tech-name">WireGuard VPN</div><div class="tech-detail">Sicherer Zugriff</div></div>
-      <div class="tech-card reveal"><div class="tech-icon">🖥️</div><div class="tech-name">WPF Desktop-Client</div><div class="tech-detail">USB-GPS Windows</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ARCHITEKTUR -->
-<section id="architektur">
-  <div class="container">
-    <div class="section-header reveal">
-      <span class="section-label">Architektur</span>
-      <h2>Durchdachtes Design</h2>
-    </div>
-    <div class="arch-grid">
-      <div class="arch-desc reveal">
-        <h3>Klare Schichtentrennung</h3>
-        <p>Die Anwendung folgt einer klaren Service-orientierten Architektur mit getrennten Verantwortlichkeiten für Persistenz, Echtzeit-Kommunikation und UI.</p>
-        <ul class="arch-list">
-          <li>Blazor Razor Components als reaktive UI-Schicht</li>
-          <li>REST-API + SignalR Hub für alle Clients</li>
-          <li>Hosted Services für Background-Tasks</li>
-          <li>Domain-Events → SignalR Relay Pattern</li>
-          <li>Separate RuntimeDbContext für flüchtigen State</li>
-          <li>JSON-Dateien für Stammdaten & Konfiguration</li>
-        </ul>
-      </div>
-      <div class="reveal">
-        <div class="code-block">
-          <div class="line"><span class="ln">1</span><span class="cm">// SignalR Hub — Live Updates</span></div>
-          <div class="line"><span class="ln">2</span><span class="kw">public class</span> <span class="ty">EinsatzHub</span> : <span class="ty">Hub</span></div>
-          <div class="line"><span class="ln">3</span><span>&#123;</span></div>
-          <div class="line"><span class="ln">4</span>&nbsp;&nbsp;<span class="kw">public async</span> <span class="ty">Task</span> <span class="fn">SendTeamUpdate</span>(</div>
-          <div class="line"><span class="ln">5</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="ty">TeamStatusDto</span> status)</div>
-          <div class="line"><span class="ln">6</span>&nbsp;&nbsp;&#123;</div>
-          <div class="line"><span class="ln">7</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">await</span> Clients.All</div>
-          <div class="line"><span class="ln">8</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.<span class="fn">SendAsync</span>(<span class="st">"TeamUpdated"</span>, status);</div>
-          <div class="line"><span class="ln">9</span>&nbsp;&nbsp;&#125;</div>
-          <div class="line"><span class="ln">10</span>&#125;</div>
-          <div class="line"><span class="ln">11</span><span class="cm">&nbsp;</span></div>
-          <div class="line"><span class="ln">12</span><span class="cm">// GPS Relay — Collar → SignalR</span></div>
-          <div class="line"><span class="ln">13</span><span class="kw">public class</span> <span class="ty">CollarTrackingRelayService</span></div>
-          <div class="line"><span class="ln">14</span>&nbsp;&nbsp;: <span class="ty">BackgroundService</span></div>
-          <div class="line"><span class="ln">15</span>&#123;</div>
-          <div class="line"><span class="ln">16</span>&nbsp;&nbsp;<span class="cm">// Webhook → Live-Karte</span></div>
-          <div class="line"><span class="ln">17</span>&#125;</div>
+      <div class="lage" role="img" aria-label="Beispiel eines Lagebilds: drei Teams mit Suchzeiten und eine Karte mit Suchgebiet, 62 Prozent abgesucht">
+        <div class="lage-bar"><span><strong>Flächensuche</strong> · Waldgebiet Nord</span><span class="live">Live</span></div>
+        <div class="lage-body">
+          <ul class="teams">
+            <li class="team"><span class="bar" style="background:#2f6fd6"></span><span><span class="name">Team Rex</span><br /><span class="meta">Gebiet A · vor 1 Min</span></span><span class="time">00:42</span></li>
+            <li class="team is-warn"><span class="bar" style="background:#d97706"></span><span><span class="name">Team Luna</span><br /><span class="meta">Gebiet B · Akku 18 %</span></span><span class="time">01:12</span></li>
+            <li class="team"><span class="bar" style="background:#3f9f50"></span><span><span class="name">Team Kira</span><br /><span class="meta">Pause</span></span><span class="time">00:18</span></li>
+          </ul>
+          <div class="map">
+            <svg viewBox="0 0 300 250" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <g stroke="var(--map-line)" stroke-width="7" fill="none" stroke-linecap="round">
+                <path d="M-10 190 C 60 170, 120 210, 310 160" />
+                <path d="M200 -10 C 190 80, 230 150, 215 260" />
+              </g>
+              <polygon points="40,40 205,32 228,150 60,178" fill="rgba(47,111,214,0.10)" stroke="#2f6fd6" stroke-width="2" stroke-dasharray="6 4" />
+              <g fill="rgba(63,159,80,0.42)">
+                <rect x="58" y="52" width="16" height="16"/><rect x="74" y="52" width="16" height="16"/><rect x="90" y="52" width="16" height="16"/><rect x="106" y="52" width="16" height="16"/><rect x="122" y="52" width="16" height="16"/>
+                <rect x="58" y="68" width="16" height="16"/><rect x="74" y="68" width="16" height="16"/><rect x="90" y="68" width="16" height="16"/><rect x="106" y="68" width="16" height="16"/><rect x="122" y="68" width="16" height="16"/><rect x="138" y="68" width="16" height="16"/>
+                <rect x="66" y="84" width="16" height="16"/><rect x="82" y="84" width="16" height="16"/><rect x="98" y="84" width="16" height="16"/><rect x="138" y="84" width="16" height="16"/><rect x="154" y="84" width="16" height="16"/>
+                <rect x="66" y="100" width="16" height="16"/><rect x="82" y="100" width="16" height="16"/><rect x="154" y="100" width="16" height="16"/><rect x="170" y="100" width="16" height="16"/>
+                <rect x="70" y="116" width="16" height="16"/><rect x="86" y="116" width="16" height="16"/><rect x="170" y="116" width="16" height="16"/>
+              </g>
+              <path d="M66 60 L 130 62 L 146 92 L 92 92 L 78 124 L 96 140" fill="none" stroke="#2f6fd6" stroke-width="2.5" stroke-linejoin="round" />
+              <path d="M146 92 L 178 108 L 182 132 L 200 140" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linejoin="round" />
+              <circle cx="96" cy="140" r="6" fill="#2f6fd6" stroke="#fff" stroke-width="2" />
+              <circle cx="200" cy="140" r="6" fill="#d97706" stroke="#fff" stroke-width="2" />
+              <rect x="246" y="196" width="22" height="16" rx="3" fill="var(--primary)" />
+              <text x="257" y="208" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="Segoe UI, sans-serif">EL</text>
+            </svg>
+            <span class="cov-label">Gebiet A · <b>62 % abgesucht</b></span>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- DEPLOYMENT -->
-<section id="deployment">
-  <div class="container">
-    <div class="section-header reveal">
-      <span class="section-label">Deployment</span>
-      <h2>Produktionsreif auf Linux</h2>
-      <p>Einfaches Setup — sicher, performant und wartbar.</p>
-    </div>
-    <div class="deploy-cards">
-
-      <div class="deploy-card reveal">
-        <span class="badge badge-green">Stabil</span>
-        <div class="deploy-icon">🐧</div>
-        <h3>Ubuntu 22.04 / 24.04 LTS</h3>
-        <p>Läuft als systemd-Service auf Ubuntu — automatischer Neustart, Logging via journalctl.</p>
+  <section class="block alt" id="ablauf">
+    <div class="wrap">
+      <div class="head">
+        <h2>Vom Alarm bis zum Bericht</h2>
+        <p>Die Anwendung begleitet den ganzen Einsatz. Was erfasst wurde, geht nicht verloren, auch nicht im Funkloch.</p>
       </div>
-
-      <div class="deploy-card reveal">
-        <span class="badge badge-blue">Reverse Proxy</span>
-        <div class="deploy-icon">⚙️</div>
-        <h3>Nginx Reverse Proxy</h3>
-        <p>Nginx leitet HTTPS-Traffic an Kestrel weiter. Brotli + Gzip Kompression für optimale Performance.</p>
+      <div class="steps">
+        <div class="step">
+          <h3>Einsatz anlegen</h3>
+          <p>Einsatz aus dem Divera-Alarm übernehmen oder selbst anlegen. Szenario wählen, Vermisste erfassen, Suchgebiete auf der Karte zeichnen, Teams mit Hund und Hundeführer bilden.</p>
+        </div>
+        <div class="step">
+          <h3>Suche führen</h3>
+          <p>Teams starten, Halsbänder zuweisen, Suchzeiten im Blick behalten. Die Karte zeigt Hunde, Hundeführer und wie viel jedes Gebiet bereits abgesucht ist. Warnungen kommen nur, wenn wirklich etwas ist.</p>
+        </div>
+        <div class="step">
+          <h3>Abschließen</h3>
+          <p>Einsatz beenden, und der PDF-Bericht ist fertig: Teams, Funk, Notizen, Tracks und Abdeckung auf echten Karten. Alles bleibt im Archiv.</p>
+        </div>
       </div>
+    </div>
+  </section>
 
-      <div class="deploy-card reveal">
-        <span class="badge badge-purple">Sicher</span>
-        <div class="deploy-icon">🔒</div>
-        <h3>VPN-geschützter Zugriff</h3>
-        <p>Nicht öffentlich erreichbar — nur über WireGuard / OpenVPN Netzwerk zugänglich.</p>
+  <section class="block" id="funktionen">
+    <div class="wrap">
+      <div class="head">
+        <h2>Was drin ist</h2>
+        <p>Gebaut mit und für Staffeln, die im Einsatz digital arbeiten.</p>
       </div>
-
+      <div class="groups">
+        <div class="group">
+          <h3>Einsatzleitung</h3>
+          <dl>
+            <dt>Einsatzmonitor</dt><dd>Teams, Suchzeiten mit Warnstufen, Suchgebiete, Vermisste und Checklisten je Szenario (Mantrailer, Fläche, Trümmer).</dd>
+            <dt>EL-Ansicht für das Tablet</dt><dd>Als App installierbar. Teams starten, pausieren und beenden, Funk, Notizen, Karte und Einsatz beenden. Hält auch bei schwachem Netz die Verbindung.</dd>
+            <dt>Funk und Notizen</dt><dd>Mit Antworten und @-Erwähnungen, sofort auf allen Geräten. Im Funkloch wird zwischengespeichert und mit Originalzeit nachgesendet.</dd>
+            <dt>Trümmer-Lagekarte</dt><dd>Drohnenfoto des Trümmerfelds hochladen und Suchbereiche direkt auf dem Bild einzeichnen.</dd>
+          </dl>
+        </div>
+        <div class="group">
+          <h3>Ortung</h3>
+          <dl>
+            <dt>GPS-Halsbänder</dt><dd>Bis zu 20 gleichzeitig, z. B. Garmin Alpha über die beiliegende Windows-App. Jede Suche bekommt einen eigenen Track in eigener Farbe.</dd>
+            <dt>Team-Handy</dt><dd>Laufweg des Hundeführers über den Browser oder die kostenlose App Traccar Client. Die App sendet auch bei gesperrtem Handy und puffert im Funkloch.</dd>
+            <dt>Abdeckung live</dt><dd>Je Suchgebiet „x % abgesucht“ und die abgesuchte Fläche, während die Hunde laufen.</dd>
+            <dt>Warnungen</dt><dd>Hund außerhalb seines Gebiets, Handy sendet nicht mehr, Akku schwach, Suchzeit überschritten. Alles gesammelt im Warnzentrum.</dd>
+          </dl>
+        </div>
+        <div class="group">
+          <h3>Nachbereitung</h3>
+          <dl>
+            <dt>PDF-Bericht</dt><dd>Kartenart (Straße, Topografisch, Satellit) und Teams wählbar. Tracks und Abdeckung auf echten Karten.</dd>
+            <dt>Archiv</dt><dd>Abgeschlossene Einsätze mit allen Suchen, Vermissten und Tracks. Der Bericht lässt sich jederzeit neu erzeugen.</dd>
+            <dt>Audit-Log</dt><dd>Wer hat wann was getan, inklusive Anmeldungen und Geräten.</dd>
+          </dl>
+        </div>
+        <div class="group">
+          <h3>Betrieb</h3>
+          <dl>
+            <dt>Systemzustand</dt><dd>Zertifikat, Backup, Speicher, Divera und Uhrzeit auf einen Blick. Ein ablaufendes Zertifikat per Knopf erneuern.</dd>
+            <dt>Stammdaten</dt><dd>Personal, Hunde und Drohnen, mit Excel-Import und -Export.</dd>
+            <dt>Divera 24/7, Wetter, Drohnen</dt><dd>Alarme und Verfügbarkeiten, Wetter am Einsatzort (DWD), Drohnen-Livestream und GPX-Import.</dd>
+            <dt>Updates aus dem Browser</dt><dd>Neue Versionen werden erkannt und mit einem Klick eingespielt.</dd>
+          </dl>
+        </div>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- VERSIONSHISTORIE -->
-<section id="versionshistorie">
-  <div class="container">
-    <div class="section-header reveal">
-      <span class="section-label">Versionshistorie</span>
-      <h2>Was ist neu?</h2>
-      <p>Aktuelle Releases und Änderungen auf einen Blick.</p>
+  <section class="block alt" id="sicherheit">
+    <div class="wrap">
+      <div class="head">
+        <h2>Eure Daten bleiben bei euch</h2>
+        <p>Keine Cloud, kein Konto bei einem Anbieter. Die Anwendung läuft auf einem Server der Staffel.</p>
+      </div>
+      <div class="split">
+        <ul class="checklist">
+          <li><span><strong>Einsatzleitung nur im VPN.</strong> Zugriff über WireGuard und mit dem Staffel-Passwort. VPN-Geräte werden per QR-Code angelegt und laufen automatisch ab.</span></li>
+          <li><span><strong>Nach außen nur das Nötigste.</strong> Die öffentliche Adresse gibt ausschließlich die Team-Ansicht und den Empfang der Handy-Positionen frei, mit Let's-Encrypt-Zertifikat.</span></li>
+          <li><span><strong>Zugänge gelten nur für einen Einsatz.</strong> Nach dem Einsatz nimmt der Server Positionen der Team-Handys nicht mehr an.</span></li>
+          <li><span><strong>Nachvollziehbar.</strong> Jede Anmeldung und jede wichtige Aktion steht im Audit-Log, Backups laufen täglich.</span></li>
+        </ul>
+        <div class="diagram">
+          <svg viewBox="0 0 440 250" role="img" aria-label="Aufbau: Einsatzleitung über VPN, Team-Handys über HTTPS, beide über nginx zum Server">
+            <g font-size="13">
+              <rect x="10" y="10" width="190" height="56" rx="8" fill="var(--surface)" stroke="var(--border)" />
+              <text x="105" y="34" text-anchor="middle" font-weight="600">Einsatzleitung</text>
+              <text x="105" y="53" text-anchor="middle" class="sub" font-size="12">Laptop, Tablet</text>
+              <rect x="240" y="10" width="190" height="56" rx="8" fill="var(--surface)" stroke="var(--border)" />
+              <text x="335" y="34" text-anchor="middle" font-weight="600">Team-Handys</text>
+              <text x="335" y="53" text-anchor="middle" class="sub" font-size="12">Browser, Traccar Client</text>
+              <path d="M105 66 V 112" stroke="var(--primary)" stroke-width="2.5" />
+              <path d="M335 66 V 112" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" />
+              <text x="113" y="94" class="sub" font-size="12">WireGuard-VPN</text>
+              <text x="343" y="94" class="sub" font-size="12">HTTPS</text>
+              <rect x="10" y="112" width="420" height="50" rx="8" fill="var(--surface)" stroke="var(--border)" />
+              <text x="220" y="133" text-anchor="middle" font-weight="600">nginx</text>
+              <text x="220" y="151" text-anchor="middle" class="sub" font-size="12">intern: alles · öffentlich: nur Team-Ansicht</text>
+              <path d="M220 162 V 192" stroke="var(--primary)" stroke-width="2.5" />
+              <rect x="95" y="192" width="250" height="48" rx="8" fill="var(--primary)" />
+              <text x="220" y="221" text-anchor="middle" font-weight="600" style="fill:#fff">Einsatzüberwachung</text>
+            </g>
+          </svg>
+        </div>
+      </div>
     </div>
-    <div class="changelog-list reveal">
+  </section>
+
+  <section class="block" id="installation">
+    <div class="wrap">
+      <div class="head">
+        <h2>Installation</h2>
+        <p>Ein Ubuntu-Server (22.04 oder 24.04 LTS) mit WireGuard reicht. Die Einrichtung erledigen drei Skripte.</p>
+      </div>
+      <pre class="code"><span class="c"># Anwendung, nginx, systemd, Firewall, tägliches Backup</span>
+sudo bash deploy/setup.sh
+<span class="c"># VPN-Geräte per QR-Code anlegen</span>
+sudo bash deploy/scripts/setup-vpn.sh dein-einsatz.example.org
+<span class="c"># Zertifikat für die Team-Handys, mit Knopf „Jetzt erneuern“ in der App</span>
+sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
+      <p class="note">Schritt für Schritt: <a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server/blob/main/DEPLOYMENT.md">DEPLOYMENT.md</a>. Updates spielt ihr danach direkt in der Anwendung ein.</p>
+    </div>
+  </section>
+
+  <section class="block alt" id="versionshistorie">
+    <div class="wrap">
+      <div class="head">
+        <h2>Neu in den letzten Versionen</h2>
+        <p>Wird bei jeder Veröffentlichung automatisch aktualisiert.</p>
+      </div>
+      <div class="changelog-list">
 <!-- CHANGELOG_START -->
-<div class="changelog-entry">
-  <div class="changelog-header">
-    <span class="changelog-version">v1.9.1</span>
-    <span class="changelog-date">10.05.2026</span>
-    <span class="changelog-name">Release 1.9.1: Konfigurierbares Tastenkürzel-System + UI-Fixes</span>
-  </div>
-  <div class="changelog-body"><h4>Was ist neu in 1.9.1</h4>
-<h4>Konfigurierbares Tastenkürzel-System</h4>
+<details class="changelog-entry" open>
+  <summary>
+    <span class="changelog-version">v1.11.6</span>
+    <span class="changelog-date">27.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
 <ul>
-<li>Neuer Tab <strong>„Tastenkürzel"</strong> in den Einstellungen: alle Navigationskürzel (Ctrl+H/M/N/T) und Stepper-Tasten (ArrowUp/Down) sind jetzt frei konfigurierbar</li>
-<li>Key-Recorder-UI: Feld anklicken → Taste drücken → sofort gespeichert</li>
-<li>Reset-Buttons pro Shortcut + „Alle zurücksetzen"</li>
-<li>Konfiguration wird pro Browser in localStorage gespeichert</li>
+<li><strong>PDF-Bericht wählbar:</strong> Beim Export lassen sich die Kartenart (Straßenkarte, Topografisch, Satellit) und die Teams auswählen, deren Tracks in den Bericht kommen. Das geht im Archiv über „PDF“ sowie beim Abschluss des Einsatzes auf dem Monitor und auf <code>/el</code>.</li>
+<li><strong>Karten im Bericht wieder mit Hintergrund:</strong> Tracks und Abdeckung liegen auf einer echten Karte (OpenStreetMap), so ist nachvollziehbar, wo der Hund war. Ältere Einsätze aus dem Archiv bekommen die Karten beim nächsten Download.</li>
+<li><strong>Abdeckung live auf der Einsatzkarte:</strong> Für jedes Suchgebiet zeigt die Karte „x % abgesucht“ und die abgesuchte Fläche, während die Hunde laufen. Die Anzeige wird alle 20 Sekunden aktualisiert und lässt sich mit dem Knopf „▦ Abdeckung“ ein- und ausblenden.</li>
+<li><strong>Zertifikat „Jetzt erneuern“:</strong> Neben dem Hinweis „Zertifikat abgelaufen/läuft ab“ steht ein Knopf zum Erneuern (Startseite, <code>/el</code>, Einstellungen → System). Dafür muss einmalig <code>setup-zertifikat.sh</code> eingerichtet werden (siehe unten).</li>
 </ul>
-<h4>HilfeDrawer – Kontextsensitive In-App-Hilfe</h4>
+<h4>Korrekturen</h4>
 <ul>
-<li><strong>?-Button</strong> im Topbar öffnet ein Slide-in Offcanvas mit Hilfetexten</li>
-<li>Scrollt automatisch zur aktuellen Seite</li>
-<li>Alle Seiten mit Beschreibung und Klickpfaden dokumentiert</li>
+<li><strong>Trümmer-Lagebild:</strong> Das Hochladen brach mit „The SSL connection could not be established“ ab. Jetzt klappt es unabhängig vom Zertifikat.</li>
+<li><strong>Suchzeit nach Neustart:</strong> Nach einem Neustart des Servers zeigten laufende Teams unsinnige Suchzeiten. Die Startzeit wird jetzt gespeichert.</li>
 </ul>
-<h4>Stepper-Verbesserungen (EinsatzStart)</h4>
+<h4>Einspielen</h4>
+<p>Normales Update über den Browser.</p>
+<p>Danach einmalig auf dem Server, damit Knopf und automatische Verlängerung funktionieren (neue <code>einsatzueberwachung-public.conf</code> aus 1.11.4 vorausgesetzt):</p>
+<pre><code>
+cd &lt;Repository-Kopie auf dem Server&gt; &amp;&amp; git pull     # holt deploy/scripts/setup-zertifikat.sh
+sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.mywire.org
+sudo certbot renew --dry-run
+</code></pre>
+<p>Details stehen in <code>DEPLOYMENT.md</code> unter „Zertifikat der öffentlichen Domain“.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
+    <span class="changelog-version">v1.11.5</span>
+    <span class="changelog-date">27.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu: rechtzeitig merken, wenn etwas nicht läuft</h4>
 <ul>
-<li>Anzahl Teams per Tastatur bedienbar (ArrowUp/Down oder konfigurierte Taste)</li>
-<li>Direkteingabe wird auf 1–50 geclampt</li>
-<li>+/- Buttons sind visuell deaktiviert an den Grenzen (1 / 50)</li>
+<li><strong>Zertifikatswarnung:</strong> Die App prüft alle 6 Stunden das Zertifikat ihrer öffentlichen Adresse. Ist es ungültig oder läuft es in weniger als 14 Tagen ab, erscheint ein Hinweis auf der Startseite und in der EL-Ansicht und eine Meldung im Warnzentrum. Ohne gültiges Zertifikat senden Traccar und Team-Handys nichts.</li>
+<li><strong>Funkstille beim Team-Handy:</strong> Hat das Handy eines Teams im Einsatz schon gesendet und meldet sich während der Suche zu lange nicht, kommt „Handy sendet nicht – Traccar gestartet?“. Das Zeitfenster stellt man in Einstellungen → Einsatzbetrieb ein, Standard sind 3 Minuten.</li>
+<li><strong>Akku:</strong> Der Akkustand aus Traccar wird angezeigt, unter 20 % gibt es eine Warnung. Teamkarte und EL-Ansicht zeigen zum Beispiel „Handy vor 2 Min · 74 %“.</li>
+<li><strong>Systemzustand</strong> (Einstellungen → System): Zertifikat, letztes Backup, freier Speicher, Divera, Uhrzeit und Zeitzone auf einen Blick.</li>
+<li><strong>Leitungsplatz erkennbar:</strong> Funk und Notizen der Einsatzleitung zeigen das Gerät, zum Beispiel „Einsatzleitung · Tablet EL“. Der Name kommt aus den VPN-Geräten. Die Anmeldung der Einsatzleitung steht mit Gerät im Audit-Log.</li>
+<li><strong>Anmeldecode</strong> im QR-Dialog groß und in Viererblöcken, zum Vorlesen per Funk. Beim Abtippen sind Leerzeichen egal.</li>
+<li><strong>Traccar testen</strong> (Einstellungen → Integration): Test per QR-Code oder Link, die App zeigt sofort „Position empfangen … – Traccar funktioniert“. Das geht ohne Einsatz.</li>
 </ul>
-<h4>Accessibility</h4>
+<h4>Einspielen</h4>
+<p>Normales Update, keine Änderung an der Konfiguration nötig.</p>
+<p>Falls noch nicht geschehen, den Zertifikatsschritt aus <strong>1.11.4</strong> ausführen (siehe <code>DEPLOYMENT.md</code>, „Zertifikat der öffentlichen Domain“). Danach unter Einstellungen → System „Jetzt prüfen“ drücken, das Zertifikat sollte grün sein. Anschließend unter Einstellungen → Integration den <strong>Traccar-Test</strong> mit einem Handy machen.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
+    <span class="changelog-version">v1.11.4</span>
+    <span class="changelog-date">27.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Korrekturen</h4>
 <ul>
-<li><code>aria-expanded</code> auf Trainer-Chip-Button in EinsatzStart ergänzt</li>
+<li><strong>Traccar sendet wieder:</strong> Das Let's-Encrypt-Zertifikat konnte sich nicht automatisch verlängern. Port 80 hat auch die Prüfanfragen auf HTTPS umgeleitet, dort kam ein 404 zurück. Die Traccar-App lehnt ein abgelaufenes Zertifikat still ab, der Browser zeigt nur eine Warnung. Die nginx-Vorlage lässt die Prüfanfragen jetzt durch (siehe „Einspielen“).</li>
+<li>Der Traccar-Endpunkt versteht zusätzlich das <strong>JSON-Format</strong> der neueren Traccar-Apps.</li>
 </ul>
-<h4>Bug-Fixes / Stabilität</h4>
-<ul>
-<li><code>async void OnLocationChanged</code> mit generellem Exception-Catch abgesichert</li>
-</ul>
-<h4>Code-Qualität</h4>
-<ul>
-<li>11 weitere Inline-Styles in EinsatzMonitor zu CSS-Klassen ausgelagert</li>
-<li>Hilfetexte (HilfeContent.cs): alle ASCII-Umlaut-Ersetzungen durch echte Umlaute ersetzt</li>
-</ul></div>
-</div>
-<div class="changelog-entry">
-  <div class="changelog-header">
-    <span class="changelog-version">v1.8.1</span>
-    <span class="changelog-date">10.05.2026</span>
-    <span class="changelog-name">v1.8.1</span>
-  </div>
-  <div class="changelog-body"><p><strong>Full Changelog</strong>: https://github.com/Elemirus1996/Einsatzueberwachung.Server/compare/v1.2.5...v1.8.1</p></div>
-</div>
-<div class="changelog-entry">
-  <div class="changelog-header">
-    <span class="changelog-version">v1.8.0</span>
-    <span class="changelog-date">07.05.2026</span>
-    <span class="changelog-name">v1.8.0 - Drohnen-Livestream, GPX-Import, Teams-Detailansicht, Frontend-Design</span>
-  </div>
-  <div class="changelog-body"><h4>What's Changed</h4>
-<ul>
-<li>GPX import (Basecamp) by @Freakwave in https://github.com/Elemirus1996/Einsatzueberwachung.Server/pull/34</li>
-<li>Added frontend Desin skill by @Freakwave in https://github.com/Elemirus1996/Einsatzueberwachung.Server/pull/35</li>
-<li>Newteams card by @Freakwave in https://github.com/Elemirus1996/Einsatzueberwachung.Server/pull/36</li>
-</ul>
-<p><strong>Full Changelog</strong>: https://github.com/Elemirus1996/Einsatzueberwachung.Server/compare/v1.7.9...v1.8.0</p></div>
-</div>
-<div class="changelog-entry">
-  <div class="changelog-header">
-    <span class="changelog-version">v1.7.9</span>
-    <span class="changelog-date">04.05.2026</span>
-    <span class="changelog-name">v1.7.9</span>
-  </div>
-  <div class="changelog-body"><h4>What's Changed</h4>
-<ul>
-<li>Mention feature by @Freakwave in https://github.com/Elemirus1996/Einsatzueberwachung.Server/pull/31</li>
-</ul>
-<p><strong>Full Changelog</strong>: https://github.com/Elemirus1996/Einsatzueberwachung.Server/compare/v1.7.8...v1.7.9</p></div>
-</div>
-<div class="changelog-entry">
-  <div class="changelog-header">
-    <span class="changelog-version">v1.7.8</span>
-    <span class="changelog-date">03.05.2026</span>
-    <span class="changelog-name">Release 1.7.8</span>
-  </div>
-  <div class="changelog-body"><h4>Hotfix - CI-Build repariert</h4>
-<p>In 1.7.6 hatte ich einen CI-Step hinzugefuegt, der die <code>libSkiaSharp.so</code> aus dem NuGet-Cache ins Release-Asset kopiert. Der Cache lag auf dem GitHub-Actions-Runner aber an einem anderen Pfad als angenommen → Step bricht ab → <code>build-server</code>-Job rot → kein <code>linux-x64-server-1.7.x.zip</code> an v1.7.6 und v1.7.7 angehaengt.</p>
-<p>Fix: Lib wird jetzt deterministisch direkt von nuget.org geholt (mit Cache-Suche als schnellem Fallback). Damit ist das Release-Asset auch bei zukuenftigen Builds zuverlaessig komplett.</p>
-<p>Inhaltlich keine Aenderung gegenueber 1.7.7 — nur CI-Reparatur, damit der In-App-Updater die Version uberhaupt herunterladen kann. Sobald der Workflow gruen ist, kannst du regulaer updaten und der manuelle libSkiaSharp.so-Workaround wird automatisch ueberschrieben.</p></div>
-</div>
-<div class="changelog-entry">
-  <div class="changelog-header">
-    <span class="changelog-version">v1.7.7</span>
-    <span class="changelog-date">03.05.2026</span>
-    <span class="changelog-name">Release 1.7.7</span>
-  </div>
-  <div class="changelog-body"><h4>Hotfix</h4>
-<p><strong>Uhr auf der Home-Seite lief 2 Stunden zurueck.</strong></p>
-<h4>Ursache</h4>
-<p>Die Home-Seite las <code>DateTime.Now</code>. Auf einem VPS, dessen System-Timezone auf UTC steht, liefert das die UTC-Uhrzeit — also 2 h hinter CEST.</p>
-<h4>Fix</h4>
-<p>Die Uhr nutzt jetzt <code>ITimeService</code>, der die in den App-Einstellungen konfigurierte Zeitzone respektiert (default <code>Europe/Berlin</code>). Damit ist die Anzeige unabhaengig von der System-Timezone des Servers korrekt.</p>
-<p>Falls die Uhr bei dir auch nach dem Update noch falsch geht: Einstellungen → Zeitzone pruefen und auf <code>Europe/Berlin</code> setzen.</p></div>
-</div>
-<div class="changelog-entry">
-  <div class="changelog-header">
-    <span class="changelog-version">v1.7.6</span>
-    <span class="changelog-date">03.05.2026</span>
-    <span class="changelog-name">Release 1.7.6</span>
-  </div>
-  <div class="changelog-body"><h4>Hotfix - PDF-Karte rendert wieder zuverlaessig nach Update</h4>
-<h4>Ursache</h4>
-<p>Mit <code>dotnet publish --self-contained false -r linux-x64</code> kommt die native <code>libSkiaSharp.so</code> nicht zuverlaessig im Publish-Output an, obwohl <code>SkiaSharp.NativeAssets.Linux</code> korrekt im csproj referenziert ist. Folge: nach jedem Update fehlte die <code>.so</code> neben der <code>Einsatzueberwachung.Server.dll</code>, der Map-Renderer kippte mit <code>DllNotFoundException</code>. Mein 25 s-Timeout-Catch fing den Crash zwar ab (kein 502), das PDF kam aber ohne Karte raus.</p>
-<h4>Fix</h4>
-<p>CI-Workflow holt die <code>libSkiaSharp.so</code> jetzt explizit aus dem NuGet-Cache und legt sie neben die DLL ins Release-Asset. Damit ist sie nach jedem zukuenftigen Update automatisch dabei.</p>
-<h4>Falls du gerade einen Einsatz hast</h4>
-<p>Wenn du nicht warten willst bis der Workflow das neue Asset gebaut hat, kannst du die Lib auch manuell auf den Server kopieren:</p>
-<p><code>`</code>bash</p>
-<p>cd /tmp</p>
-<p>curl -sLo skia.nupkg https://www.nuget.org/api/v2/package/SkiaSharp.NativeAssets.Linux/3.116.1</p>
-<p>unzip -o skia.nupkg -d skia-pkg</p>
-<p>sudo cp skia-pkg/runtimes/linux-x64/native/libSkiaSharp.so /opt/einsatzueberwachung/server/</p>
-<p>sudo chown einsatz:einsatz /opt/einsatzueberwachung/server/libSkiaSharp.so</p>
-<p>sudo systemctl restart einsatzueberwachung-server.service</p>
-<p><code>`</code></p>
-<p>Nach diesem Workaround bleibt die Lib erhalten - das naechste Update via 1.7.6+ wird sie ohnehin mitliefern.</p></div>
-</div>
-<div class="changelog-entry">
-  <div class="changelog-header">
-    <span class="changelog-version">v1.7.5</span>
-    <span class="changelog-date">03.05.2026</span>
-    <span class="changelog-name">Release 1.7.5</span>
-  </div>
-  <div class="changelog-body"><h4>Änderungen in 1.7.5</h4>
 <h4>Neu</h4>
-<p>-<strong>Neuer Home Bildschirm</strong>: In der Mitte befindet sich das Staffel Logo mit Datum und Uhrzeit, sowie einem Button für Einsatz anlegen, Divera-Einsatz verfügbar oder Einsatz anzeigen. Links befindet sich ein Notizen Liste wo man eintragen kann wer Urlaub oder ähnliches hat. Rechts befinden sich Statistiken aus dem Archiv.</p>
-<p>-<strong>Bildschirmschoner Einsatz-Monitor</strong>: Wenn kein Einsatz anliegt wird nun das Logo der Staffel Datum und Uhrzeit, sowie ein Info-Ticker angezeigt.</p>
 <ul>
-<li><strong>Separates PDF-Logo</strong>: Unter Einstellungen kann jetzt ein eigenes Logo für den PDF-Export hinterlegt werden (unabhängig vom Staffel-Logo der UI)</li>
-<li><strong>Home-Logo responsiv</strong>: Das Staffel-Logo auf der Startseite skaliert jetzt besser mit der Monitorgröße</li>
+<li><strong>Nach Ende einer Suche:</strong> Auf dem Team-Handy erscheint „Suche beendet – Traccar jetzt stoppen“ mit einem Knopf, der den Stopp in Traccar öffnet. Auf Android vibriert das Handy dazu. Bei einer neuen Suche erscheint „Traccar starten“. Bei einer Kurzpause kommt kein Hinweis.</li>
+<li><strong>Lagekarte:</strong> Nach dem Stopp einer Suche zeigt die Karte das Handy des Teams nicht mehr als „live“, auch wenn Traccar noch sendet. Beim nächsten Start ist es wieder da.</li>
 </ul>
-<h4>Fixes</h4>
+<p>Hinweis: Traccar lässt sich nicht vom Server aus beenden, iOS und Android erlauben das nicht. Deshalb kommt der Stopp per Tipp.</p>
+<h4>Einspielen</h4>
+<p>1. Update wie gewohnt installieren.</p>
+<p>2. <strong>Einmalig auf dem Server</strong>: neue <code>einsatzueberwachung-public.conf</code> übernehmen und das Zertifikat verlängern. Die Befehle stehen in <code>DEPLOYMENT.md</code> unter „Zertifikat der öffentlichen Domain“:</p>
+<pre><code>
+mkdir -p /var/www/certbot
+nginx -t &amp;&amp; systemctl reload nginx
+certbot certonly --webroot -w /var/www/certbot -d &lt;domain&gt; --cert-name &lt;domain&gt; --force-renewal --deploy-hook "systemctl reload nginx"
+certbot renew --dry-run
+</code></pre>
+<p>3. In der Traccar-App einmal „Stop“ und wieder „Start“ drücken. Die im Handy gesammelten Positionen werden dann nachgesendet.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
+    <span class="changelog-version">v1.11.3</span>
+    <span class="changelog-date">27.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Hinweis</h4>
+<p>Inhaltlich gleich wie <strong>1.11.1</strong>. Die Divera-Änderungen der Beta 1.11.2 sind zurückgenommen, Divera funktioniert wieder wie vorher.</p>
+<p>Diese Version ist für Server gedacht, die die Beta installiert hatten. Mit dem normalen Update im Browser kommen sie damit zurück. Wer die Beta eingespielt hat, sollte in Einstellungen → System die <strong>Update-Adresse</strong> wieder leeren.</p>
+<h4>Einspielen</h4>
+<p>Normales Update, keine Änderung an der Konfiguration nötig.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
+    <span class="changelog-version">v1.11.1</span>
+    <span class="changelog-date">26.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Korrekturen</h4>
 <ul>
-<li>PDF-Export hat bisher immer das UI-Logo verwendet statt des konfigurierten PDF-Logos</li>
+<li><strong>Kein Suchtrack mehr verloren beim Neustart einer Suche auf <code>/el</code>:</strong> Nach „Stopp“ ist das Halsband frei. Startet man den Hund danach über die EL-Ansicht neu, kommt jetzt eine kurze Rückfrage: „Mit Halsband X starten“ (das zuletzt benutzte steht zuerst) oder „Ohne Halsband starten“. Bisher lief die Suche ohne Rückfrage ohne Track. Im Monitor ist das zuletzt benutzte Halsband vorausgewählt.</li>
+<li><strong>GPS vom Team-Handy im Funkloch:</strong> Positionen bleiben im Handy und werden nachgesendet, sobald wieder Netz da ist, mit dem richtigen Zeitpunkt. Der Laufweg hat keine Lücke mehr.</li>
+<li><strong>Einsatz beenden kurz nach Mitternacht:</strong> Eine Endzeit wie 23:50 wird dem Vortag zugeordnet statt in der Zukunft zu liegen.</li>
+<li>Kann ein Team nicht gestartet werden (z. B. Hund läuft bereits in einem anderen Team), zeigt <code>/el</code> einen Hinweis.</li>
+</ul>
+<h4>Einspielen</h4>
+<p>Normales Update, keine Änderung an der Konfiguration nötig.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
+    <span class="changelog-version">v1.11.0</span>
+    <span class="changelog-date">26.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
+<ul>
+<li><strong>EL-Ansicht als App</strong> (<code>/el</code>): auf Tablet und Handy installierbar („Zum Home-Bildschirm“).</li>
+</ul>
+<p>- Stabiles Wiederverbinden im Mobilfunk mit gelber Hinweisleiste. Ist die Sitzung abgelaufen, lädt die Seite automatisch neu.</p>
+<p>- Eigene Offline-Seite statt Browser-Fehler. Der Bildschirm bleibt während eines laufenden Einsatzes an.</p>
+<ul>
+<li><strong>Einsatz beenden auf Tablet und Handy</strong> (<code>/el/beenden</code>, Knopf ganz unten im EL-Dashboard): Ergebnis, Endzeit, Bemerkungen, Personal und Hunde vor Ort (vorausgewählt), GPS-Tracks im Bericht.</li>
+</ul>
+<p>- Monitor und EL-Ansicht schließen über dieselbe Logik ab.</p>
+<p>- Sind zwei Leitungsplätze gleichzeitig im Abschluss, wird nur einmal archiviert.</p>
+<ul>
+<li><strong>Suchtracks einheitlich</strong>:</li>
+</ul>
+<p>- <strong>Stopp</strong> speichert den Halsband- und Handy-Track als abgeschlossene Suche, jetzt auch auf <code>/el</code> und über die API.</p>
+<p>- <strong>Pause</strong> unterbricht nur, danach läuft derselbe Track weiter.</p>
+<p>- Jede <strong>neue Suche</strong> mit demselben Halsband bekommt eine andere Farbe.</p>
+<ul>
+<li><strong>Funkloch</strong>: Bricht die Verbindung ab, lassen sich Funksprüche und Notizen über „Funk / Notiz erfassen“ auf dem Gerät speichern. Den Knopf gibt es in der Hinweisleiste und auf der Offline-Seite.</li>
+</ul>
+<p>- Sobald die Verbindung zurück ist, werden die Einträge automatisch nachgesendet, mit Vermerk der Erfassungszeit.</p>
+<ul>
+<li><strong>Karte bei schwachem Netz</strong>:</li>
+</ul>
+<p>- Angesehene Kartenkacheln werden auf dem Gerät gespeichert.</p>
+<p>- Der Knopf <strong>„Für Funkloch sichern“</strong> (unten links in der Karte) lädt das sichtbare Einsatzgebiet vorab. Das geht für Straßen- und Topokarte, bis Zoomstufe 16.</p>
+<ul>
+<li><strong>Archiv</strong>: Die Details öffnen sich direkt unter dem gewählten Einsatz.</li>
+</ul>
+<h4>Korrekturen</h4>
+<ul>
+<li>Das Archiv übernimmt beim Abschluss jetzt auch Szenario, abgeschlossene Suchen und Vermisstendaten. Bisher fehlten sie.</li>
+</ul>
+<h4>Einspielen</h4>
+<p>Normales Update. Konfiguration und nginx bleiben unverändert.</p>
+<ul>
+<li>Die App-Funktionen (Installieren, Offline-Seite, Funkloch-Puffer, Kartenspeicher) aktualisieren sich beim nächsten Aufruf von selbst. Sie brauchen ein gültiges Zertifikat, also den Aufruf über die Domain im VPN.</li>
+<li>Auf dem Tablet nach dem Update <code>/el</code> einmal neu laden.</li>
 </ul></div>
-</div>
-<div class="changelog-entry">
-  <div class="changelog-header">
-    <span class="changelog-version">v1.7.4</span>
-    <span class="changelog-date">02.05.2026</span>
-    <span class="changelog-name">v1.7.4</span>
-  </div>
-  <div class="changelog-body"><h4>What's Changed</h4>
+</details>
+<details class="changelog-entry">
+  <summary>
+    <span class="changelog-version">v1.10.2</span>
+    <span class="changelog-date">26.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
 <ul>
-<li>Warning system by @Freakwave in https://github.com/Elemirus1996/Einsatzueberwachung.Server/pull/29</li>
+<li><strong>Einsatz starten auf Tablet und Handy (<code>/el/start</code>)</strong>: eigene Startseite in der EL-Ansicht, mit dem Daumen bedienbar.</li>
 </ul>
-<p><strong>Full Changelog</strong>: https://github.com/Elemirus1996/Einsatzueberwachung.Server/compare/v1.7.3...v1.7.4</p></div>
-</div>
-<div class="changelog-entry">
-  <div class="changelog-header">
-    <span class="changelog-version">v1.7.3</span>
-    <span class="changelog-date">02.05.2026</span>
-    <span class="changelog-name">v1.7.3</span>
-  </div>
-  <div class="changelog-body"><p><strong>Full Changelog</strong>: https://github.com/Elemirus1996/Einsatzueberwachung.Server/compare/v1.7.2...v1.7.3</p></div>
-</div>
+<p>- Divera-Alarm mit einem Tippen übernehmen (Ort, Koordinate, Stichwort, Zeit, Lage)</p>
+<p>- Szenario als große Kacheln, Einsatz oder Übung als Umschalter</p>
+<p>- Einsatzort per Eingabe oder <strong>„Meinen Standort verwenden“</strong> (Handy-GPS, die Karte zentriert sich darauf)</p>
+<p>- Einsatzleiter aus den Stammdaten oder als Freitext, vorbelegt mit dem zuletzt auf diesem Gerät verwendeten</p>
+<p>- Alarmzeit, Einsatznummer, Melder, Führungsassistent und Lage unter „Weitere Angaben“</p>
+<p>- Nach dem Start direkt ins EL-Dashboard</p>
+<ul>
+<li>Der Knopf „Einsatz starten“ im leeren EL-Dashboard führt auf die neue Seite.</li>
+</ul>
+<h4>Sonstiges</h4>
+<ul>
+<li>Beide Startseiten legen Einsätze über dieselbe Logik an. Versionsnummer auf 1.10.2 angehoben.</li>
+</ul>
+<h4>Einspielen</h4>
+<p>Normales Update, keine Änderung an der Konfiguration nötig.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
+    <span class="changelog-version">v1.10.1</span>
+    <span class="changelog-date">25.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Fixes</h4>
+<ul>
+<li><strong>Updates kamen im Browser nicht an:</strong> Skripte und Stylesheets wurden 30 Tage ohne Rückfrage zwischengespeichert.</li>
+</ul>
+<p>Nach einem Update liefen Browser deshalb bis zu 30 Tage mit alten Dateien – auch die Sicherheitskorrekturen der</p>
+<p>Karten-Popups aus 1.9.3 kamen dort nicht an. Jetzt tragen eigene Skripte und Stylesheets einen Fingerabdruck im</p>
+<p>Dateinamen, alle übrigen Dateien werden vor Gebrauch beim Server geprüft.</p>
+<ul>
+<li><strong>Handy:</strong> Die Hauptanwendung zeigte auf schmalen Bildschirmen nur die Seitenleiste. Jetzt Kopfleiste mit Menü-Knopf.</li>
+<li><strong>Einsatzleitung (<code>/el</code>)</strong> steht in der Navigation; auf dem Handy führt die Startseite direkt dorthin.</li>
+<li><strong>nginx (öffentlicher Zugang):</strong> In der Vorlage aus 1.10.0 fehlten in einigen Blöcken Host und X-Forwarded-Proto –</li>
+</ul>
+<p>VPN-Geräte wurden auf <code>127.0.0.1</code> weitergeleitet. Außerdem waren Dateien mit Fingerabdruck im Namen (z. B.</p>
+<p><code>app.jlypqgwbzp.css</code>) für die Team-Ansicht von außen nicht erreichbar. Die CI prüft die Vorlage jetzt mit einem echten</p>
+<p>nginx (Weiterleitung, Kopfzeilen, Zugriff von außen und aus dem VPN).</p>
+<ul>
+<li><code>setup-vpn.sh</code>: dnsmasq ignoriert <code>/etc/hosts</code> des Servers.</li>
+</ul>
+<h4>Einspielen</h4>
+<p>1. Update wie gewohnt.</p>
+<p>2. Öffentlicher Team-Zugang: neue Vorlage übernehmen (Domain und Zertifikatspfade wie bisher), dann nginx prüfen und neu laden:</p>
+<pre><code>
+cp /etc/nginx/sites-available/einsatzueberwachung-public /root/einsatzueberwachung-public.vor-1.10.1
+curl -fLo /etc/nginx/sites-available/einsatzueberwachung-public https://raw.githubusercontent.com/Elemirus1996/Einsatzueberwachung.Server/v1.10.1/deploy/nginx/einsatzueberwachung-public.conf
+nginx -t &amp;&amp; systemctl reload nginx
+</code></pre>
+<h4>Sonstiges</h4>
+<ul>
+<li>Versionsnummer auf 1.10.1 angehoben.</li>
+</ul></div>
+</details>
 <!-- CHANGELOG_END -->
-    </div>
-  </div>
-</section>
-
-<!-- CTA -->
-<section id="cta">
-  <div class="container">
-    <div class="cta-box reveal">
-      <h2>Bereit für den Einsatz? 🐕</h2>
-      <p>Kostenlos, Open Source und einsatzbereit — für Rettungshundestaffeln, die digital arbeiten möchten.</p>
-      <div class="hero-actions">
-        <a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server" class="btn-primary">Repository ansehen</a>
-        <a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server/releases" class="btn-secondary">📦 Letzte Version</a>
       </div>
+      <p class="more"><a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server/releases">Alle Versionen auf GitHub →</a></p>
     </div>
-  </div>
-</section>
+  </section>
+</main>
 
-<!-- FOOTER -->
 <footer>
-  <p>
-    Built with ❤️ für Rettungshundestaffeln &nbsp;·&nbsp;
-    <a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server">GitHub</a>
-    &nbsp;·&nbsp;
-    <a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server/issues">Issues melden</a>
-  </p>
+  <div class="wrap">
+    <span>Einsatzüberwachung · entwickelt von Elemirus1996 und Freakwave · Lizenz MIT</span>
+    <span><a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server">GitHub</a> · <a href="https://github.com/Elemirus1996/Einsatzueberwachung.Server/issues">Fehler melden</a></span>
+  </div>
 </footer>
 
-<script>
-  // Scroll Reveal
-  const observer = new IntersectionObserver(
-    entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
-    { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-  );
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-</script>
 </body>
 </html>

@@ -1,188 +1,151 @@
 # 🐕 Einsatzüberwachung.Server
 
-**Einsatzleitsystem für Suchhundestaffeln** — entwickelt für den VPN-internen Betrieb auf einem Linux-Server.
+**Einsatzleitsystem für Rettungshundestaffeln.** Läuft auf einem eigenen Linux-Server und gibt der Staffel ein gemeinsames, aktuelles Lagebild: Teams und Suchzeiten, Hunde und Hundeführer live auf der Karte, Abdeckung der Suchgebiete, Funk, Notizen und am Ende ein vollständiger PDF-Bericht.
 
-Die Anwendung unterstützt Suchhundestaffeln bei der Koordination von Einsätzen: Teamverwaltung mit Timern, Live-GPS-Tracking von Suchhunden, Drohnen-Livestream, GPX-Import, Funksprüche, Notizen, Einsatzberichte als PDF und eine direkte Schnittstelle zu Divera 24/7.
+Die Einsatzleitung arbeitet ausschließlich im VPN. Nach außen ist nur das freigegeben, was die Handys der Teams brauchen.
 
-Entwickelt von **Elemirus1996** und **Freakwave**. Lizenz: [MIT](LICENSE).
+[![.NET Tests](https://github.com/Elemirus1996/Einsatzueberwachung.Server/actions/workflows/dotnet-tests.yml/badge.svg)](https://github.com/Elemirus1996/Einsatzueberwachung.Server/actions/workflows/dotnet-tests.yml)
+[![Neueste Version](https://img.shields.io/github/v/release/Elemirus1996/Einsatzueberwachung.Server?label=Version)](https://github.com/Elemirus1996/Einsatzueberwachung.Server/releases/latest)
+[![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
+
+Entwickelt von **Elemirus1996** und **Freakwave** · Projektseite: <https://elemirus1996.github.io/Einsatzueberwachung.Server/>
 
 ---
 
-## ✨ Funktionen im Überblick
+## ✨ Was die Anwendung kann
+
+### Im Einsatz
 
 | Bereich | Beschreibung |
 |---|---|
-| 🗂️ **Einsatzsteuerung** | Einsatz starten/beenden, Teams anlegen, Suchgebiete auf der Karte definieren |
-| 🎯 **Einsatz-Szenarien** | Mantrailer / Flächensuche / Trümmer / Sonstige als Szenario am Einsatz; UI passt sich an (Multi-Vermisste, Trümmer-Karte) |
-| 🧑‍🤝‍🧑 **Mehrere Vermisste** | Bei Fläche/Trümmer-Szenario beliebig viele Vermisstenprofile pro Einsatz; Mantrailer auf eine Person beschränkt |
-| 📋 **Szenarioabhängige Checklisten** | Editierbare Default-Checklisten je Szenario in den Stammdaten, automatisch an jedes Vermisstenprofil angehängt |
-| 🧱 **Trümmer-Lagekarte** | Drohnenfoto vom Trümmerfeld hochladen und Suchgebiete pixel-basiert (ohne GPS) einzeichnen — eigene Seite, NavMenu-Eintrag erscheint nur im Trümmer-Szenario |
-| ⏱️ **Team-Timer** | Zeiterfassung pro Team mit farbcodierter Warnstufe (Grün → Orange → Rot → Blinken) |
-| 👥 **Teams-Detailansicht** | Detailkarte pro Team mit Status, zugewiesenen Hunden und Timer-Übersicht |
-| 📡 **GPS Live-Tracking** | Bis zu 20 Halsbänder gleichzeitig, Live-Laufwege auf der Karte, automatische Suchgebiet-Warnung |
-| 🚶 **Mensch-Laufweg (Handy-GPS)** | Laufweg des Hundeführers via Team-Mobile (Smartphone-GPS) live erfassen und als `HumanTrack` zur Suche speichern |
-| 🚁 **Drohnen-Livestream** | Drohnen in Stammdaten verwalten und per Live-Stream-Link direkt in der Karte anzeigen |
-| 📥 **GPX-Import** | GPS-Tracks als GPX-Datei importieren (z. B. aus Garmin Basecamp) zur Dokumentation von Suchteams |
-| 📻 **Funksprüche** | Chronologische Funkspruch-Liste mit Antwort-Threads, Echtzeit-Sync via SignalR |
-| 📝 **Notizen** | Globale und teamspezifische Notizen mit Zeitstempel, Antwort-Threads und @-Erwähnungen |
-| 🗺️ **Interaktive Karte** | Leaflet.js-Karte mit Suchgebieten, Polygonen, ELW-Position und GPS-Tracks |
-| 📄 **PDF-Bericht** | Einsatzbericht mit GPS-Track-Karten und Teamdaten als PDF-Download |
-| 🏛️ **Archiv** | Abgeschlossene Einsätze durchsuchen und als PDF exportieren |
-| 👤 **Stammdaten** | Personal, Hunde und Drohnen verwalten (inkl. Excel-Import/-Export) |
-| 🔔 **Divera 24/7** | Alarme und Verfügbarkeitsstatus direkt in der Anwendung |
-| 🎓 **Trainer-Modul** | Passwortgeschützter Bereich für Übungsverwaltung und Szenario-Vorschläge |
-| 📱 **Mobile Ansicht** | Optimierte Ansicht für Smartphones (integriert, keine separate App) |
-| 🌤️ **Wetter** | Aktuelle Wetterdaten für den Einsatzort via DWD/BrightSky |
-| 🔄 **Auto-Update** | GitHub-Release-Check und Update-Einspielen direkt aus der Anwendung |
+| 🗂️ **Einsatzmonitor** | Einsatz anlegen und beenden, Teams mit Hund und Hundeführer, Suchzeiten mit Warnstufen (Grün → Orange → Rot), Suchgebiete auf der Karte |
+| 📱 **EL-Ansicht `/el`** | Für das Tablet der Einsatzleitung, als App installierbar: Teams starten, pausieren und beenden, Funk, Notizen, Karte und Einsatz beenden. Hält auch in schwachem Mobilfunk die Verbindung |
+| 📶 **Funkloch** | Funk und Notizen werden auf dem Gerät zwischengespeichert und mit der ursprünglichen Uhrzeit nachgesendet. Kartenkacheln lassen sich vorab „für Funkloch sichern“ |
+| 🎯 **Szenarien** | Mantrailer, Fläche, Trümmer und Sonstige. Die Oberfläche passt sich an, z. B. mehrere Vermisste bei Fläche und Trümmer sowie Checklisten je Szenario |
+| 🧱 **Trümmer-Lagekarte** | Drohnenfoto des Trümmerfelds hochladen und Suchbereiche direkt auf dem Bild einzeichnen |
+| 📻 **Funk & Notizen** | Chronologisch, mit Antworten und @-Erwähnungen, auf allen Geräten sofort aktuell. Einträge der Einsatzleitung zeigen das Gerät, z. B. „Einsatzleitung · Tablet EL“ |
+
+### Ortung
+
+| Bereich | Beschreibung |
+|---|---|
+| 🐕 **GPS-Halsbänder** | Bis zu 20 Halsbänder gleichzeitig (z. B. Garmin Alpha über die beiliegende Windows-App). Jede Suche bekommt einen eigenen Track in eigener Farbe. Eine Pause unterbricht den Track, danach läuft er weiter |
+| 🚶 **Team-Handy** | Laufweg des Hundeführers über den Browser oder die kostenlose App **Traccar Client**. Die App sendet auch bei gesperrtem Handy weiter und puffert im Funkloch. Eingerichtet wird sie per Link mit einem Zugang, der nur für diesen Einsatz gilt |
+| ▦ **Abdeckung live** | Die Karte zeigt je Suchgebiet „x % abgesucht“ und die bereits abgesuchte Fläche, während die Hunde laufen |
+| ⚠️ **Warnungen** | Hund verlässt sein Suchgebiet, Team-Handy sendet nicht mehr, Akku unter 20 %, Suchzeit überschritten. Alle Warnungen laufen im Warnzentrum zusammen |
+| 🚁 **Drohnen & GPX** | Drohnen-Livestream in der Karte, GPX-Import (z. B. aus Garmin Basecamp) |
+
+### Nachbereitung
+
+| Bereich | Beschreibung |
+|---|---|
+| 📄 **PDF-Bericht** | Teams, Funk, Notizen, Tracks und Abdeckung auf echten Karten. Kartenart (Straße, Topografisch, Satellit) und Teams sind wählbar |
+| 🏛️ **Archiv** | Abgeschlossene Einsätze mit allen Suchen, Vermissten und Tracks. Den Bericht jederzeit neu erzeugen |
+| 🧾 **Audit-Log** | Wer hat wann was getan, inklusive Anmeldungen und Geräten |
+
+### Betrieb
+
+| Bereich | Beschreibung |
+|---|---|
+| 🔒 **Zugriff** | Einsatzleitung nur im WireGuard-VPN, mit Staffel-Passwort. VPN-Geräte werden in den Einstellungen per QR-Code angelegt und laufen automatisch ab |
+| 🩺 **Systemzustand** | Zertifikat, letztes Backup, freier Speicher, Divera und Uhrzeit auf einen Blick. Ein ablaufendes Zertifikat lässt sich direkt in der App erneuern |
+| 👤 **Stammdaten** | Personal, Hunde und Drohnen, mit Excel-Import und -Export |
+| 🔔 **Divera 24/7** | Alarme und Verfügbarkeiten in der Anwendung, Einsatz aus dem Alarm übernehmen |
+| 🌤️ **Wetter** | Wetter am Einsatzort (DWD über BrightSky) |
+| 🎓 **Trainer-Modul** | Passwortgeschützter Bereich für Übungen und Szenario-Vorschläge |
+| 🔄 **Updates** | Neue Versionen werden aus GitHub-Releases erkannt und im Browser eingespielt |
 
 ---
 
-## 🏗️ Projektstruktur
+## 🧭 Aufbau im Einsatz
 
 ```
-src/
-├── Einsatzueberwachung.Server/     ← ASP.NET Core Blazor Server (Hauptanwendung + REST-API)
-├── Einsatzueberwachung.Domain/     ← Domain-Modelle, Interfaces und Business-Logik
-├── Einsatzueberwachung.LiveTracking/ ← WPF Desktop-App (Windows) für USB-GPS-Empfänger
-└── Einsatzueberwachung.Tests/      ← xUnit Unit-Tests
-
-deploy/
-├── nginx/                          ← Nginx Reverse-Proxy-Konfiguration
-├── systemd/                        ← systemd Service Units, Backup- und Healthcheck-Timer
-├── wireguard/                      ← WireGuard VPN Beispielkonfiguration
-└── scripts/                        ← backup.sh, health-check.sh, apply-update.sh
+  Einsatzleitung (Laptop, Tablet /el)          Team-Handys (Browser, Traccar Client)
+              │  WireGuard-VPN                          │  HTTPS, Let's Encrypt
+              ▼                                         ▼
+  ┌───────────────────────── nginx ──────────────────────────────┐
+  │  intern: gesamte Anwendung      öffentlich: nur /team und    │
+  │                                 /api/team-mobile/…           │
+  └───────────────────────────┬──────────────────────────────────┘
+                              ▼
+                  Einsatzueberwachung.Server  ◄── LiveTracking-App (Windows, GPS-Halsbänder)
 ```
 
----
-
-## 🛠️ Tech-Stack
-
-- **Frontend**: Blazor Server (.NET 9) mit Bootstrap 5.3+, Dark Mode, Bootstrap Icons
-- **Karten**: Leaflet.js mit OpenStreetMap-Tiles
-- **Echtzeit**: SignalR (`/hubs/einsatz`) für alle Live-Updates
-- **Datenbank**: Entity Framework Core mit SQLite (`runtime-state.db`)
-- **Stammdaten**: JSON-Dateien (menschenlesbar, im Datenverzeichnis)
-- **PDF-Export**: QuestPDF + SkiaSharp
-- **Excel**: ClosedXML
-- **Deployment**: systemd-Dienst hinter Nginx auf Ubuntu 22.04/24.04 LTS
-- **Zugriff**: ausschließlich VPN-intern (WireGuard/OpenVPN), Anmeldung der Einsatzleitung mit Staffel-Passwort (ab 1.10)
+Für die Handys der Teams ist eine öffentliche Adresse mit Zertifikat nötig, z. B. eine kostenlose DynDNS-Domain. Ohne gültiges Zertifikat sendet Traccar Client nichts. Die Anwendung warnt deshalb rechtzeitig vor dem Ablauf.
 
 ---
 
-## 📡 GPS Live-Tracking
+## 🚀 Installation auf Ubuntu
 
-Für Halsband-Tracking wird die beiliegende Windows-App **Einsatzueberwachung.LiveTracking** verwendet:
+Vollständige Anleitung: [`DEPLOYMENT.md`](DEPLOYMENT.md)
 
-1. In der Einsatzüberwachung *Einstellungen → Integration → GPS-Livetracking* öffnen. Dort stehen die Download-Adresse und der Verbindungscode für die App, jeweils mit Kopier-Knopf.
-2. App herunterladen, entpacken und auf dem Windows-Rechner mit angeschlossenem GPS-Empfänger (z. B. Garmin Alpha) starten. Der Rechner muss im VPN sein.
-3. Den Verbindungscode in der App einfügen und verbinden. Er enthält Server-Adresse, API-Schlüssel und den Fingerabdruck des Server-Zertifikats – so klappt die Verbindung auch mit einem selbst ausgestellten Zertifikat. Bei Netzausfall puffert die App die Positionen und sendet sie mit Originalzeit nach.
-4. Erkannte Halsbänder erscheinen automatisch im EinsatzMonitor.
-5. Im EinsatzMonitor Team starten → Halsband zuweisen → Live-Pfad auf der Karte verfolgen.
-6. Team stoppen → GPS-Track wird als Snapshot gespeichert und steht im PDF-Bericht zur Verfügung.
+```bash
+sudo bash deploy/setup.sh                                          # .NET-Laufzeit, nginx, systemd, Firewall, Backups
+sudo bash deploy/scripts/setup-vpn.sh dein-einsatz.mywire.org      # VPN-Geräte per QR-Code (ab 1.10)
+sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.mywire.org   # Zertifikat + Knopf „Jetzt erneuern“ (ab 1.11.6)
+```
 
-Verlässt ein Hund sein Suchgebiet: rot pulsierender Marker auf der Karte + Warnung im Tracking-Panel.
+Das Setup richtet ein:
 
-### 🚶 Mensch-Laufweg per Handy-GPS (Team-Mobile)
+- den systemd-Dienst `einsatzueberwachung-server.service` hinter nginx
+- ein tägliches Backup um 03:30 Uhr und einen Healthcheck alle 2 Minuten mit automatischem Neustart
+- Daten unter `/opt/einsatzueberwachung/data` und die Zeitsynchronisierung mit `chrony`
+- den Updater `deploy/scripts/apply-update.sh` für Updates aus dem Browser
 
-Zusätzlich kann der Laufweg des Menschen (Hundeführer) über die mobile Team-Ansicht aufgezeichnet werden:
+| Umgebungsvariable | Standard | Bedeutung |
+|---|---|---|
+| `EINSATZUEBERWACHUNG_DATA_DIR` | `/opt/einsatzueberwachung/data` | Stammdaten, Einstellungen, Archiv, Trümmer-Bilder |
+| `EINSATZUEBERWACHUNG_REPORT_DIR` | `…/data/berichte` | Erzeugte PDF-Berichte |
+| `EINSATZUEBERWACHUNG_PUBLIC_PORT` | `5002` | Interner Port für die öffentliche Team-Adresse |
+| `EINSATZUEBERWACHUNG_UPDATE_APPLY_CMD` | `…/apply-update.sh '{package}' '{version}'` | Befehl zum Einspielen von Updates |
 
-1. Team im Team-Login auswählen und `TeamMobile` (`/team`) öffnen.
-2. Standortfreigabe im Browser zulassen.
-3. Während das Team läuft, sendet das Handy Positionen an `/api/team-mobile/location`.
-4. Beim Team-Stopp wird der Verlauf als `HumanTrack` zur abgeschlossenen Suche gespeichert.
-5. Der Verlauf erscheint in Karte und PDF-Bericht zusammen mit dem Halsband-Track.
+---
 
-**GPS bei gesperrtem Handy (ab 1.10):** Im Browser stoppt das GPS, sobald das Handy gesperrt ist. Auf der Team-Seite
-richtet der Knopf mit dem Vibrations-Symbol die kostenlose App **Traccar Client** (Android/iOS) per Link ein – Adresse
-und ein Team-Token, das nur für diesen Einsatz gilt. Die App sendet dann im Hintergrund weiter, puffert bei Funkloch und
-sendet mit Originalzeit nach. Nach Einsatzende nimmt der Server das Token nicht mehr an.
+## 📡 GPS-Halsbänder und Team-Handys
+
+**Halsbänder:** In *Einstellungen → Integration → GPS-Livetracking* stehen Download und Verbindungscode der Windows-App **Einsatzueberwachung.LiveTracking**. Der Code enthält Server-Adresse, Schlüssel und den Fingerabdruck des Zertifikats. Damit klappt die Verbindung auch mit einem selbst ausgestellten Zertifikat. Erkannte Halsbänder erscheinen im Monitor. Beim Start eines Teams wird das Halsband zugewiesen, beim Beenden der Suche wird der Track gespeichert.
+
+**Team-Handy:** Das Team öffnet `/team` und gibt den Standort frei. Für die Ortung bei gesperrtem Handy richtet ein Knopf **Traccar Client** ein. Nach dem Einsatz nimmt der Server den Zugang nicht mehr an. Ob alles funktioniert, lässt sich ohne Einsatz prüfen: *Einstellungen → Integration → Traccar testen*.
 
 Details: [`docs/GPS_TRACKING_WORKFLOW.md`](docs/GPS_TRACKING_WORKFLOW.md)
 
 ---
 
-## 🚀 Lokaler Start (Development)
+## 🛠️ Technik
+
+- **Anwendung:** Blazor Server (.NET 9), SignalR für alle Live-Updates, Bootstrap 5 mit Hell- und Dunkelmodus
+- **Karten:** Leaflet mit OpenStreetMap, OpenTopoMap und Esri-Satellit. PDF-Karten mit SkiaSharp
+- **Daten:** SQLite (EF Core) für den laufenden Einsatz, JSON-Dateien für Stammdaten und Einstellungen
+- **PDF / Excel:** QuestPDF, ClosedXML
+- **Betrieb:** Ubuntu 22.04/24.04 LTS, systemd, nginx, WireGuard, Let's Encrypt
+
+```
+src/
+├── Einsatzueberwachung.Server/        ← Blazor-Anwendung und REST-API
+├── Einsatzueberwachung.Domain/        ← Modelle, Dienste und Fachlogik
+├── Einsatzueberwachung.LiveTracking/  ← Windows-App für GPS-Empfänger (Halsbänder)
+└── Einsatzueberwachung.Tests/         ← xUnit-Tests
+deploy/
+├── nginx/  systemd/  wireguard/       ← Vorlagen für den Server
+└── scripts/                           ← Setup, Backup, Healthcheck, Update, VPN, Zertifikat
+```
+
+---
+
+## 💻 Entwicklung
 
 ```bash
-# Abhängigkeiten wiederherstellen und bauen
 dotnet build Einsatzueberwachung.Server.sln
-
-# Server starten
-dotnet run --project src/Einsatzueberwachung.Server
-
-# Tests ausführen
+dotnet run --project src/Einsatzueberwachung.Server      # http://localhost:5000, Swagger unter /swagger
 dotnet test src/Einsatzueberwachung.Tests
-
-# LiveTracking Desktop-App (nur Windows)
-dotnet run --project src/Einsatzueberwachung.LiveTracking
 ```
 
-Die Anwendung ist dann unter `http://localhost:5000` erreichbar. Swagger-UI: `http://localhost:5000/swagger`.
+Die REST-API ist im Development-Modus unter `/swagger` dokumentiert. Die Schnittstelle für die Trainings-App beschreibt [`TRAINING_API.md`](TRAINING_API.md).
 
 ---
 
-## 🐧 Deployment auf Ubuntu (VPN-intern)
+## 📦 Releases
 
-Vollständige Anleitung: [`DEPLOYMENT.md`](DEPLOYMENT.md)
+Jedes veröffentlichte GitHub-Release (`v*`) baut automatisch das Paket `linux-x64-server-<version>.zip` und die Windows-App für die Halsbänder. Danach aktualisiert es die Versionshistorie auf der [Projektseite](https://elemirus1996.github.io/Einsatzueberwachung.Server/). Eingespielt wird das Update in der Anwendung unter *Einstellungen → System*.
 
-**Kurzübersicht:**
-
-```bash
-# Auf dem Server: Setup-Skript ausführen (installiert .NET Runtime, Nginx, systemd, UFW)
-sudo bash deploy/setup.sh
-```
-
-**Was das Setup einrichtet:**
-
-- systemd-Dienst (`einsatzueberwachung-server.service`) hinter Nginx Reverse Proxy
-- Tägliches automatisches Backup um 03:30 Uhr
-- Healthcheck alle 2 Minuten mit automatischem Neustart
-- Persistente Laufzeitdaten unter `/opt/einsatzueberwachung/data`
-- Serverseitiger GitHub-Updater via `deploy/scripts/apply-update.sh`
-- NTP-Zeitsynchronisierung via `chrony`
-
-**Relevante Umgebungsvariablen:**
-
-| Variable | Standard | Beschreibung |
-|---|---|---|
-| `EINSATZ_DATA_DIR` | `/opt/einsatzueberwachung/data` | Stammdaten, Einstellungen, Archiv, Trümmer-Bilder unter `truemmer/{einsatzId}/` |
-| `EINSATZ_REPORTS_DIR` | `/opt/einsatzueberwachung/data/berichte` | Generierte PDF-Berichte |
-
----
-
-## 🔌 REST-API
-
-Alle Endpunkte sind über `/api/` erreichbar. Im Development-Modus steht Swagger unter `/swagger` zur Verfügung.
-
-| Pfad | Zweck |
-|---|---|
-| `POST /api/einsatz/start` | Neuen Einsatz starten |
-| `GET /api/einsatz` | Aktuellen Einsatzzustand abrufen |
-| `POST /api/truemmer/karten` | Trümmer-Lagekarte (Drohnenfoto) hochladen — Multipart, max 20 MB, JPG/PNG/WEBP |
-| `GET /api/truemmer/karten/{id}/image` | Trümmer-Bild ausliefern |
-| `DELETE /api/truemmer/karten/{id}` | Trümmer-Karte löschen |
-| `POST /api/CollarWebhook/location` | GPS-Halsband-Position empfangen (Webhook) |
-| `GET /api/team-mobile/state` | Mobilen Team-Zustand inkl. Halsband- und Handy-Track abrufen (authentifiziert) |
-| `POST /api/team-mobile/location` | Handy-GPS-Position eines Team-Users speichern (authentifiziert) |
-| `GET /api/radio` | Funksprüche abrufen |
-| `POST /api/radio` | Neuen Funkspruch erstellen |
-| `GET /api/divera/status` | Divera 24/7 Status abrufen |
-| `GET /api/training/resources` | Stammdaten-Snapshot für Trainings-App |
-| `POST /api/update/check` | GitHub-Release-Check auslösen |
-| `POST /api/update/install` | Update einspielen |
-| `GET /health` | Health-Check Endpoint |
-| `GET /hubs/einsatz` | SignalR WebSocket Hub |
-
-Training-API Details: [`TRAINING_API.md`](TRAINING_API.md)
-
----
-
-## 📦 Release-Automation
-
-Bei jedem veröffentlichten GitHub Release (`v*`) wird automatisch ein Linux-Asset gebaut und hochgeladen:
-
-- Workflow: `.github/workflows/release-linux-asset.yml`
-- Asset-Name: `linux-x64-server-<version>.zip` (z. B. `linux-x64-server-1.2.0.zip`)
-- Manuelles Nachtriggern über `workflow_dispatch` mit Tag-Eingabe ist möglich.
-
-Das Update kann direkt aus der Anwendung heraus eingespielt werden (Einstellungsseite oder `POST /api/update/install`).
+Lizenz: [MIT](LICENSE) · Verwendete Bibliotheken: [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md)

@@ -12,7 +12,8 @@ import urllib.request
 from datetime import datetime, timezone
 
 REPO = "Elemirus1996/Einsatzueberwachung.Server"
-API_URL = f"https://api.github.com/repos/{REPO}/releases?per_page=10"
+API_URL = f"https://api.github.com/repos/{REPO}/releases?per_page=20"
+MAX_ENTRIES = 8
 
 MARKER_START = "<!-- CHANGELOG_START -->"
 MARKER_END = "<!-- CHANGELOG_END -->"
@@ -34,8 +35,20 @@ def markdown_to_html(text: str) -> str:
 
     html_lines = []
     in_list = False
+    in_code = False
 
     for line in text.splitlines():
+        # Code blocks (```bash ... ```)
+        if line.strip().startswith("```"):
+            if in_list:
+                html_lines.append("</ul>")
+                in_list = False
+            html_lines.append("</code></pre>" if in_code else "<pre><code>")
+            in_code = not in_code
+            continue
+        if in_code:
+            html_lines.append(_escape(line))
+            continue
         # Headings
         if line.startswith("### "):
             if in_list:
@@ -66,6 +79,8 @@ def markdown_to_html(text: str) -> str:
 
     if in_list:
         html_lines.append("</ul>")
+    if in_code:
+        html_lines.append("</code></pre>")
 
     return "\n".join(html_lines)
 
@@ -83,7 +98,7 @@ def _inline(text: str) -> str:
     return text
 
 
-def release_to_html(release: dict) -> str:
+def release_to_html(release: dict, open_entry: bool = False) -> str:
     tag = _escape(release.get("tag_name", ""))
     name = _escape(release.get("name") or tag)
     body = release.get("body") or ""
@@ -98,21 +113,24 @@ def release_to_html(release: dict) -> str:
     body_html = markdown_to_html(body)
     body_block = f'<div class="changelog-body">{body_html}</div>' if body_html else ""
 
+    # Collapsible entry (layout in docs/index.html); the newest one is open
     return f"""\
-<div class="changelog-entry">
-  <div class="changelog-header">
+<details class="changelog-entry"{" open" if open_entry else ""}>
+  <summary>
     <span class="changelog-version">{tag}</span>
     <span class="changelog-date">{date_str}</span>
-    <span class="changelog-name">{name}</span>
-  </div>
+    <span class="changelog-name">{name if name != tag else ""}</span>
+  </summary>
   {body_block}
-</div>"""
+</details>"""
 
 
 def generate_section_html(releases: list) -> str:
+    # Published regular releases only (no drafts, no betas)
+    releases = [r for r in releases if not r.get("draft") and not r.get("prerelease")][:MAX_ENTRIES]
     if not releases:
         return '<div class="changelog-empty">Noch keine Releases verfügbar.</div>'
-    return "\n".join(release_to_html(r) for r in releases)
+    return "\n".join(release_to_html(r, i == 0) for i, r in enumerate(releases))
 
 
 def update_index(html_path: str, section_html: str, count: int) -> None:
