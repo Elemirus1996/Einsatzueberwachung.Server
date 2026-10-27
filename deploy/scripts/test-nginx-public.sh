@@ -4,12 +4,17 @@
 #  - jeder Pfad bekommt Host und X-Forwarded-Proto (sonst baut die App Weiterleitungen auf 127.0.0.1 – 1.10.0)
 #  - von aussen nur Team-Pfade (Port 5002), „/“ ist 404
 #  - Geraete aus dem VPN-Netz landen auf Port 5000 (volle Oberflaeche)
+#  - Let's-Encrypt-Pruefanfragen kommen ueber Port 80 und 443 an (sonst laeuft das Zertifikat ab – 1.11.4)
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 CONF="$HERE/../nginx/einsatzueberwachung-public.conf"
 DOMAIN="$(awk '/server_name/ {gsub(";",""); print $2; exit}' "$CONF")"
 T="$(mktemp -d)"
+chmod 755 "$T"
+mkdir -p "$T/acme/.well-known/acme-challenge"
+echo "probe-ok" >"$T/acme/.well-known/acme-challenge/probe"
+chmod -R a+rX "$T/acme"
 cleanup() { sudo nginx -c "$T/nginx.conf" -s stop 2>/dev/null || true; kill "$ECHO_PID" 2>/dev/null || true; rm -rf "$T"; }
 trap cleanup EXIT
 
@@ -30,7 +35,7 @@ PY
 python3 "$T/echo.py" & ECHO_PID=$!
 
 render() { # $1 = 1: 127.0.0.1 gilt als VPN-Geraet
-	sed -e "s#/etc/letsencrypt/live/[^/]*/fullchain.pem#$T/cert.pem#; s#/etc/letsencrypt/live/[^/]*/privkey.pem#$T/key.pem#" "$CONF" >"$T/public.conf"
+	sed -e "s#/etc/letsencrypt/live/[^/]*/fullchain.pem#$T/cert.pem#; s#/etc/letsencrypt/live/[^/]*/privkey.pem#$T/key.pem#; s#/var/www/certbot#$T/acme#" "$CONF" >"$T/public.conf"
 	if [[ "$1" == 1 ]]; then sed -i 's#^\(\s*\)default\s*0;#\1default 0;\n\1127.0.0.1/32 1;#' "$T/public.conf"; fi
 	printf 'pid %s/nginx.pid;\nerror_log %s/error.log;\nevents {}\nhttp {\n  access_log off;\n  include %s/public.conf;\n}\n' "$T" "$T" "$T" >"$T/nginx.conf"
 }
@@ -59,6 +64,16 @@ for p in /team/login /team /api/team-mobile/state /api/team-mobile/traccar /hubs
 done
 expect / 404
 expect /einstellungen 404
+
+echo "--- Let's Encrypt"
+acme() { # $1 Schema, $2 Port
+	local code; code="$(curl -sk --resolve "$DOMAIN:$2:127.0.0.1" -o "$T/body" -w '%{http_code}' "$1://$DOMAIN/.well-known/acme-challenge/probe")"
+	[[ "$code" == 200 && "$(cat "$T/body")" == "probe-ok" ]] && echo "OK   $1 acme-challenge -> 200" || { echo "FEHLER $1 acme-challenge: $code"; fail=1; }
+}
+acme http 80
+acme https 443
+code="$(curl -s --resolve "$DOMAIN:80:127.0.0.1" -o /dev/null -w '%{http_code} %{redirect_url}' "http://$DOMAIN/team/login")"
+[[ "$code" == "301 https://$DOMAIN/team/login" ]] && echo "OK   http /team/login -> 301 https" || { echo "FEHLER http /team/login: $code"; fail=1; }
 expect /downloads/app-settings.json 404
 expect /css/../einstellungen 404
 

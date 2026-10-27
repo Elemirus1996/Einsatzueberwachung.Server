@@ -4,7 +4,7 @@ namespace Einsatzueberwachung.Server.Services;
 
 /// <summary>
 /// Positionen der App „Traccar Client“ (OsmAnd-Protokoll, https://www.traccar.org/osmand/): Formular-POST bzw.
-/// Query-Parameter mit id, lat, lon, timestamp, accuracy, batt. Die App puffert bei Funkloch und sendet mit
+/// Query-Parameter mit id, lat, lon, timestamp, accuracy, batt – oder JSON (neuere App-Versionen, siehe ParseJson). Die App puffert bei Funkloch und sendet mit
 /// Originalzeit nach – so entsteht der Laufweg auch bei gesperrtem Handy.
 /// </summary>
 public static class TraccarProtocol
@@ -32,6 +32,48 @@ public static class TraccarProtocol
 
         double? accuracy = TryDouble(value("accuracy"), out var acc) && acc >= 0 ? acc : null;
         return new Position(id.Trim(), lat, lon, ParseTimestamp(value("timestamp")), accuracy);
+    }
+
+    /// <summary>
+    /// JSON-Variante der neueren Traccar-Client-Apps (wie im Traccar-Server, OsmAndProtocolDecoder.decodeJson):
+    /// {"device_id": "…", "location": {"timestamp": "ISO", "coords": {"latitude": …, "longitude": …, "accuracy": …}}}
+    /// </summary>
+    public static Position? ParseJson(string json)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.ValueKind != System.Text.Json.JsonValueKind.Object) return null;
+
+            var id = root.TryGetProperty("device_id", out var idEl) && idEl.ValueKind == System.Text.Json.JsonValueKind.String ? idEl.GetString() : null;
+            if (string.IsNullOrWhiteSpace(id)
+                || !root.TryGetProperty("location", out var location) || location.ValueKind != System.Text.Json.JsonValueKind.Object
+                || !location.TryGetProperty("coords", out var coords) || coords.ValueKind != System.Text.Json.JsonValueKind.Object
+                || !Zahl(coords, "latitude", out var lat) || !Zahl(coords, "longitude", out var lon))
+            {
+                return null;
+            }
+
+            if (lat is < -90 or > 90 || lon is < -180 or > 180) return null;
+
+            double? accuracy = Zahl(coords, "accuracy", out var acc) && acc >= 0 ? acc : null;
+            var timestamp = location.TryGetProperty("timestamp", out var ts)
+                ? ParseTimestamp(ts.ValueKind == System.Text.Json.JsonValueKind.String ? ts.GetString() : ts.GetRawText())
+                : null;
+            return new Position(id.Trim(), lat, lon, timestamp, accuracy);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
+
+        static bool Zahl(System.Text.Json.JsonElement e, string name, out double wert)
+        {
+            wert = 0;
+            return e.TryGetProperty(name, out var el) && el.ValueKind == System.Text.Json.JsonValueKind.Number
+                && el.TryGetDouble(out wert) && !double.IsNaN(wert) && !double.IsInfinity(wert);
+        }
     }
 
     /// <summary>Sekunden oder Millisekunden seit 1970, ISO 8601 oder „yyyy-MM-dd HH:mm:ss“ (UTC).</summary>
