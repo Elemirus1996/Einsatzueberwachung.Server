@@ -85,8 +85,8 @@
             const ring = a.points.map(p => pxToLatLng(p.x, p.y, inst.height));
             const poly = L.polygon(ring, {
                 color: a.color || "#FF9800",
-                weight: 2,
-                fillOpacity: 0.25
+                weight: 3,
+                fillOpacity: 0.2
             });
             const tooltip = a.assignedTeamName
                 ? `<strong>${escapeHtml(a.name)}</strong><br/>Team: ${escapeHtml(a.assignedTeamName)}`
@@ -101,45 +101,54 @@
         if (!inst) return;
         cancelDraw(elementId);
 
-        // Manuelles Polygon-Zeichnen: Klicks sammeln Punkte, Doppelklick schließt.
-        const points = [];
-        let preview = null;
+        // Wie auf der Einsatzkarte (Leaflet.draw): Eckpunkte, gefuellte Vorschau, Schliessen per Klick auf den
+        // ersten Punkt, keine Ueberschneidungen. Keine Flaechenangabe – das Bild hat keinen Massstab.
         const dotnetRef = inst.dotnetRef;
         const height = inst.height;
+        let created = false;
 
-        function onClick(e) {
-            points.push(e.latlng);
-            if (preview) inst.map.removeLayer(preview);
-            preview = L.polyline(points, { color: "#1976D2", dashArray: "4,4", weight: 2 }).addTo(inst.map);
-        }
-
-        function onDblClick(e) {
-            if (points.length < 3) {
-                cleanup();
-                return;
+        const handler = new L.Draw.Polygon(inst.map, {
+            allowIntersection: false,
+            showArea: false,
+            showLength: false,
+            drawError: {
+                color: "#e74c3c",
+                message: "<strong>Fehler!</strong> Linien dürfen sich nicht überschneiden."
+            },
+            shapeOptions: {
+                color: "#3388ff",
+                weight: 3,
+                fillOpacity: 0.2
             }
-            const px = points.map(p => latLngToPx(p, height));
-            cleanup();
-            if (dotnetRef) {
+        });
+
+        function onCreated(e) {
+            created = true;
+            const px = e.layer.getLatLngs()[0].map(p => latLngToPx(p, height));
+            if (dotnetRef && px.length >= 3) {
                 dotnetRef.invokeMethodAsync("OnPolygonCreated", px).catch(() => { /* ignore */ });
             }
         }
 
-        function cleanup() {
-            inst.map.off("click", onClick);
-            inst.map.off("dblclick", onDblClick);
-            if (preview) {
-                inst.map.removeLayer(preview);
-                preview = null;
+        function onStop() {
+            const abgebrochen = !created;
+            cleanup();
+            // Abbruch per Esc → Seite setzt den Zeichenmodus zurueck
+            if (abgebrochen && dotnetRef) {
+                dotnetRef.invokeMethodAsync("OnDrawCanceled").catch(() => { /* ignore */ });
             }
-            inst.currentDraw = null;
-            // Doppelklick-Zoom wieder aktivieren
-            inst.map.doubleClickZoom.enable();
         }
 
-        inst.map.doubleClickZoom.disable();
-        inst.map.on("click", onClick);
-        inst.map.on("dblclick", onDblClick);
+        function cleanup() {
+            inst.map.off(L.Draw.Event.CREATED, onCreated);
+            inst.map.off(L.Draw.Event.DRAWSTOP, onStop);
+            inst.currentDraw = null;
+            handler.disable();
+        }
+
+        inst.map.on(L.Draw.Event.CREATED, onCreated);
+        inst.map.on(L.Draw.Event.DRAWSTOP, onStop);
+        handler.enable();
         inst.currentDraw = { cleanup: cleanup };
     }
 

@@ -4,6 +4,23 @@
 const DEBUG = false;
 const log = DEBUG ? console.log.bind(console) : () => {};
 const error = console.error.bind(console); // Errors immer loggen
+
+// Zeichenhinweise von Leaflet.draw auf Deutsch (Einsatzkarte und Truemmer-Lagekarte)
+if (window.L && L.drawLocal) {
+    const t = L.drawLocal.draw.handlers;
+    t.polygon.tooltip = {
+        start: 'Klicken, um das Suchgebiet zu beginnen.',
+        cont: 'Klicken, um weitere Eckpunkte zu setzen.',
+        end: 'Auf den ersten Punkt klicken, um das Suchgebiet zu schließen.'
+    };
+    t.rectangle.tooltip = { start: 'Klicken und ziehen, um ein Rechteck zu zeichnen.' };
+    t.simpleshape.tooltip = { end: 'Maus loslassen, um fertig zu zeichnen.' };
+    t.marker.tooltip = { start: 'Klicken, um die Markierung zu setzen.' };
+    L.drawLocal.draw.toolbar.actions = { title: 'Zeichnen abbrechen', text: 'Abbrechen' };
+    L.drawLocal.draw.toolbar.finish = { title: 'Zeichnen beenden', text: 'Fertig' };
+    L.drawLocal.draw.toolbar.undo = { title: 'Letzten Punkt löschen', text: 'Letzten Punkt löschen' };
+}
+
 window.LeafletMap = {
 maps: {},
 
