@@ -64,6 +64,40 @@ public class TraccarProtocolTests
         if (id is not null) values["id"] = id;
         Assert.Null(TraccarProtocol.Parse(Values(values)));
     }
+
+    // JSON wie von den neueren Traccar-Client-Apps (Feldnamen wie im Traccar-Server, OsmAndProtocolDecoder.decodeJson)
+    private const string JsonPosition = """
+    {
+      "device_id": "team-token-1",
+      "location": {
+        "timestamp": "2026-10-26T20:07:15.000Z",
+        "coords": { "latitude": 51.45076, "longitude": 7.15875, "accuracy": 8.5, "speed": -1, "heading": -1, "altitude": 120 },
+        "is_moving": true,
+        "battery": { "level": 0.81, "is_charging": false }
+      }
+    }
+    """;
+
+    [Fact]
+    public void Json_WieVonNeuerTraccarApp_WirdGelesen()
+    {
+        var p = TraccarProtocol.ParseJson(JsonPosition);
+
+        Assert.NotNull(p);
+        Assert.Equal("team-token-1", p!.DeviceId);
+        Assert.Equal(51.45076, p.Latitude, 5);
+        Assert.Equal(7.15875, p.Longitude, 5);
+        Assert.Equal(8.5, p.Accuracy);
+        Assert.Equal(new DateTime(2026, 10, 26, 20, 7, 15, DateTimeKind.Utc), p.TimestampUtc);
+    }
+
+    [Theory]
+    [InlineData("kein json")]
+    [InlineData("{}")]
+    [InlineData("{ \"device_id\": \"x\", \"location\": { \"timestamp\": \"2026-10-26T20:07:15Z\" } }")]
+    [InlineData("{ \"device_id\": \"x\", \"location\": { \"coords\": { \"latitude\": 95, \"longitude\": 7 } } }")]
+    [InlineData("{ \"location\": { \"coords\": { \"latitude\": 51, \"longitude\": 7 } } }")]
+    public void Json_UngueltigeAngaben_WerdenAbgelehnt(string json) => Assert.Null(TraccarProtocol.ParseJson(json));
 }
 
 public class TraccarEndpointTests
@@ -119,6 +153,26 @@ public class TraccarEndpointTests
         var verlauf = einsatz.GetPhoneTrackHistory(team.TeamId);
         Assert.Equal([51.1, 51.2], verlauf.Select(p => p.Latitude));
         Assert.True(verlauf[1].Timestamp - verlauf[0].Timestamp >= TimeSpan.FromMinutes(4.9));
+    }
+
+    [Fact]
+    public async Task JsonVonNeuerTraccarApp_SpeichertPositionImLaufweg()
+    {
+        var (einsatz, tokens, team) = await RunningTeamAsync();
+        var token = tokens.IssueTeamCookieValue(team.TeamId);
+        var controller = new TeamMobileController(tokens, einsatz, new CollarTrackingService(einsatz), NullLogger<TeamMobileController>.Instance);
+        var http = new DefaultHttpContext();
+        http.Request.ContentType = "application/json; charset=utf-8";
+        http.Request.Body = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(
+            "{\"device_id\":\"" + token + "\",\"location\":{\"timestamp\":\"" + DateTime.UtcNow.ToString("o") +
+            "\",\"coords\":{\"latitude\":51.2,\"longitude\":7.1,\"accuracy\":5}}}"));
+        controller.ControllerContext = new ControllerContext { HttpContext = http };
+
+        var result = await controller.PostTraccarPosition();
+
+        Assert.IsType<OkResult>(result);
+        Assert.Equal(51.2, Assert.Single(einsatz.GetPhoneTrackHistory(team.TeamId)).Latitude, 5);
+        team.StopTimer();
     }
 
     [Fact]

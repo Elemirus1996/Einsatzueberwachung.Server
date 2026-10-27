@@ -156,6 +156,26 @@ gesetzt ist, gilt der Port als intern. Fehlt umgekehrt der Port in `ASPNETCORE_U
 Server übernehmen dafür aus der neuen `einsatzueberwachung-public.conf` die Zeile `limit_req_zone … traccar_zone` und
 den Block `location = /api/team-mobile/traccar` – sonst bremst die strenge Begrenzung der Team-Anmeldung die App aus.
 
+### Zertifikat der öffentlichen Domain (Let's Encrypt, ab 1.11.4)
+
+Das Zertifikat gilt 90 Tage und wird von certbot automatisch verlängert – aber nur, wenn Let's Encrypt die
+Prüfanfragen unter `http://<domain>/.well-known/acme-challenge/` erreicht. Die `einsatzueberwachung-public.conf`
+enthält dafür einen eigenen Port-80-Block und liefert den Pfad aus `/var/www/certbot`. Läuft das Zertifikat ab,
+zeigen Browser nur eine Warnung (wegklickbar), **Apps wie Traccar Client senden dann gar nichts mehr**.
+
+Einmalig auf den Webroot-Weg umstellen:
+
+```bash
+sudo mkdir -p /var/www/certbot
+# neue einsatzueberwachung-public.conf übernehmen, dann:
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot certonly --webroot -w /var/www/certbot -d dein-einsatz.mywire.org      --cert-name dein-einsatz.mywire.org --force-renewal --deploy-hook "systemctl reload nginx"
+sudo certbot renew --dry-run           # muss „Congratulations, all simulated renewals succeeded“ melden
+systemctl list-timers | grep certbot   # automatische Verlängerung aktiv?
+```
+
+Prüfen, bis wann das Zertifikat gilt: `sudo certbot certificates`.
+
 ### Anmeldung der Einsatzleitung (ab 1.10)
 
 Alle Seiten und Schnittstellen außer der Team-Ansicht verlangen eine Anmeldung mit dem gemeinsamen Passwort der Staffel.

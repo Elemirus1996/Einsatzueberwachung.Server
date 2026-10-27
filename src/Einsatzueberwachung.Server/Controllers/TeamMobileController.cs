@@ -162,12 +162,27 @@ public sealed class TeamMobileController : ControllerBase
     [AllowAnonymous] // Anmeldung ueber das Team-Token in „id“
     public async Task<IActionResult> PostTraccarPosition()
     {
-        var form = Request.HasFormContentType ? await Request.ReadFormAsync() : null;
-        string? Value(string key) => form?[key].FirstOrDefault() ?? Request.Query[key].FirstOrDefault();
+        TraccarProtocol.Position? position;
+        if (Request.ContentType?.StartsWith("application/json", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            // Neuere Traccar-Client-Apps senden JSON (hoechstens 64 KB lesen)
+            using var reader = new StreamReader(Request.Body);
+            var buffer = new char[64 * 1024];
+            var length = await reader.ReadBlockAsync(buffer, 0, buffer.Length);
+            position = TraccarProtocol.ParseJson(new string(buffer, 0, length));
+        }
+        else
+        {
+            var form = Request.HasFormContentType ? await Request.ReadFormAsync() : null;
+            string? Value(string key) => form?[key].FirstOrDefault() ?? Request.Query[key].FirstOrDefault();
+            position = TraccarProtocol.Parse(Value);
+        }
 
-        var position = TraccarProtocol.Parse(Value);
         if (position is null)
+        {
+            _logger.LogWarning("Traccar-Position nicht lesbar (Content-Type {ContentType})", Request.ContentType ?? "-");
             return BadRequest(new { error = "id, lat und lon erforderlich." });
+        }
 
         // Ungueltiges oder abgelaufenes Token: annehmen und verwerfen. Die App wuerde sonst ihren Puffer endlos
         // wiederholen und den Akku leeren; die Team-Ansicht zeigt den Status ohnehin an.
