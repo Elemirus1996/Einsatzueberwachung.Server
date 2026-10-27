@@ -19,9 +19,12 @@ public sealed class ElOutboxController : ControllerBase
     private readonly IRadioService _radioService;
     private readonly IEinsatzService _einsatzService;
     private readonly ITimeService _timeService;
+    private readonly LeitungsGeraetNamen _geraete;
 
-    public ElOutboxController(ElOutboxService outbox, IRadioService radioService, IEinsatzService einsatzService, ITimeService timeService)
+    public ElOutboxController(ElOutboxService outbox, IRadioService radioService, IEinsatzService einsatzService, ITimeService timeService,
+        LeitungsGeraetNamen geraete)
     {
+        _geraete = geraete;
         _outbox = outbox;
         _radioService = radioService;
         _einsatzService = einsatzService;
@@ -55,7 +58,7 @@ public sealed class ElOutboxController : ControllerBase
             if (entry.Kind == "funk")
             {
                 await _radioService.AddMessageAsync(
-                    new CreateRadioMessageRequest(text, "einsatzleitung", "Einsatzleitung", "Einsatzleitung"),
+                    new CreateRadioMessageRequest(text, "einsatzleitung", Absender, Absender),
                     cancellationToken);
             }
             else
@@ -71,4 +74,6 @@ public sealed class ElOutboxController : ControllerBase
 
         return Ok(new { duplicate = false });
     }
+
+    private string Absender => LeitungsGeraetNamen.Absender(_geraete.NameFuer(HttpContext.Connection.RemoteIpAddress));
 }

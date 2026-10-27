@@ -1,8 +1,10 @@
 @page "/einstellungen"
 @rendermode InteractiveServer
+@implements IDisposable
 @using System.Text.Json
 @using System.IO.Compression
 @using System.Text
+@using Einsatzueberwachung.Server.Services
 
 <PageTitle>Einstellungen</PageTitle>
 
@@ -219,6 +221,16 @@
                                 <option value="90">90 Sekunden</option>
                             </InputSelect>
                             <span class="cfg-help">Gilt bei aktiven Suchen mit zugewiesenem Halsband.</span>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label">Team-Handy: Funkstille-Warnung</label>
+                            <InputSelect class="cfg-input" @bind-Value="_appSettings.PhoneNoSignalTimeoutSeconds">
+                                <option value="120">nach 2 Minuten</option>
+                                <option value="180">nach 3 Minuten</option>
+                                <option value="300">nach 5 Minuten</option>
+                                <option value="600">nach 10 Minuten</option>
+                            </InputSelect>
+                            <span class="cfg-help">Traccar/Team-Seite: nur Teams, deren Handy im Einsatz schon gesendet hat.</span>
                         </div>
                     </div>
                 </div>
@@ -918,6 +930,45 @@
 
                 <div class="cfg-section">
                     <div class="cfg-section-title-row">
+                        <h3 class="cfg-sub-header"><i class="bi bi-phone-vibrate me-1"></i>Traccar testen (Team-Handys)</h3>
+                        <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="NeuerTraccarTest">
+                            <i class="bi bi-qr-code"></i> Test starten
+                        </button>
+                    </div>
+                    <p class="cfg-help">
+                        Prüft den ganzen Weg ohne Einsatz: Traccar-App → Zertifikat → Server. Mit der Traccar-App den QR-Code
+                        scannen (oder auf dem Handy den Link tippen), in der App „OK“ und dann „Start“. Danach im Einsatz das
+                        Handy wieder über die Team-Seite („Mit diesem Einsatz verbinden“) einrichten.
+                    </p>
+                    @if (_traccarTestKennung is not null)
+                    {
+                        <div class="cfg-traccar-test">
+                            <img src="@_traccarTestQr" alt="QR-Code für die Traccar-App" class="cfg-vpn-qr" />
+                            <div>
+                                <a class="cfg-btn cfg-btn-ghost" href="@_traccarTestLink"><i class="bi bi-phone"></i> Auf diesem Handy einrichten</a>
+                                <div class="cfg-help mt-2">Ziel: <code>@_traccarTestEndpoint</code> · Kennung <code>@_traccarTestKennung</code> (1 Stunde gültig)</div>
+                                @if (TraccarTest.LetzterEmpfang is { } empfang)
+                                {
+                                    <p class="cfg-inline-status is-ok mt-2">
+                                        <i class="bi bi-check-circle"></i>
+                                        Position empfangen um @empfang.EmpfangenUtc.ToLocalTime().ToString("HH:mm:ss") (@empfang.Format@(empfang.BatteryPercent is int akku ? $", Akku {akku} %" : "")@(empfang.Accuracy is double genau ? $", ± {genau:0} m" : "")) – Traccar funktioniert.
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="cfg-help mt-2"><span class="spinner-border spinner-border-sm me-1"></span>Warte auf die erste Position vom Handy …</p>
+                                    @if (SystemZustand.Aktuell?.Zertifikat is { } z && z.Kritisch(DateTime.UtcNow))
+                                    {
+                                        <p class="cfg-inline-status is-error"><i class="bi bi-x-circle"></i> @SystemZustandService.ZertifikatText(z, DateTime.UtcNow)</p>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="cfg-section">
+                    <div class="cfg-section-title-row">
                         <h3 class="cfg-sub-header"><i class="bi bi-geo-alt me-1"></i>GPS-Livetracking (Windows-Tool)</h3>
                         <span class="cfg-inline-badge muted">extern</span>
                     </div>
@@ -1001,6 +1052,58 @@
             {
                 <h2 class="cfg-pane-title"><i class="bi bi-cpu me-2"></i>System</h2>
                 <p class="cfg-pane-subtitle">Versionsstand, Pfade und Update-Verwaltung.</p>
+
+                <div class="cfg-section">
+                    <div class="cfg-section-title-row">
+                        <h3 class="cfg-sub-header"><i class="bi bi-heart-pulse me-1"></i>Systemzustand</h3>
+                        <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="PruefeSystemAsync" disabled="@_systemPruefBusy">
+                            <i class="bi bi-arrow-repeat"></i> Jetzt prüfen
+                        </button>
+                    </div>
+                    @if (SystemZustand.Aktuell is not { } zustand)
+                    {
+                        <p class="cfg-help">Noch nicht geprüft – „Jetzt prüfen“ drücken.</p>
+                    }
+                    else
+                    {
+                        var nowUtc = DateTime.UtcNow;
+                        <dl class="cfg-info-grid cfg-systemzustand">
+                            <dt>Zertifikat</dt>
+                            <dd class="@(zustand.Zertifikat is { } z0 && z0.Kritisch(nowUtc) ? "is-bad" : "is-ok")">
+                                @if (zustand.Zertifikat is not { } z)
+                                {
+                                    <span class="text-muted">keine öffentliche Adresse eingetragen (Team-Mobile-URL)</span>
+                                }
+                                else if (z.Kritisch(nowUtc))
+                                {
+                                    @SystemZustandService.ZertifikatText(z, nowUtc)
+                                }
+                                else
+                                {
+                                    @($"{z.Host}: gültig bis {z.GueltigBisUtc?.ToLocalTime():dd.MM.yyyy} (noch {z.TageRest(nowUtc)} Tage)")
+                                }
+                            </dd>
+                            <dt>Letztes Backup</dt>
+                            <dd class="@(zustand.LetztesBackup is null || DateTime.Now - zustand.LetztesBackup > TimeSpan.FromDays(7) ? "is-bad" : "is-ok")">
+                                @(zustand.LetztesBackup is { } b ? $"{b:dd.MM.yyyy HH:mm} (vor {(int)(DateTime.Now - b).TotalDays} Tagen)" : "noch nie")
+                            </dd>
+                            <dt>Freier Speicher</dt>
+                            <dd class="@(zustand.FreierSpeicherBytes < SystemZustandService.SpeicherWarnBytes ? "is-bad" : "is-ok")">
+                                @(zustand.FreierSpeicherBytes is long frei ? $"{frei / 1024d / 1024 / 1024:0.0} GB" : "unbekannt")
+                            </dd>
+                            <dt>Divera</dt>
+                            <dd class="@(zustand.DiveraErreichbar == false ? "is-bad" : "is-ok")">
+                                @(zustand.DiveraErreichbar switch { true => "erreichbar", false => "nicht erreichbar", _ => "nicht eingerichtet" })
+                            </dd>
+                            <dt>Uhrzeit</dt>
+                            <dd>
+                                App: @zustand.AppZeit.ToString("dd.MM.yyyy HH:mm") (@zustand.AppZeitzone) · Server-Zeitzone: @zustand.ServerZeitzone
+                            </dd>
+                            <dt>Geprüft</dt>
+                            <dd class="text-muted">@zustand.GeprueftUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm") · automatisch alle 6 Stunden</dd>
+                        </dl>
+                    }
+                </div>
 
                 <div class="cfg-section">
                     <h3 class="cfg-sub-header">Stand</h3>

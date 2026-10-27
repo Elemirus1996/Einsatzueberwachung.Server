@@ -1,6 +1,7 @@
 @rendermode InteractiveServer
 @using Einsatzueberwachung.Server.Security
 
+<CascadingValue Name="LeitungsGeraet" Value="Geraet" IsFixed="true">
 <Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
         @if (PublicOnly && !PublicAccess.IsPublicPage(routeData.PageType))
@@ -26,6 +27,7 @@
         }
     </Found>
 </Router>
+</CascadingValue>
 
 @code {
     /// <summary>
@@ -33,6 +35,9 @@
     /// und steckt signiert im Komponenten-Marker – der Browser kann ihn nicht aendern.
     /// </summary>
     [Parameter] public bool PublicOnly { get; set; }
+
+    /// <summary>Name des Leitungsplatzes (VPN-Geraet), ebenfalls signiert aus App.razor</summary>
+    [Parameter] public string? Geraet { get; set; }
 
     [CascadingParameter] private Task<AuthenticationState>? AuthenticationState { get; set; }
 

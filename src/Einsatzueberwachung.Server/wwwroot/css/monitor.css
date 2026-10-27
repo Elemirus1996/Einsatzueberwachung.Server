@@ -915,3 +915,12 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }.theme-preview-surface {
     border-color: var(--theme-secondary, var(--ui-border)) !important;
 }
+
+/* Anmelde-Code der Teams im QR-Dialog: gross und in Viererbloecken zum Vorlesen */
+.monitor-team-code {
+    margin-top: 12px;
+    font: 700 1.6rem/1.2 'JetBrains Mono', ui-monospace, 'Cascadia Mono', monospace;
+    letter-spacing: 0.08em;
+    text-align: center;
+    user-select: all;
+}

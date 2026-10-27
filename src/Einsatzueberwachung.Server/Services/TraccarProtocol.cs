@@ -9,7 +9,7 @@ namespace Einsatzueberwachung.Server.Services;
 /// </summary>
 public static class TraccarProtocol
 {
-    public sealed record Position(string DeviceId, double Latitude, double Longitude, DateTime? TimestampUtc, double? Accuracy);
+    public sealed record Position(string DeviceId, double Latitude, double Longitude, DateTime? TimestampUtc, double? Accuracy, int? BatteryPercent = null);
 
     public static Position? Parse(Func<string, string?> value)
     {
@@ -31,7 +31,9 @@ public static class TraccarProtocol
         if (lat is < -90 or > 90 || lon is < -180 or > 180) return null;
 
         double? accuracy = TryDouble(value("accuracy"), out var acc) && acc >= 0 ? acc : null;
-        return new Position(id.Trim(), lat, lon, ParseTimestamp(value("timestamp")), accuracy);
+        // batt: Prozent (Traccar Client), teils als Kommazahl
+        int? battery = TryDouble(value("batt"), out var batt) && batt is >= 0 and <= 100 ? (int)Math.Round(batt) : null;
+        return new Position(id.Trim(), lat, lon, ParseTimestamp(value("timestamp")), accuracy, battery);
     }
 
     /// <summary>
@@ -61,7 +63,10 @@ public static class TraccarProtocol
             var timestamp = location.TryGetProperty("timestamp", out var ts)
                 ? ParseTimestamp(ts.ValueKind == System.Text.Json.JsonValueKind.String ? ts.GetString() : ts.GetRawText())
                 : null;
-            return new Position(id.Trim(), lat, lon, timestamp, accuracy);
+            // battery.level: 0–1 (wie im Traccar-Server)
+            int? battery = location.TryGetProperty("battery", out var bat) && bat.ValueKind == System.Text.Json.JsonValueKind.Object
+                && Zahl(bat, "level", out var level) && level is >= 0 and <= 1 ? (int)Math.Round(level * 100) : null;
+            return new Position(id.Trim(), lat, lon, timestamp, accuracy, battery);
         }
         catch (System.Text.Json.JsonException)
         {

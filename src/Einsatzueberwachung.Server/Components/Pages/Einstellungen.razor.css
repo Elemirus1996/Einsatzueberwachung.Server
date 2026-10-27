@@ -858,3 +858,27 @@
     background: var(--surface-color, var(--ui-surface-2));
     border-color: var(--ui-border);
 }
+
+/* Systemzustand: Ampel je Zeile */
+.cfg-systemzustand dd.is-ok::before,
+.cfg-systemzustand dd.is-bad::before {
+    content: "";
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-right: 6px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+.cfg-systemzustand dd.is-ok::before { background: #2d7a4d; }
+.cfg-systemzustand dd.is-bad::before { background: #a72920; }
+.cfg-systemzustand dd.is-bad { color: #a72920; font-weight: 600; }
+
+/* Traccar testen: QR-Code neben Anleitung, auf dem Handy untereinander */
+.cfg-traccar-test {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+}

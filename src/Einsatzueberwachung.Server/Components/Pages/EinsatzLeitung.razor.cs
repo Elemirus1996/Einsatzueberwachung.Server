@@ -17,6 +17,8 @@ public partial class EinsatzLeitung : IDisposable
     [Inject] private IRadioService Radio { get; set; } = default!;
     [Inject] private IMasterDataService MasterDataService { get; set; } = default!;
     [Inject] private TeamSucheService TeamSuche { get; set; } = default!;
+    [CascadingParameter(Name = "LeitungsGeraet")] private string? Geraet { get; set; }
+    [Inject] private ITimeService TimeService { get; set; } = default!;
 
     private string _activeTab = "uebersicht";
     private string _noteFilter = "alle";
@@ -522,8 +524,8 @@ public partial class EinsatzLeitung : IDisposable
         var req = new CreateRadioMessageRequest(
             text,
             "einsatzleitung",
-            "Einsatzleitung",
-            "Einsatzleitung");
+            LeitungsGeraetNamen.Absender(Geraet),
+            LeitungsGeraetNamen.Absender(Geraet));
         try
         {
             await Radio.AddMessageAsync(req);

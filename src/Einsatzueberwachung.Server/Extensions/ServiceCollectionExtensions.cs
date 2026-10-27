@@ -74,6 +74,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IVpnPeerTool, SudoVpnPeerTool>();
         services.AddSingleton(_ => VpnDeviceStore.ForDataDirectory());
         services.AddSingleton<VpnDeviceService>();
+        services.AddSingleton<LeitungsGeraetNamen>();
+        services.AddSingleton<TraccarTestService>();
         services.AddHostedService<VpnDeviceCleanupService>();
         services.AddScoped<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider, LeitungRevalidatingAuthStateProvider>();
 
@@ -308,6 +310,10 @@ internal static class ServiceCollectionExtensions
     {
         services.AddHostedService<EinsatzHubRelayService>();
         services.AddHostedService<CollarTrackingRelayService>();
+        services.AddSingleton<TeamHandyUeberwachungService>();
+        services.AddHostedService(sp => sp.GetRequiredService<TeamHandyUeberwachungService>());
+        services.AddSingleton<SystemZustandService>();
+        services.AddHostedService(sp => sp.GetRequiredService<SystemZustandService>());
         services.AddHostedService<TeamMobileHubRelayService>();
         services.AddHostedService<TeamTimerTickService>();
         services.AddHostedService<UpdateAutoCheckService>();

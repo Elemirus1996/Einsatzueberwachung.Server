@@ -42,6 +42,10 @@ public partial class EinsatzMonitor
         _teamMessageText = string.Empty;
     }
 
+    /// <summary>Anmelde-Code in Viererbloecken (z. B. „WXXW 2V8X SKLF 3XK3“) – gut vorzulesen</summary>
+    private static string TeamCodeLesbar(string code) =>
+        string.Join(' ', Enumerable.Range(0, (code.Length + 3) / 4).Select(i => code.Substring(i * 4, Math.Min(4, code.Length - i * 4))));
+
     private async Task OpenTeamMobileModalAsync()
     {
         var token = TeamMobileTokenService.CurrentMasterToken;

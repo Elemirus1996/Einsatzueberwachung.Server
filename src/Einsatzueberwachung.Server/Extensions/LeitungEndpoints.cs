@@ -1,3 +1,5 @@
+using Einsatzueberwachung.Domain.Interfaces;
+using Einsatzueberwachung.Server.Services;
 using Einsatzueberwachung.Server.Security;
 using Microsoft.AspNetCore.Authentication;
 
@@ -11,7 +13,8 @@ internal static class LeitungEndpoints
         var group = app.MapGroup("/leitung").AllowAnonymous().DisableAntiforgery();
 
         // Nicht /leitung/anmelden: dort nimmt die Blazor-Seite selbst POST an (mehrdeutige Route)
-        group.MapPost("/anmeldung", async (HttpContext http, LeitungAuthStore store, LoginLockout lockout) =>
+        group.MapPost("/anmeldung", async (HttpContext http, LeitungAuthStore store, LoginLockout lockout,
+            IAuditLogService audit, LeitungsGeraetNamen geraete) =>
         {
             var form = await http.Request.ReadFormAsync();
             var returnUrl = SafeReturnUrl(form["returnUrl"]);
@@ -32,6 +35,8 @@ internal static class LeitungEndpoints
             lockout.Success(client);
             await http.SignInAsync(LeitungAuth.AuthenticationScheme, LeitungAuth.CreatePrincipal(store.Generation),
                 new AuthenticationProperties { IsPersistent = true });
+            var geraet = geraete.NameFuer(http.Connection.RemoteIpAddress);
+            audit.Log("Anmeldung Einsatzleitung", geraet is null ? client : $"{geraet} ({client})");
             return Results.Redirect(returnUrl);
         });
 

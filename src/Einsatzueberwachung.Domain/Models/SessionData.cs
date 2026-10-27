@@ -1,4 +1,4 @@
-﻿// Quelle: WPF-Projekt Models/SessionData.cs
+// Quelle: WPF-Projekt Models/SessionData.cs
 // Session-/Stammdaten für die Anwendung (Personal, Hunde, Einstellungen)
 
 using System.Collections.Generic;
@@ -87,6 +87,9 @@ namespace Einsatzueberwachung.Domain.Models
 
         // Monitoring für GPS-Halsbänder (aktive Suche)
         public int CollarNoSignalTimeoutSeconds { get; set; }
+
+        /// <summary>Team-Handy (Traccar/Team-Seite): Warnung, wenn während der Suche so lange keine Position kommt</summary>
+        public int PhoneNoSignalTimeoutSeconds { get; set; }
 
         // Karten-Marker Symbole
         // Collar: "paw" | "dog" | "bone" | "dot" | "crosshairs" | "location-arrow"
@@ -189,6 +192,7 @@ namespace Einsatzueberwachung.Domain.Models
 
             // Halsband-Monitoring-Defaults
             CollarNoSignalTimeoutSeconds = 30;
+            PhoneNoSignalTimeoutSeconds = 180;
 
             // Karten-Marker-Defaults
             CollarMarkerIcon = "paw";
