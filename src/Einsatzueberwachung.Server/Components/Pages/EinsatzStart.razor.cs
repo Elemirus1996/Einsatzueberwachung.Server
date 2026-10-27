@@ -262,8 +262,7 @@ public partial class EinsatzStart
         _diveraLoading = true;
         try
         {
-            await DiveraService.LadeEinstellungenAsync();
-            _diveraAlarms = DiveraService.AlarmeUebernehmen ? await DiveraService.GetActiveAlarmsAsync() : new();
+            _diveraAlarms = await DiveraService.GetActiveAlarmsAsync();
         }
         catch
         {

@@ -300,11 +300,7 @@ internal static class ServiceCollectionExtensions
         });
 
         services.AddHttpClient<IWeatherService, DwdWeatherService>();
-        // Eine Instanz fuer alle Seiten: gemeinsamer Zwischenspeicher + Backoff (statt je Seite eigene Divera-Abfragen)
-        services.AddSingleton<IDiveraService>(sp => new DiveraService(
-            sp.GetRequiredService<ISettingsService>(),
-            sp.GetRequiredService<IMasterDataService>(),
-            sp.GetRequiredService<ILogger<DiveraService>>()));
+        services.AddHttpClient<IDiveraService, DiveraService>();
         return services;
     }
 

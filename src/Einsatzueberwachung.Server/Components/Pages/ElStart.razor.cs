@@ -67,8 +67,7 @@ public partial class ElStart : IDisposable
 
         try
         {
-            await DiveraService.LadeEinstellungenAsync();
-            _diveraAlarms = DiveraService.AlarmeUebernehmen ? await DiveraService.GetActiveAlarmsAsync() : [];
+            _diveraAlarms = DiveraService.IsConfigured ? await DiveraService.GetActiveAlarmsAsync() : [];
         }
         catch
         {

@@ -1,4 +1,4 @@
-@using System.Text.Json
+﻿@using System.Text.Json
 @using Einsatzueberwachung.Domain.Interfaces
 @using Einsatzueberwachung.Domain.Models
 @inject ISettingsService SettingsService
@@ -197,7 +197,6 @@
     @if (IsPwa)
     {
         <script src="@Assets["js/el-outbox.js"]"></script>
-        <script src="@Assets["js/el-foto.js"]"></script>
     }
     <script src="@Assets["js/einsatz-map.js"]"></script>
     <script src="@Assets["js/keyboard-shortcuts.js"]"></script>

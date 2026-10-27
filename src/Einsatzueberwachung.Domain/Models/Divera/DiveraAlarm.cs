@@ -31,28 +31,14 @@ namespace Einsatzueberwachung.Domain.Models.Divera
         /// <summary>Alle adressierten User-IDs aus ucr_addressed</summary>
         public List<int> AddressedUserIds { get; set; } = new();
 
-        // Jeder Status ausser 0 gilt als "hat geantwortet"
+        // Jeder nicht-null Status gilt als "hat geantwortet" (org-spezifische IDs wie 56298)
         public int CountKomme => Ucr?.Values.Count(v => v != 0) ?? 0;
+        public int Count30Min => Ucr?.Values.Count(v => v == 56296) ?? 0;
+        public int Count1Std => Ucr?.Values.Count(v => v == 56297) ?? 0;
+        public int CountNichtEinsatzbereit => Ucr?.Values.Count(v => v == 56298) ?? 0;
+        public int CountKommeNicht => Ucr?.Values.Count(v => v == 2 || v == 56298) ?? 0;
+        public int CountSpaeter => Ucr?.Values.Count(v => v == 3 || v == 56297) ?? 0;
         public int CountKeineAntwort => Ucr?.Values.Count(v => v == 0) ?? 0;
-
-        /// <summary>Zusagen (kommt sofort oder spaeter) nach Bedeutung der Status der eigenen Einheit</summary>
-        public int CountZusagen => UcrDetails.Count(u => u.Status != 0
-            && u.Bedeutung is DiveraRueckmeldung.Kommt or DiveraRueckmeldung.KommtSpaeter);
-
-        /// <summary>Rueckmeldungen je Status (Name aus Divera), Zusagen zuerst</summary>
-        public IReadOnlyList<DiveraRueckmeldungGruppe> Rueckmeldungen => UcrDetails
-            .Where(u => u.Status != 0)
-            .GroupBy(u => u.Status)
-            .Select(g => new DiveraRueckmeldungGruppe(g.Key, g.First().StatusText, g.First().Bedeutung, g.Count()))
-            .OrderBy(g => g.Bedeutung == DiveraRueckmeldung.Unbekannt ? 9 : (int)g.Bedeutung)
-            .ThenBy(g => g.Name)
-            .ToList();
-
         public string DateFormatted => Date.ToString("dd.MM.yyyy HH:mm");
-    }
-
-    public sealed record DiveraRueckmeldungGruppe(int StatusId, string Name, DiveraRueckmeldung Bedeutung, int Anzahl)
-    {
-        public string BadgeCss => DiveraStatusFarbe.BadgeCss(Bedeutung);
     }
 }

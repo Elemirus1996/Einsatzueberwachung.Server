@@ -39,7 +39,6 @@ public static class EinsatzStartHelper
         model.Stichwort = alarm.Title;
         model.Alarmiert = alarm.Caller;
         model.EinsatzNummer = !string.IsNullOrWhiteSpace(alarm.ForeignId) ? alarm.ForeignId : $"D-{alarm.Id}";
-        model.DiveraAlarmId = alarm.Id;
         model.IstEinsatz = true;
 
         var lagetext = new StringBuilder();

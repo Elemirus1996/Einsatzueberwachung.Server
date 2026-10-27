@@ -858,28 +858,3 @@
     background: var(--surface-color, var(--ui-surface-2));
     border-color: var(--ui-border);
 }
-
-/* Divera: Status-Zuordnung und Kanal-Prüfung */
-.cfg-divera-farbe {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    margin-right: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.25);
-    border-radius: 50%;
-    vertical-align: middle;
-}
-
-.cfg-divera-status select {
-    min-width: 180px;
-}
-
-.cfg-divera-pruefung {
-    max-height: 320px;
-    overflow: auto;
-    padding: 10px 12px;
-    border-radius: 6px;
-    background: var(--ui-surface-2, #f4f4f4);
-    font-size: 12px;
-    white-space: pre-wrap;
-}

@@ -20,57 +20,35 @@ namespace Einsatzueberwachung.Domain.Services
                 return _cachedPull;
             }
 
-            // Nur eine Abfrage gleichzeitig – alle wartenden Seiten bekommen danach dasselbe Ergebnis
-            await _fetchLock.WaitAsync();
             try
             {
-                if (_cachedPull != null && DateTime.UtcNow - _cacheTime < PullCacheDuration)
-                    return _cachedPull;
-                if (InBackoff)
-                    return _cachedPull;
+                var url = $"{_baseUrl}/pull/all?accesskey={_accessKey}";
+                _logger.LogInformation("Divera PullAll: GET {Url}", _baseUrl + "/pull/all");
 
-                HttpResponseMessage? response = null;
-                try
+                var response = await _httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
                 {
-                    var url = $"{_baseUrl}/pull/all?accesskey={_accessKey}";
-                    _logger.LogInformation("Divera PullAll: GET {Url}", _baseUrl + "/pull/all");
+                    _logger.LogWarning("Divera PullAll fehlgeschlagen: HTTP {StatusCode}", response.StatusCode);
+                    return null;
+                }
 
-                    response = await _httpClient.GetAsync(url);
+                var json = await response.Content.ReadAsStringAsync();
+                var result = ParsePullAllResponse(json);
 
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        _logger.LogWarning("Divera PullAll fehlgeschlagen: HTTP {StatusCode}", response.StatusCode);
-                        RecordFailure(response);
-                        return _cachedPull;
-                    }
-
-                    var json = await response.Content.ReadAsStringAsync();
-                    var result = ParsePullAllResponse(json);
-                    if (result == null)
-                    {
-                        RecordFailure(null);
-                        return _cachedPull;
-                    }
-
-                    await AnreichernAsync(result, result.Alarms);
-                    RecordSuccess();
+                if (result != null)
+                {
                     _cachedPull = result;
                     _cacheTime = DateTime.UtcNow;
-                    if (result.StatusDefinitions.Count > 0)
-                        _statusDefinitionen = result.StatusDefinitions.Values.OrderBy(d => d.Name).ToList();
                     DataChanged?.Invoke();
-                    return result;
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Fehler beim Abrufen von Divera PullAll");
-                    RecordFailure(response);
-                    return _cachedPull;
-                }
+
+                return result;
             }
-            finally
+            catch (Exception ex)
             {
-                _fetchLock.Release();
+                _logger.LogError(ex, "Fehler beim Abrufen von Divera PullAll");
+                return null;
             }
         }
 
@@ -82,53 +60,36 @@ namespace Einsatzueberwachung.Domain.Services
             if (_cachedLastAlarm != null && DateTime.UtcNow - _lastAlarmCacheTime < LastAlarmCacheDuration)
                 return _cachedLastAlarm.Id > 0 && !_cachedLastAlarm.Closed ? _cachedLastAlarm : null;
 
-            await _fetchLock.WaitAsync();
             try
             {
-                if (_cachedLastAlarm != null && DateTime.UtcNow - _lastAlarmCacheTime < LastAlarmCacheDuration)
-                    return _cachedLastAlarm.Id > 0 && !_cachedLastAlarm.Closed ? _cachedLastAlarm : null;
-                if (InBackoff)
-                    return _cachedLastAlarm is { Id: > 0, Closed: false } ? _cachedLastAlarm : null;
+                var url = $"{GetApiHostUrl()}/api/last-alarm?accesskey={_accessKey}";
+                _logger.LogInformation("Divera LastAlarm: GET {BaseUrl}/api/last-alarm", GetApiHostUrl());
 
-                HttpResponseMessage? response = null;
-                try
+                var response = await _httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
                 {
-                    var url = $"{GetApiHostUrl()}/api/last-alarm?accesskey={_accessKey}";
-                    _logger.LogInformation("Divera LastAlarm: GET {BaseUrl}/api/last-alarm", GetApiHostUrl());
-
-                    response = await _httpClient.GetAsync(url);
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        _logger.LogWarning("Divera LastAlarm fehlgeschlagen: HTTP {StatusCode}", response.StatusCode);
-                        RecordFailure(response);
-                        return null;
-                    }
-
-                    var json = await response.Content.ReadAsStringAsync();
-                    var alarm = ParseLastAlarmResponse(json);
-                    if (alarm != null)
-                        await AnreichernAsync(_cachedPull, new[] { alarm });
-
-                    RecordSuccess();
-                    _cachedLastAlarm = alarm ?? new DiveraAlarm { Closed = true };
-                    _lastAlarmCacheTime = DateTime.UtcNow;
-
-                    if (alarm != null)
-                        DataChanged?.Invoke();
-
-                    return alarm;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Fehler beim Abrufen von Divera LastAlarm");
-                    RecordFailure(response);
+                    _logger.LogWarning("Divera LastAlarm fehlgeschlagen: HTTP {StatusCode}", response.StatusCode);
                     return null;
                 }
+
+                var json = await response.Content.ReadAsStringAsync();
+                _logger.LogDebug("Divera LastAlarm Antwort: {Json}", json.Length > 1000 ? json[..1000] + "…" : json);
+
+                var alarm = ParseLastAlarmResponse(json);
+
+                _cachedLastAlarm = alarm ?? new DiveraAlarm { Closed = true };
+                _lastAlarmCacheTime = DateTime.UtcNow;
+
+                if (alarm != null)
+                    DataChanged?.Invoke();
+
+                return alarm;
             }
-            finally
+            catch (Exception ex)
             {
-                _fetchLock.Release();
+                _logger.LogError(ex, "Fehler beim Abrufen von Divera LastAlarm");
+                return null;
             }
         }
 
@@ -141,7 +102,25 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 var lastAlarm = await GetLastAlarmAsync();
                 if (lastAlarm != null)
+                {
+                    if (pull?.StatusDefinitions?.Count > 0)
+                    {
+                        foreach (var ucrEntry in lastAlarm.UcrDetails)
+                        {
+                            if (pull.StatusDefinitions.TryGetValue(ucrEntry.Status, out var statusDef))
+                                ucrEntry.StatusName = statusDef.Name;
+                        }
+                    }
+                    if (pull?.Members?.Count > 0)
+                    {
+                        var memberLookup = pull.Members.ToDictionary(m => m.Id, m => m.FullName);
+                        foreach (var ucrEntry in lastAlarm.UcrDetails)
+                            if (memberLookup.TryGetValue(ucrEntry.MemberId, out var name) && !string.IsNullOrWhiteSpace(name))
+                                ucrEntry.MemberName = name;
+                    }
+
                     alarms.Add(lastAlarm);
+                }
             }
 
             return alarms;
@@ -150,8 +129,7 @@ namespace Einsatzueberwachung.Domain.Services
         public async Task<DiveraAlarm?> GetAlarmByIdAsync(int alarmId)
         {
             var pull = await PullAllAsync();
-            return pull?.Alarms.FirstOrDefault(a => a.Id == alarmId)
-                ?? (_cachedLastAlarm is { } last && last.Id == alarmId ? last : null);
+            return pull?.Alarms.FirstOrDefault(a => a.Id == alarmId);
         }
 
         public async Task<List<DiveraMember>> GetMembersWithStatusAsync()
