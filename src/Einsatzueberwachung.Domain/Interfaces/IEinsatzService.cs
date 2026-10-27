@@ -1,4 +1,4 @@
-﻿// Service-Interface für Einsatz-Verwaltung (Teams, Timer, Funksprüche)
+// Service-Interface für Einsatz-Verwaltung (Teams, Timer, Funksprüche)
 // Quelle: Abgeleitet von WPF ViewModels/MainViewModel.cs und Models/Team.cs
 
 using System;
@@ -32,6 +32,8 @@ namespace Einsatzueberwachung.Domain.Interfaces
         event Action<Guid>? TruemmerAreaRemoved;
         event Action? ElNotizAdded;
         event Action<string, string, TeamPhoneLocation>? TeamPhoneLocationChanged;
+        /// <summary>Handy-Position eines Teams ist nicht mehr live (Suche beendet) – Markierung entfernen</summary>
+        event Action<string>? TeamPhoneLocationRemoved;
 
         /// <summary>
         /// Wird ausgelöst wenn ein neuer GPS-Punkt zum Telefon-Track eines aktiv laufenden Teams hinzugefügt wird.

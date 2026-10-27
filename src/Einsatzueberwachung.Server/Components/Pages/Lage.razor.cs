@@ -73,6 +73,7 @@ public partial class Lage : IAsyncDisposable
         EinsatzService.VermisstenInfoChanged += OnEinsatzChanged;
         CollarTrackingService.CollarLocationReceived += OnCollarLocationReceived;
         EinsatzService.TeamPhoneLocationChanged += OnTeamPhoneLocationChanged;
+        EinsatzService.TeamPhoneLocationRemoved += OnTeamPhoneLocationRemoved;
         EinsatzService.TeamPhoneTrackPointAdded += OnTeamPhoneTrackPointAdded;
 
         _clockTimer = new System.Threading.Timer(_ =>
@@ -245,6 +246,21 @@ public partial class Lage : IAsyncDisposable
         });
     }
 
+    // Suche beendet: Handy-Markierung entfernen
+    private void OnTeamPhoneLocationRemoved(string teamId)
+    {
+        if (!_mapInitialized) return;
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("PhoneTracking.removeMarker", "lageMap", teamId);
+            }
+            catch (ObjectDisposedException) { }
+            catch (JSDisconnectedException) { }
+        });
+    }
+
     private void OnTeamPhoneLocationChanged(string teamId, string teamName, TeamPhoneLocation location)
     {
         if (!_mapInitialized) return;
@@ -326,6 +342,7 @@ public partial class Lage : IAsyncDisposable
             EinsatzService.VermisstenInfoChanged -= OnEinsatzChanged;
             CollarTrackingService.CollarLocationReceived -= OnCollarLocationReceived;
             EinsatzService.TeamPhoneLocationChanged -= OnTeamPhoneLocationChanged;
+            EinsatzService.TeamPhoneLocationRemoved -= OnTeamPhoneLocationRemoved;
             EinsatzService.TeamPhoneTrackPointAdded -= OnTeamPhoneTrackPointAdded;
 
             _clockTimer?.Dispose();
