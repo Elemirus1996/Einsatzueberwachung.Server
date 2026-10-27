@@ -24,10 +24,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
-    <Version>1.11.2</Version>
-    <AssemblyVersion>1.11.2.0</AssemblyVersion>
-    <FileVersion>1.11.2.0</FileVersion>
-    <InformationalVersion>1.11.2-beta</InformationalVersion>
+    <Version>1.11.3</Version>
+    <AssemblyVersion>1.11.3.0</AssemblyVersion>
+    <FileVersion>1.11.3.0</FileVersion>
+    <InformationalVersion>1.11.3</InformationalVersion>
   </PropertyGroup>
 
 </Project>
