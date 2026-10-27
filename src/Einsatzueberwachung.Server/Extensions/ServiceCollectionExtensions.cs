@@ -51,7 +51,7 @@ internal static class ServiceCollectionExtensions
             {
                 Title = "Einsatzueberwachung.Server API",
                 Version = "v1",
-                Description = "REST API fuer Mobile- und externe Integrationen."
+                Description = "REST API für Mobile- und externe Integrationen."
             });
 
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";

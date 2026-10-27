@@ -142,7 +142,7 @@ public partial class EinsatzArchiv
         var success = await ArchivService.DeleteAsync(_deleteCandidate.Id);
         if (!success)
         {
-            _status = "Der Archiv-Eintrag konnte nicht geloescht werden.";
+            _status = "Der Archiv-Eintrag konnte nicht gelöscht werden.";
             _deleteCandidate = null;
             return;
         }
@@ -152,7 +152,7 @@ public partial class EinsatzArchiv
             _selected = null;
         }
 
-        _status = $"Archiv-Eintrag {_deleteCandidate.EinsatzNummer} wurde geloescht.";
+        _status = $"Archiv-Eintrag {_deleteCandidate.EinsatzNummer} wurde gelöscht.";
         _deleteCandidate = null;
         await LoadAsync();
     }

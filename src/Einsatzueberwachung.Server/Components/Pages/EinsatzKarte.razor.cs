@@ -392,6 +392,33 @@ public partial class EinsatzKarte
         }
     }
 
+    // ── Suchgebiet aus Koordinatenliste / als Liste ausgeben (#96) ─────────
+    private bool _koordDialogOffen;
+    private SearchArea? _koordDialogGebiet;
+    private bool _zoomNachSpeichern;
+
+    private void KoordinatenImportOeffnen()
+    {
+        _koordDialogGebiet = null;
+        _koordDialogOffen = true;
+    }
+
+    private void KoordinatenAnzeigen(SearchArea area)
+    {
+        _koordDialogGebiet = area;
+        _koordDialogOffen = true;
+    }
+
+    /// <summary>Wie nach dem Zeichnen: GeoJSON uebernehmen und den normalen Dialog fuer Name, Team und Farbe oeffnen</summary>
+    private void KoordinatenUebernehmen(string geoJson)
+    {
+        _koordDialogOffen = false;
+        _lastDrawnGeoJson = geoJson;
+        _drawingSaved = false;
+        _zoomNachSpeichern = true;
+        ShowAddAreaDialog();
+    }
+
     private void ShowAddAreaDialog()
     {
         _editingArea = null;
@@ -524,7 +551,12 @@ public partial class EinsatzKarte
 
         _lastDrawnGeoJson = "";
         _drawingSaved = true; // Flag setzen, damit CloseDialog nicht erneut löscht
+        var zoomen = _zoomNachSpeichern;
+        var gespeichert = _currentArea;
         await CloseDialog();
+
+        // Aus Koordinaten angelegt: Gebiet liegt evtl. ausserhalb des Kartenausschnitts
+        if (zoomen) await ZoomToArea(gespeichert);
     }
 
     private void DeleteSearchArea(SearchArea area)
@@ -605,6 +637,7 @@ public partial class EinsatzKarte
     private async Task CloseDialog()
     {
         _showDialog = false;
+        _zoomNachSpeichern = false;
         _editingArea = null;
 
         // Wenn Dialog geschlossen wird UND die Zeichnung wurde NICHT gespeichert:

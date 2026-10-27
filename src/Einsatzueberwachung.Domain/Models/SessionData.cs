@@ -173,7 +173,7 @@ namespace Einsatzueberwachung.Domain.Models
             QuickNoteTemplates = new List<string>
             {
                 "ELW Ankunft Einsatzstelle",
-                "ELW verlaesst Einsatzstelle",
+                "ELW verlässt Einsatzstelle",
                 "Team vor Ort eingetroffen",
                 "Lagemeldung an Leitstelle",
                 "Suche gestartet",

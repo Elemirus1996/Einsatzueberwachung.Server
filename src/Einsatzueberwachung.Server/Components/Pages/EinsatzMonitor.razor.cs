@@ -447,7 +447,7 @@ public partial class EinsatzMonitor
             _quickNoteTemplates = new List<string>
             {
                 "ELW Ankunft Einsatzstelle",
-                "ELW verlaesst Einsatzstelle",
+                "ELW verlässt Einsatzstelle",
                 "Team vor Ort eingetroffen",
                 "Lagemeldung an Leitstelle",
                 "Suche gestartet",
@@ -570,7 +570,7 @@ public partial class EinsatzMonitor
                 else
                 {
                     _monitorWeatherUsingFallback = true;
-                    _monitorWeatherError = "Live-Aktualisierung fehlgeschlagen. Letzte gueltige Wetterdaten werden angezeigt.";
+                    _monitorWeatherError = "Live-Aktualisierung fehlgeschlagen. Letzte gültige Wetterdaten werden angezeigt.";
                 }
 
                 return;
@@ -590,7 +590,7 @@ public partial class EinsatzMonitor
             else
             {
                 _monitorWeatherUsingFallback = true;
-                _monitorWeatherError = "Wetterdienst derzeit nicht erreichbar. Letzte gueltige Daten bleiben sichtbar.";
+                _monitorWeatherError = "Wetterdienst derzeit nicht erreichbar. Letzte gültige Daten bleiben sichtbar.";
             }
         }
         finally
@@ -604,7 +604,7 @@ public partial class EinsatzMonitor
         var address = EinsatzService.CurrentEinsatz.Einsatzort;
         if (string.IsNullOrWhiteSpace(address))
         {
-            _monitorWeatherError = "Kein Einsatzort gesetzt. Wetterdaten koennen nicht geladen werden.";
+            _monitorWeatherError = "Kein Einsatzort gesetzt. Wetterdaten können nicht geladen werden.";
             return null;
         }
 
@@ -654,7 +654,7 @@ public partial class EinsatzMonitor
         return EvaluateWeatherRisk(weather) switch
         {
             WeatherRiskLevel.Kritisch => "Kritisch",
-            WeatherRiskLevel.Erhoeht => "Erhoeht",
+            WeatherRiskLevel.Erhoeht => "Erhöht",
             WeatherRiskLevel.Beobachten => "Beobachten",
             _ => "Stabil"
         };
@@ -1240,13 +1240,13 @@ public partial class EinsatzMonitor
 
         if (_teamForm.FirstWarningMinutes <= 0 || _teamForm.SecondWarningMinutes <= 0)
         {
-            validationMessage = "Warnschwellen muessen groesser als 0 sein.";
+            validationMessage = "Warnschwellen müssen größer als 0 sein.";
             return false;
         }
 
         if (_teamForm.SecondWarningMinutes <= _teamForm.FirstWarningMinutes)
         {
-            validationMessage = "Warnung 2 muss groesser als Warnung 1 sein.";
+            validationMessage = "Warnung 2 muss größer als Warnung 1 sein.";
             return false;
         }
 
@@ -1254,13 +1254,13 @@ public partial class EinsatzMonitor
         {
             if (string.IsNullOrWhiteSpace(_teamForm.DogId))
             {
-                validationMessage = "Bitte einen Hund auswaehlen.";
+                validationMessage = "Bitte einen Hund auswählen.";
                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(_teamForm.HundefuehrerId))
             {
-                validationMessage = "Bitte einen Hundefuehrer auswaehlen.";
+                validationMessage = "Bitte einen Hundeführer auswählen.";
                 return false;
             }
         }
@@ -1269,13 +1269,13 @@ public partial class EinsatzMonitor
         {
             if (string.IsNullOrWhiteSpace(_teamForm.DroneId))
             {
-                validationMessage = "Bitte eine Drohne auswaehlen.";
+                validationMessage = "Bitte eine Drohne auswählen.";
                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(_teamForm.HundefuehrerId))
             {
-                validationMessage = "Bitte einen Piloten auswaehlen.";
+                validationMessage = "Bitte einen Piloten auswählen.";
                 return false;
             }
         }

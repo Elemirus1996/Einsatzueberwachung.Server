@@ -7,6 +7,10 @@
             title="@(DrawingActive ? "Zeichnen abbrechen" : "Neues Suchgebiet zeichnen")">
         <i class="bi bi-plus-lg toggle-icon"></i>
     </button>
+    <button class="btn btn-xs btn-outline-secondary ms-1" @onclick="OnAddFromCoordinates"
+            title="Suchgebiet aus Koordinatenliste (Dezimal oder UTM)" aria-label="Suchgebiet aus Koordinatenliste">
+        <i class="bi bi-list-ol"></i>
+    </button>
 </div>
 
 @if (SearchAreas.Any())
@@ -49,6 +53,9 @@
                     <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnEdit.InvokeAsync(area)" title="Bearbeiten">
                         <i class="bi bi-pencil"></i>
                     </button>
+                    <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnShowCoordinates.InvokeAsync(area)" title="Koordinaten als Liste">
+                        <i class="bi bi-list-ol"></i>
+                    </button>
                     <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnDownloadGpx.InvokeAsync(area)" title="GPX herunterladen">
                         <i class="bi bi-download"></i>
                     </button>
@@ -75,6 +82,8 @@ else
     [Parameter] public EventCallback<SearchArea> OnZoomToArea { get; set; }
     [Parameter] public EventCallback<SearchArea> OnEdit { get; set; }
     [Parameter] public EventCallback<SearchArea> OnDownloadGpx { get; set; }
+    [Parameter] public EventCallback OnAddFromCoordinates { get; set; }
+    [Parameter] public EventCallback<SearchArea> OnShowCoordinates { get; set; }
     [Parameter] public EventCallback<SearchArea> OnDelete { get; set; }
     [Parameter] public EventCallback<string> OnNavigateToTeam { get; set; }
 }

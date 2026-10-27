@@ -39,7 +39,7 @@ namespace Einsatzueberwachung.Domain.Services
         public Task RemoveTeamAsync(string teamId)
         {
             if (IsEinsatzAktiv())
-                throw new InvalidOperationException("Teams koennen waehrend eines laufenden Einsatzes nicht geloescht werden.");
+                throw new InvalidOperationException("Teams können während eines laufenden Einsatzes nicht gelöscht werden.");
 
             var team = _teams.FirstOrDefault(t => t.TeamId == teamId);
             if (team != null)
@@ -76,7 +76,7 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 var conflict = _teams.FirstOrDefault(t => t.TeamId != teamId && t.DogId == team.DogId && t.IsRunning);
                 if (conflict != null)
-                    throw new InvalidOperationException($"Hund '{team.DogName}' laeuft bereits in Team '{conflict.TeamName}'. Bitte zuerst dieses Team stoppen.");
+                    throw new InvalidOperationException($"Hund '{team.DogName}' läuft bereits in Team '{conflict.TeamName}'. Bitte zuerst dieses Team stoppen.");
 
                 _dogPauses.Remove(team.DogId);
             }

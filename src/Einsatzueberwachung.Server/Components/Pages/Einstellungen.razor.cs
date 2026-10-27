@@ -193,7 +193,7 @@ public partial class Einstellungen
         catch (Exception ex)
         {
             _updateStatus.LastError = ex.Message;
-            _updateStatus.LastMessage = "Update-Pruefung fehlgeschlagen";
+            _updateStatus.LastMessage = "Update-Prüfung fehlgeschlagen";
         }
         finally
         {
@@ -310,7 +310,7 @@ public partial class Einstellungen
         var file = args.File;
         if (file is null)
         {
-            SetLogoStatus("Keine Datei ausgewaehlt.", true);
+            SetLogoStatus("Keine Datei ausgewählt.", true);
             return;
         }
 
@@ -322,7 +322,7 @@ public partial class Einstellungen
 
         if (!allowed.Contains(extension))
         {
-            SetLogoStatus("Ungueltiges Format. Erlaubt sind PNG, JPG, JPEG, WEBP oder SVG.", true);
+            SetLogoStatus("Ungültiges Format. Erlaubt sind PNG, JPG, JPEG, WEBP oder SVG.", true);
             return;
         }
 
@@ -552,12 +552,12 @@ private async Task SetDesignModeAsync(bool darkMode)
         _quickNoteTemplatesText = string.Join(Environment.NewLine, _appSettings.QuickNoteTemplates);
         _quickNoteList = new List<string>(_appSettings.QuickNoteTemplates);
         _sessionImportJson = string.Empty;
-        SetMaintenanceStatus("Daten wurden auf Standard zurueckgesetzt.", false);
+        SetMaintenanceStatus("Daten wurden auf Standard zurückgesetzt.", false);
     }
 
     private async Task ConfirmResetDataAsync()
     {
-        var confirmed = await JS.InvokeAsync<bool>("confirm", "Sollen die Einsatzdaten und Einstellungen wirklich auf Standard zurueckgesetzt werden?");
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Sollen die Einsatzdaten und Einstellungen wirklich auf Standard zurückgesetzt werden?");
         if (!confirmed)
         {
             return;
@@ -570,7 +570,7 @@ private async Task SetDesignModeAsync(bool darkMode)
     {
         if (string.IsNullOrWhiteSpace(_sessionImportJson))
         {
-            SetMaintenanceStatus("Bitte zuerst SessionData-JSON einfuegen.", true);
+            SetMaintenanceStatus("Bitte zuerst SessionData-JSON einfügen.", true);
             return;
         }
 
@@ -597,7 +597,7 @@ private async Task SetDesignModeAsync(bool darkMode)
         var file = args.File;
         if (file is null)
         {
-            SetMaintenanceStatus("Keine Datei ausgewaehlt.", true);
+            SetMaintenanceStatus("Keine Datei ausgewählt.", true);
             return;
         }
 
@@ -621,7 +621,7 @@ private async Task SetDesignModeAsync(bool darkMode)
             var imported = await ReadJsonFromInputFileAsync<AppSettings>(args, 2 * 1024 * 1024);
             if (imported is null)
             {
-                SetMaintenanceStatus("AppSettings-Import fehlgeschlagen: Datei war leer oder ungueltig.", true);
+                SetMaintenanceStatus("AppSettings-Import fehlgeschlagen: Datei war leer oder ungültig.", true);
                 return;
             }
 
@@ -646,7 +646,7 @@ private async Task SetDesignModeAsync(bool darkMode)
             var imported = await ReadJsonFromInputFileAsync<StaffelSettings>(args, 2 * 1024 * 1024);
             if (imported is null)
             {
-                SetMaintenanceStatus("StaffelSettings-Import fehlgeschlagen: Datei war leer oder ungueltig.", true);
+                SetMaintenanceStatus("StaffelSettings-Import fehlgeschlagen: Datei war leer oder ungültig.", true);
                 return;
             }
 
@@ -681,7 +681,7 @@ private async Task SetDesignModeAsync(bool darkMode)
 
     private async Task ConfirmRestoreBackupZipAsync(InputFileChangeEventArgs args)
     {
-        var confirmed = await JS.InvokeAsync<bool>("confirm", "Soll die ausgewaehlte Backup-Datei wirklich eingespielt werden?");
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Soll die ausgewählte Backup-Datei wirklich eingespielt werden?");
         if (!confirmed)
         {
             return;
@@ -695,7 +695,7 @@ private async Task SetDesignModeAsync(bool darkMode)
         var file = args.File;
         if (file is null)
         {
-            SetMaintenanceStatus("Keine Backup-Datei ausgewaehlt.", true);
+            SetMaintenanceStatus("Keine Backup-Datei ausgewählt.", true);
             return;
         }
 
@@ -1021,7 +1021,7 @@ private async Task SetDesignModeAsync(bool darkMode)
         var file = args.File;
         if (file is null)
         {
-            SetPdfLogoStatus("Keine Datei ausgewaehlt.", true);
+            SetPdfLogoStatus("Keine Datei ausgewählt.", true);
             return;
         }
 
@@ -1033,7 +1033,7 @@ private async Task SetDesignModeAsync(bool darkMode)
 
         if (!allowed.Contains(extension))
         {
-            SetPdfLogoStatus("Ungueltiges Format. Erlaubt sind PNG, JPG, JPEG oder WEBP.", true);
+            SetPdfLogoStatus("Ungültiges Format. Erlaubt sind PNG, JPG, JPEG oder WEBP.", true);
             return;
         }
 
@@ -1189,7 +1189,7 @@ private async Task SetDesignModeAsync(bool darkMode)
         return new List<string>
         {
             "ELW Ankunft Einsatzstelle",
-            "ELW verlaesst Einsatzstelle",
+            "ELW verlässt Einsatzstelle",
             "Team vor Ort eingetroffen",
             "Lagemeldung an Leitstelle",
             "Suche gestartet",
@@ -1205,7 +1205,7 @@ private async Task SetDesignModeAsync(bool darkMode)
             p.FirstWarningFrequency,
             repeat: false,
             repeatSeconds: 0,
-            "Test fuer erste Warnung abgespielt.");
+            "Test für erste Warnung abgespielt.");
     }
 
     private async Task PlayCriticalWarningTestAsync()
@@ -1216,7 +1216,7 @@ private async Task SetDesignModeAsync(bool darkMode)
             p.SecondWarningFrequency,
             p.RepeatSecondWarning,
             Math.Max(1, p.RepeatWarningIntervalSeconds),
-            "Test fuer kritische Warnung gestartet.");
+            "Test für kritische Warnung gestartet.");
     }
 
     private async Task StopWarningTestAsync()

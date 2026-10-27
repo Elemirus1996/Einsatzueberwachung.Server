@@ -40,7 +40,7 @@ public sealed class TeamMobileController : ControllerBase
     public IActionResult ListTeams([FromQuery] string master)
     {
         if (!_tokenService.ValidateMasterToken(master))
-            return Unauthorized(new { error = "Ungueltiger Master-Token oder kein aktiver Einsatz." });
+            return Unauthorized(new { error = "Ungültiger Master-Token oder kein aktiver Einsatz." });
 
         var einsatz = _einsatzService.CurrentEinsatz;
         if (einsatz is not { IstEinsatz: true } || einsatz.EinsatzEnde != null)
@@ -75,7 +75,7 @@ public sealed class TeamMobileController : ControllerBase
             return BadRequest(new { error = "MasterToken und TeamId erforderlich." });
 
         if (!_tokenService.ValidateMasterToken(request.MasterToken))
-            return Unauthorized(new { error = "Ungueltiger Master-Token." });
+            return Unauthorized(new { error = "Ungültiger Master-Token." });
 
         var team = _einsatzService.Teams.FirstOrDefault(t => t.TeamId == request.TeamId);
         if (team == null)

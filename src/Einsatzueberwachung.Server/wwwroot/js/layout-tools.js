@@ -41,6 +41,12 @@ window.layoutTools.scrollIntoViewNearest = function (elementId) {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 };
 
+// Textfeld markieren, damit der Inhalt mit Strg+C kopiert werden kann (Koordinaten-Ausgabe)
+window.layoutTools.selectText = function (elementId) {
+    const el = document.getElementById(elementId);
+    if (el && el.select) el.select();
+};
+
 window.layoutTools.getSidebarCollapsed = function () {
     const value = localStorage.getItem("einsatz.sidebarCollapsed");
     return value === "1" || value === "true";

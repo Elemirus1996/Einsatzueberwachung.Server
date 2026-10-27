@@ -57,8 +57,8 @@ public sealed class EinsatzAbschlussService
     /// <summary>Prueft die Pflichtangaben; liefert die Fehlermeldung oder null.</summary>
     public static string? Validate(string ergebnis, bool ressourcenGeprueft)
     {
-        if (string.IsNullOrWhiteSpace(ergebnis)) return "Bitte ein Ergebnis auswaehlen.";
-        if (!ressourcenGeprueft) return "Bitte die Pruefung der Ressourcen bestaetigen.";
+        if (string.IsNullOrWhiteSpace(ergebnis)) return "Bitte ein Ergebnis auswählen.";
+        if (!ressourcenGeprueft) return "Bitte die Prüfung der Ressourcen bestätigen.";
         return null;
     }
 

@@ -96,18 +96,18 @@ public partial class Stammdaten
         var file = args.File;
         if (file is null)
         {
-            _status = "Keine Datei ausgewaehlt.";
+            _status = "Keine Datei ausgewählt.";
             return;
         }
 
         if (!file.Name.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
         {
-            _status = "Bitte eine .xlsx Datei auswaehlen.";
+            _status = "Bitte eine .xlsx Datei auswählen.";
             return;
         }
 
         _isImporting = true;
-        _status = "Import laeuft...";
+        _status = "Import läuft …";
 
         try
         {
@@ -126,7 +126,7 @@ public partial class Stammdaten
                 ? $" Warnungen: {importResult.Warnings.Count}."
                 : string.Empty;
 
-            _status = $"Import abgeschlossen: {importResult.TotalImported} importiert, {importResult.TotalSkipped} uebersprungen.{warningInfo}";
+            _status = $"Import abgeschlossen: {importResult.TotalImported} importiert, {importResult.TotalSkipped} übersprungen.{warningInfo}";
             await RefreshAsync();
         }
         catch (Exception ex)

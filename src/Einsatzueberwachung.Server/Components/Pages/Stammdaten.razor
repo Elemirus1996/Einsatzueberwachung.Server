@@ -129,7 +129,7 @@
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
                                                         <button class="btn btn-outline-primary" @onclick="() => EditPersonal(person.Id)">Bearbeiten</button>
-                                                        <button class="btn btn-outline-secondary" @onclick="() => DeletePersonalAsync(person.Id)">Loeschen</button>
+                                                        <button class="btn btn-outline-secondary" @onclick="() => DeletePersonalAsync(person.Id)">Löschen</button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -227,7 +227,7 @@
                                     <thead>
                                         <tr>
                                             <th>Hund</th>
-                                            <th>Hundefuehrer</th>
+                                            <th>Hundeführer</th>
                                             <th>Spezialisierung</th>
                                             <th>Status</th>
                                             <th class="text-end">Aktionen</th>
@@ -247,7 +247,7 @@
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
                                                         <button class="btn btn-outline-primary" @onclick="() => EditDog(dog.Id)">Bearbeiten</button>
-                                                        <button class="btn btn-outline-secondary" @onclick="() => DeleteDogAsync(dog.Id)">Loeschen</button>
+                                                        <button class="btn btn-outline-secondary" @onclick="() => DeleteDogAsync(dog.Id)">Löschen</button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -354,7 +354,7 @@
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
                                                         <button class="btn btn-outline-primary" @onclick="() => EditDrone(drone.Id)">Bearbeiten</button>
-                                                        <button class="btn btn-outline-secondary" @onclick="() => DeleteDroneAsync(drone.Id)">Loeschen</button>
+                                                        <button class="btn btn-outline-secondary" @onclick="() => DeleteDroneAsync(drone.Id)">Löschen</button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -549,7 +549,7 @@
             <div class="modal-modern" @onclick:stopPropagation="true">
                 <div class="modal-modern-header">
                     <h3>Personal anlegen</h3>
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseCreatePersonalModal">Schliessen</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseCreatePersonalModal">Schließen</button>
                 </div>
                 <div class="modal-modern-body">
                     <div class="mb-3">
@@ -603,7 +603,7 @@
             <div class="modal-modern" @onclick:stopPropagation="true">
                 <div class="modal-modern-header">
                     <h3>Hund anlegen</h3>
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseCreateDogModal">Schliessen</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseCreateDogModal">Schließen</button>
                 </div>
                 <div class="modal-modern-body">
                     <div class="mb-3">
@@ -666,7 +666,7 @@
             <div class="modal-modern" @onclick:stopPropagation="true">
                 <div class="modal-modern-header">
                     <h3>Drohne anlegen</h3>
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseCreateDroneModal">Schliessen</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseCreateDroneModal">Schließen</button>
                 </div>
                 <div class="modal-modern-body">
                     <div class="mb-3">
