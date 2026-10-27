@@ -56,7 +56,10 @@ namespace Einsatzueberwachung.Domain.Services
         public Task<PdfExportResult> ExportArchivedEinsatzToPdfAsync(ArchivedEinsatz archivedEinsatz)
             => ExportArchivedEinsatzToPdfAsync(archivedEinsatz, false);
 
-        public async Task<PdfExportResult> ExportArchivedEinsatzToPdfAsync(ArchivedEinsatz archivedEinsatz, bool includeTracks)
+        public Task<PdfExportResult> ExportArchivedEinsatzToPdfAsync(ArchivedEinsatz archivedEinsatz, bool includeTracks)
+            => ExportArchivedEinsatzToPdfAsync(archivedEinsatz, includeTracks ? new PdfBerichtOptionen() : PdfBerichtOptionen.OhneTracks);
+
+        public async Task<PdfExportResult> ExportArchivedEinsatzToPdfAsync(ArchivedEinsatz archivedEinsatz, PdfBerichtOptionen optionen)
         {
             try
             {
@@ -64,14 +67,14 @@ namespace Einsatzueberwachung.Domain.Services
                 var filename = $"Einsatzbericht_{archivedEinsatz.EinsatzNummer}_{archivedEinsatz.EinsatzDatum:yyyyMMdd}.pdf";
                 var einsatzPath = AppPathResolver.GetReportDirectory();
                 var filePath = Path.Combine(einsatzPath, filename);
-                var tracks = includeTracks ? archivedEinsatz.TrackSnapshots : null;
+                var tracks = optionen.WaehleTracks(archivedEinsatz.TrackSnapshots);
                 List<SearchAreaCoverageResult>? coverage = null;
                 byte[]? coverageHeatmap = null;
 
                 if (tracks?.Any(t => t.Points.Count >= 2) == true && _mapRenderer != null)
                 {
-                    await RenderTrackMapsAsync(tracks);
-                    (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, archivedEinsatz.ElwPosition);
+                    await RenderTrackMapsAsync(tracks, optionen.Kartenart);
+                    (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, archivedEinsatz.ElwPosition, optionen.Kartenart);
                 }
 
                 var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, coverage, coverageHeatmap);
@@ -100,17 +103,20 @@ namespace Einsatzueberwachung.Domain.Services
         public async Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz)
             => await ExportArchivedEinsatzToPdfBytesAsync(archivedEinsatz, false);
 
-        public async Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz, bool includeTracks)
+        public Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz, bool includeTracks)
+            => ExportArchivedEinsatzToPdfBytesAsync(archivedEinsatz, includeTracks ? new PdfBerichtOptionen() : PdfBerichtOptionen.OhneTracks);
+
+        public async Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz, PdfBerichtOptionen optionen)
         {
             var staffelInfo = await ResolveStaffelInfoAsync(archivedEinsatz);
-            var tracks = includeTracks ? archivedEinsatz.TrackSnapshots : null;
+            var tracks = optionen.WaehleTracks(archivedEinsatz.TrackSnapshots);
             List<SearchAreaCoverageResult>? coverage = null;
             byte[]? coverageHeatmap = null;
 
             if (tracks?.Any(t => t.Points.Count >= 2) == true && _mapRenderer != null)
             {
-                await RenderTrackMapsAsync(tracks);
-                (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, archivedEinsatz.ElwPosition);
+                await RenderTrackMapsAsync(tracks, optionen.Kartenart);
+                (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, archivedEinsatz.ElwPosition, optionen.Kartenart);
             }
 
             var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, coverage, coverageHeatmap);
@@ -148,7 +154,7 @@ namespace Einsatzueberwachung.Domain.Services
             });
         }
 
-        private async Task RenderTrackMapsAsync(List<TeamTrackSnapshot> tracks)
+        private async Task RenderTrackMapsAsync(List<TeamTrackSnapshot> tracks, MapTileType kartenart = MapTileType.Streets)
         {
             foreach (var track in tracks.Where(t => t.Points.Count >= 2))
             {
@@ -159,7 +165,8 @@ namespace Einsatzueberwachung.Domain.Services
                         track.SearchAreaCoordinates?.Count >= 3 ? track.SearchAreaCoordinates : null,
                         "#000000",
                         track.SearchAreaColor,
-                        800, 450);
+                        800, 450,
+                        kartenart);
 
                     if (imageBytes != null)
                     {
@@ -174,7 +181,7 @@ namespace Einsatzueberwachung.Domain.Services
         }
 
         private async Task<(List<SearchAreaCoverageResult>? Coverage, byte[]? Heatmap)> CalculateAndRenderCoverageAsync(
-            List<TeamTrackSnapshot> tracks, (double Latitude, double Longitude)? elwPosition)
+            List<TeamTrackSnapshot> tracks, (double Latitude, double Longitude)? elwPosition, MapTileType kartenart = MapTileType.Streets)
         {
             var coverage = CoverageAnalysisCalculator.Calculate(tracks);
             if (coverage.Count == 0)
@@ -183,7 +190,7 @@ namespace Einsatzueberwachung.Domain.Services
             byte[]? heatmap = null;
             try
             {
-                heatmap = await _mapRenderer!.RenderCoverageHeatmapAsync(coverage, elwPosition);
+                heatmap = await _mapRenderer!.RenderCoverageHeatmapAsync(coverage, elwPosition, tileType: kartenart);
             }
             catch
             {

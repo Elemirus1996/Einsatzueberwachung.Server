@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Hilfsprogramm der Einsatzueberwachung: Zertifikat der oeffentlichen Domain erneuern (Knopf „Jetzt erneuern“).
+# Laeuft als root ueber sudoers, nimmt KEINE freien Argumente an – Domain und Webroot stehen in der root-eigenen
+# Datei /etc/einsatzueberwachung/zertifikat.conf (eingerichtet von setup-zertifikat.sh).
+#
+#   einsatz-zertifikat erneuern   → ergebnis=erneuert|nicht_faellig|fehler und die letzten Zeilen von certbot
+#   einsatz-zertifikat info       → domain=…
+set -uo pipefail
+
+CONF="/etc/einsatzueberwachung/zertifikat.conf"
+CERTBOT="certbot"
+# Nur fuer den Test ohne root (deploy/scripts/test-einsatz-zertifikat.sh) umbiegbar
+if [[ $EUID -ne 0 ]]; then
+	CONF="${EINSATZ_ZERT_CONF:-$CONF}"
+	CERTBOT="${EINSATZ_ZERT_CERTBOT:-$CERTBOT}"
+fi
+
+[[ -r "$CONF" ]] || { echo "ergebnis=fehler"; echo "Nicht eingerichtet (setup-zertifikat.sh ausfuehren)." >&2; exit 2; }
+DOMAIN="$(awk -F= '$1=="domain" {print $2}' "$CONF")"
+WEBROOT="$(awk -F= '$1=="webroot" {print $2}' "$CONF")"
+[[ "$DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || { echo "ergebnis=fehler"; echo "Ungueltige Domain in $CONF" >&2; exit 2; }
+[[ -d "$WEBROOT" ]] || { echo "ergebnis=fehler"; echo "Webroot $WEBROOT fehlt" >&2; exit 2; }
+
+case "${1:-}" in
+	info)
+		echo "domain=$DOMAIN"
+		;;
+	erneuern)
+		# --keep-until-expiring: nur erneuern, wenn faellig (< 30 Tage) oder abgelaufen – schont die Limits von Let's Encrypt
+		AUSGABE="$("$CERTBOT" certonly --webroot -w "$WEBROOT" -d "$DOMAIN" --cert-name "$DOMAIN" \
+			--non-interactive --agree-tos --keep-until-expiring \
+			--deploy-hook "systemctl reload nginx" 2>&1)"
+		CODE=$?
+		if [[ $CODE -ne 0 ]]; then
+			echo "ergebnis=fehler"
+		elif grep -qiE "not yet due|Keeping the existing certificate" <<<"$AUSGABE"; then
+			echo "ergebnis=nicht_faellig"
+		else
+			echo "ergebnis=erneuert"
+		fi
+		# Letzte Zeilen fuer die Anzeige (keine Schluessel – certbot gibt keine aus)
+		tail -n 12 <<<"$AUSGABE"
+		exit $CODE
+		;;
+	*)
+		echo "Aufruf: einsatz-zertifikat erneuern|info" >&2
+		exit 64
+		;;
+esac

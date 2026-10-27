@@ -119,6 +119,16 @@
                     <span>GPS-Tracks in den Bericht übernehmen
                         <small>(@(_trackCount == 0 ? "keine Tracks vorhanden" : $"{_trackCount} Track(s)"))</small></span>
                 </label>
+                @if (_tracksImPdf)
+                {
+                    <label class="els-label" for="elb-karte">Karte im Bericht</label>
+                    <select id="elb-karte" class="els-input" @bind="_kartenart">
+                        @foreach (var (art, name) in Einsatzueberwachung.Domain.Models.PdfBerichtOptionen.Kartenarten)
+                        {
+                            <option value="@art">@name</option>
+                        }
+                    </select>
+                }
                 <label class="els-check @(_pruefungFehlt ? "is-missing" : "")">
                     <input type="checkbox" @bind="_ressourcenGeprueft" />
                     <span>Alle Teams sind zurück, Personal und Hunde sind geprüft.</span>

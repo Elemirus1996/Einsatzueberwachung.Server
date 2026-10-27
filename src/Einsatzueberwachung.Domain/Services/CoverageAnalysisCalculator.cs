@@ -49,7 +49,8 @@ namespace Einsatzueberwachung.Domain.Services
             return results;
         }
 
-        private static SearchAreaCoverageResult? CalculateForArea(
+        /// <summary>Abdeckung eines einzelnen Suchgebiets (auch live auf der Karte, waehrend Teams suchen).</summary>
+        public static SearchAreaCoverageResult? CalculateForArea(
             List<(double Latitude, double Longitude)> polygon,
             string areaName,
             string areaColor,
@@ -83,6 +84,33 @@ namespace Einsatzueberwachung.Domain.Services
             var latStep = effectiveCellSize / MetersPerDegreeLat;
             var lonStep = effectiveCellSize / metersPerDegreeLon;
 
+            // Punkte in ein Raster einsortieren (Kantenlaenge >= Radius): je Zelle muessen dann nur die Punkte der
+            // Nachbarfelder geprueft werden statt aller Punkte – wichtig live bei stundenlangen Halsband-Tracks
+            var bucketLat = coverageRadiusMeters * 1.1 / MetersPerDegreeLat;
+            var bucketLon = coverageRadiusMeters * 1.1 / metersPerDegreeLon;
+            var buckets = new Dictionary<(long, long), List<TrackPoint>>();
+            foreach (var p in points)
+            {
+                if (p.Latitude < minLat - bucketLat || p.Latitude > maxLat + bucketLat
+                    || p.Longitude < minLon - bucketLon || p.Longitude > maxLon + bucketLon)
+                    continue;
+                var key = ((long)Math.Floor(p.Latitude / bucketLat), (long)Math.Floor(p.Longitude / bucketLon));
+                if (!buckets.TryGetValue(key, out var list)) buckets[key] = list = new List<TrackPoint>();
+                list.Add(p);
+            }
+
+            bool IsCovered(double lat, double lon)
+            {
+                var kLat = (long)Math.Floor(lat / bucketLat);
+                var kLon = (long)Math.Floor(lon / bucketLon);
+                for (var dLat = -1; dLat <= 1; dLat++)
+                    for (var dLon = -1; dLon <= 1; dLon++)
+                        if (buckets.TryGetValue((kLat + dLat, kLon + dLon), out var nah)
+                            && nah.Any(p => HaversineDistance(lat, lon, p.Latitude, p.Longitude) <= coverageRadiusMeters))
+                            return true;
+                return false;
+            }
+
             var cells = new List<CoverageCell>();
             var totalCells = 0;
             var coveredCells = 0;
@@ -95,7 +123,7 @@ namespace Einsatzueberwachung.Domain.Services
                         continue;
 
                     totalCells++;
-                    var covered = points.Any(p => HaversineDistance(lat, lon, p.Latitude, p.Longitude) <= coverageRadiusMeters);
+                    var covered = IsCovered(lat, lon);
                     if (covered) coveredCells++;
 
                     cells.Add(new CoverageCell { Latitude = lat, Longitude = lon, Covered = covered });

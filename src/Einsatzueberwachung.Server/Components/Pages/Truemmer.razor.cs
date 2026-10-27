@@ -1,7 +1,7 @@
-using System.Net.Http.Headers;
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
+using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
@@ -14,8 +14,7 @@ public partial class Truemmer : IDisposable
 
     [Inject] private IEinsatzService EinsatzService { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
-    [Inject] private IHttpClientFactory HttpClientFactory { get; set; } = default!;
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private TruemmerKartenSpeicher KartenSpeicher { get; set; } = default!;
 
     private List<TruemmerKarte> _karten = new();
     private Guid? _selectedKarteId;
@@ -114,24 +113,16 @@ public partial class Truemmer : IDisposable
 
         try
         {
-            using var content = new MultipartFormDataContent();
-            await using var stream = file.OpenReadStream(20 * 1024 * 1024);
+            await using var stream = file.OpenReadStream(TruemmerKartenSpeicher.MaxImageBytes);
             using var ms = new MemoryStream();
             await stream.CopyToAsync(ms);
-            ms.Position = 0;
 
-            var streamContent = new StreamContent(ms);
-            streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
-            content.Add(streamContent, "file", file.Name);
-            content.Add(new StringContent(Path.GetFileNameWithoutExtension(file.Name)), "title");
+            // Direkt speichern statt die eigene API ueber die Browser-Adresse aufzurufen (scheiterte am Zertifikat)
+            var (_, fehler) = await KartenSpeicher.SpeichernAsync(ms.ToArray(), file.Name, Path.GetFileNameWithoutExtension(file.Name));
 
-            var http = HttpClientFactory.CreateClient();
-            var baseUri = new Uri(Navigation.BaseUri);
-            var response = await http.PostAsync(new Uri(baseUri, "/api/truemmer/karten"), content);
-
-            if (!response.IsSuccessStatusCode)
+            if (fehler is not null)
             {
-                _status = $"Upload fehlgeschlagen: {response.StatusCode}";
+                _status = $"Upload fehlgeschlagen: {fehler}";
                 _isError = true;
             }
             else
@@ -165,9 +156,7 @@ public partial class Truemmer : IDisposable
     {
         try
         {
-            var http = HttpClientFactory.CreateClient();
-            var baseUri = new Uri(Navigation.BaseUri);
-            await http.DeleteAsync(new Uri(baseUri, $"/api/truemmer/karten/{id}"));
+            await KartenSpeicher.LoeschenAsync(id);
         }
         catch { /* swallow */ }
         ReloadKarten();

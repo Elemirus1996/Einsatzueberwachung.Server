@@ -721,6 +721,18 @@
                             </span>
                         </label>
                     </div>
+                    @if (_closeMissionIncludeTracks)
+                    {
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Karte im Bericht</label>
+                            <select class="form-select" @bind="_closeMissionKartenart">
+                                @foreach (var (art, name) in PdfBerichtOptionen.Kartenarten)
+                                {
+                                    <option value="@art">@name</option>
+                                }
+                            </select>
+                        </div>
+                    }
                 </div>
 
                 <div class="border rounded p-2 mb-3">

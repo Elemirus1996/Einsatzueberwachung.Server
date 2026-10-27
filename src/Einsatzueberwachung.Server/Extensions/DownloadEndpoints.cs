@@ -1,4 +1,6 @@
 using Einsatzueberwachung.Domain.Interfaces;
+using Einsatzueberwachung.Domain.Models;
+using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Domain.Services;
 using Einsatzueberwachung.Server.Security;
 using Microsoft.AspNetCore.StaticFiles;
@@ -7,7 +9,7 @@ using System.Text.Json;
 
 namespace Einsatzueberwachung.Server.Extensions;
 
-internal static class DownloadEndpoints
+public static class DownloadEndpoints
 {
     public static WebApplication MapDownloadEndpoints(this WebApplication app)
     {
@@ -129,7 +131,9 @@ internal static class DownloadEndpoints
             return Results.File(bytes, "application/pdf", $"{fileNamePart}.pdf");
         });
 
-        app.MapGet("/downloads/einsatz-archiv/{id}.pdf", async (string id, IArchivService archivService, IPdfExportService pdfExportService) =>
+        // Optional: ?karte=Streets|Topographic|Satellite&teams=<id>,<id>&tracks=0 (Auswahl im Archiv)
+        app.MapGet("/downloads/einsatz-archiv/{id}.pdf", async (string id, string? karte, string? teams, string? tracks,
+            IArchivService archivService, IPdfExportService pdfExportService) =>
         {
             var archivedEinsatz = await archivService.GetByIdAsync(id);
             if (archivedEinsatz is null)
@@ -137,8 +141,8 @@ internal static class DownloadEndpoints
                 return Results.NotFound();
             }
 
-            var includeTracks = archivedEinsatz.TrackSnapshots?.Any(track => track.Points.Count >= 2) == true;
-            var bytes = await pdfExportService.ExportArchivedEinsatzToPdfBytesAsync(archivedEinsatz, includeTracks);
+            var bytes = await pdfExportService.ExportArchivedEinsatzToPdfBytesAsync(archivedEinsatz,
+                BerichtOptionenAusAdresse(archivedEinsatz, karte, teams, tracks));
             var fileNamePart = string.IsNullOrWhiteSpace(archivedEinsatz.EinsatzNummer)
                 ? $"einsatz-archiv-{archivedEinsatz.EinsatzDatum:yyyyMMdd-HHmmss}"
                 : $"einsatz-archiv-{archivedEinsatz.EinsatzNummer}";
@@ -322,5 +326,16 @@ internal static class DownloadEndpoints
         });
 
         return app;
+    }
+
+    /// <summary>Auswahl aus der Download-Adresse; ohne Angaben wie bisher (alle Tracks, Straßenkarte).</summary>
+    public static PdfBerichtOptionen BerichtOptionenAusAdresse(ArchivedEinsatz einsatz, string? karte, string? teams, string? tracks)
+    {
+        var mitTracks = tracks != "0" && einsatz.TrackSnapshots?.Any(track => track.Points.Count >= 2) == true;
+        var kartenart = Enum.TryParse<MapTileType>(karte, ignoreCase: true, out var art)
+            && PdfBerichtOptionen.Kartenarten.Any(k => k.Art == art) ? art : MapTileType.Streets;
+        IReadOnlyCollection<string>? teamIds = string.IsNullOrWhiteSpace(teams) ? null
+            : teams.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(StringComparer.Ordinal);
+        return new PdfBerichtOptionen(mitTracks, kartenart, teamIds);
     }
 }

@@ -11,7 +11,8 @@ public sealed record EinsatzAbschlussAnfrage(
     TimeOnly? Endzeit,
     bool TracksImPdf,
     IReadOnlyList<string> PersonalVorOrt,
-    IReadOnlyList<string> HundeVorOrt);
+    IReadOnlyList<string> HundeVorOrt,
+    Einsatzueberwachung.Domain.Models.Enums.MapTileType Kartenart = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets);
 
 public sealed record EinsatzAbschlussErgebnis(ArchivedEinsatz Archiviert, PdfExportResult Pdf);
 
@@ -86,7 +87,8 @@ public sealed class EinsatzAbschlussService
                 anfrage.PersonalVorOrt.ToList(),
                 anfrage.HundeVorOrt.ToList());
 
-            var pdf = await _pdfExportService.ExportArchivedEinsatzToPdfAsync(archived, anfrage.TracksImPdf);
+            var pdf = await _pdfExportService.ExportArchivedEinsatzToPdfAsync(archived,
+                anfrage.TracksImPdf ? new PdfBerichtOptionen(Kartenart: anfrage.Kartenart) : PdfBerichtOptionen.OhneTracks);
 
             _einsatzService.ResetEinsatz();
             return new EinsatzAbschlussErgebnis(archived, pdf);

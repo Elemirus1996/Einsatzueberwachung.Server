@@ -282,10 +282,54 @@
                                 title="Als .einsatz-export.json herunterladen">
                             <i class="bi bi-download me-1"></i>Exportieren
                         </button>
-                        <a class="btn btn-sm btn-outline-primary" href="@GetArchivedPdfDownloadUrl(_selected.Id)" target="_blank" rel="noopener">PDF</a>
+                        <button type="button" class="btn btn-sm @(_pdfAuswahlOffen ? "btn-primary" : "btn-outline-primary")"
+                                @onclick="() => _pdfAuswahlOffen = !_pdfAuswahlOffen" aria-expanded="@_pdfAuswahlOffen.ToString().ToLowerInvariant()">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                        </button>
                         <button class="btn btn-sm btn-outline-secondary" @onclick="CloseDetails">Schliessen</button>
                     </div>
                 </div>
+                @if (_pdfAuswahlOffen)
+                {
+                    @* Bericht mit Auswahl – wird beim Herunterladen jedes Mal neu erzeugt *@
+                    <div class="archive-pdf-auswahl">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small mb-1">Karte</label>
+                                <select class="form-select form-select-sm" @bind="_pdfKartenart">
+                                    @foreach (var (art, name) in PdfBerichtOptionen.Kartenarten)
+                                    {
+                                        <option value="@art">@name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-8">
+                                <label class="form-check mb-0">
+                                    <input class="form-check-input" type="checkbox" @bind="_pdfMitTracks" />
+                                    <span class="form-check-label">GPS-Tracks und Abdeckung aufnehmen</span>
+                                </label>
+                            </div>
+                        </div>
+                        @if (_pdfMitTracks && TeamsMitTracks.Count > 0)
+                        {
+                            <div class="small fw-semibold mt-3 mb-1">Teams im Bericht</div>
+                            <div class="d-flex flex-wrap gap-3">
+                                @foreach (var (teamId, teamName) in TeamsMitTracks)
+                                {
+                                    <label class="form-check mb-0">
+                                        <input class="form-check-input" type="checkbox" checked="@(!_pdfTeamsAus.Contains(teamId))"
+                                               @onchange="e => SetPdfTeam(teamId, e.Value is true)" />
+                                        <span class="form-check-label">@teamName</span>
+                                    </label>
+                                }
+                            </div>
+                        }
+                        <a class="btn btn-sm btn-primary mt-3 @(_pdfMitTracks && TeamsMitTracks.Count > 0 && TeamsMitTracks.All(t => _pdfTeamsAus.Contains(t.TeamId)) ? "disabled" : "")"
+                           href="@PdfAuswahlUrl" target="_blank" rel="noopener">
+                            <i class="bi bi-download me-1"></i>PDF erzeugen
+                        </a>
+                    </div>
+                }
                 <div class="card-body">
                     <div class="row g-2 mb-3">
                         <div class="col-12 col-md-4"><strong>Datum:</strong> @_selected.EinsatzDatum.ToString("dd.MM.yyyy HH:mm")</div>

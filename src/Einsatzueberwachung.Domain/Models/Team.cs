@@ -11,8 +11,23 @@ namespace Einsatzueberwachung.Domain.Models
     {
         private bool _disposed = false;
 
-        // Startzeit des Timers, gesetzt von StartTimer() und vom TeamTimerService gelesen
+        // Startzeit des Timers, gesetzt von StartTimer() und vom TeamTimerService gelesen.
+        // JsonInclude: muss den Neustart des Servers ueberstehen – sonst laeuft ein suchendes Team danach mit
+        // Startzeit „Jahr 1“ weiter (Suchzeit von Hunderttausenden Tagen, alle Warnstufen ausgeloest)
+        [System.Text.Json.Serialization.JsonInclude]
         public DateTime StartTime { get; private set; }
+
+        /// <summary>
+        /// Nach dem Wiederherstellen: laufendes Team ohne Startzeit (aeltere Sicherung) – Startzeit aus der bis dahin
+        /// gemessenen Suchzeit zurueckrechnen.
+        /// </summary>
+        public void StartzeitWiederherstellen(DateTime now)
+        {
+            if (!IsRunning || StartTime != default) return;
+            // Gespeicherte Suchzeit aus dem alten Fehler (Hunderttausende Tage) nicht uebernehmen
+            if (ElapsedTime > TimeSpan.FromDays(7) || ElapsedTime < TimeSpan.Zero) ElapsedTime = TimeSpan.Zero;
+            StartTime = now - ElapsedTime;
+        }
 
         public string TeamId { get; set; }
         public string TeamName { get; set; }

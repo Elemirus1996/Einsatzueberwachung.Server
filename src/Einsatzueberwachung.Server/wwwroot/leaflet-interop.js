@@ -448,6 +448,67 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         }
     },
     
+    // Abdeckung live (1.11.6): je Suchgebiet „x % abgesucht“ als Beschriftung, dazu eine zuschaltbare Ebene mit den
+    // abgesuchten Rasterzellen (gleiche Rechnung wie im Bericht, kommt alle 20 s vom Server)
+    setCoverage: function(mapId, gebiete) {
+        const mapData = this.maps[mapId];
+        if (!mapData) return;
+        if (!mapData.coverage) {
+            mapData.coverage = { layer: L.layerGroup(), renderer: L.canvas({ padding: 0.2 }), beschriftet: new Set() };
+            this.addCoverageControl(mapData);
+        }
+        const cov = mapData.coverage;
+        cov.layer.clearLayers();
+        const aktuell = new Set();
+
+        (gebiete || []).forEach((g) => {
+            aktuell.add(g.areaId);
+            const flaeche = mapData.markers[g.areaId];
+            if (flaeche && flaeche.bindTooltip) {
+                const text = (Math.round(g.prozent)).toLocaleString('de-DE') + ' % abgesucht';
+                if (flaeche.getTooltip && flaeche.getTooltip()) flaeche.setTooltipContent(text);
+                else flaeche.bindTooltip(text, { permanent: true, direction: 'center', className: 'eu-coverage-label' });
+                cov.beschriftet.add(g.areaId);
+            }
+            const halbLat = g.zellGroesseMeter / 111320 / 2;
+            (g.abgesuchteZellen || []).forEach((c) => {
+                const halbLon = g.zellGroesseMeter / (111320 * Math.max(0.01, Math.cos(c[0] * Math.PI / 180))) / 2;
+                L.rectangle([[c[0] - halbLat, c[1] - halbLon], [c[0] + halbLat, c[1] + halbLon]], {
+                    renderer: cov.renderer, stroke: false, fillColor: '#2d7a4d', fillOpacity: 0.38, interactive: false
+                }).addTo(cov.layer);
+            });
+        });
+
+        // Gebiete ohne (weitere) Abdeckung: Beschriftung entfernen
+        cov.beschriftet.forEach((id) => {
+            if (aktuell.has(id)) return;
+            const flaeche = mapData.markers[id];
+            if (flaeche && flaeche.unbindTooltip) flaeche.unbindTooltip();
+            cov.beschriftet.delete(id);
+        });
+    },
+
+    addCoverageControl: function(mapData) {
+        const cov = mapData.coverage;
+        const Control = L.Control.extend({
+            options: { position: 'bottomleft' },
+            onAdd: function() {
+                const button = L.DomUtil.create('button', 'leaflet-bar eu-coverage-toggle');
+                button.type = 'button';
+                button.title = 'Abgesuchte Flächen einfärben (Radius 25 m um die Tracks)';
+                button.textContent = '▦ Abdeckung';
+                L.DomEvent.disableClickPropagation(button);
+                L.DomEvent.on(button, 'click', function() {
+                    const an = !mapData.map.hasLayer(cov.layer);
+                    if (an) cov.layer.addTo(mapData.map); else mapData.map.removeLayer(cov.layer);
+                    button.classList.toggle('is-active', an);
+                });
+                return button;
+            }
+        });
+        new Control().addTo(mapData.map);
+    },
+
     // Entfernt ein Suchgebiet von der Karte
     removeSearchArea: function(mapId, areaId) {
         try {

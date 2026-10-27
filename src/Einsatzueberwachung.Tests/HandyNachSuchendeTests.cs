@@ -68,3 +68,41 @@ public class HandyNachSuchendeTests
         Assert.True(einsatz.PhoneLocations.ContainsKey(team.TeamId));
     }
 }
+
+/// <summary>Laufende Suche ueberlebt einen Neustart des Servers (Startzeit wird gespeichert und wiederhergestellt)</summary>
+public class TeamStartzeitNachNeustartTests
+{
+    [Fact]
+    public async Task LaufendesTeam_BehaeltStartzeitUeberDieSicherung()
+    {
+        var einsatz = new EinsatzService();
+        var team = await einsatz.AddTeamAsync(new Team { TeamName = "Rex" });
+        team.StartTimer(new DateTime(2026, 10, 27, 15, 0, 0));
+        var json = System.Text.Json.JsonSerializer.Serialize(einsatz.ExportRuntimeSnapshot());
+
+        var neu = new EinsatzService();
+        await neu.ImportRuntimeSnapshotAsync(System.Text.Json.JsonSerializer.Deserialize<EinsatzRuntimeSnapshot>(json)!);
+
+        Assert.Equal(new DateTime(2026, 10, 27, 15, 0, 0), neu.Teams.Single().StartTime);
+        team.StopTimer();
+        neu.Teams.Single().StopTimer();
+    }
+
+    [Fact]
+    public void AeltereSicherungOhneStartzeit_WirdAusSuchzeitRekonstruiert()
+    {
+        var json = """{ "TeamName": "Rex", "IsRunning": true, "ElapsedTime": "00:42:00" }""";
+        var team = System.Text.Json.JsonSerializer.Deserialize<Team>(json)!;
+        Assert.Equal(default, team.StartTime);
+
+        var jetzt = new DateTime(2026, 10, 27, 16, 0, 0);
+        team.StartzeitWiederherstellen(jetzt);
+
+        Assert.Equal(jetzt.AddMinutes(-42), team.StartTime);
+
+        var kaputt = System.Text.Json.JsonSerializer.Deserialize<Team>("""{ "IsRunning": true, "ElapsedTime": "739915.17:22:19" }""")!;
+        kaputt.StartzeitWiederherstellen(jetzt);
+        Assert.Equal(TimeSpan.Zero, kaputt.ElapsedTime);
+        Assert.Equal(jetzt, kaputt.StartTime);
+    }
+}

@@ -148,7 +148,7 @@ public class PdfExportSmokeTests
 
         public Task<byte[]?> RenderTrackMapAsync(List<TrackPoint> trackPoints,
             List<(double Latitude, double Longitude)>? searchAreaCoords, string trackColor,
-            string? areaColor, int width = 800, int height = 450)
+            string? areaColor, int width = 800, int height = 450, MapTileType tileType = MapTileType.Streets)
         {
             TrackColor = trackColor;
             return Task.FromResult<byte[]?>(null);
@@ -171,7 +171,7 @@ public class PdfExportSmokeTests
             => Task.FromResult<byte[]?>(null);
 
         public Task<byte[]?> RenderCoverageHeatmapAsync(List<SearchAreaCoverageResult> coverageResults,
-            (double Latitude, double Longitude)? elwPosition, int width = 1200, int height = 780)
+            (double Latitude, double Longitude)? elwPosition, int width = 1200, int height = 780, MapTileType tileType = MapTileType.Streets)
             => Task.FromResult<byte[]?>(null);
     }
 }

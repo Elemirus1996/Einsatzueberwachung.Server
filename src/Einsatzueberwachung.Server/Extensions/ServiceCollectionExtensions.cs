@@ -76,6 +76,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<VpnDeviceService>();
         services.AddSingleton<LeitungsGeraetNamen>();
         services.AddSingleton<TraccarTestService>();
+        services.AddSingleton<LiveAbdeckungService>();
+        services.AddSingleton<TruemmerKartenSpeicher>();
         services.AddHostedService<VpnDeviceCleanupService>();
         services.AddScoped<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider, LeitungRevalidatingAuthStateProvider>();
 
@@ -314,6 +316,7 @@ internal static class ServiceCollectionExtensions
         services.AddHostedService(sp => sp.GetRequiredService<TeamHandyUeberwachungService>());
         services.AddSingleton<SystemZustandService>();
         services.AddHostedService(sp => sp.GetRequiredService<SystemZustandService>());
+        services.AddSingleton<ZertifikatErneuerung>();
         services.AddHostedService<TeamMobileHubRelayService>();
         services.AddHostedService<TeamTimerTickService>();
         services.AddHostedService<UpdateAutoCheckService>();
