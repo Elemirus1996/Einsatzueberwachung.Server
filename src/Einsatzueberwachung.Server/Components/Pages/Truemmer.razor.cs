@@ -176,6 +176,14 @@ public partial class Truemmer : IDisposable
         await JS.InvokeVoidAsync("truemmerMap.cancelDraw", MapElementId);
     }
 
+    /// <summary>Zeichnen per Esc abgebrochen (truemmer-map.js)</summary>
+    [JSInvokable]
+    public Task OnDrawCanceled()
+    {
+        _isDrawing = false;
+        return InvokeAsync(StateHasChanged);
+    }
+
     [JSInvokable]
     public async Task OnPolygonCreated(List<TruemmerPoint> points)
     {
