@@ -1,6 +1,5 @@
-@inject ISettingsService SettingsService
+﻿@inject ISettingsService SettingsService
 @inject IEinsatzService EinsatzService
-@inject IDiveraService DiveraService
 @implements IDisposable
 
 <div class="top-row navbar @(IsCollapsed ? "nav-header-collapsed" : "")">
@@ -106,16 +105,12 @@
                 <span class="nav-text">Wetter</span>
             </NavLink>
         </div>
-        @* Ausgeblendet, wenn die Statusseite in Einstellungen → Divera abgeschaltet ist *@
-        @if (!(DiveraService.IsConfigured && !DiveraService.StatusAnzeigen))
-        {
         <div class="nav-item px-2">
             <NavLink class="nav-link" href="/divera" title="Divera 24/7">
                 <span class="nav-icon"><i class="bi bi-broadcast-pin"></i></span>
                 <span class="nav-text">Divera 24/7</span>
             </NavLink>
         </div>
-        }
 
         <div class="nav-section-header nav-section-label">VERWALTUNG</div>
 
@@ -174,7 +169,6 @@
     protected override async Task OnInitializedAsync()
     {
         EinsatzService.SzenarioChanged += OnSzenarioChanged;
-        await DiveraService.LadeEinstellungenAsync();
 
         var settings = await SettingsService.GetStaffelSettingsAsync();
         _staffelName = settings.StaffelName;

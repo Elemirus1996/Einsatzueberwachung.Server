@@ -3,7 +3,6 @@
 @using System.Text.Json
 @using System.IO.Compression
 @using System.Text
-@using Einsatzueberwachung.Domain.Models.Divera
 
 <PageTitle>Einstellungen</PageTitle>
 
@@ -62,20 +61,6 @@
                     @onclick="() => SetActiveTab(SettingsTab.Integration)">
                 <span class="cfg-tab-label"><i class="bi bi-broadcast-pin me-2"></i>Integration</span>
                 <span class="cfg-tab-badge ok">@IntegrationActiveCount aktiv</span>
-            </button>
-
-            <button type="button"
-                    class="cfg-tab @(_activeTab == SettingsTab.Divera ? "is-active" : "")"
-                    @onclick="() => SetActiveTab(SettingsTab.Divera)">
-                <span class="cfg-tab-label"><i class="bi bi-bell me-2"></i>Divera 24/7</span>
-                @if (_appSettings.DiveraEnabled && !string.IsNullOrWhiteSpace(_appSettings.DiveraAccessKey))
-                {
-                    <span class="cfg-tab-badge ok">aktiv</span>
-                }
-                else
-                {
-                    <span class="cfg-tab-badge muted">aus</span>
-                }
             </button>
 
             <button type="button"
@@ -853,7 +838,83 @@
             else if (_activeTab == SettingsTab.Integration)
             {
                 <h2 class="cfg-pane-title"><i class="bi bi-broadcast-pin me-2"></i>Integration</h2>
-                <p class="cfg-pane-subtitle">Externe Schnittstellen — GPS-Livetracking. Divera 24/7 hat einen eigenen Bereich.</p>
+                <p class="cfg-pane-subtitle">Externe Schnittstellen — Divera 24/7 und GPS-Livetracking.</p>
+
+                <div class="cfg-section">
+                    <div class="cfg-section-title-row">
+                        <h3 class="cfg-sub-header"><i class="bi bi-broadcast-pin me-1"></i>Divera 24/7</h3>
+                        @if (_appSettings.DiveraEnabled && !string.IsNullOrWhiteSpace(_appSettings.DiveraAccessKey))
+                        {
+                            <span class="cfg-inline-badge ok">aktiv</span>
+                        }
+                        else
+                        {
+                            <span class="cfg-inline-badge muted">inaktiv</span>
+                        }
+                    </div>
+                    <div class="cfg-field">
+                        <label class="cfg-toggle">
+                            <InputCheckbox @bind-Value="_appSettings.DiveraEnabled" />
+                            <span>Integration aktivieren</span>
+                        </label>
+                    </div>
+
+                    @if (_appSettings.DiveraEnabled)
+                    {
+                        <div class="cfg-grid cfg-grid-2 mt-2">
+                            <div class="cfg-field">
+                                <label class="cfg-label">API Access-Key</label>
+                                <div class="cfg-input-with-action">
+                                    <input type="@(_showDiveraKey ? "text" : "password")"
+                                           class="cfg-input"
+                                           placeholder="Divera API-Key"
+                                           @bind="_appSettings.DiveraAccessKey" />
+                                    <button type="button" class="cfg-icon-btn"
+                                            @onclick="() => _showDiveraKey = !_showDiveraKey"
+                                            title="Zeigen/Verbergen">
+                                        <i class="bi @(_showDiveraKey ? "bi-eye-slash" : "bi-eye")"></i>
+                                    </button>
+                                </div>
+                                <span class="cfg-help">Verwaltung → Schnittstellen → API-Access-Key</span>
+                            </div>
+                            <div class="cfg-field">
+                                <label class="cfg-label">API Base-URL</label>
+                                <InputText class="cfg-input" @bind-Value="_appSettings.DiveraBaseUrl" placeholder="https://app.divera247.com/api/v2" />
+                            </div>
+                            <div class="cfg-field">
+                                <label class="cfg-label">Poll Idle (Sek)</label>
+                                <InputNumber class="cfg-input" @bind-Value="_appSettings.DiveraPollIntervalIdleSeconds" />
+                                <span class="cfg-help">Standard 600 (= 10 Min)</span>
+                            </div>
+                            <div class="cfg-field">
+                                <label class="cfg-label">Poll bei Alarm (Sek)</label>
+                                <InputNumber class="cfg-input" @bind-Value="_appSettings.DiveraPollIntervalActiveSeconds" />
+                                <span class="cfg-help">Standard 60 (= 1 Min)</span>
+                            </div>
+                        </div>
+
+                        <div class="cfg-actions mt-2">
+                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="TestDiveraConnectionAsync" disabled="@_diveraTestBusy">
+                                @if (_diveraTestBusy)
+                                {
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-plug"></i>
+                                }
+                                Verbindung testen
+                            </button>
+                            @if (!string.IsNullOrWhiteSpace(_diveraTestStatus))
+                            {
+                                <span class="cfg-inline-status @(_diveraTestError ? "is-error" : "is-ok")">
+                                    <i class="bi @(_diveraTestError ? "bi-x-circle" : "bi-check-circle")"></i>
+                                    @_diveraTestStatus
+                                </span>
+                            }
+                        </div>
+                    }
+                </div>
 
                 <div class="cfg-section">
                     <div class="cfg-section-title-row">
@@ -934,176 +995,6 @@
                         <span class="cfg-help">Leer lassen = automatisch aus Request ableiten. URL-Schema optional – fehlt es, wird <code>https://</code> ergänzt. Beispiel: <code>192.168.1.100:5000</code></span>
                     </div>
                 </div>
-            }
-
-            else if (_activeTab == SettingsTab.Divera)
-            {
-                <h2 class="cfg-pane-title"><i class="bi bi-bell me-2"></i>Divera 24/7</h2>
-                <p class="cfg-pane-subtitle">Alarme, Rückmeldungen und Einsatz-Chat. Jede Funktion lässt sich einzeln ein- und ausschalten.</p>
-
-                <div class="cfg-section">
-                    <div class="cfg-section-title-row">
-                        <h3 class="cfg-sub-header"><i class="bi bi-plug me-1"></i>Verbindung</h3>
-                        @if (_appSettings.DiveraEnabled && !string.IsNullOrWhiteSpace(_appSettings.DiveraAccessKey))
-                        {
-                            <span class="cfg-inline-badge ok">aktiv</span>
-                        }
-                        else
-                        {
-                            <span class="cfg-inline-badge muted">inaktiv</span>
-                        }
-                    </div>
-                    <div class="cfg-field">
-                        <label class="cfg-toggle">
-                            <InputCheckbox @bind-Value="_appSettings.DiveraEnabled" />
-                            <span>Integration aktivieren</span>
-                        </label>
-                    </div>
-
-                    @if (_appSettings.DiveraEnabled)
-                    {
-                        <div class="cfg-grid cfg-grid-2 mt-2">
-                            <div class="cfg-field">
-                                <label class="cfg-label">API Access-Key</label>
-                                <div class="cfg-input-with-action">
-                                    <input type="@(_showDiveraKey ? "text" : "password")"
-                                           class="cfg-input"
-                                           placeholder="Divera API-Key"
-                                           @bind="_appSettings.DiveraAccessKey" />
-                                    <button type="button" class="cfg-icon-btn"
-                                            @onclick="() => _showDiveraKey = !_showDiveraKey"
-                                            title="Zeigen/Verbergen">
-                                        <i class="bi @(_showDiveraKey ? "bi-eye-slash" : "bi-eye")"></i>
-                                    </button>
-                                </div>
-                                <span class="cfg-help">Verwaltung → Schnittstellen → API-Access-Key</span>
-                            </div>
-                            <div class="cfg-field">
-                                <label class="cfg-label">API Base-URL</label>
-                                <InputText class="cfg-input" @bind-Value="_appSettings.DiveraBaseUrl" placeholder="https://app.divera247.com/api/v2" />
-                            </div>
-                            <div class="cfg-field">
-                                <label class="cfg-label">Poll Idle (Sek)</label>
-                                <InputNumber class="cfg-input" @bind-Value="_appSettings.DiveraPollIntervalIdleSeconds" />
-                                <span class="cfg-help">Standard 600 (= 10 Min)</span>
-                            </div>
-                            <div class="cfg-field">
-                                <label class="cfg-label">Poll bei Alarm (Sek)</label>
-                                <InputNumber class="cfg-input" @bind-Value="_appSettings.DiveraPollIntervalActiveSeconds" />
-                                <span class="cfg-help">Standard 60 (= 1 Min)</span>
-                            </div>
-                        </div>
-
-                        <div class="cfg-actions mt-2">
-                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="TestDiveraConnectionAsync" disabled="@_diveraTestBusy">
-                                @if (_diveraTestBusy)
-                                {
-                                    <span class="spinner-border spinner-border-sm"></span>
-                                }
-                                else
-                                {
-                                    <i class="bi bi-plug"></i>
-                                }
-                                Verbindung testen
-                            </button>
-                            @if (!string.IsNullOrWhiteSpace(_diveraTestStatus))
-                            {
-                                <span class="cfg-inline-status @(_diveraTestError ? "is-error" : "is-ok")">
-                                    <i class="bi @(_diveraTestError ? "bi-x-circle" : "bi-check-circle")"></i>
-                                    @_diveraTestStatus
-                                </span>
-                            }
-                        </div>
-                    }
-                </div>
-
-
-                @if (_appSettings.DiveraEnabled)
-                {
-                    <div class="cfg-section">
-                        <h3 class="cfg-sub-header"><i class="bi bi-toggles me-1"></i>Funktionen</h3>
-                        <div class="cfg-field">
-                            <label class="cfg-toggle">
-                                <InputCheckbox @bind-Value="_appSettings.DiveraAlarmeUebernehmen" />
-                                <span>Alarme übernehmen – aktive Divera-Alarme auf den Startseiten anbieten</span>
-                            </label>
-                        </div>
-                        <div class="cfg-field">
-                            <label class="cfg-toggle">
-                                <InputCheckbox @bind-Value="_appSettings.DiveraStatusAnzeigen" />
-                                <span>Rückmeldungen und Personalstatus – Seite „Divera 24/7“ im Menü</span>
-                            </label>
-                        </div>
-                        <div class="cfg-field">
-                            <label class="cfg-toggle">
-                                <InputCheckbox @bind-Value="_appSettings.DiveraFotosSenden" />
-                                <span>Fotos der Einsatzleitung in den Einsatz-Chat senden (Knopf „Foto“ in der EL-Ansicht)</span>
-                            </label>
-                            <span class="cfg-help">Braucht die Divera-Zusatzmodule „Messenger“ und „Cloud“. Der Schlüssel muss im Messenger schreiben dürfen.</span>
-                        </div>
-                    </div>
-
-                    <div class="cfg-section">
-                        <div class="cfg-section-title-row">
-                            <h3 class="cfg-sub-header"><i class="bi bi-person-check me-1"></i>Rückmelde-Status</h3>
-                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="LadeDiveraStatusAsync" disabled="@_diveraStatusBusy">
-                                <i class="bi bi-arrow-repeat"></i> Status von Divera laden
-                            </button>
-                        </div>
-                        <p class="cfg-help">
-                            Jede Einheit legt ihre Status in Divera selbst fest. Die Bedeutung ergibt sich aus der Farbe
-                            (grün = kommt, gelb = später, rot = kommt nicht) – hier lässt sie sich je Status ändern.
-                            Namen der Rückmeldenden kommen aus den Stammdaten (Feld „Divera Benutzer-ID“).
-                        </p>
-                        @if (DiveraService.StatusDefinitionen.Count == 0)
-                        {
-                            <p class="cfg-help">Noch keine Status geladen.</p>
-                        }
-                        else
-                        {
-                            <table class="table table-sm align-middle cfg-divera-status">
-                                <thead><tr><th>Status in Divera</th><th>Bedeutung</th></tr></thead>
-                                <tbody>
-                                    @foreach (var status in DiveraService.StatusDefinitionen)
-                                    {
-                                        <tr>
-                                            <td>
-                                                <span class="cfg-divera-farbe" style="background:@DiveraFarbeCss(status.Color)"></span>
-                                                @status.Name <span class="text-muted small">#@status.Id</span>
-                                            </td>
-                                            <td>
-                                                <select class="cfg-input" value="@DiveraZuordnungWert(status.Id)"
-                                                        @onchange="e => SetDiveraZuordnung(status.Id, e.Value?.ToString())">
-                                                    <option value="">Automatisch (@DiveraStatusFarbe.Anzeige(DiveraStatusFarbe.Bedeutung(status.Color)))</option>
-                                                    <option value="Kommt">Kommt</option>
-                                                    <option value="KommtSpaeter">Kommt später</option>
-                                                    <option value="KommtNicht">Kommt nicht</option>
-                                                </select>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        }
-                    </div>
-
-                    <div class="cfg-section">
-                        <div class="cfg-section-title-row">
-                            <h3 class="cfg-sub-header"><i class="bi bi-chat-square-dots me-1"></i>Einsatz-Chat prüfen</h3>
-                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="PruefeDiveraKanalAsync" disabled="@_diveraKanalBusy">
-                                <i class="bi bi-search"></i> Kanal-Prüfung starten
-                            </button>
-                        </div>
-                        <p class="cfg-help">
-                            Prüft am offenen Divera-Alarm, ob Divera den Messenger-Chat des Einsatzes mitliefert. Angezeigt werden
-                            nur Feldnamen und IDs, keine Inhalte. Dafür muss in Divera ein (Test-)Alarm offen sein.
-                        </p>
-                        @if (_diveraKanalZeilen.Count > 0)
-                        {
-                            <pre class="cfg-divera-pruefung">@string.Join(Environment.NewLine, _diveraKanalZeilen)</pre>
-                        }
-                    </div>
-                }
             }
 
             else if (_activeTab == SettingsTab.System)
