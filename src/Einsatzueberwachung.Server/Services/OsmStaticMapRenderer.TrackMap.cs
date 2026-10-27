@@ -86,7 +86,7 @@ public sealed partial class OsmStaticMapRenderer
                     DrawMarker(canvas, trackPts[^1], new SKColor(220, 53, 69), "Ende");
                 }
 
-                DrawAttribution(canvas, width, height, "© OpenStreetMap © CARTO");
+                DrawAttribution(canvas, width, height, OsmAttribution);
 
                 return EncodeAsPng(outputBitmap);
             }

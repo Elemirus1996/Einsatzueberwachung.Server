@@ -8,8 +8,9 @@ public sealed partial class OsmStaticMapRenderer : IStaticMapRenderer, IDisposab
     private readonly HttpClient _httpClient;
     private readonly ILogger<OsmStaticMapRenderer> _logger;
 
-    // Carto @2x Tiles sind 512×512px
-    private const int TileSize = 512;
+    // OpenStreetMap-Kacheln sind 256×256px (CARTO verlangt seit 2026 einen API-Schluessel – dort kam nur
+    // „API KEY REQUIRED“ statt der Karte, im Bericht standen die Tracks dann ohne Hintergrund)
+    private const int TileSize = 256;
 
     // Gesamt-Timeout pro Map-Render. Schützt vor 502 Bad Gateway durch Nginx (60s default)
     // und davor, dass langsame externe Tile-Server (ESRI/OpenTopoMap) den Worker blockieren.

@@ -37,20 +37,18 @@ public sealed partial class OsmStaticMapRenderer
             "© OpenStreetMap contributors | © OpenTopoMap (CC-BY-SA)"),
 
         _ => new(
-            [
-                "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-                "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-                "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png"
-            ],
-            512,
-            "© OpenStreetMap © CARTO")
+            ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            256,
+            OsmAttribution)
     };
+
+    // OpenStreetMap: Nutzungsregeln eingehalten (eigener User-Agent, hoechstens 2 Downloads gleichzeitig,
+    // nur die Kacheln des Berichtsausschnitts)
+    private const string OsmAttribution = "© OpenStreetMap-Mitwirkende";
 
     private static readonly string[] TileServers =
     [
-        "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-        "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-        "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     ];
 
     private async Task<Dictionary<(int x, int y), byte[]?>> DownloadTilesAsync(
