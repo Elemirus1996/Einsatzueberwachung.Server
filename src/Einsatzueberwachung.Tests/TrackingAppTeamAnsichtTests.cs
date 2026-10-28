@@ -236,7 +236,7 @@ public class TrackingAppTeamAnsichtReviewTests
     private static readonly byte[] Secret = System.Security.Cryptography.RandomNumberGenerator.GetBytes(64);
 
     [Fact]
-    public async Task HoechstensDreiVerbindungenJeTeam_AeltesteBekommtStop()
+    public async Task HoechstensDreiVerbindungenJeTeam_AeltesteWirdVerdraengt()
     {
         var einsatz = new EinsatzService();
         var tokens = new TeamMobileTokenService(Secret, einsatz);
@@ -249,7 +249,7 @@ public class TrackingAppTeamAnsichtReviewTests
 
         Assert.Equal(TeamAppEreignisse.MaxVerbindungenJeTeam, ereignisse.AnzahlVerbindungen);
         Assert.True(aeltester.TryRead(out var letztes));
-        Assert.StartsWith("event: stop", letztes);
+        Assert.Equal("event: verdraengt\ndata: {\"wiederholenNachSec\":60}\n\n", letztes); // kein „stop“: weiter angemeldet
         Assert.True(aeltester.Completion.IsCompleted);
     }
 

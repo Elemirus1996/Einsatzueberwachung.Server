@@ -52,7 +52,8 @@ public sealed class TeamAppEreignisse : IDisposable
             .Skip(MaxVerbindungenJeTeam)
             .Select(p => p.Key)
             .ToList();
-        foreach (var alt in ueberzaehlig) Beenden(alt);
+        // Eigenes Ereignis statt „stop“: Das verdraengte Geraet ist weiter angemeldet und darf nur nicht sofort neu verbinden
+        foreach (var alt in ueberzaehlig) Beenden(alt, "verdraengt", new { wiederholenNachSec = VerdraengtWartenSec });
         _signaturen.TryAdd(teamId, Signatur(teamId));
         return (id, kanal.Reader);
     }
@@ -103,9 +104,12 @@ public sealed class TeamAppEreignisse : IDisposable
     // Einsatzende oder neuer Einsatz: alle App-Tokens sind ungueltig
     private void OnGenerationGeaendert() => StopFuer(_ => true);
 
-    private void Beenden(Guid id)
+    /// <summary>So lange wartet eine verdraengte App, bevor sie neu verbindet (sonst werfen sich Geraete im Kreis hinaus)</summary>
+    public const int VerdraengtWartenSec = 60;
+
+    private void Beenden(Guid id, string ereignis = "stop", object? daten = null)
     {
-        if (_abos.TryGetValue(id, out var abo)) abo.Kanal.Writer.TryWrite(Format("stop", new { }));
+        if (_abos.TryGetValue(id, out var abo)) abo.Kanal.Writer.TryWrite(Format(ereignis, daten ?? new { }));
         Abmelden(id);
     }
 

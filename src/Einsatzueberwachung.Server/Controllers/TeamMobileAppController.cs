@@ -138,7 +138,7 @@ public sealed class TeamMobileAppController : ControllerBase
                 if (text is null) continue;
                 await Response.WriteAsync(text, abbruch);
                 await Response.Body.FlushAsync(abbruch);
-                if (text.StartsWith("event: stop", StringComparison.Ordinal)) break;
+                if (text.StartsWith("event: stop", StringComparison.Ordinal) || text.StartsWith("event: verdraengt", StringComparison.Ordinal)) break;
             }
         }
         catch (OperationCanceledException) { /* App hat die Verbindung getrennt */ }
