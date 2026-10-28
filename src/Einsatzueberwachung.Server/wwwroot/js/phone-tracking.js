@@ -7,6 +7,13 @@ window.PhoneTracking = (function () {
     // teamId -> { polyline, color }
     const _tracks = {};
 
+    // Einzeln ausgeblendete Handys (Auge am Eintrag im Handy-Tab) – Marker und Laufweg bleiben erhalten, nur unsichtbar
+    const _hidden = new Set();
+
+    function _show(mapData, teamId, layer) {
+        if (!_hidden.has(teamId)) layer.addTo(mapData.phoneLayer);
+    }
+
     // Konfiguriertes Symbol ("phone" | "person" | "person_walking" | "radio" | "dot")
     let _humanIcon = 'phone';
 
@@ -37,6 +44,7 @@ window.PhoneTracking = (function () {
             mapData.map.addLayer(mapData.phoneLayer);
         }
         // Zustand aus altem Seitenbesuch zurücksetzen
+        _hidden.clear();
         Object.keys(_markers).forEach(k => delete _markers[k]);
         Object.keys(_elMarkers).forEach(k => delete _elMarkers[k]);
         Object.keys(_tracks).forEach(k => delete _tracks[k]);
@@ -85,7 +93,7 @@ window.PhoneTracking = (function () {
             const icon = _createHumanIcon(color);
             const marker = L.marker([lat, lng], { icon })
                 .bindPopup(popupContent);
-            marker.addTo(mapData.phoneLayer);
+            _show(mapData, teamId, marker);
             _markers[teamId] = marker;
         }
     }
@@ -112,7 +120,8 @@ window.PhoneTracking = (function () {
         const polyline = L.polyline(
             points.map(p => [p.lat, p.lng]),
             { color: trackColor, weight: 3, opacity: 0.7, dashArray: '3 8' }
-        ).addTo(mapData.phoneLayer);
+        );
+        _show(mapData, teamId, polyline);
 
         _tracks[teamId] = { polyline, color: trackColor };
     }
@@ -132,7 +141,8 @@ window.PhoneTracking = (function () {
             const trackColor = _teamColor(teamId);
             const polyline = L.polyline([[lat, lng]], {
                 color: trackColor, weight: 3, opacity: 0.7, dashArray: '3 8'
-            }).addTo(mapData.phoneLayer);
+            });
+            _show(mapData, teamId, polyline);
             _tracks[teamId] = { polyline, color: trackColor };
         } else {
             _tracks[teamId].polyline.addLatLng([lat, lng]);
@@ -161,6 +171,20 @@ window.PhoneTracking = (function () {
             }
         } else {
             mapData.map.removeLayer(mapData.phoneLayer);
+        }
+    }
+
+    /** Ein einzelnes Handy (Marker und Laufweg) aus- oder einblenden. */
+    function setTeamVisible(mapId, teamId, visible) {
+        const mapData = _getMapData(mapId);
+        if (!mapData || !mapData.phoneLayer) return;
+        const teile = [_markers[teamId], _tracks[teamId] && _tracks[teamId].polyline].filter(Boolean);
+        if (visible) {
+            _hidden.delete(teamId);
+            teile.forEach(l => { if (!mapData.phoneLayer.hasLayer(l)) l.addTo(mapData.phoneLayer); });
+        } else {
+            _hidden.add(teamId);
+            teile.forEach(l => mapData.phoneLayer.removeLayer(l));
         }
     }
 
@@ -243,5 +267,6 @@ window.PhoneTracking = (function () {
     }
 
     return { initialize, updateMarker, loadTrack, appendTrackPoint, clearTrack, toggleVisibility, removeMarker, clearAll, setOptions, zoomToTeam,
+        setTeamVisible,
         setElPosition, clearElPositions };
 })();

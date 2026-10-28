@@ -156,3 +156,30 @@ public class TrackingAppTests
         Assert.IsType<BadRequestObjectResult>(await Controller(einsatz, tokens, token).PostPositions(request));
     }
 }
+
+/// <summary>Handy-Tab der Karte: Handy-Daten eines Teams entfernen</summary>
+public class HandyDatenEntfernenTests
+{
+    [Fact]
+    public async Task NichtWaehrendDerSuche_DanachLetztePositionUndVerlaufWeg()
+    {
+        var einsatz = new EinsatzService();
+        await einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Testwald", IstEinsatz = true, EinsatzDatum = new DateTime(2026, 10, 28, 9, 0, 0) });
+        var team = await einsatz.AddTeamAsync(new Team { TeamName = "Team Luna" });
+        team.StartTimer();
+        await einsatz.UpdateTeamPhoneLocationAsync(team.TeamId, 49.3, 8.4);
+        var gemeldet = new List<string>();
+        einsatz.TeamPhoneLocationRemoved += gemeldet.Add;
+
+        Assert.False(einsatz.EntferneHandyDaten(team.TeamId)); // Suche laeuft
+        Assert.NotEmpty(einsatz.GetPhoneTrackHistory(team.TeamId));
+
+        team.StopTimer();
+        Assert.True(einsatz.EntferneHandyDaten(team.TeamId));
+        Assert.Empty(einsatz.GetPhoneTrackHistory(team.TeamId));
+        Assert.False(einsatz.PhoneLocations.ContainsKey(team.TeamId));
+        Assert.Contains(team.TeamId, gemeldet); // Karten und Speicherung erfahren davon
+
+        Assert.True(einsatz.EntferneHandyDaten("geloeschtes-team")); // Reste geloeschter Teams lassen sich entfernen
+    }
+}

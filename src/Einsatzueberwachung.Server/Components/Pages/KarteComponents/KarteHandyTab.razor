@@ -33,6 +33,8 @@
             PhoneLocations.TryGetValue(teamId, out var loc);
             PhoneTrackHistories.TryGetValue(teamId, out var history);
             var teamName = GetTeamName(teamId);
+            var laeuft = Teams.FirstOrDefault(t => t.TeamId == teamId)?.IsRunning == true;
+            var ausgeblendet = HiddenTeamIds.Contains(teamId);
             var histCount = history?.Count ?? 0;
             var histDist = history != null ? ComputeDistance(history) : 0.0;
 
@@ -71,11 +73,19 @@
                     <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => OnNavigateToTeam.InvokeAsync(teamId)" title="Zum Team im Monitor">
                         <i class="bi bi-people"></i>
                     </button>
-                    <button class="btn btn-xs btn-link @(PhoneLayerVisible ? "" : "opacity-50")"
+                    @* Nur dieses Handy – der Schalter oben blendet alle aus *@
+                    <button class="btn btn-xs btn-link @(ausgeblendet ? "opacity-50" : "")"
                             @onclick:stopPropagation="true"
-                            @onclick="OnTogglePhoneLayer"
-                            title="@(PhoneLayerVisible ? "Handy-Layer ausblenden" : "Handy-Layer einblenden")">
-                        <i class="bi @(PhoneLayerVisible ? "bi-eye" : "bi-eye-slash")"></i>
+                            @onclick="() => OnToggleTeam.InvokeAsync(teamId)"
+                            title="@(ausgeblendet ? "Dieses Handy einblenden" : "Dieses Handy ausblenden")">
+                        <i class="bi @(ausgeblendet ? "bi-eye-slash" : "bi-eye")"></i>
+                    </button>
+                    <button class="btn btn-xs btn-link text-secondary"
+                            @onclick:stopPropagation="true"
+                            @onclick="() => OnDelete.InvokeAsync(teamId)"
+                            disabled="@laeuft"
+                            title="@(laeuft ? "Während der Suche nicht löschbar" : "Handy-Daten aus der Karte entfernen")">
+                        <i class="bi bi-trash"></i>
                     </button>
                 </div>
             </div>
@@ -97,6 +107,9 @@
     [Parameter] public EventCallback<string> OnZoomToTeam { get; set; }
     [Parameter] public EventCallback OnTogglePhoneLayer { get; set; }
     [Parameter] public EventCallback<string> OnNavigateToTeam { get; set; }
+    [Parameter] public IReadOnlySet<string> HiddenTeamIds { get; set; } = new HashSet<string>();
+    [Parameter] public EventCallback<string> OnToggleTeam { get; set; }
+    [Parameter] public EventCallback<string> OnDelete { get; set; }
 
     private PeriodicTimer? _ageRefreshTimer;
     private CancellationTokenSource? _timerCts;
@@ -140,7 +153,7 @@
     private string GetTeamName(string teamId)
     {
         var team = Teams.FirstOrDefault(t => t.TeamId == teamId);
-        return team?.TeamName ?? teamId;
+        return team?.TeamName ?? "Gelöschtes Team";
     }
 
     /// <summary>

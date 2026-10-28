@@ -1292,6 +1292,28 @@ public partial class EinsatzKarte
         await InvokeAsync(StateHasChanged);
     }
 
+    // ── Einzelne Handys aus-/einblenden und entfernen (Handy-Tab) ────────
+    private readonly HashSet<string> _ausgeblendeteHandys = new();
+
+    private async Task HandyUmschaltenAsync(string teamId)
+    {
+        var einblenden = _ausgeblendeteHandys.Remove(teamId);
+        if (!einblenden) _ausgeblendeteHandys.Add(teamId);
+        await JSRuntime.InvokeVoidAsync("PhoneTracking.setTeamVisible", "einsatzMap", teamId, einblenden);
+    }
+
+    private async Task HandyDatenEntfernenAsync(string teamId)
+    {
+        if (!EinsatzService.EntferneHandyDaten(teamId))
+        {
+            SetSearchMessage("Während der Suche lassen sich die Handy-Daten nicht entfernen.");
+            return;
+        }
+        _ausgeblendeteHandys.Remove(teamId);
+        await JSRuntime.InvokeVoidAsync("PhoneTracking.removeMarker", "einsatzMap", teamId);
+        await JSRuntime.InvokeVoidAsync("PhoneTracking.clearTrack", "einsatzMap", teamId);
+    }
+
     private async Task ZoomToPhoneTeamAsync(string teamId)
     {
         // Layer einblenden falls noch nicht aktiv

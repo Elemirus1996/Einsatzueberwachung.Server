@@ -122,7 +122,10 @@
                                        PhoneLayerVisible="_phoneLayerVisible"
                                        OnZoomToTeam="ZoomToPhoneTeamAsync"
                                        OnTogglePhoneLayer="TogglePhoneLayer"
-                                       OnNavigateToTeam="NavigateToTeamInMonitor" />
+                                       OnNavigateToTeam="NavigateToTeamInMonitor"
+                                       HiddenTeamIds="_ausgeblendeteHandys"
+                                       OnToggleTeam="HandyUmschaltenAsync"
+                                       OnDelete="HandyDatenEntfernenAsync" />
                     }
 
                     @if (_activeSidebarTab == "points")
