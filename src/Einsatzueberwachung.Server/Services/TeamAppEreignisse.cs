@@ -16,7 +16,7 @@ public sealed class TeamAppEreignisse : IDisposable
     private sealed record Abo(string TeamId, Channel<string> Kanal, long Nummer);
 
     /// <summary>Hoechstens so viele gleichzeitige Live-Verbindungen je Team; bei mehr wird die aelteste beendet</summary>
-    public const int MaxVerbindungenJeTeam = 3;
+    public const int MaxVerbindungenJeTeam = 10;
     private long _naechsteNummer;
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);

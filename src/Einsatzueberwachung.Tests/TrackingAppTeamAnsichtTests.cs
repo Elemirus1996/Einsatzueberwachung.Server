@@ -205,28 +205,20 @@ public class TrackingAppTeamAnsichtTests
     public async Task Ereignisse_Endpunkt_RetryPingUndStopBeiEinsatzende()
     {
         var u = await AufbauAsync();
-        var vorher = TeamMobileAppController.PingIntervall;
-        TeamMobileAppController.PingIntervall = TimeSpan.FromMilliseconds(100);
-        try
-        {
-            var body = new MemoryStream();
-            var c = Controller(u, body: body);
-            var lauf = c.GetEreignisse();
-            await Task.Delay(350);                           // mindestens ein Ping
-            await u.Einsatz.EndEinsatzAsync();               // → stop, Verbindung zu
-            await lauf.WaitAsync(TimeSpan.FromSeconds(5));
+        var body = new MemoryStream();
+        var c = Controller(u, body: body);
+        c.PingIntervall = TimeSpan.FromMilliseconds(100);
+        var lauf = c.GetEreignisse();
+        await Task.Delay(350);                           // mindestens ein Ping
+        await u.Einsatz.EndEinsatzAsync();               // → stop, Verbindung zu
+        await lauf.WaitAsync(TimeSpan.FromSeconds(5));
 
-            var text = Encoding.UTF8.GetString(body.ToArray());
-            Assert.Equal("text/event-stream", c.HttpContext.Response.ContentType);
-            Assert.StartsWith("retry: 5000\n\n", text);
-            Assert.Contains(": ping\n\n", text);
-            Assert.EndsWith("event: stop\ndata: {}\n\n", text);
-            Assert.Equal(0, u.Ereignisse.AnzahlVerbindungen);
-        }
-        finally
-        {
-            TeamMobileAppController.PingIntervall = vorher;
-        }
+        var text = Encoding.UTF8.GetString(body.ToArray());
+        Assert.Equal("text/event-stream", c.HttpContext.Response.ContentType);
+        Assert.StartsWith("retry: 5000\n\n", text);
+        Assert.Contains(": ping\n\n", text);
+        Assert.EndsWith("event: stop\ndata: {}\n\n", text);
+        Assert.Equal(0, u.Ereignisse.AnzahlVerbindungen);
     }
 }
 
@@ -236,7 +228,7 @@ public class TrackingAppTeamAnsichtReviewTests
     private static readonly byte[] Secret = System.Security.Cryptography.RandomNumberGenerator.GetBytes(64);
 
     [Fact]
-    public async Task HoechstensDreiVerbindungenJeTeam_AeltesteWirdVerdraengt()
+    public async Task ZuVieleVerbindungenJeTeam_AeltesteWirdVerdraengt()
     {
         var einsatz = new EinsatzService();
         var tokens = new TeamMobileTokenService(Secret, einsatz);
@@ -271,16 +263,8 @@ public class TrackingAppTeamAnsichtReviewTests
         http.Response.Body = body;
         controller.ControllerContext = new ControllerContext { HttpContext = http };
 
-        var vorher = TeamMobileAppController.PingIntervall;
-        TeamMobileAppController.PingIntervall = TimeSpan.FromMilliseconds(200);
-        try
-        {
-            await controller.GetEreignisse().WaitAsync(TimeSpan.FromSeconds(10));
-        }
-        finally
-        {
-            TeamMobileAppController.PingIntervall = vorher;
-        }
+        controller.PingIntervall = TimeSpan.FromMilliseconds(200);
+        await controller.GetEreignisse().WaitAsync(TimeSpan.FromSeconds(10));
         Assert.EndsWith("event: stop\ndata: {}\n\n", Encoding.UTF8.GetString(body.ToArray()));
     }
 
