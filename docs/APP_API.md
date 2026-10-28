@@ -183,9 +183,14 @@ data: {}
 - `halsband`: neue Position des Halsbands dieses Teams.
 - `mitteilung`: neue Mitteilung der Einsatzleitung (zusätzlich in `/lage` gespeichert).
 - `lage`: Suche, Gebiet, Halsband-Zuordnung oder Team geändert → App lädt `/lage` (und `/tracks` ohne `seit`) neu.
-- `stop`: Einsatz beendet oder Team gelöscht → wie `mode: stop`; der Server schließt danach die Verbindung.
+- `stop`: **echtes Ende** – Einsatz beendet, Team gelöscht oder Token abgelaufen → wie `mode: stop`; der Server schließt danach die Verbindung.
+- `verdraengt` `{"wiederholenNachSec":60}`: Je Team sind höchstens **10** Live-Verbindungen offen (Schutz vor Missbrauch; nach einem
+  Funkloch können hängende Verbindungen kurz mitzählen); bei einer weiteren wird die älteste
+  mit diesem Ereignis geschlossen. Das Gerät bleibt angemeldet, Ortung und Token laufen weiter. Es darf **nicht sofort** neu
+  verbinden, sondern frühestens nach `wiederholenNachSec` Sekunden (sonst werfen sich mehrere Geräte im Kreis hinaus) und fragt bis
+  dahin bei Bedarf `/lage` ab. Gezählt werden nur Verbindungen auf `/ereignisse`; die Team-Webseite im Browser nutzt sie nicht.
 - Alle 20 s ein Kommentar `: ping` (hält Mobilfunk und nginx offen). Bricht die Verbindung ab, verbindet die App nach 5 s neu
-  (`retry: 5000` wird mitgesendet) und lädt `/lage` neu.
+  (`retry: 5000` wird mitgesendet) und lädt `/lage` neu – außer nach `verdraengt` (siehe oben).
 - Rückfall ohne Live-Verbindung: `/lage` alle 15 s, solange die Ansicht im Vordergrund ist. Im Hintergrund nichts davon – nur die Ortung.
 
 ### Grenzen

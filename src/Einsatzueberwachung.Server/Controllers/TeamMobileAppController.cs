@@ -138,7 +138,7 @@ public sealed class TeamMobileAppController : ControllerBase
                 if (text is null) continue;
                 await Response.WriteAsync(text, abbruch);
                 await Response.Body.FlushAsync(abbruch);
-                if (text.StartsWith("event: stop", StringComparison.Ordinal)) break;
+                if (text.StartsWith("event: stop", StringComparison.Ordinal) || text.StartsWith("event: verdraengt", StringComparison.Ordinal)) break;
             }
         }
         catch (OperationCanceledException) { /* App hat die Verbindung getrennt */ }
@@ -148,7 +148,8 @@ public sealed class TeamMobileAppController : ControllerBase
         }
     }
 
-    public static TimeSpan PingIntervall { get; set; } = TimeSpan.FromSeconds(20);
+    /// <summary>Abstand der „: ping“-Kommentare (je Anfrage; Tests setzen ihn kleiner)</summary>
+    public TimeSpan PingIntervall { get; set; } = TimeSpan.FromSeconds(20);
 
     /// <summary>Native Anmeldung, Schritt 1: Anmelde-Code aus dem QR-Code → Einsatz und Teamliste.</summary>
     [HttpPost("login/teams")]
