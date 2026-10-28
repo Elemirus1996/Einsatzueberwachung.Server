@@ -13,7 +13,11 @@ namespace Einsatzueberwachung.Server.Services;
 /// </summary>
 public sealed class TeamAppEreignisse : IDisposable
 {
-    private sealed record Abo(string TeamId, Channel<string> Kanal);
+    private sealed record Abo(string TeamId, Channel<string> Kanal, long Nummer);
+
+    /// <summary>Hoechstens so viele gleichzeitige Live-Verbindungen je Team; bei mehr wird die aelteste beendet</summary>
+    public const int MaxVerbindungenJeTeam = 3;
+    private long _naechsteNummer;
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private readonly IEinsatzService _einsatz;
@@ -41,7 +45,14 @@ public sealed class TeamAppEreignisse : IDisposable
     {
         var kanal = Channel.CreateBounded<string>(new BoundedChannelOptions(200) { FullMode = BoundedChannelFullMode.DropOldest });
         var id = Guid.NewGuid();
-        _abos[id] = new Abo(teamId, kanal);
+        _abos[id] = new Abo(teamId, kanal, Interlocked.Increment(ref _naechsteNummer));
+
+        var ueberzaehlig = _abos.Where(p => p.Value.TeamId == teamId)
+            .OrderByDescending(p => p.Value.Nummer)
+            .Skip(MaxVerbindungenJeTeam)
+            .Select(p => p.Key)
+            .ToList();
+        foreach (var alt in ueberzaehlig) Beenden(alt);
         _signaturen.TryAdd(teamId, Signatur(teamId));
         return (id, kanal.Reader);
     }
@@ -92,14 +103,16 @@ public sealed class TeamAppEreignisse : IDisposable
     // Einsatzende oder neuer Einsatz: alle App-Tokens sind ungueltig
     private void OnGenerationGeaendert() => StopFuer(_ => true);
 
+    private void Beenden(Guid id)
+    {
+        if (_abos.TryGetValue(id, out var abo)) abo.Kanal.Writer.TryWrite(Format("stop", new { }));
+        Abmelden(id);
+    }
+
     private void StopFuer(Func<Abo, bool> auswahl)
     {
-        var stop = Format("stop", new { });
-        foreach (var (id, abo) in _abos.Where(p => auswahl(p.Value)).ToList())
-        {
-            abo.Kanal.Writer.TryWrite(stop);
-            Abmelden(id);
-        }
+        foreach (var id in _abos.Where(p => auswahl(p.Value)).Select(p => p.Key).ToList())
+            Beenden(id);
     }
 
     private void LageWennGeaendert(string teamId)
