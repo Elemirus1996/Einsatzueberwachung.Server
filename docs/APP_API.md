@@ -193,6 +193,27 @@ data: {}
   (`retry: 5000` wird mitgesendet) und lädt `/lage` neu – außer nach `verdraengt` (siehe oben).
 - Rückfall ohne Live-Verbindung: `/lage` alle 15 s, solange die Ansicht im Vordergrund ist. Im Hintergrund nichts davon – nur die Ortung.
 
+### 10. Heimatstaffel: Server-Kennung und Logo (#121)
+
+`GET /config` und `POST /login/teams` enthalten zusätzlich (das bisherige Textfeld `staffel` bleibt unverändert):
+
+```json
+"server": { "kennung": "7f3c9a1e-…", "staffel": "RHS Musterstadt", "logoVersion": "a1b2c3d4e5f60718" }
+```
+
+- `kennung`: feste Kennung dieses Servers (UUID), einmal erzeugt und dauerhaft gespeichert. Ändert sich nicht bei neuer Adresse,
+  neuem Staffelnamen oder Neustart. Nicht geheim. Daran erkennt die App die **Heimatstaffel** wieder.
+- `logoVersion`: ändert sich genau dann, wenn ein anderes Logo hinterlegt wird; `null`, wenn es für die App kein Logo gibt.
+  Die App lädt das Logo nur neu, wenn sich `logoVersion` gegenüber ihrer gespeicherten Fassung ändert.
+
+`GET /logo` (Token wie überall, ungültig → `410` + `stop`):
+
+- `200` mit `Content-Type: image/png`, höchstens 512 × 512 px (Seitenverhältnis bleibt), `ETag: "<logoVersion>"`,
+  `Cache-Control: private, max-age=86400`. Mit `If-None-Match: "<logoVersion>"` → `304`.
+- `404`, wenn kein Logo hinterlegt ist **oder** das Logo ein SVG ist. Der Server rechnet PNG, JPG und WEBP in PNG um; SVG kann er
+  nicht umwandeln. Für die App muss die Staffel dann ein PNG oder JPG hochladen (Hinweis in Einstellungen → Staffel).
+  Die App zeigt bei `404` nur den Namen.
+
 ### Grenzen
 
 - nginx: eigenes Limit für `/api/team-mobile/app/` (300 Anfragen/min je IP, Burst 120), weil sich im Mobilfunk viele Handys eine IP teilen.
@@ -231,4 +252,9 @@ Der Server zeigt die jeweils neueste Position je Gerät; der Gerätename kommt a
 | kein Einsatz | `pause` – GPS aus, angemeldet bleiben; beim nächsten Einsatz ohne Eingabe wieder `track` |
 | Token ungültig, abgelaufen, Passwort geändert | 410 `stop` – Token löschen, EL-Rolle neu anmelden |
 
-Die Position der Einsatzleitung wird nicht gespeichert und erscheint nicht im Bericht. Bei Einsatzende verschwindet der Marker.
+Die Position der Einsatzleitung wird nicht gespeichert und erscheint nicht im Bericht.
+
+### 3. `GET /logo`
+
+Wie in der Team-Rolle (Abschnitt 10), mit EL-Token, nur intern. Kennung und `logoVersion` liefert die native EL-Anmeldung (Phase 1b)
+im selben Objekt `server`. Bei Einsatzende verschwindet der Marker.
