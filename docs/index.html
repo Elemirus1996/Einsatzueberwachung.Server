@@ -415,6 +415,29 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.11.7</span>
+    <span class="changelog-date">28.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
+<ul>
+<li><strong>Suchgebiet aus Koordinatenliste:</strong> Unter Karte → Gebiete eine Liste aus einer anderen App einfügen. Erkannt werden Dezimal (Breite,Länge oder Länge,Breite) und UTM. Eine Vorschau zeigt Punkte, Format und Fläche, danach kommt der gewohnte Dialog für Name, Team und Farbe. Jedes Gebiet lässt sich auch als Liste ausgeben und kopieren.</li>
+<li><strong>Traccar spart Akku:</strong> Der Link „Mit diesem Einsatz verbinden“ richtet Traccar jetzt sparsam ein: Genauigkeit hoch statt höchste, alle 20 s statt 10 s, Stillstandserkennung an, Handy wachhalten aus. Die Werte lassen sich unter Einstellungen → Einsatzbetrieb → „Traccar auf den Team-Handys“ ändern und gelten ab dem nächsten Antippen des Links.</li>
+<li><strong>„Ortung jetzt beenden“ bei Einsatzende:</strong> Die Team-Seite zeigt bei Einsatzende einen großen Knopf, um Traccar zu stoppen. Bisher wurde der Hinweis genau dann ausgeblendet.</li>
+<li><strong>Trümmer-Lagekarte:</strong> Suchgebiete werden jetzt gezeichnet wie auf der Einsatzkarte, mit Eckpunkten, Flächenvorschau und Schließen per Klick auf den ersten Punkt. Die Zeichenhinweise beider Karten sind auf Deutsch.</li>
+</ul>
+<h4>Korrekturen</h4>
+<ul>
+<li><strong>Lange Tracks nach Neustart vollständig:</strong> Bisher blieben pro Halsband und Handy nur die letzten 2000 Punkte erhalten, also etwa 2,8 Stunden. Jetzt wird jeder Punkt gespeichert, ohne Obergrenze. Vorhandene Daten werden beim ersten Start übernommen.</li>
+<li><strong>Überall die eingestellte Zeitzone:</strong> Läuft der Server auf UTC, lagen bisher u. a. Funkzeiten, Audit-Log, Pausendauer, PDF-Stand und Alarmzeit 1–2 Stunden daneben. Jetzt gilt überall die Zeitzone aus den Einstellungen.</li>
+<li><strong>Umlaute:</strong> Rund 100 Oberflächentexte wie „auswählen“, „Löschen“ oder „Schließen“ sind korrigiert.</li>
+</ul>
+<h4>Einspielen</h4>
+<p>Normales Update über den Browser, keine Konfigurationsänderung nötig.</p>
+<p>Damit die Team-Handys die sparsamen Traccar-Werte bekommen, beim nächsten Einsatz wie gewohnt den QR-Code scannen und „Mit diesem Einsatz verbinden“ antippen.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.11.6</span>
     <span class="changelog-date">27.10.2026</span>
     <span class="changelog-name"></span>
@@ -588,43 +611,6 @@ certbot renew --dry-run
 </ul>
 <h4>Einspielen</h4>
 <p>Normales Update, keine Änderung an der Konfiguration nötig.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.10.1</span>
-    <span class="changelog-date">25.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Fixes</h4>
-<ul>
-<li><strong>Updates kamen im Browser nicht an:</strong> Skripte und Stylesheets wurden 30 Tage ohne Rückfrage zwischengespeichert.</li>
-</ul>
-<p>Nach einem Update liefen Browser deshalb bis zu 30 Tage mit alten Dateien – auch die Sicherheitskorrekturen der</p>
-<p>Karten-Popups aus 1.9.3 kamen dort nicht an. Jetzt tragen eigene Skripte und Stylesheets einen Fingerabdruck im</p>
-<p>Dateinamen, alle übrigen Dateien werden vor Gebrauch beim Server geprüft.</p>
-<ul>
-<li><strong>Handy:</strong> Die Hauptanwendung zeigte auf schmalen Bildschirmen nur die Seitenleiste. Jetzt Kopfleiste mit Menü-Knopf.</li>
-<li><strong>Einsatzleitung (<code>/el</code>)</strong> steht in der Navigation; auf dem Handy führt die Startseite direkt dorthin.</li>
-<li><strong>nginx (öffentlicher Zugang):</strong> In der Vorlage aus 1.10.0 fehlten in einigen Blöcken Host und X-Forwarded-Proto –</li>
-</ul>
-<p>VPN-Geräte wurden auf <code>127.0.0.1</code> weitergeleitet. Außerdem waren Dateien mit Fingerabdruck im Namen (z. B.</p>
-<p><code>app.jlypqgwbzp.css</code>) für die Team-Ansicht von außen nicht erreichbar. Die CI prüft die Vorlage jetzt mit einem echten</p>
-<p>nginx (Weiterleitung, Kopfzeilen, Zugriff von außen und aus dem VPN).</p>
-<ul>
-<li><code>setup-vpn.sh</code>: dnsmasq ignoriert <code>/etc/hosts</code> des Servers.</li>
-</ul>
-<h4>Einspielen</h4>
-<p>1. Update wie gewohnt.</p>
-<p>2. Öffentlicher Team-Zugang: neue Vorlage übernehmen (Domain und Zertifikatspfade wie bisher), dann nginx prüfen und neu laden:</p>
-<pre><code>
-cp /etc/nginx/sites-available/einsatzueberwachung-public /root/einsatzueberwachung-public.vor-1.10.1
-curl -fLo /etc/nginx/sites-available/einsatzueberwachung-public https://raw.githubusercontent.com/Elemirus1996/Einsatzueberwachung.Server/v1.10.1/deploy/nginx/einsatzueberwachung-public.conf
-nginx -t &amp;&amp; systemctl reload nginx
-</code></pre>
-<h4>Sonstiges</h4>
-<ul>
-<li>Versionsnummer auf 1.10.1 angehoben.</li>
-</ul></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>
