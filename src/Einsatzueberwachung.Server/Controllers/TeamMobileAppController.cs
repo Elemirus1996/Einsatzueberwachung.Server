@@ -46,6 +46,7 @@ public sealed class TeamMobileAppController : ControllerBase
         {
             apiVersion = ApiVersion,
             einsatz = EinsatzText(_einsatzService.CurrentEinsatz),
+            uebung = !_einsatzService.CurrentEinsatz.IstEinsatz,
             staffel = staffel?.StaffelName ?? "",
             teams = _einsatzService.Teams
                 .OrderBy(t => t.TeamName)
@@ -101,6 +102,7 @@ public sealed class TeamMobileAppController : ControllerBase
             teamName = team?.TeamName ?? "",
             dogName = team?.DogName ?? "",
             einsatz = EinsatzText(einsatz),
+            uebung = !einsatz.IstEinsatz,
             staffel = staffel?.StaffelName ?? "",
             positionUrl = basis + "/positions",
             statusUrl = basis + "/status",
