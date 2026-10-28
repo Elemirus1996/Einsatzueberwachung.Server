@@ -1,7 +1,10 @@
 # Schnittstelle der Tracking-App (v1)
 
-Verbindliche Beschreibung für die iOS- und die Android-App ([Einsatzueberwachung.App](https://github.com/Elemirus1996/Einsatzueberwachung.App)).
+Verbindliche Beschreibung für die iOS- und die Android-App ([Einsatzueberwachung-App](https://github.com/Elemirus1996/Einsatzueberwachung-App)).
 Änderungen hier zuerst, mit Tests im Server (`TrackingAppTests`). Neue Felder dürfen dazukommen; Apps ignorieren unbekannte Felder.
+
+**Zeiten:** In der ganzen App-Schnittstelle sind Zeitpunkte UTC – als ISO 8601 **mit `Z`** (z. B. `2026-10-28T09:15:00Z`)
+oder als Unix-Millisekunden, wo es angegeben ist. Ortszeit ohne Zone kommt nicht vor.
 
 ## Rolle Team
 
@@ -92,9 +95,105 @@ Server-Logik: Suche läuft → `track`; Kurzpause, Suche nicht gestartet oder be
 
 **Sicherheitsnetz:** Erreicht die Uhr `expiresAt`, beendet die App die Ortung auch ohne Netz.
 
+### 6. `GET /lage` – native Team-Ansicht (#119)
+
+Alles, was die Ansicht beim Öffnen braucht (Grundlage: heutige Team-Seite).
+
+```json
+{
+  "mode": "track",
+  "serverZeit": "2026-10-28T09:15:00Z",
+  "einsatz": { "text": "Vermisste Person · Testwald", "uebung": false, "staffel": "RHS Musterstadt" },
+  "team": { "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"] },
+  "suche": { "status": "laeuft", "seit": "2026-10-28T08:40:00Z", "dauerSec": 2100 },
+  "suchgebiet": { "id": "…", "name": "Gebiet A", "farbe": "#2f6fd6", "punkte": [ { "lat": 49.31, "lng": 8.43 } ] },
+  "halsband": { "id": "HB-7", "name": "Halsband 7", "lat": 49.312, "lng": 8.431, "zeit": "2026-10-28T09:14:48Z", "akku": 72 },
+  "mitteilungen": [ { "id": "…", "text": "Bitte Funkkontakt", "zeit": "2026-10-28T09:10:00Z" } ]
+}
+```
+
+- `suche.status`: `bereit` (noch nicht gesucht) · `laeuft` · `kurzpause` · `beendet`. `seit` = Beginn der laufenden bzw. letzten Suche, `null` bei `bereit`.
+  `dauerSec` = Suchzeit (ohne Kurzpausen) wie im Monitor.
+- `suchgebiet` und `halsband` sind `null`, wenn keins zugewiesen ist bzw. noch keine Position vorliegt. `akku` fehlt, wenn unbekannt.
+- `helfer` ist eine Liste (ein Team kann mehrere Helfer haben).
+- `mitteilungen`: die letzten 20 Mitteilungen der Einsatzleitung an dieses Team, **älteste zuerst**. Sie bleiben für den
+  laufenden Einsatz gespeichert (auch über einen Neustart des Servers), damit die App sie nach Funkloch oder Hintergrund nachholt.
+  `id` ist stabil – „neu“ und „gelesen“ verwaltet die App auf dem Gerät.
+
+### 7. `GET /tracks` und `GET /tracks?seit=<unix-ms>`
+
+```json
+{
+  "serverZeit": 1761642900000,
+  "laufend": {
+    "hund":   [ { "lat": 49.31, "lng": 8.43, "t": 1761641000000 } ],
+    "mensch": [ { "lat": 49.30, "lng": 8.42, "t": 1761641005000 } ]
+  },
+  "abgeschlossen": [
+    { "sucheId": "…", "beginn": "…Z", "ende": "…Z",
+      "tracks": [ { "art": "hund", "farbe": "#d32f2f", "punkte": [ { "lat": 49.3, "lng": 8.4, "t": 1761630000000 } ] } ] }
+  ]
+}
+```
+
+- `laufend`: Halsband-Track (`hund`) und Handy-Laufweg (`mensch`) der **laufenden** Suche dieses Teams, nach Zeit sortiert. Leer, wenn keine Suche läuft.
+- `abgeschlossen`: frühere Suchen dieses Teams im Einsatz. `art` ist `hund` oder `mensch`.
+- Mit `seit`: nur Punkte der laufenden Suche mit `t > seit`, `abgeschlossen` entfällt.
+  Hinweis: Positionen, die erst nach einem Funkloch mit älterer Zeit eintreffen, liefert `seit` nicht nach.
+  Deshalb lädt die App bei jedem `lage`-Ereignis und spätestens alle 5 Minuten einmal **ohne** `seit`.
+
+### 8. `POST /statusmeldung`
+
+```json
+{ "id": "6f1c…-uuid-der-app", "code": "im_gebiet" }
+```
+
+| `code` | Notiz im Einsatz (wie die Knöpfe der Team-Seite) |
+|---|---|
+| `im_gebiet` | „im Suchgebiet eingetroffen“ |
+| `pause` | „Pause“ |
+| `funk` | „Funkkontakt benötigt“ |
+| `beendet` | „Auftrag beendet“ |
+
+- Antwort `200`: `{ "zeit": "…Z", "doppelt": false }`. Unbekannter Code → `400`.
+- `id` (von der App erzeugt, max. 64 Zeichen) entdoppelt: Die App darf im Funkloch beliebig oft wiederholen, dieselbe `id`
+  erzeugt nur **eine** Notiz (Antwort dann `"doppelt": true`).
+
+### 9. `GET /ereignisse` – Live (Server-Sent Events)
+
+`Accept: text/event-stream`, Token **nur** im `Authorization`-Header (nie in der Adresse).
+Ungültiges Token beim Verbinden → `410` + `{"mode":"stop"}` wie überall.
+
+```
+event: halsband
+data: {"lat":49.312,"lng":8.431,"zeit":"2026-10-28T09:14:48Z","akku":72}
+
+event: mitteilung
+data: {"id":"…","text":"Bitte Funkkontakt","zeit":"2026-10-28T09:10:00Z"}
+
+event: lage
+data: {}
+
+event: stop
+data: {}
+
+: ping
+```
+
+- `halsband`: neue Position des Halsbands dieses Teams.
+- `mitteilung`: neue Mitteilung der Einsatzleitung (zusätzlich in `/lage` gespeichert).
+- `lage`: Suche, Gebiet, Halsband-Zuordnung oder Team geändert → App lädt `/lage` (und `/tracks` ohne `seit`) neu.
+- `stop`: Einsatz beendet oder Team gelöscht → wie `mode: stop`; der Server schließt danach die Verbindung.
+- Alle 20 s ein Kommentar `: ping` (hält Mobilfunk und nginx offen). Bricht die Verbindung ab, verbindet die App nach 5 s neu
+  (`retry: 5000` wird mitgesendet) und lädt `/lage` neu.
+- Rückfall ohne Live-Verbindung: `/lage` alle 15 s, solange die Ansicht im Vordergrund ist. Im Hintergrund nichts davon – nur die Ortung.
+
 ### Grenzen
 
 - nginx: eigenes Limit für `/api/team-mobile/app/` (300 Anfragen/min je IP, Burst 120), weil sich im Mobilfunk viele Handys eine IP teilen.
+  Die Anmeldung (`/login`, `/login/teams`) ist strenger begrenzt (20/min je IP, wie `/team/login`).
+- Bei Überschreitung antwortet nginx mit **429**. Die App zeigt dann „Zu viele Versuche, bitte kurz warten“ und versucht es frühestens nach 30 s erneut.
+- `/ereignisse` läuft über einen eigenen nginx-Block ohne Pufferung und mit langer Laufzeit.
 - Die App sendet nur an den `server` aus der Übergabe und nur über HTTPS.
 
 ## Rolle Einsatzleitung
