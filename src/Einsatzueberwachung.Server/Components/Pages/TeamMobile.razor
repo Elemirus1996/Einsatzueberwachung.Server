@@ -46,7 +46,7 @@ else
                     @if (_team.IsRunning) { <span class="badge bg-success ms-1">aktiv</span> }
                 </div>
             </div>
-            @if (!_einsatzEnded)
+            @if (!_einsatzEnded && !_inApp)
             {
                 <button class="btn btn-sm @(_traccarPanelOpen ? "btn-warning" : "btn-light")" @onclick="() => _traccarPanelOpen = !_traccarPanelOpen"
                         title="GPS bei gesperrtem Handy">
@@ -123,7 +123,7 @@ else
             </div>
         }
 
-        @if (_traccarPanelOpen && !_einsatzEnded)
+        @if (_traccarPanelOpen && !_einsatzEnded && !_inApp)
         {
             <div class="team-mobile-info-panel">
                 <div class="fw-semibold mb-1"><i class="bi bi-phone-vibrate me-1"></i>GPS auch bei gesperrtem Handy</div>
@@ -330,6 +330,30 @@ else
 
     private AppSettings _einstellungen = new();
 
+    // Tracking-App (#110): Laeuft die Seite in der App, bekommt die native Ortung nach der gewohnten Anmeldung ein
+    // App-Token mit Ablauf. Die App steuert sich dann ueber api/team-mobile/app/v1 – Traccar wird nicht gebraucht.
+    private const int AppTokenStunden = 24;
+    private bool _inApp;
+
+    private async Task AnAppUebergebenAsync()
+    {
+        if (_einsatzEnded || string.IsNullOrWhiteSpace(_teamId)) return;
+        try { _inApp = await JS.InvokeAsync<bool>("teamApp.istApp"); } catch { return; }
+        if (!_inApp) return;
+
+        var ablaufUtc = DateTime.UtcNow.AddHours(AppTokenStunden);
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            apiVersion = Einsatzueberwachung.Server.Controllers.TeamMobileAppController.ApiVersion,
+            server = Navigation.BaseUri.TrimEnd('/'),
+            token = TokenService.IssueAppToken(_teamId, ablaufUtc),
+            teamName = _team?.TeamName ?? "",
+            expiresAt = ablaufUtc
+        });
+        try { await JS.InvokeAsync<bool>("teamApp.uebergeben", json); } catch { /* App nicht bereit */ }
+        StateHasChanged();
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _einstellungen = await SettingsService.GetAppSettingsAsync();
@@ -463,6 +487,7 @@ else
         _selfRef = DotNetObjectReference.Create(this);
         try { await JS.InvokeVoidAsync("teamMobileMap.startWatchingUser", _selfRef); } catch { /* ignore */ }
         try { _traccarGenutzt = await JS.InvokeAsync<bool>("teamTraccar.genutzt"); } catch { /* ignore */ }
+        await AnAppUebergebenAsync();
         if (_einsatzEnded && _traccarGenutzt) ZeigeTraccarHinweis("ende");
 
         // Direkt an Domain-Events andocken

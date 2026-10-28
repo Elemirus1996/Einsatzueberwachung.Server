@@ -106,6 +106,48 @@ public sealed class TeamMobileTokenService : ITeamMobileTokenService, IDisposabl
         return true;
     }
 
+    // App-Token: „a1.<teamId>.<generation>.<ablauf-unix>.<signatur>“ – eigener Praefix in der Signatur, damit es
+    // nicht als Cookie (und ein Cookie nicht als App-Token) durchgeht.
+    private const string AppTokenVersion = "a1";
+
+    public string IssueAppToken(string teamId, DateTime ablaufUtc)
+    {
+        if (string.IsNullOrWhiteSpace(teamId) || teamId.Contains('.'))
+            throw new ArgumentException("teamId ungültig.", nameof(teamId));
+
+        int generation;
+        lock (_lock) generation = _currentGeneration;
+        var ablauf = new DateTimeOffset(DateTime.SpecifyKind(ablaufUtc, DateTimeKind.Utc)).ToUnixTimeSeconds();
+        var payload = $"{AppTokenVersion}.{teamId}.{generation}.{ablauf}";
+        return $"{payload}.{ComputeSignature("app|" + payload)}";
+    }
+
+    public bool TryValidateAppToken(string token, DateTime nowUtc, out string teamId, out DateTime ablaufUtc)
+    {
+        teamId = string.Empty;
+        ablaufUtc = default;
+        if (string.IsNullOrWhiteSpace(token) || token.Length > 512) return false;
+
+        var parts = token.Split('.');
+        if (parts.Length != 5 || parts[0] != AppTokenVersion || string.IsNullOrWhiteSpace(parts[1])) return false;
+        if (!int.TryParse(parts[2], out var generation) || !long.TryParse(parts[3], out var ablauf)) return false;
+
+        int currentGeneration;
+        lock (_lock) currentGeneration = _currentGeneration;
+        if (generation != currentGeneration) return false;
+
+        var expected = ComputeSignature($"app|{parts[0]}.{parts[1]}.{parts[2]}.{parts[3]}");
+        if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(parts[4]), Encoding.ASCII.GetBytes(expected)))
+            return false;
+
+        var ablaufZeit = DateTimeOffset.FromUnixTimeSeconds(ablauf).UtcDateTime;
+        if (ablaufZeit <= nowUtc) return false;
+
+        teamId = parts[1];
+        ablaufUtc = ablaufZeit;
+        return true;
+    }
+
     private string ComputeSignature(string payload)
     {
         using var hmac = new HMACSHA256(_hmacSecret);
