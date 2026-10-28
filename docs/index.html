@@ -415,6 +415,32 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.11.10</span>
+    <span class="changelog-date">28.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu: Schnittstelle für die eigene App (Test auf dem iPhone)</h4>
+<ul>
+<li><strong>Team-Anmeldung in der App</strong> mit dem bekannten Anmelde-Code aus dem Team-QR-Code des Monitors, jetzt auch in <strong>Übungen</strong> (bisher gab es den Code nur bei Einsätzen; das gilt auch für die Team-Seite im Browser).</li>
+<li><strong>Native Team-Ansicht:</strong> Die App bekommt Einsatz, Team, Suchstatus und -zeit, Suchgebiet, Halsband-Position, Laufwege und Mitteilungen der Einsatzleitung. Sie sendet die Statusmeldungen („im Suchgebiet eingetroffen“, „Pause“, „Funkkontakt benötigt“, „Auftrag beendet“). Änderungen kommen live.</li>
+<li><strong>Mitteilungen der Einsatzleitung an ein Team</strong> werden gespeichert (die letzten 20 je Team), damit die App sie nach einem Funkloch nachholt.</li>
+<li>Die App ortet nur während der Suche und hört nach dem Einsatz von selbst auf.</li>
+</ul>
+<h4>Einspielen</h4>
+<p><strong>Nur, wenn gerade kein Einsatz läuft.</strong></p>
+<p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.11.10“.</p>
+<p>2. <strong>nginx-Vorlage übernehmen.</strong> Sie enthält drei neue Blöcke für die App: Anmeldung mit strengem Limit, Positionen und Abfragen, Live-Verbindung ohne Pufferung.</p>
+<pre><code>
+   cd &lt;Repository-Kopie auf dem Server&gt; &amp;&amp; git pull
+   sudo cp deploy/nginx/einsatzueberwachung-public.conf /etc/nginx/sites-available/einsatzueberwachung-public.conf
+   sudo nginx -t &amp;&amp; sudo systemctl reload nginx
+</code></pre>
+<p>Hast du die Datei auf dem Server angepasst (Domain, Zertifikatspfade), übernimm nur die neuen <code>location</code>-Blöcke für <code>/api/team-mobile/app/</code> und die Zeile <code>limit_req_zone … team_app_zone</code>.</p>
+<p>3. Prüfen: <code>curl -s -o /dev/null -w "%{http_code}
+" https://&lt;deine-domain&gt;/api/team-mobile/app/v1/status</code> muss <strong>410</strong> liefern. Das heißt erreichbar, ohne Anmeldung kein Zugang.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.11.9</span>
     <span class="changelog-date">28.10.2026</span>
     <span class="changelog-name"></span>
@@ -558,22 +584,6 @@ certbot renew --dry-run
   <div class="changelog-body"><h4>Hinweis</h4>
 <p>Inhaltlich gleich wie <strong>1.11.1</strong>. Die Divera-Änderungen der Beta 1.11.2 sind zurückgenommen, Divera funktioniert wieder wie vorher.</p>
 <p>Diese Version ist für Server gedacht, die die Beta installiert hatten. Mit dem normalen Update im Browser kommen sie damit zurück. Wer die Beta eingespielt hat, sollte in Einstellungen → System die <strong>Update-Adresse</strong> wieder leeren.</p>
-<h4>Einspielen</h4>
-<p>Normales Update, keine Änderung an der Konfiguration nötig.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.1</span>
-    <span class="changelog-date">26.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Korrekturen</h4>
-<ul>
-<li><strong>Kein Suchtrack mehr verloren beim Neustart einer Suche auf <code>/el</code>:</strong> Nach „Stopp“ ist das Halsband frei. Startet man den Hund danach über die EL-Ansicht neu, kommt jetzt eine kurze Rückfrage: „Mit Halsband X starten“ (das zuletzt benutzte steht zuerst) oder „Ohne Halsband starten“. Bisher lief die Suche ohne Rückfrage ohne Track. Im Monitor ist das zuletzt benutzte Halsband vorausgewählt.</li>
-<li><strong>GPS vom Team-Handy im Funkloch:</strong> Positionen bleiben im Handy und werden nachgesendet, sobald wieder Netz da ist, mit dem richtigen Zeitpunkt. Der Laufweg hat keine Lücke mehr.</li>
-<li><strong>Einsatz beenden kurz nach Mitternacht:</strong> Eine Endzeit wie 23:50 wird dem Vortag zugeordnet statt in der Zukunft zu liegen.</li>
-<li>Kann ein Team nicht gestartet werden (z. B. Hund läuft bereits in einem anderen Team), zeigt <code>/el</code> einen Hinweis.</li>
-</ul>
 <h4>Einspielen</h4>
 <p>Normales Update, keine Änderung an der Konfiguration nötig.</p></div>
 </details>
