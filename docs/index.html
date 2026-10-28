@@ -415,6 +415,20 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.11.9</span>
+    <span class="changelog-date">28.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Korrektur</h4>
+<ul>
+<li><strong>Versionsnummer:</strong> In 1.11.7 und 1.11.8 zeigten Startseite und Einstellungen noch „1.11.6“, und der Updater meldete deshalb dauerhaft „Update verfügbar“. Ab 1.11.9 stimmt die Anzeige wieder, und die Meldung verschwindet nach dem Update. Ein Test verhindert, dass die Nummern wieder auseinanderlaufen.</li>
+</ul>
+<p>Inhaltlich entspricht diese Version 1.11.8 (siehe dort).</p>
+<h4>Einspielen</h4>
+<p>Normales Update über den Browser. Danach zeigt Einstellungen → System „1.11.9“.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.11.8</span>
     <span class="changelog-date">28.10.2026</span>
     <span class="changelog-name"></span>
@@ -562,52 +576,6 @@ certbot renew --dry-run
 </ul>
 <h4>Einspielen</h4>
 <p>Normales Update, keine Änderung an der Konfiguration nötig.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.0</span>
-    <span class="changelog-date">26.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Neu</h4>
-<ul>
-<li><strong>EL-Ansicht als App</strong> (<code>/el</code>): auf Tablet und Handy installierbar („Zum Home-Bildschirm“).</li>
-</ul>
-<p>- Stabiles Wiederverbinden im Mobilfunk mit gelber Hinweisleiste. Ist die Sitzung abgelaufen, lädt die Seite automatisch neu.</p>
-<p>- Eigene Offline-Seite statt Browser-Fehler. Der Bildschirm bleibt während eines laufenden Einsatzes an.</p>
-<ul>
-<li><strong>Einsatz beenden auf Tablet und Handy</strong> (<code>/el/beenden</code>, Knopf ganz unten im EL-Dashboard): Ergebnis, Endzeit, Bemerkungen, Personal und Hunde vor Ort (vorausgewählt), GPS-Tracks im Bericht.</li>
-</ul>
-<p>- Monitor und EL-Ansicht schließen über dieselbe Logik ab.</p>
-<p>- Sind zwei Leitungsplätze gleichzeitig im Abschluss, wird nur einmal archiviert.</p>
-<ul>
-<li><strong>Suchtracks einheitlich</strong>:</li>
-</ul>
-<p>- <strong>Stopp</strong> speichert den Halsband- und Handy-Track als abgeschlossene Suche, jetzt auch auf <code>/el</code> und über die API.</p>
-<p>- <strong>Pause</strong> unterbricht nur, danach läuft derselbe Track weiter.</p>
-<p>- Jede <strong>neue Suche</strong> mit demselben Halsband bekommt eine andere Farbe.</p>
-<ul>
-<li><strong>Funkloch</strong>: Bricht die Verbindung ab, lassen sich Funksprüche und Notizen über „Funk / Notiz erfassen“ auf dem Gerät speichern. Den Knopf gibt es in der Hinweisleiste und auf der Offline-Seite.</li>
-</ul>
-<p>- Sobald die Verbindung zurück ist, werden die Einträge automatisch nachgesendet, mit Vermerk der Erfassungszeit.</p>
-<ul>
-<li><strong>Karte bei schwachem Netz</strong>:</li>
-</ul>
-<p>- Angesehene Kartenkacheln werden auf dem Gerät gespeichert.</p>
-<p>- Der Knopf <strong>„Für Funkloch sichern“</strong> (unten links in der Karte) lädt das sichtbare Einsatzgebiet vorab. Das geht für Straßen- und Topokarte, bis Zoomstufe 16.</p>
-<ul>
-<li><strong>Archiv</strong>: Die Details öffnen sich direkt unter dem gewählten Einsatz.</li>
-</ul>
-<h4>Korrekturen</h4>
-<ul>
-<li>Das Archiv übernimmt beim Abschluss jetzt auch Szenario, abgeschlossene Suchen und Vermisstendaten. Bisher fehlten sie.</li>
-</ul>
-<h4>Einspielen</h4>
-<p>Normales Update. Konfiguration und nginx bleiben unverändert.</p>
-<ul>
-<li>Die App-Funktionen (Installieren, Offline-Seite, Funkloch-Puffer, Kartenspeicher) aktualisieren sich beim nächsten Aufruf von selbst. Sie brauchen ein gültiges Zertifikat, also den Aufruf über die Domain im VPN.</li>
-<li>Auf dem Tablet nach dem Update <code>/el</code> einmal neu laden.</li>
-</ul></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>
