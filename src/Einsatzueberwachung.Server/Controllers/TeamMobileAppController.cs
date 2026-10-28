@@ -58,7 +58,7 @@ public sealed class TeamMobileAppController : ControllerBase
     public async Task<IActionResult> GetLage()
     {
         if (!TryTeam(out var teamId, out _) || _halsbaender is null) return Gone();
-        var team = _einsatzService.Teams.First(t => t.TeamId == teamId);
+        if (_einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return Gone();
         var einsatz = _einsatzService.CurrentEinsatz;
         var staffel = (await _settings.GetStaffelSettingsAsync())?.StaffelName ?? "";
         return Ok(AppLage.Erstellen(einsatz, team, staffel, _halsbaender, _einsatzService.TeamMitteilungen(teamId),
@@ -69,7 +69,7 @@ public sealed class TeamMobileAppController : ControllerBase
     public IActionResult GetTracks([FromQuery] long? seit)
     {
         if (!TryTeam(out var teamId, out _) || _halsbaender is null) return Gone();
-        var team = _einsatzService.Teams.First(t => t.TeamId == teamId);
+        if (_einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return Gone();
         return Ok(AppLage.Tracks(_einsatzService.CurrentEinsatz, team, _einsatzService, _halsbaender, seit));
     }
 
@@ -86,7 +86,7 @@ public sealed class TeamMobileAppController : ControllerBase
         if (!_statusmeldungen.ErstesMal(teamId, request.Id, jetzt))
             return Ok(new { zeit = jetzt, doppelt = true });
 
-        var team = _einsatzService.Teams.First(t => t.TeamId == teamId);
+        if (_einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return Gone();
         await _einsatzService.AddGlobalNoteWithSourceAsync($"[{team.TeamName}] {text}", team.TeamId, team.TeamName,
             "Mobile", Einsatzueberwachung.Domain.Models.Enums.GlobalNotesEntryType.Manual, "Team-App");
         return Ok(new { zeit = jetzt, doppelt = false });
@@ -96,7 +96,7 @@ public sealed class TeamMobileAppController : ControllerBase
     [HttpGet("ereignisse")]
     public async Task GetEreignisse()
     {
-        if (!TryTeam(out var teamId, out _) || _ereignisse is null)
+        if (!TryTeam(out var teamId, out var ablaufUtc) || _ereignisse is null)
         {
             Response.StatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status410Gone;
             await Response.WriteAsJsonAsync(new { mode = "stop" });
@@ -115,6 +115,14 @@ public sealed class TeamMobileAppController : ControllerBase
         {
             while (!abbruch.IsCancellationRequested)
             {
+                // Token laeuft ab (24 h): nicht mit Pings weiter offenhalten, sondern beenden
+                if (DateTime.UtcNow >= ablaufUtc)
+                {
+                    await Response.WriteAsync(TeamAppEreignisse.Format("stop", new { }), abbruch);
+                    await Response.Body.FlushAsync(abbruch);
+                    break;
+                }
+
                 using var takt = CancellationTokenSource.CreateLinkedTokenSource(abbruch);
                 takt.CancelAfter(PingIntervall);
                 string? text = null;

@@ -229,3 +229,71 @@ public class TrackingAppTeamAnsichtTests
         }
     }
 }
+
+/// <summary>Befunde der Leitung zu PR #122</summary>
+public class TrackingAppTeamAnsichtReviewTests
+{
+    private static readonly byte[] Secret = System.Security.Cryptography.RandomNumberGenerator.GetBytes(64);
+
+    [Fact]
+    public async Task HoechstensDreiVerbindungenJeTeam_AeltesteBekommtStop()
+    {
+        var einsatz = new EinsatzService();
+        var tokens = new TeamMobileTokenService(Secret, einsatz);
+        await einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Testwald", IstEinsatz = true, EinsatzDatum = new DateTime(2026, 10, 28, 9, 0, 0) });
+        var team = await einsatz.AddTeamAsync(new Team { TeamName = "Team Rex" });
+        var ereignisse = new TeamAppEreignisse(einsatz, new CollarTrackingService(einsatz), tokens);
+
+        var (_, aeltester) = ereignisse.Abonnieren(team.TeamId);
+        for (var i = 0; i < TeamAppEreignisse.MaxVerbindungenJeTeam; i++) ereignisse.Abonnieren(team.TeamId);
+
+        Assert.Equal(TeamAppEreignisse.MaxVerbindungenJeTeam, ereignisse.AnzahlVerbindungen);
+        Assert.True(aeltester.TryRead(out var letztes));
+        Assert.StartsWith("event: stop", letztes);
+        Assert.True(aeltester.Completion.IsCompleted);
+    }
+
+    [Fact]
+    public async Task OffeneVerbindung_EndetBeiAblaufDesTokens()
+    {
+        var einsatz = new EinsatzService();
+        var tokens = new TeamMobileTokenService(Secret, einsatz);
+        await einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Testwald", IstEinsatz = true, EinsatzDatum = new DateTime(2026, 10, 28, 9, 0, 0) });
+        var team = await einsatz.AddTeamAsync(new Team { TeamName = "Team Rex" });
+        var halsbaender = new CollarTrackingService(einsatz);
+        var settings = EinsatzAbschlussTests.Recorder<ISettingsService>.Create((_, _) => null);
+        var controller = new TeamMobileAppController(tokens, einsatz, settings.Proxy, NullLogger<TeamMobileAppController>.Instance,
+            halsbaender, new TeamAppEreignisse(einsatz, halsbaender, tokens), new AppStatusmeldungen());
+        var http = new DefaultHttpContext();
+        // Token laeuft in 2 s ab (ganze Sekunden im Token)
+        http.Request.Headers.Authorization = "Bearer " + tokens.IssueAppToken(team.TeamId, DateTime.UtcNow.AddSeconds(2));
+        var body = new MemoryStream();
+        http.Response.Body = body;
+        controller.ControllerContext = new ControllerContext { HttpContext = http };
+
+        var vorher = TeamMobileAppController.PingIntervall;
+        TeamMobileAppController.PingIntervall = TimeSpan.FromMilliseconds(200);
+        try
+        {
+            await controller.GetEreignisse().WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        finally
+        {
+            TeamMobileAppController.PingIntervall = vorher;
+        }
+        Assert.EndsWith("event: stop\ndata: {}\n\n", Encoding.UTF8.GetString(body.ToArray()));
+    }
+
+    [Fact]
+    public async Task Mitteilungen_ListeWirdErsetztNichtVeraendert()
+    {
+        var einsatz = new EinsatzService();
+        await einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Testwald", IstEinsatz = true, EinsatzDatum = new DateTime(2026, 10, 28, 9, 0, 0) });
+        var vorher = einsatz.CurrentEinsatz.TeamMitteilungen;
+
+        einsatz.TeamMitteilungSpeichern("t1", "Hallo");
+
+        Assert.Empty(vorher); // eine laufende Speicherung sieht weiter ihre unveraenderte Liste
+        Assert.Single(einsatz.CurrentEinsatz.TeamMitteilungen);
+    }
+}

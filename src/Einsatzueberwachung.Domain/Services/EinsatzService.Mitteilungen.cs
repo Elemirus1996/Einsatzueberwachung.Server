@@ -16,14 +16,15 @@ namespace Einsatzueberwachung.Domain.Services
             var mitteilung = new TeamMitteilung { TeamId = teamId, Text = text.Trim(), ZeitUtc = DateTime.UtcNow };
             lock (_mitteilungenLock)
             {
-                var liste = _currentEinsatz.TeamMitteilungen;
-                liste.Add(mitteilung);
+                // Neue Liste statt Aenderung der alten: Die Speicherung serialisiert EinsatzData ohne diese Sperre
+                var liste = new List<TeamMitteilung>(_currentEinsatz.TeamMitteilungen) { mitteilung };
                 var zuViel = liste.Count(m => m.TeamId == teamId) - MaxTeamMitteilungen;
                 for (var i = 0; zuViel > 0 && i < liste.Count; )
                 {
                     if (liste[i].TeamId == teamId) { liste.RemoveAt(i); zuViel--; }
                     else i++;
                 }
+                _currentEinsatz.TeamMitteilungen = liste;
             }
             TeamMitteilungGespeichert?.Invoke(mitteilung);
             return mitteilung;
