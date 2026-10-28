@@ -206,6 +206,23 @@ public class TrackingAppTests
     }
 
     [Fact]
+    public async Task NativeAnmeldung_AuchInUebung()
+    {
+        var einsatz = new EinsatzService();
+        var tokens = new TeamMobileTokenService(Secret, einsatz);
+        Assert.Null(tokens.CurrentMasterToken); // Platzhalter ohne Einsatzort gilt nicht als aktiv
+
+        await einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Übungsgelände", IstEinsatz = false, EinsatzDatum = new DateTime(2026, 10, 28, 9, 0, 0) });
+        var team = await einsatz.AddTeamAsync(new Team { TeamName = "Team Rex" });
+        Assert.NotNull(tokens.CurrentMasterToken);
+
+        var controller = Controller(einsatz, tokens, null);
+        Assert.IsType<OkObjectResult>(await controller.LoginTeams(Anmeldung(tokens.CurrentMasterToken)));
+        var antwort = JsonSerializer.SerializeToElement(((ObjectResult)controller.Login(Anmeldung(tokens.CurrentMasterToken, team.TeamId))).Value);
+        Assert.True(tokens.TryValidateAppToken(antwort.GetProperty("token").GetString()!, DateTime.UtcNow, out _, out _));
+    }
+
+    [Fact]
     public async Task NativeAnmeldung_NachEinsatzendeNichtMehr()
     {
         var (einsatz, tokens, team) = await LaufendesTeamAsync();

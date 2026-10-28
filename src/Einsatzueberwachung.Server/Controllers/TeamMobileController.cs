@@ -43,7 +43,7 @@ public sealed class TeamMobileController : ControllerBase
             return Unauthorized(new { error = "Ungültiger Master-Token oder kein aktiver Einsatz." });
 
         var einsatz = _einsatzService.CurrentEinsatz;
-        if (einsatz is not { IstEinsatz: true } || einsatz.EinsatzEnde != null)
+        if (einsatz is not { EinsatzEnde: null } || string.IsNullOrWhiteSpace(einsatz.Einsatzort))
             return NotFound(new { error = "Kein aktiver Einsatz." });
 
         var teams = _einsatzService.Teams
@@ -243,7 +243,7 @@ public sealed class TeamMobileController : ControllerBase
         if (string.IsNullOrWhiteSpace(teamId)) return Unauthorized();
 
         var einsatz = _einsatzService.CurrentEinsatz;
-        var einsatzActive = einsatz is { IstEinsatz: true } && einsatz.EinsatzEnde == null;
+        var einsatzActive = einsatz is { EinsatzEnde: null } && !string.IsNullOrWhiteSpace(einsatz.Einsatzort);
 
         var team = _einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
         if (team == null)

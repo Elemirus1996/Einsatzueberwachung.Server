@@ -10,7 +10,7 @@ Verbindliche Beschreibung für die iOS- und die Android-App ([Einsatzueberwachun
 1. Die App scannt den **bestehenden** QR-Code aus dem Monitor (Team-Dialog): `https://<server>/team/login/<Anmelde-Code>`
    (ältere Form `https://<server>/team/login?code=<Anmelde-Code>` ebenfalls annehmen) oder das Mitglied tippt Server und Code ein.
    Die App akzeptiert nur `https://`-Adressen und zeigt vor dem Anmelden den Servernamen zur Bestätigung.
-   Den Code gibt es nur während eines laufenden **Einsatzes** (nicht bei Übungen), wie auf der Team-Seite.
+   Den Code gibt es nur, solange ein Einsatz oder eine Übung läuft (Einsatzort eingetragen, nicht beendet).
 2. **Native Anmeldung** (Basis `https://<server>/api/team-mobile/app/v1`, ohne Token):
 
    `POST /login/teams` mit `{ "code": "<Anmelde-Code>" }` → Einsatz und Teamliste:

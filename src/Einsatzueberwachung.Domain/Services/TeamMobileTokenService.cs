@@ -160,9 +160,9 @@ public sealed class TeamMobileTokenService : ITeamMobileTokenService, IDisposabl
     private void OnEinsatzChanged()
     {
         var current = _einsatzService.CurrentEinsatz;
-        // Wie EinsatzService: ohne Einsatzort gibt es keinen Einsatz. Das leere Platzhalter-Objekt beim Start hat
-        // IstEinsatz = true – ohne diese Pruefung galt es als aktiv, und die Generation hing an seinem Erzeugungszeitpunkt.
-        var isActive = current is { IstEinsatz: true, EinsatzEnde: null } && !string.IsNullOrWhiteSpace(current.Einsatzort);
+        // Wie EinsatzService: ohne Einsatzort gibt es keinen Einsatz (das leere Platzhalter-Objekt beim Start gilt
+        // nicht als aktiv). Einsatz und Uebung gleichermassen – Teams melden sich auch in Uebungen an.
+        var isActive = current is { EinsatzEnde: null } && !string.IsNullOrWhiteSpace(current.Einsatzort);
 
         bool changed = false;
         lock (_lock)

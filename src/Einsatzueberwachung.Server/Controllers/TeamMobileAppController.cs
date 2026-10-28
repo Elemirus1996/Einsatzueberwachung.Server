@@ -145,12 +145,12 @@ public sealed class TeamMobileAppController : ControllerBase
         return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = gespeichert });
     }
 
-    // Wie /team/login: nur mit gueltigem Anmelde-Code und waehrend eines laufenden Einsatzes
+    // Wie /team/login: nur mit gueltigem Anmelde-Code und waehrend eines laufenden Einsatzes oder einer Uebung
     private bool AnmeldeCodeGueltig(string? code)
     {
         var bereinigt = (code ?? "").Replace(" ", "").ToUpperInvariant();
         if (!_tokenService.ValidateMasterToken(bereinigt)) return false;
-        return _einsatzService.CurrentEinsatz is { IstEinsatz: true, EinsatzEnde: null };
+        return _einsatzService.CurrentEinsatz is { EinsatzEnde: null } einsatz && !string.IsNullOrWhiteSpace(einsatz.Einsatzort);
     }
 
     private IActionResult AnmeldungAbgelehnt() =>
