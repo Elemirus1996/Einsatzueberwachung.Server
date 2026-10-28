@@ -155,6 +155,66 @@ public class TrackingAppTests
 
         Assert.IsType<BadRequestObjectResult>(await Controller(einsatz, tokens, token).PostPositions(request));
     }
+
+    private static TeamMobileAppController.AppLoginRequest Anmeldung(string? code, string? teamId = null) =>
+        new() { Code = code, TeamId = teamId };
+
+    [Fact]
+    public async Task NativeAnmeldung_CodeLiefertTeamsUndTokenFuerConfig()
+    {
+        var (einsatz, tokens, team) = await LaufendesTeamAsync();
+        var controller = Controller(einsatz, tokens, null);
+
+        var liste = JsonSerializer.SerializeToElement(((ObjectResult)await controller.LoginTeams(Anmeldung(tokens.CurrentMasterToken))).Value);
+        Assert.Equal("Vermisste Person · Testwald", liste.GetProperty("einsatz").GetString());
+        Assert.Equal("RHS Test", liste.GetProperty("staffel").GetString());
+        var eintrag = Assert.Single(liste.GetProperty("teams").EnumerateArray());
+        Assert.Equal(team.TeamId, eintrag.GetProperty("teamId").GetString());
+        Assert.Equal("Team Rex", eintrag.GetProperty("teamName").GetString());
+
+        // Code wie auf der Anmeldeseite: Leerzeichen und Kleinschreibung egal
+        var code = string.Join(" ", tokens.CurrentMasterToken!.ToLowerInvariant().Chunk(4).Select(c => new string(c)));
+        var antwort = JsonSerializer.SerializeToElement(((ObjectResult)controller.Login(Anmeldung(code, team.TeamId))).Value);
+        Assert.Equal("team", antwort.GetProperty("rolle").GetString());
+        Assert.Equal(team.TeamId, antwort.GetProperty("teamId").GetString());
+        var token = antwort.GetProperty("token").GetString()!;
+        Assert.True(tokens.TryValidateAppToken(token, DateTime.UtcNow, out _, out var ablauf));
+        Assert.InRange(ablauf, DateTime.UtcNow.AddHours(23.9), DateTime.UtcNow.AddHours(24));
+
+        var config = JsonSerializer.SerializeToElement(((ObjectResult)await Controller(einsatz, tokens, token).GetConfig()).Value);
+        Assert.Equal("Team Rex", config.GetProperty("teamName").GetString());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("FALSCHERCODE2345")]
+    public async Task NativeAnmeldung_FalscherCodeWirdAbgelehnt(string? code)
+    {
+        var (einsatz, tokens, team) = await LaufendesTeamAsync();
+        var controller = Controller(einsatz, tokens, null);
+        Assert.IsType<UnauthorizedObjectResult>(await controller.LoginTeams(Anmeldung(code)));
+        Assert.IsType<UnauthorizedObjectResult>(controller.Login(Anmeldung(code, team.TeamId)));
+    }
+
+    [Fact]
+    public async Task NativeAnmeldung_UnbekanntesTeam()
+    {
+        var (einsatz, tokens, _) = await LaufendesTeamAsync();
+        Assert.IsType<NotFoundObjectResult>(Controller(einsatz, tokens, null).Login(Anmeldung(tokens.CurrentMasterToken, "gibt-es-nicht")));
+        Assert.IsType<NotFoundObjectResult>(Controller(einsatz, tokens, null).Login(Anmeldung(tokens.CurrentMasterToken, null)));
+    }
+
+    [Fact]
+    public async Task NativeAnmeldung_NachEinsatzendeNichtMehr()
+    {
+        var (einsatz, tokens, team) = await LaufendesTeamAsync();
+        var code = tokens.CurrentMasterToken;
+        await einsatz.EndEinsatzAsync();
+        var controller = Controller(einsatz, tokens, null);
+        Assert.IsType<UnauthorizedObjectResult>(await controller.LoginTeams(Anmeldung(code)));
+        Assert.IsType<UnauthorizedObjectResult>(controller.Login(Anmeldung(code, team.TeamId)));
+    }
 }
 
 /// <summary>Handy-Tab der Karte: Handy-Daten eines Teams entfernen</summary>

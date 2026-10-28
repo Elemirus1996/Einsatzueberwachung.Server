@@ -7,10 +7,25 @@ Verbindliche Beschreibung für die iOS- und die Android-App ([Einsatzueberwachun
 
 ### 1. Anmeldung (wie bisher per QR-Code)
 
-1. Die App scannt den **bestehenden** QR-Code aus dem Monitor (Team-Dialog): `https://<server>/team/login?code=<Anmelde-Code>`.
-   Sie akzeptiert nur `https://`-Adressen und zeigt vor dem Öffnen den Servernamen zur Bestätigung.
-2. Die App öffnet die Adresse in ihrer WebView. Das Mitglied meldet sich wie gewohnt an und wählt sein Team.
-3. Die Team-Seite erkennt die App und übergibt die Zugangsdaten an die native Ortung:
+1. Die App scannt den **bestehenden** QR-Code aus dem Monitor (Team-Dialog): `https://<server>/team/login/<Anmelde-Code>`
+   (ältere Form `https://<server>/team/login?code=<Anmelde-Code>` ebenfalls annehmen) oder das Mitglied tippt Server und Code ein.
+   Die App akzeptiert nur `https://`-Adressen und zeigt vor dem Anmelden den Servernamen zur Bestätigung.
+   Den Code gibt es nur während eines laufenden **Einsatzes** (nicht bei Übungen), wie auf der Team-Seite.
+2. **Native Anmeldung** (Basis `https://<server>/api/team-mobile/app/v1`, ohne Token):
+
+   `POST /login/teams` mit `{ "code": "<Anmelde-Code>" }` → Einsatz und Teamliste:
+   ```json
+   { "apiVersion": 1, "einsatz": "Vermisste Person · Testwald", "staffel": "RHS Musterstadt",
+     "teams": [ { "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "…" } ] }
+   ```
+   `POST /login` mit `{ "code": "<Anmelde-Code>", "teamId": "…" }` → Token:
+   ```json
+   { "apiVersion": 1, "rolle": "team", "token": "a1.…", "teamId": "…", "teamName": "Team Rex", "expiresAt": "2026-10-29T10:00:00Z" }
+   ```
+   Leerzeichen und Kleinschreibung im Code sind egal. Falscher Code oder kein laufender Einsatz → `401`, unbekanntes Team → `404`.
+   Der Code steht im Body, nicht in der Adresse, damit er nicht in Zugriffsprotokollen landet.
+3. Alternativ (WebView, bisher): Die App öffnet die Adresse aus dem QR-Code, das Mitglied meldet sich auf der Team-Seite an,
+   und die Seite übergibt die Zugangsdaten an die App:
    - iOS: `window.webkit.messageHandlers.einsatzApp.postMessage(json)` → `WKScriptMessageHandler` mit dem Namen **`einsatzApp`**
    - Android: `window.EinsatzAppAndroid.ortungUebergeben(json)` → `@JavascriptInterface` mit dem Namen **`EinsatzAppAndroid`**
 
@@ -24,7 +39,7 @@ Alle Anfragen: `Authorization: Bearer <token>`, Basis `https://<server>/api/team
 
 ### 2. `GET /config`
 
-Nach der Übergabe und bei jedem App-Start.
+Nach der Anmeldung und bei jedem App-Start.
 
 ```json
 {
