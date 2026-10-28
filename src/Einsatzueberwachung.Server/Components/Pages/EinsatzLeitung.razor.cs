@@ -20,6 +20,8 @@ public partial class EinsatzLeitung : IDisposable
     [Inject] private TeamSucheService TeamSuche { get; set; } = default!;
     [CascadingParameter(Name = "LeitungsGeraet")] private string? Geraet { get; set; }
     [Inject] private ITimeService TimeService { get; set; } = default!;
+    [Inject] private ElAppTokenService ElAppTokens { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private string _activeTab = "uebersicht";
     private string _noteFilter = "alle";
@@ -170,6 +172,26 @@ public partial class EinsatzLeitung : IDisposable
         EinsatzService.ElNotizAdded += OnStateChangedDirect;
     }
 
+    // Tracking-App (#110): Laeuft /el in der App, bekommt die native Ortung ein EL-Token. Diese Seite ist nur im VPN
+    // und nur nach Anmeldung erreichbar – mehr Zugang gibt das Token nicht (nur api/el/app/v1).
+    private async Task AnAppUebergebenAsync()
+    {
+        bool inApp;
+        try { inApp = await JS.InvokeAsync<bool>("teamApp.istApp"); } catch { return; }
+        if (!inApp) return;
+
+        var ablaufUtc = DateTime.UtcNow + ElAppTokenService.Laufzeit;
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            apiVersion = Einsatzueberwachung.Server.Controllers.TeamMobileAppController.ApiVersion,
+            rolle = "el",
+            server = Navigation.BaseUri.TrimEnd('/'),
+            token = ElAppTokens.Ausstellen(ablaufUtc),
+            expiresAt = ablaufUtc
+        });
+        try { await JS.InvokeAsync<bool>("teamApp.uebergeben", json); } catch { /* App nicht bereit */ }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await SyncOutboxTeamsAsync();
@@ -177,6 +199,7 @@ public partial class EinsatzLeitung : IDisposable
         try
         {
             await JS.InvokeVoidAsync("elDashboard.startClock", "el-live-clock");
+            await AnAppUebergebenAsync();
             // Tablet/Handy: Bildschirm waehrend eines laufenden Einsatzes nicht automatisch sperren
             await JS.InvokeVoidAsync("layoutTools.keepScreenOn", HasActiveEinsatz);
             _soundEnabled = await JS.InvokeAsync<bool>("elDashboard.getPref", "sound", false);

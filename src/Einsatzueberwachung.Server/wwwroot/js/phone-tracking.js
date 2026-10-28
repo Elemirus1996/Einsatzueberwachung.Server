@@ -38,6 +38,7 @@ window.PhoneTracking = (function () {
         }
         // Zustand aus altem Seitenbesuch zurücksetzen
         Object.keys(_markers).forEach(k => delete _markers[k]);
+        Object.keys(_elMarkers).forEach(k => delete _elMarkers[k]);
         Object.keys(_tracks).forEach(k => delete _tracks[k]);
     }
 
@@ -196,5 +197,51 @@ window.PhoneTracking = (function () {
         marker.openPopup();
     }
 
-    return { initialize, updateMarker, loadTrack, appendTrackPoint, clearTrack, toggleVisibility, removeMarker, clearAll, setOptions, zoomToTeam };
+    // ── Einsatzleitung (Tracking-App, #110): eigener, immer sichtbarer Layer ──────────────────
+    // geraet -> marker
+    const _elMarkers = {};
+
+    function _elLayer(mapData) {
+        if (!mapData.elLayer) {
+            mapData.elLayer = new L.FeatureGroup();
+            mapData.map.addLayer(mapData.elLayer);
+        }
+        return mapData.elLayer;
+    }
+
+    function setElPosition(mapId, geraet, lat, lng, timestamp, akku) {
+        const mapData = _getMapData(mapId);
+        if (!mapData) return;
+        const time = timestamp
+            ? new Date(timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+            : '--:--';
+        const popup = `<strong>Einsatzleitung · ${escapeHtml(geraet)}</strong><br>` +
+                      `<small>Stand: ${time}${akku != null ? ' · Akku ' + akku + ' %' : ''}</small>`;
+        if (_elMarkers[geraet]) {
+            _elMarkers[geraet].setLatLng([lat, lng]);
+            _elMarkers[geraet].setPopupContent(popup);
+            return;
+        }
+        const icon = L.divIcon({
+            className: '',
+            html: '<div class="eu-el-marker" title="Einsatzleitung">EL</div>',
+            iconSize: [30, 22],
+            iconAnchor: [15, 11],
+            popupAnchor: [0, -12]
+        });
+        const marker = L.marker([lat, lng], { icon, zIndexOffset: 900 })
+            .bindPopup(popup)
+            .bindTooltip(escapeHtml(geraet), { direction: 'bottom', offset: [0, 10] });
+        marker.addTo(_elLayer(mapData));
+        _elMarkers[geraet] = marker;
+    }
+
+    function clearElPositions(mapId) {
+        const mapData = _getMapData(mapId);
+        if (mapData && mapData.elLayer) mapData.elLayer.clearLayers();
+        Object.keys(_elMarkers).forEach(k => delete _elMarkers[k]);
+    }
+
+    return { initialize, updateMarker, loadTrack, appendTrackPoint, clearTrack, toggleVisibility, removeMarker, clearAll, setOptions, zoomToTeam,
+        setElPosition, clearElPositions };
 })();

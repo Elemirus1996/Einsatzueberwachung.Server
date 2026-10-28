@@ -345,6 +345,7 @@ else
         var json = System.Text.Json.JsonSerializer.Serialize(new
         {
             apiVersion = Einsatzueberwachung.Server.Controllers.TeamMobileAppController.ApiVersion,
+            rolle = "team",
             server = Navigation.BaseUri.TrimEnd('/'),
             token = TokenService.IssueAppToken(_teamId, ablaufUtc),
             teamName = _team?.TeamName ?? "",

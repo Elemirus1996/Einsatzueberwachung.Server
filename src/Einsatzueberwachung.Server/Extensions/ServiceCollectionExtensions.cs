@@ -169,6 +169,9 @@ internal static class ServiceCollectionExtensions
         var secret = LoadOrCreateTeamMobileSecret();
         services.AddSingleton<ITeamMobileTokenService>(sp =>
             new TeamMobileTokenService(secret, sp.GetRequiredService<IEinsatzService>()));
+        // Tracking-App, Rolle Einsatzleitung (#110)
+        services.AddSingleton(sp => new ElAppTokenService(secret, sp.GetRequiredService<LeitungAuthStore>()));
+        services.AddSingleton<ElPositionService>();
 
         return services;
     }

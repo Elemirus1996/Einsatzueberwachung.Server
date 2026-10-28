@@ -267,6 +267,11 @@ public partial class EinsatzKarte
                 CollarTrackingService.TrackSnapshotSaved += OnTrackSnapshotSaved;
                 EinsatzService.TeamPhoneLocationChanged += OnTeamPhoneLocationChanged;
                 EinsatzService.TeamPhoneLocationRemoved += OnTeamPhoneLocationRemoved;
+
+                // Einsatzleitung aus der Tracking-App (#110)
+                foreach (var el in ElPositionen.Aktuell) await ZeigeElAsync(el);
+                ElPositionen.Geaendert += OnElPositionGeaendert;
+                ElPositionen.Geleert += OnElPositionenGeleert;
                 EinsatzService.TeamPhoneTrackPointAdded += OnTeamPhoneTrackPointAdded;
                 EinsatzService.TrackSnapshotAdded += OnTrackSnapshotSaved;
 
@@ -1167,6 +1172,26 @@ public partial class EinsatzKarte
         });
     }
 
+    // ── Einsatzleitung auf der Karte (Tracking-App, #110) ─────────────────
+    [Inject] private ElPositionService ElPositionen { get; set; } = default!;
+
+    private Task ZeigeElAsync(ElPosition el) =>
+        JSRuntime.InvokeVoidAsync("PhoneTracking.setElPosition", "einsatzMap", el.Geraet, el.Latitude, el.Longitude, el.Zeit, el.BatteryPercent).AsTask();
+
+    private void OnElPositionGeaendert(ElPosition el) => _ = InvokeAsync(async () =>
+    {
+        try { if (_mapInitialized) await ZeigeElAsync(el); }
+        catch (ObjectDisposedException) { }
+        catch (JSDisconnectedException) { }
+    });
+
+    private void OnElPositionenGeleert() => _ = InvokeAsync(async () =>
+    {
+        try { if (_mapInitialized) await JSRuntime.InvokeVoidAsync("PhoneTracking.clearElPositions", "einsatzMap"); }
+        catch (ObjectDisposedException) { }
+        catch (JSDisconnectedException) { }
+    });
+
     // Suche beendet: Handy nicht mehr als live zeigen (Traccar sendet evtl. weiter)
     private void OnTeamPhoneLocationRemoved(string teamId)
     {
@@ -1641,6 +1666,8 @@ public partial class EinsatzKarte
             CollarTrackingService.CollarHistoryCleared -= OnCollarHistoryCleared;
             CollarTrackingService.TrackSnapshotSaved -= OnTrackSnapshotSaved;
             EinsatzService.TeamPhoneLocationChanged -= OnTeamPhoneLocationChanged;
+            ElPositionen.Geaendert -= OnElPositionGeaendert;
+            ElPositionen.Geleert -= OnElPositionenGeleert;
             EinsatzService.TeamPhoneLocationRemoved -= OnTeamPhoneLocationRemoved;
             EinsatzService.TeamPhoneTrackPointAdded -= OnTeamPhoneTrackPointAdded;
             EinsatzService.TrackSnapshotAdded -= OnTrackSnapshotSaved;

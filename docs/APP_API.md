@@ -15,7 +15,7 @@ Verbindliche Beschreibung für die iOS- und die Android-App ([Einsatzueberwachun
    - Android: `window.EinsatzAppAndroid.ortungUebergeben(json)` → `@JavascriptInterface` mit dem Namen **`EinsatzAppAndroid`**
 
    ```json
-   { "apiVersion": 1, "server": "https://einsatz.example.org", "token": "a1.…", "teamName": "Team Rex", "expiresAt": "2026-10-29T10:00:00Z" }
+   { "apiVersion": 1, "rolle": "team", "server": "https://einsatz.example.org", "token": "a1.…", "teamName": "Team Rex", "expiresAt": "2026-10-29T10:00:00Z" }
    ```
    Die App übernimmt nur Übergaben, deren `server` mit der Adresse aus dem QR-Code übereinstimmt.
 4. Das Token ist an Team und Einsatz gebunden und läuft spätestens nach 24 h ab. Es gehört in Keychain bzw. Keystore.
@@ -83,4 +83,32 @@ Server-Logik: Suche läuft → `track`; Kurzpause, Suche nicht gestartet oder be
 
 ## Rolle Einsatzleitung
 
-Folgt (Phase 1, zweiter Teil): `api/el/app/v1/` nur aus dem VPN, Position der Einsatzleitung für die Karte im ELW.
+Zweck: Der Führungsassistent sieht auf der Einsatzkarte, wo die Einsatzleitung ist (roter Marker „EL“ mit Gerätename).
+
+### 1. Anmeldung (wie bisher)
+
+1. WireGuard-VPN ist aktiv. Die App öffnet die **interne** Adresse des Servers (vom Nutzer einmal eingegeben, z. B. aus dem VPN-QR-Code) und zeigt `/el`.
+   Ohne VPN ist die Adresse nicht erreichbar → Hinweis „WireGuard einschalten“.
+2. Anmeldung in der WebView mit dem Staffel-Passwort wie im Browser.
+3. Die EL-Ansicht übergibt über dieselbe Brücke wie die Team-Seite:
+   ```json
+   { "apiVersion": 1, "rolle": "el", "server": "https://einsatz.intern", "token": "e1.…", "expiresAt": "…" }
+   ```
+   Die Team-Übergabe trägt `"rolle": "team"`. Die App übernimmt nur Übergaben, deren `server` der geöffneten Adresse entspricht.
+4. Das Token gilt 24 h und nur, solange das Staffel-Passwort nicht geändert wird. Es erlaubt ausschließlich die zwei Endpunkte unten.
+
+Basis `https://<interne Adresse>/api/el/app/v1`, Anmeldung `Authorization: Bearer <token>`.
+Am öffentlichen Zugang sind diese Pfade gesperrt (404).
+
+### 2. `POST /positions` und `GET /status`
+
+Format wie bei der Team-Rolle (`positions`-Liste, Antwort mit `mode`, `intervalSec` = 30, `uploadEverySec` = 60, `pauseCheckSec`, `expiresAt`).
+Der Server zeigt die jeweils neueste Position je Gerät; der Gerätename kommt aus den VPN-Geräten (Einstellungen → VPN-Geräte).
+
+| Zustand | `mode` |
+|---|---|
+| Einsatz oder Übung läuft | `track` |
+| kein Einsatz | `pause` – GPS aus, angemeldet bleiben; beim nächsten Einsatz ohne Eingabe wieder `track` |
+| Token ungültig, abgelaufen, Passwort geändert | 410 `stop` – Token löschen, EL-Rolle neu anmelden |
+
+Die Position der Einsatzleitung wird nicht gespeichert und erscheint nicht im Bericht. Bei Einsatzende verschwindet der Marker.
