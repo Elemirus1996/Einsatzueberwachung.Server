@@ -170,6 +170,6 @@ public class LagebewusstseinTests
         Assert.True(test.TryVermerke(kennung, 51, 7, 5, 80, "JSON", jetzt));
         Assert.Equal(80, test.LetzterEmpfang!.BatteryPercent);
         Assert.False(test.TryVermerke(kennung, 51, 7, 5, 80, "JSON", jetzt.AddHours(2)));
-        Assert.Contains("id=" + kennung, TraccarTestService.EinrichtungsLink("https://x.example/api/team-mobile/traccar", kennung));
+        Assert.Contains("id=" + kennung, TraccarTestService.EinrichtungsLink("https://x.example/api/team-mobile/traccar", kennung, new Einsatzueberwachung.Domain.Models.AppSettings()));
     }
 }

@@ -30,5 +30,15 @@ public class AppSettingsValidator : AbstractValidator<AppSettings>
         RuleFor(s => s.PhoneNoSignalTimeoutSeconds)
             .InclusiveBetween(60, 1800)
             .WithMessage("Handy-Funkstille muss zwischen 1 und 30 Minuten liegen");
+
+        RuleFor(s => s.TraccarGenauigkeit)
+            .Must(g => g is "highest" or "high" or "medium" or "low")
+            .WithMessage("Unbekannte Traccar-Genauigkeit");
+        RuleFor(s => s.TraccarIntervallSekunden)
+            .InclusiveBetween(5, 300)
+            .WithMessage("Traccar-Intervall muss zwischen 5 und 300 Sekunden liegen");
+        RuleFor(s => s.TraccarMindestabstandMeter)
+            .InclusiveBetween(0, 500)
+            .WithMessage("Traccar-Mindestabstand muss zwischen 0 und 500 Metern liegen");
     }
 }

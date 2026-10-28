@@ -236,6 +236,53 @@
                 </div>
 
                 <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-battery-half me-1"></i>Traccar auf den Team-Handys</h3>
+                    <p class="cfg-help mb-2">
+                        Gilt für den Link „Mit diesem Einsatz verbinden“ auf der Team-Seite. Traccar übernimmt die Werte bei jedem
+                        Antippen neu; danach kann der Server die App nicht mehr umstellen. Sparsame Werte sorgen dafür, dass ein
+                        nach dem Einsatz vergessenes Traccar kaum Akku kostet.
+                    </p>
+                    <div class="cfg-grid cfg-grid-2">
+                        <div class="cfg-field">
+                            <label class="cfg-label">Genauigkeit</label>
+                            <InputSelect class="cfg-input" @bind-Value="_appSettings.TraccarGenauigkeit">
+                                <option value="highest">Höchste (höchster Akkuverbrauch)</option>
+                                <option value="high">Hoch (empfohlen)</option>
+                                <option value="medium">Mittel</option>
+                            </InputSelect>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label">Position senden alle</label>
+                            <InputSelect class="cfg-input" @bind-Value="_appSettings.TraccarIntervallSekunden">
+                                <option value="10">10 Sekunden</option>
+                                <option value="20">20 Sekunden (empfohlen)</option>
+                                <option value="30">30 Sekunden</option>
+                                <option value="60">60 Sekunden</option>
+                            </InputSelect>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label">Mindestabstand</label>
+                            <InputSelect class="cfg-input" @bind-Value="_appSettings.TraccarMindestabstandMeter">
+                                <option value="5">5 m</option>
+                                <option value="10">10 m (empfohlen)</option>
+                                <option value="25">25 m</option>
+                            </InputSelect>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label">Akku sparen</label>
+                            <label class="d-flex align-items-center gap-2">
+                                <InputCheckbox @bind-Value="_appSettings.TraccarStillstandErkennen" />
+                                Ortung drosseln, wenn das Handy stillliegt (empfohlen)
+                            </label>
+                            <label class="d-flex align-items-center gap-2">
+                                <InputCheckbox @bind-Value="_appSettings.TraccarWachhalten" />
+                                Handy wachhalten (nur bei Aussetzern auf älteren Android-Geräten, kostet viel Akku)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cfg-section">
                     <h3 class="cfg-sub-header"><i class="bi bi-pin-map-fill me-1"></i>Karten-Marker</h3>
                     <div class="cfg-grid cfg-grid-2">
                         <div class="cfg-field">

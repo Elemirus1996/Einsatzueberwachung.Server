@@ -1095,7 +1095,7 @@ private async Task SetDesignModeAsync(bool darkMode)
             : Navigation.BaseUri;
         _traccarTestEndpoint = basis.TrimEnd('/') + "/api/team-mobile/traccar";
         _traccarTestKennung = TraccarTest.NeueKennung(DateTime.UtcNow);
-        _traccarTestLink = TraccarTestService.EinrichtungsLink(_traccarTestEndpoint, _traccarTestKennung);
+        _traccarTestLink = TraccarTestService.EinrichtungsLink(_traccarTestEndpoint, _traccarTestKennung, _appSettings);
         _traccarTestQr = GenerateQrDataUrl(_traccarTestLink);
         if (!_traccarTestAbonniert)
         {

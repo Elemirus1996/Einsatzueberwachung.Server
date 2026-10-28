@@ -58,9 +58,7 @@ public sealed class TraccarTestService
         return true;
     }
 
-    /// <summary>Einrichtungs-Link fuer die Traccar-App (wie auf der Team-Seite)</summary>
-    public static string EinrichtungsLink(string endpoint, string kennung) =>
-        "org.traccar.client://?url=" + Uri.EscapeDataString(endpoint)
-        + "&id=" + Uri.EscapeDataString(kennung)
-        + "&accuracy=highest&interval=10&distance=5&angle=30&buffer=true&wakelock=true&stop_detection=false";
+    /// <summary>Einrichtungs-Link fuer die Traccar-App – dieselben Werte wie auf der Team-Seite</summary>
+    public static string EinrichtungsLink(string endpoint, string kennung, Einsatzueberwachung.Domain.Models.AppSettings einstellungen) =>
+        TraccarProtocol.EinrichtungsLink(endpoint, kennung, einstellungen);
 }

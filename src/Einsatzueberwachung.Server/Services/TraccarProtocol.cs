@@ -9,6 +9,24 @@ namespace Einsatzueberwachung.Server.Services;
 /// </summary>
 public static class TraccarProtocol
 {
+    /// <summary>
+    /// Einrichtungslink fuer Traccar Client (Team-Seite und Traccar-Test). Die Werte kommen aus den Einstellungen –
+    /// Traccar uebernimmt sie bei jedem Antippen neu; danach laesst sich die App vom Server nicht mehr umstellen.
+    /// </summary>
+    public static string EinrichtungsLink(string endpoint, string id, Einsatzueberwachung.Domain.Models.AppSettings einstellungen)
+    {
+        var genauigkeit = einstellungen.TraccarGenauigkeit is "highest" or "high" or "medium" or "low"
+            ? einstellungen.TraccarGenauigkeit : "high";
+        return "org.traccar.client://?url=" + Uri.EscapeDataString(endpoint)
+            + "&id=" + Uri.EscapeDataString(id)
+            + "&accuracy=" + genauigkeit
+            + "&interval=" + Math.Clamp(einstellungen.TraccarIntervallSekunden, 5, 300).ToString(CultureInfo.InvariantCulture)
+            + "&distance=" + Math.Clamp(einstellungen.TraccarMindestabstandMeter, 0, 500).ToString(CultureInfo.InvariantCulture)
+            + "&angle=30&buffer=true"
+            + "&wakelock=" + (einstellungen.TraccarWachhalten ? "true" : "false")
+            + "&stop_detection=" + (einstellungen.TraccarStillstandErkennen ? "true" : "false");
+    }
+
     public sealed record Position(string DeviceId, double Latitude, double Longitude, DateTime? TimestampUtc, double? Accuracy, int? BatteryPercent = null);
 
     public static Position? Parse(Func<string, string?> value)

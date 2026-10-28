@@ -91,6 +91,17 @@ namespace Einsatzueberwachung.Domain.Models
         /// <summary>Team-Handy (Traccar/Team-Seite): Warnung, wenn während der Suche so lange keine Position kommt</summary>
         public int PhoneNoSignalTimeoutSeconds { get; set; }
 
+        // Traccar Client auf den Team-Handys – gilt fuer den Einrichtungslink, der bei jedem Einsatz neu angetippt wird.
+        // Sparsam voreingestellt (#110): ein vergessenes Traccar kostet nach dem Einsatz kaum Akku.
+        /// <summary>highest | high | medium | low</summary>
+        public string TraccarGenauigkeit { get; set; } = "high";
+        public int TraccarIntervallSekunden { get; set; } = 20;
+        public int TraccarMindestabstandMeter { get; set; } = 10;
+        /// <summary>Liegt das Handy still, drosselt Traccar die Ortung (wichtigster Akku-Hebel nach dem Einsatz)</summary>
+        public bool TraccarStillstandErkennen { get; set; } = true;
+        /// <summary>Prozessor wachhalten – zuverlaessiger auf manchen Android-Geraeten, kostet deutlich Akku</summary>
+        public bool TraccarWachhalten { get; set; }
+
         // Karten-Marker Symbole
         // Collar: "paw" | "dog" | "bone" | "dot" | "crosshairs" | "location-arrow"
         // Human:  "phone" | "person" | "person_walking" | "radio" | "dot"

@@ -95,7 +95,18 @@ else
             </div>
         }
 
-        @if (_traccarHinweis is not null && !_einsatzEnded)
+        @if (_traccarHinweis == "ende")
+        {
+            @* Einsatz beendet: Traccar laeuft sonst weiter – der Server kann die App nicht selbst stoppen (#110) *@
+            <div class="alert alert-danger m-2 mb-0 text-center" role="alert">
+                <div class="fw-bold fs-5 mb-1"><i class="bi bi-stop-circle-fill me-1"></i>Einsatz beendet</div>
+                <div class="small mb-2">Traccar sendet sonst weiter und verbraucht Akku.</div>
+                <a class="btn btn-danger btn-lg w-100" href="org.traccar.client://action/stop" @onclick="() => _traccarHinweis = null">
+                    Ortung jetzt beenden
+                </a>
+            </div>
+        }
+        else if (_traccarHinweis is not null && !_einsatzEnded)
         {
             @* Suche beendet/gestartet: Traccar laeuft unabhaengig vom Browser und laesst sich nur per Tipp steuern *@
             <div class="alert @(_traccarHinweis == "stop" ? "alert-warning" : "alert-success") d-flex align-items-center gap-2 m-2 mb-0 py-2" role="alert">
@@ -288,9 +299,8 @@ else
             if (string.IsNullOrWhiteSpace(_teamId)) return "#";
             var endpoint = Navigation.BaseUri.TrimEnd('/') + "/api/team-mobile/traccar";
             var token = TokenService.IssueTeamCookieValue(_teamId);
-            return "org.traccar.client://?url=" + Uri.EscapeDataString(endpoint)
-                + "&id=" + Uri.EscapeDataString(token)
-                + "&accuracy=highest&interval=10&distance=5&angle=30&buffer=true&wakelock=true&stop_detection=false";
+            // Sparsame Werte aus den Einstellungen (#110) – werden bei jedem Einsatz neu uebernommen
+            return Einsatzueberwachung.Server.Services.TraccarProtocol.EinrichtungsLink(endpoint, token, _einstellungen);
         }
     }
     private Team? _team;
@@ -318,8 +328,11 @@ else
     private int? _phoneGpsErrorCode;
     private bool _requestingGps;
 
+    private AppSettings _einstellungen = new();
+
     protected override async Task OnInitializedAsync()
     {
+        _einstellungen = await SettingsService.GetAppSettingsAsync();
         if (ApplicationState.TryTakeFromJson<string>("team-mobile-id", out var persistedId)
             && !string.IsNullOrWhiteSpace(persistedId))
         {
@@ -450,6 +463,7 @@ else
         _selfRef = DotNetObjectReference.Create(this);
         try { await JS.InvokeVoidAsync("teamMobileMap.startWatchingUser", _selfRef); } catch { /* ignore */ }
         try { _traccarGenutzt = await JS.InvokeAsync<bool>("teamTraccar.genutzt"); } catch { /* ignore */ }
+        if (_einsatzEnded && _traccarGenutzt) ZeigeTraccarHinweis("ende");
 
         // Direkt an Domain-Events andocken
         _collarHandler = OnCollarLocation;
@@ -591,6 +605,7 @@ else
         _ = InvokeAsync(() =>
         {
             _einsatzEnded = true;
+            if (_traccarGenutzt) ZeigeTraccarHinweis("ende");
             StateHasChanged();
         });
     }
