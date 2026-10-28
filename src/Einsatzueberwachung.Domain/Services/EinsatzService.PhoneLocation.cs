@@ -119,6 +119,18 @@ namespace Einsatzueberwachung.Domain.Services
             }
         }
 
+        public bool EntferneHandyDaten(string teamId)
+        {
+            if (string.IsNullOrWhiteSpace(teamId)) return false;
+            if (_teams.FirstOrDefault(t => t.TeamId == teamId) is { IsRunning: true }) return false;
+
+            ClearPhoneTrackHistory(teamId);
+            lock (_phoneLocationsLock) _phoneLocations.Remove(teamId);
+            // Immer melden – Karten raeumen auf, die Speicherung schreibt (Eintrag kommt nach Neustart nicht zurueck)
+            try { TeamPhoneLocationRemoved?.Invoke(teamId); } catch { /* Subscriber-Fehler ignorieren */ }
+            return true;
+        }
+
         public void ClearPhoneTrackHistory(string teamId)
         {
             lock (_phoneLocationsLock)

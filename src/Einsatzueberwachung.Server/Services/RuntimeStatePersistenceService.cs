@@ -321,6 +321,7 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
         // Live-Verläufe: Halsband-GPS und Telefon-GPS während laufender Suche persistieren
         _collarTrackingService.CollarLocationReceived += OnCollarLocationDirty;
         _einsatzService.TeamPhoneTrackPointAdded += OnPhoneTrackPointDirty;
+        _einsatzService.TeamPhoneLocationRemoved += OnPhoneRemovedDirty;
     }
 
     private void Unsubscribe()
@@ -334,6 +335,7 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
         _einsatzService.CompletedSearchUpdated -= OnCompletedSearchDirty;
         _collarTrackingService.CollarLocationReceived -= OnCollarLocationDirty;
         _einsatzService.TeamPhoneTrackPointAdded -= OnPhoneTrackPointDirty;
+        _einsatzService.TeamPhoneLocationRemoved -= OnPhoneRemovedDirty;
     }
 
     private void OnDirty() => _isDirty = true;
@@ -342,5 +344,6 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
     private void OnTrackDirty(Einsatzueberwachung.Domain.Models.TeamTrackSnapshot _) => _isDirty = true;
     private void OnCompletedSearchDirty(Einsatzueberwachung.Domain.Models.CompletedSearch _) => _isDirty = true;
     private void OnCollarLocationDirty(string collarId, Einsatzueberwachung.Domain.Models.CollarLocation location) => _isDirty = true;
+    private void OnPhoneRemovedDirty(string teamId) => _isDirty = true;
     private void OnPhoneTrackPointDirty(string teamId, string memberId, Einsatzueberwachung.Domain.Models.TeamPhoneLocation location) => _isDirty = true;
 }

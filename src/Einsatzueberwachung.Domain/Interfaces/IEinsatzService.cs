@@ -162,6 +162,12 @@ namespace Einsatzueberwachung.Domain.Interfaces
         void ClearPhoneTrackHistory(string teamId);
 
         /// <summary>
+        /// Handy-Daten eines Teams aus der Karte entfernen (letzte Position und Verlauf). Nicht waehrend der Suche des
+        /// Teams – dann false. Abgeschlossene Suchen und Berichte behalten ihre Laufwege.
+        /// </summary>
+        bool EntferneHandyDaten(string teamId);
+
+        /// <summary>
         /// Stellt den aufgezeichneten GPS-Pfad eines Teams wieder her (z.B. nach Server-Neustart aus Persistenz).
         /// Vorhandene Einträge werden ersetzt, nicht ergänzt.
         /// </summary>
