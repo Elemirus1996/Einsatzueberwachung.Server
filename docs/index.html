@@ -415,6 +415,29 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.11.8</span>
+    <span class="changelog-date">28.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
+<ul>
+<li><strong>Handys auf der Karte einzeln ausblenden:</strong> Das Auge an einem Eintrag im Handy-Bereich der Karte blendet nur dieses Handy aus, mit Marker und Laufweg. Bisher verschwanden alle. Das Auge oben bleibt der Schalter für alle Handys.</li>
+<li><strong>Handy-Daten entfernen:</strong> Mit dem Papierkorb an einem Eintrag werden letzte Position und Verlauf eines Teams aus der Karte gelöscht, auch dauerhaft nach einem Neustart. Während das Team sucht, ist das gesperrt. Abgeschlossene Suchen und Berichte behalten ihre Laufwege. Reste gelöschter Teams erscheinen als „Gelöschtes Team“ statt mit interner Kennung.</li>
+<li><strong>Vorbereitung für die eigene App</strong> (iPhone und Android, in Entwicklung):</li>
+</ul>
+<p>- Schnittstelle für die Team-Ortung: Der Server sagt der App, wann sie orten, pausieren oder aufhören soll. Nach dem Einsatz ist das GPS aus.</p>
+<p>- Schnittstelle für den Standort der Einsatzleitung, nur im VPN.</p>
+<p>- Auf der Einsatzkarte erscheint die Einsatzleitung später als roter Marker „EL“ mit Gerätename.</p>
+<h4>Korrekturen</h4>
+<ul>
+<li><strong>Uhrzeiten von Handy-Tracks:</strong> Seit 1.11.7 zeigten die Detail-Tabellen von Handy-Laufwegen (Beginn, Ende, Punktzeiten) eine Stunde zu spät. Neue Punkte stimmen wieder, bereits gespeicherte Punkte bleiben um eine Stunde verschoben.</li>
+</ul>
+<h4>Einspielen</h4>
+<p>Normales Update über den Browser.</p>
+<p>Für die App wird später ein zusätzlicher nginx-Block gebraucht. Er ist in <code>deploy/nginx/einsatzueberwachung-public.conf</code> enthalten (eigenes Limit für <code>/api/team-mobile/app/</code>, weil sich im Mobilfunk viele Handys eine IP teilen). Übernehmen genügt, sobald die App getestet wird. Für den normalen Betrieb ist das noch nicht nötig.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.11.7</span>
     <span class="changelog-date">28.10.2026</span>
     <span class="changelog-name"></span>
@@ -585,32 +608,6 @@ certbot renew --dry-run
 <li>Die App-Funktionen (Installieren, Offline-Seite, Funkloch-Puffer, Kartenspeicher) aktualisieren sich beim nächsten Aufruf von selbst. Sie brauchen ein gültiges Zertifikat, also den Aufruf über die Domain im VPN.</li>
 <li>Auf dem Tablet nach dem Update <code>/el</code> einmal neu laden.</li>
 </ul></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.10.2</span>
-    <span class="changelog-date">26.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Neu</h4>
-<ul>
-<li><strong>Einsatz starten auf Tablet und Handy (<code>/el/start</code>)</strong>: eigene Startseite in der EL-Ansicht, mit dem Daumen bedienbar.</li>
-</ul>
-<p>- Divera-Alarm mit einem Tippen übernehmen (Ort, Koordinate, Stichwort, Zeit, Lage)</p>
-<p>- Szenario als große Kacheln, Einsatz oder Übung als Umschalter</p>
-<p>- Einsatzort per Eingabe oder <strong>„Meinen Standort verwenden“</strong> (Handy-GPS, die Karte zentriert sich darauf)</p>
-<p>- Einsatzleiter aus den Stammdaten oder als Freitext, vorbelegt mit dem zuletzt auf diesem Gerät verwendeten</p>
-<p>- Alarmzeit, Einsatznummer, Melder, Führungsassistent und Lage unter „Weitere Angaben“</p>
-<p>- Nach dem Start direkt ins EL-Dashboard</p>
-<ul>
-<li>Der Knopf „Einsatz starten“ im leeren EL-Dashboard führt auf die neue Seite.</li>
-</ul>
-<h4>Sonstiges</h4>
-<ul>
-<li>Beide Startseiten legen Einsätze über dieselbe Logik an. Versionsnummer auf 1.10.2 angehoben.</li>
-</ul>
-<h4>Einspielen</h4>
-<p>Normales Update, keine Änderung an der Konfiguration nötig.</p></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>
