@@ -104,7 +104,7 @@
         if (!TokenService.ValidateMasterToken(Master)) return;
 
         var einsatz = EinsatzService.CurrentEinsatz;
-        if (einsatz is not { IstEinsatz: true } || einsatz.EinsatzEnde != null) return;
+        if (einsatz is not { EinsatzEnde: null } || string.IsNullOrWhiteSpace(einsatz.Einsatzort)) return;
 
         _validToken = true;
         _einsatzort = einsatz.Einsatzort ?? string.Empty;
