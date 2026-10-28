@@ -455,3 +455,26 @@ window.teamTraccar = {
         try { if (navigator.vibrate) navigator.vibrate([250, 120, 250]); } catch (e) { /* nicht unterstuetzt (iPhone) */ }
     }
 };
+
+// Tracking-App (#110, docs/APP_API.md): Laeuft die Team-Seite in der App, uebergibt sie nach der gewohnten
+// Anmeldung das App-Token an die native Ortung. iOS: WKScriptMessageHandler „einsatzApp“, Android: JavascriptInterface
+// „EinsatzAppAndroid“. Im normalen Browser passiert nichts.
+window.teamApp = {
+    istApp: function () {
+        return !!((window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.einsatzApp)
+            || (window.EinsatzAppAndroid && window.EinsatzAppAndroid.ortungUebergeben));
+    },
+    uebergeben: function (json) {
+        try {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.einsatzApp) {
+                window.webkit.messageHandlers.einsatzApp.postMessage(json);
+                return true;
+            }
+            if (window.EinsatzAppAndroid && window.EinsatzAppAndroid.ortungUebergeben) {
+                window.EinsatzAppAndroid.ortungUebergeben(json);
+                return true;
+            }
+        } catch (e) { /* App nicht bereit */ }
+        return false;
+    }
+};

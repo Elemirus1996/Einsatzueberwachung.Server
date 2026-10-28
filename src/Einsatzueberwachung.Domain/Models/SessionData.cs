@@ -102,6 +102,9 @@ namespace Einsatzueberwachung.Domain.Models
         /// <summary>Prozessor wachhalten – zuverlaessiger auf manchen Android-Geraeten, kostet deutlich Akku</summary>
         public bool TraccarWachhalten { get; set; }
 
+        /// <summary>Tracking-App (#110): gepufferte Positionen gesammelt alle so viele Sekunden hochladen</summary>
+        public int AppUploadSekunden { get; set; } = 60;
+
         // Karten-Marker Symbole
         // Collar: "paw" | "dog" | "bone" | "dot" | "crosshairs" | "location-arrow"
         // Human:  "phone" | "person" | "person_walking" | "radio" | "dot"

@@ -36,7 +36,8 @@ namespace Einsatzueberwachung.Domain.Services
             var timestamp = now;
             if (timestampUtc.HasValue)
             {
-                timestamp = timestampUtc.Value + (now - DateTime.UtcNow);
+                // Ergebnis ist Ortszeit – Kind „Utc“ vom Eingangswert entfernen, sonst rechnet die Anzeige doppelt um
+                timestamp = DateTime.SpecifyKind(timestampUtc.Value + (now - DateTime.UtcNow), DateTimeKind.Unspecified);
                 if (timestamp > now) timestamp = now;
                 if (timestamp < now.AddHours(-24)) return Task.CompletedTask;
             }

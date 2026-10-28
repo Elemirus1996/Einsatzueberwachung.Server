@@ -24,6 +24,15 @@ public interface ITeamMobileTokenService
     /// <summary>Validiert einen Team-Cookie-Wert. Liefert die TeamId zurück wenn gültig.</summary>
     bool TryValidateTeamCookie(string cookieValue, out string teamId);
 
+    /// <summary>
+    /// Token für die Tracking-App (Ortung im Hintergrund): an Team und Einsatz gebunden wie das Cookie, zusätzlich mit
+    /// eingebautem Ablauf, damit die App auch ohne Netz von selbst aufhört.
+    /// </summary>
+    string IssueAppToken(string teamId, DateTime ablaufUtc);
+
+    /// <summary>Prüft ein App-Token (Signatur, Einsatz-Generation, Ablauf).</summary>
+    bool TryValidateAppToken(string token, DateTime nowUtc, out string teamId, out DateTime ablaufUtc);
+
     /// <summary>Wird gefeuert wenn der Einsatzleiter eine Nachricht an ein bestimmtes Team schickt.</summary>
     event Action<string, string, DateTime>? TeamMessageBroadcasted;
 
