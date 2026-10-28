@@ -1,5 +1,6 @@
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Services;
+using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,15 +26,129 @@ public sealed class TeamMobileAppController : ControllerBase
     private readonly IEinsatzService _einsatzService;
     private readonly ISettingsService _settings;
     private readonly ILogger<TeamMobileAppController> _logger;
+    private readonly ICollarTrackingService? _halsbaender;
+    private readonly TeamAppEreignisse? _ereignisse;
+    private readonly AppStatusmeldungen? _statusmeldungen;
 
     public TeamMobileAppController(ITeamMobileTokenService tokenService, IEinsatzService einsatzService,
-        ISettingsService settings, ILogger<TeamMobileAppController> logger)
+        ISettingsService settings, ILogger<TeamMobileAppController> logger,
+        ICollarTrackingService? halsbaender = null, TeamAppEreignisse? ereignisse = null, AppStatusmeldungen? statusmeldungen = null)
     {
         _tokenService = tokenService;
         _einsatzService = einsatzService;
         _settings = settings;
         _logger = logger;
+        _halsbaender = halsbaender;
+        _ereignisse = ereignisse;
+        _statusmeldungen = statusmeldungen;
     }
+
+    // ── Native Team-Ansicht (#119, docs/APP_API.md Abschnitte 6–9) ───────────
+
+    /// <summary>Statusmeldungen der App: fester Code → Text wie die Knoepfe der Team-Seite</summary>
+    public static readonly IReadOnlyDictionary<string, string> StatusmeldungCodes = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["im_gebiet"] = "im Suchgebiet eingetroffen",
+        ["pause"] = "Pause",
+        ["funk"] = "Funkkontakt benötigt",
+        ["beendet"] = "Auftrag beendet"
+    };
+
+    [HttpGet("lage")]
+    public async Task<IActionResult> GetLage()
+    {
+        if (!TryTeam(out var teamId, out _) || _halsbaender is null) return Gone();
+        if (_einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return Gone();
+        var einsatz = _einsatzService.CurrentEinsatz;
+        var staffel = (await _settings.GetStaffelSettingsAsync())?.StaffelName ?? "";
+        return Ok(AppLage.Erstellen(einsatz, team, staffel, _halsbaender, _einsatzService.TeamMitteilungen(teamId),
+            OrtungsSteuerung.AlsText(OrtungsSteuerung.FuerTeam(einsatz, team))));
+    }
+
+    [HttpGet("tracks")]
+    public IActionResult GetTracks([FromQuery] long? seit)
+    {
+        if (!TryTeam(out var teamId, out _) || _halsbaender is null) return Gone();
+        if (_einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return Gone();
+        return Ok(AppLage.Tracks(_einsatzService.CurrentEinsatz, team, _einsatzService, _halsbaender, seit));
+    }
+
+    [HttpPost("statusmeldung")]
+    public async Task<IActionResult> PostStatusmeldung([FromBody] AppStatusmeldungRequest? request)
+    {
+        if (!TryTeam(out var teamId, out _) || _statusmeldungen is null) return Gone();
+        if (request?.Code is null || !StatusmeldungCodes.TryGetValue(request.Code, out var text))
+            return BadRequest(new { error = "Unbekannter Code.", codes = StatusmeldungCodes.Keys });
+        if (string.IsNullOrWhiteSpace(request.Id) || request.Id.Length > 64)
+            return BadRequest(new { error = "id fehlt oder ist zu lang (höchstens 64 Zeichen)." });
+
+        var jetzt = DateTime.UtcNow;
+        if (!_statusmeldungen.ErstesMal(teamId, request.Id, jetzt))
+            return Ok(new { zeit = jetzt, doppelt = true });
+
+        if (_einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return Gone();
+        await _einsatzService.AddGlobalNoteWithSourceAsync($"[{team.TeamName}] {text}", team.TeamId, team.TeamName,
+            "Mobile", Einsatzueberwachung.Domain.Models.Enums.GlobalNotesEntryType.Manual, "Team-App");
+        return Ok(new { zeit = jetzt, doppelt = false });
+    }
+
+    /// <summary>Live-Ereignisse als Server-Sent Events; Token nur im Header</summary>
+    [HttpGet("ereignisse")]
+    public async Task GetEreignisse()
+    {
+        if (!TryTeam(out var teamId, out var ablaufUtc) || _ereignisse is null)
+        {
+            Response.StatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status410Gone;
+            await Response.WriteAsJsonAsync(new { mode = "stop" });
+            return;
+        }
+
+        Response.Headers.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+        Response.Headers["X-Accel-Buffering"] = "no"; // nginx nicht puffern
+        await Response.WriteAsync("retry: 5000\n\n");
+        await Response.Body.FlushAsync();
+
+        var (id, leser) = _ereignisse.Abonnieren(teamId);
+        var abbruch = HttpContext.RequestAborted;
+        try
+        {
+            while (!abbruch.IsCancellationRequested)
+            {
+                // Token laeuft ab (24 h): nicht mit Pings weiter offenhalten, sondern beenden
+                if (DateTime.UtcNow >= ablaufUtc)
+                {
+                    await Response.WriteAsync(TeamAppEreignisse.Format("stop", new { }), abbruch);
+                    await Response.Body.FlushAsync(abbruch);
+                    break;
+                }
+
+                using var takt = CancellationTokenSource.CreateLinkedTokenSource(abbruch);
+                takt.CancelAfter(PingIntervall);
+                string? text = null;
+                try
+                {
+                    if (await leser.WaitToReadAsync(takt.Token)) leser.TryRead(out text);
+                    else break; // abgemeldet (stop)
+                }
+                catch (OperationCanceledException) when (!abbruch.IsCancellationRequested)
+                {
+                    text = ": ping\n\n";
+                }
+                if (text is null) continue;
+                await Response.WriteAsync(text, abbruch);
+                await Response.Body.FlushAsync(abbruch);
+                if (text.StartsWith("event: stop", StringComparison.Ordinal)) break;
+            }
+        }
+        catch (OperationCanceledException) { /* App hat die Verbindung getrennt */ }
+        finally
+        {
+            _ereignisse.Abmelden(id);
+        }
+    }
+
+    public static TimeSpan PingIntervall { get; set; } = TimeSpan.FromSeconds(20);
 
     /// <summary>Native Anmeldung, Schritt 1: Anmelde-Code aus dem QR-Code → Einsatz und Teamliste.</summary>
     [HttpPost("login/teams")]
@@ -199,6 +314,13 @@ public sealed class TeamMobileAppController : ControllerBase
     }
 
     private sealed record AppAnweisung(string mode, int intervalSec, int uploadEverySec, int pauseCheckSec, DateTime expiresAt);
+
+    public sealed class AppStatusmeldungRequest
+    {
+        /// <summary>Von der App erzeugte Kennung (z. B. UUID), entdoppelt Wiederholungen im Funkloch</summary>
+        public string? Id { get; set; }
+        public string? Code { get; set; }
+    }
 
     public sealed class AppLoginRequest
     {

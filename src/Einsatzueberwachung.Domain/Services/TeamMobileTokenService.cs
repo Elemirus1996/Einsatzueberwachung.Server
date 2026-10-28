@@ -50,6 +50,8 @@ public sealed class TeamMobileTokenService : ITeamMobileTokenService, IDisposabl
     public void BroadcastTeamMessage(string teamId, string message)
     {
         if (string.IsNullOrWhiteSpace(teamId) || string.IsNullOrWhiteSpace(message)) return;
+        // Gespeichert, damit die App sie nach Funkloch oder aus dem Hintergrund nachholt (#119)
+        _einsatzService.TeamMitteilungSpeichern(teamId, message);
         TeamMessageBroadcasted?.Invoke(teamId, message, Ortszeit.Jetzt);
     }
 

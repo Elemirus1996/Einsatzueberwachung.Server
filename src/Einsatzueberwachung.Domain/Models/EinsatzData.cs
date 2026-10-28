@@ -44,6 +44,9 @@ namespace Einsatzueberwachung.Domain.Models
         // Alle gespeicherten GPS-Tracks des Einsatzes (Legacy – bleibt für Rückwärtskompatibilität)
         public List<TeamTrackSnapshot> TrackSnapshots { get; set; }
 
+        /// <summary>Mitteilungen der Einsatzleitung an Teams (letzte 20 je Team), fuer die Tracking-App (#119)</summary>
+        public List<TeamMitteilung> TeamMitteilungen { get; set; } = new();
+
         /// <summary>
         /// Abgeschlossene Suchen (gruppiert). Max. 1 Hund- + 1 Mensch-Track pro Suche.
         /// Ersetzt die flache <see cref="TrackSnapshots"/>-Liste; wird beim Laden ggf. automatisch migriert.

@@ -167,6 +167,14 @@ namespace Einsatzueberwachung.Domain.Interfaces
         /// </summary>
         bool EntferneHandyDaten(string teamId);
 
+        /// <summary>Mitteilung der Einsatzleitung an ein Team speichern (letzte 20 je Team, fuer die App)</summary>
+        TeamMitteilung TeamMitteilungSpeichern(string teamId, string text);
+
+        /// <summary>Gespeicherte Mitteilungen an ein Team, aelteste zuerst</summary>
+        IReadOnlyList<TeamMitteilung> TeamMitteilungen(string teamId);
+
+        event Action<TeamMitteilung>? TeamMitteilungGespeichert;
+
         /// <summary>
         /// Stellt den aufgezeichneten GPS-Pfad eines Teams wieder her (z.B. nach Server-Neustart aus Persistenz).
         /// Vorhandene Einträge werden ersetzt, nicht ergänzt.
