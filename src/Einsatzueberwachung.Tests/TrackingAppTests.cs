@@ -97,6 +97,7 @@ public class TrackingAppTests
         Assert.Equal("RHS Test", json.GetProperty("staffel").GetString());
         Assert.Equal("Vermisste Person · Testwald", json.GetProperty("einsatz").GetString());
         Assert.Equal("track", json.GetProperty("mode").GetString());
+        Assert.False(json.GetProperty("uebung").GetBoolean());
         Assert.Equal("https://einsatz.example.org/api/team-mobile/app/v1/positions", json.GetProperty("positionUrl").GetString());
         Assert.Equal(20, json.GetProperty("intervalSec").GetInt32());
     }
@@ -217,7 +218,8 @@ public class TrackingAppTests
         Assert.NotNull(tokens.CurrentMasterToken);
 
         var controller = Controller(einsatz, tokens, null);
-        Assert.IsType<OkObjectResult>(await controller.LoginTeams(Anmeldung(tokens.CurrentMasterToken)));
+        var liste = JsonSerializer.SerializeToElement(((ObjectResult)await controller.LoginTeams(Anmeldung(tokens.CurrentMasterToken))).Value);
+        Assert.True(liste.GetProperty("uebung").GetBoolean()); // App zeigt „Übung“ an
         var antwort = JsonSerializer.SerializeToElement(((ObjectResult)controller.Login(Anmeldung(tokens.CurrentMasterToken, team.TeamId))).Value);
         Assert.True(tokens.TryValidateAppToken(antwort.GetProperty("token").GetString()!, DateTime.UtcNow, out _, out _));
     }

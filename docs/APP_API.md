@@ -15,14 +15,15 @@ Verbindliche Beschreibung für die iOS- und die Android-App ([Einsatzueberwachun
 
    `POST /login/teams` mit `{ "code": "<Anmelde-Code>" }` → Einsatz und Teamliste:
    ```json
-   { "apiVersion": 1, "einsatz": "Vermisste Person · Testwald", "staffel": "RHS Musterstadt",
+   { "apiVersion": 1, "einsatz": "Vermisste Person · Testwald", "uebung": false, "staffel": "RHS Musterstadt",
      "teams": [ { "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "…" } ] }
    ```
    `POST /login` mit `{ "code": "<Anmelde-Code>", "teamId": "…" }` → Token:
    ```json
    { "apiVersion": 1, "rolle": "team", "token": "a1.…", "teamId": "…", "teamName": "Team Rex", "expiresAt": "2026-10-29T10:00:00Z" }
    ```
-   Leerzeichen und Kleinschreibung im Code sind egal. Falscher Code oder kein laufender Einsatz → `401`, unbekanntes Team → `404`.
+   `uebung` ist `true` bei einer Übung – die App zeigt das deutlich an.
+   Leerzeichen und Kleinschreibung im Code sind egal. Die Anmeldung ist strenger begrenzt (20 Anfragen/min je IP, wie `/team/login`). Falscher Code oder kein laufender Einsatz → `401`, unbekanntes Team → `404`.
    Der Code steht im Body, nicht in der Adresse, damit er nicht in Zugriffsprotokollen landet.
 3. Alternativ (WebView, bisher): Die App öffnet die Adresse aus dem QR-Code, das Mitglied meldet sich auf der Team-Seite an,
    und die Seite übergibt die Zugangsdaten an die App:
@@ -45,7 +46,7 @@ Nach der Anmeldung und bei jedem App-Start.
 {
   "apiVersion": 1,
   "teamId": "…", "teamName": "Team Rex", "dogName": "Rex",
-  "einsatz": "Vermisste Person · Testwald", "staffel": "RHS Musterstadt",
+  "einsatz": "Vermisste Person · Testwald", "uebung": false, "staffel": "RHS Musterstadt",
   "positionUrl": "https://…/api/team-mobile/app/v1/positions",
   "statusUrl": "https://…/api/team-mobile/app/v1/status",
   "expiresAt": "2026-10-29T10:00:00Z",
