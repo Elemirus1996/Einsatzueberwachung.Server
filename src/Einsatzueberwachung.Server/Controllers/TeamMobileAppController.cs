@@ -8,8 +8,8 @@ namespace Einsatzueberwachung.Server.Controllers;
 /// <summary>
 /// Schnittstelle der Tracking-App, Rolle Team (#110, verbindlich beschrieben in docs/APP_API.md).
 /// Jede Antwort sagt der App, ob sie orten, pausieren oder aufhoeren soll – anders als Traccar versteht die App das.
-/// Anmeldung: „Authorization: Bearer &lt;App-Token&gt;“; das Token bekommt die App von der Team-Seite nach der
-/// gewohnten Anmeldung per QR-Code.
+/// Anmeldung: „Authorization: Bearer &lt;App-Token&gt;“; das Token bekommt die App nativ ueber login/teams und login
+/// mit dem Anmelde-Code aus dem bestehenden QR-Code (oder von der Team-Seite in einer WebView).
 /// </summary>
 [ApiController]
 [Route("api/team-mobile/app/v1")]
@@ -19,6 +19,7 @@ public sealed class TeamMobileAppController : ControllerBase
 {
     public const int ApiVersion = 1;
     public const int MaxPositionenProUpload = 500;
+    public const int AppTokenStunden = 24;
 
     private readonly ITeamMobileTokenService _tokenService;
     private readonly IEinsatzService _einsatzService;
@@ -32,6 +33,54 @@ public sealed class TeamMobileAppController : ControllerBase
         _einsatzService = einsatzService;
         _settings = settings;
         _logger = logger;
+    }
+
+    /// <summary>Native Anmeldung, Schritt 1: Anmelde-Code aus dem QR-Code → Einsatz und Teamliste.</summary>
+    [HttpPost("login/teams")]
+    public async Task<IActionResult> LoginTeams([FromBody] AppLoginRequest? request)
+    {
+        if (!AnmeldeCodeGueltig(request?.Code)) return AnmeldungAbgelehnt();
+
+        var staffel = await _settings.GetStaffelSettingsAsync();
+        return Ok(new
+        {
+            apiVersion = ApiVersion,
+            einsatz = EinsatzText(_einsatzService.CurrentEinsatz),
+            staffel = staffel?.StaffelName ?? "",
+            teams = _einsatzService.Teams
+                .OrderBy(t => t.TeamName)
+                .Select(t => new
+                {
+                    teamId = t.TeamId,
+                    teamName = t.TeamName,
+                    dogName = t.DogName ?? "",
+                    hundefuehrerName = t.HundefuehrerName ?? ""
+                })
+                .ToList()
+        });
+    }
+
+    /// <summary>Native Anmeldung, Schritt 2: Anmelde-Code + Team → App-Token (gleiche Regeln wie /team/login).</summary>
+    [HttpPost("login")]
+    public IActionResult Login([FromBody] AppLoginRequest? request)
+    {
+        if (!AnmeldeCodeGueltig(request?.Code)) return AnmeldungAbgelehnt();
+
+        var team = _einsatzService.Teams.FirstOrDefault(t => t.TeamId == request!.TeamId);
+        if (team == null || team.TeamId.Contains('.'))
+            return NotFound(new { error = "Team nicht gefunden." });
+
+        var ablaufUtc = DateTime.UtcNow.AddHours(AppTokenStunden);
+        _logger.LogInformation("App-Anmeldung fuer Team {TeamName} ({TeamId})", team.TeamName, team.TeamId);
+        return Ok(new
+        {
+            apiVersion = ApiVersion,
+            rolle = "team",
+            token = _tokenService.IssueAppToken(team.TeamId, ablaufUtc),
+            teamId = team.TeamId,
+            teamName = team.TeamName,
+            expiresAt = ablaufUtc
+        });
     }
 
     [HttpGet("config")]
@@ -51,7 +100,7 @@ public sealed class TeamMobileAppController : ControllerBase
             teamId,
             teamName = team?.TeamName ?? "",
             dogName = team?.DogName ?? "",
-            einsatz = string.Join(" · ", new[] { einsatz.Stichwort, einsatz.Einsatzort }.Where(s => !string.IsNullOrWhiteSpace(s))),
+            einsatz = EinsatzText(einsatz),
             staffel = staffel?.StaffelName ?? "",
             positionUrl = basis + "/positions",
             statusUrl = basis + "/status",
@@ -96,6 +145,20 @@ public sealed class TeamMobileAppController : ControllerBase
         return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = gespeichert });
     }
 
+    // Wie /team/login: nur mit gueltigem Anmelde-Code und waehrend eines laufenden Einsatzes oder einer Uebung
+    private bool AnmeldeCodeGueltig(string? code)
+    {
+        var bereinigt = (code ?? "").Replace(" ", "").ToUpperInvariant();
+        if (!_tokenService.ValidateMasterToken(bereinigt)) return false;
+        return _einsatzService.CurrentEinsatz is { EinsatzEnde: null } einsatz && !string.IsNullOrWhiteSpace(einsatz.Einsatzort);
+    }
+
+    private IActionResult AnmeldungAbgelehnt() =>
+        Unauthorized(new { error = "Der Anmelde-Code ist ungültig oder es ist gerade kein Einsatz aktiv." });
+
+    private static string EinsatzText(Domain.Models.EinsatzData einsatz) =>
+        string.Join(" · ", new[] { einsatz.Stichwort, einsatz.Einsatzort }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
     private bool TryTeam(out string teamId, out DateTime ablaufUtc)
     {
         teamId = string.Empty;
@@ -134,6 +197,13 @@ public sealed class TeamMobileAppController : ControllerBase
     }
 
     private sealed record AppAnweisung(string mode, int intervalSec, int uploadEverySec, int pauseCheckSec, DateTime expiresAt);
+
+    public sealed class AppLoginRequest
+    {
+        /// <summary>Anmelde-Code aus dem QR-Code (…/team/login/&lt;Code&gt;)</summary>
+        public string? Code { get; set; }
+        public string? TeamId { get; set; }
+    }
 
     public sealed class AppPositionenRequest
     {

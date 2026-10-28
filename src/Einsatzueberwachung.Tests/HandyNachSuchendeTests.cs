@@ -9,17 +9,18 @@ public class HandyNachSuchendeTests
     [Fact]
     public void SucheBeendet_NurNachStopp_NichtInKurzpauseOderBereit()
     {
+        // Feste Zeiten: Mit der echten Uhr lag zwischen Start und Pause oft keine messbare Zeit, ElapsedTime blieb 0
+        var t0 = new DateTime(2026, 10, 28, 9, 0, 0);
         var team = new Team { TeamName = "Rex" };
         Assert.False(team.IsSucheBeendet); // noch nie gesucht
 
-        team.StartTimer();
-        team.ElapsedTime = TimeSpan.FromMinutes(5);
+        team.StartTimer(t0);
         Assert.False(team.IsSucheBeendet); // laeuft
 
-        team.PauseTimer();
+        team.PauseTimer(t0.AddMinutes(5));
         Assert.False(team.IsSucheBeendet); // Kurzpause: Laufweg geht weiter
 
-        team.StartTimer();
+        team.StartTimer(t0.AddMinutes(6));
         team.StopTimer();
         Assert.True(team.IsSucheBeendet);
 

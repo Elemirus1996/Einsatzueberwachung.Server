@@ -332,7 +332,6 @@ else
 
     // Tracking-App (#110): Laeuft die Seite in der App, bekommt die native Ortung nach der gewohnten Anmeldung ein
     // App-Token mit Ablauf. Die App steuert sich dann ueber api/team-mobile/app/v1 – Traccar wird nicht gebraucht.
-    private const int AppTokenStunden = 24;
     private bool _inApp;
 
     private async Task AnAppUebergebenAsync()
@@ -341,7 +340,7 @@ else
         try { _inApp = await JS.InvokeAsync<bool>("teamApp.istApp"); } catch { return; }
         if (!_inApp) return;
 
-        var ablaufUtc = DateTime.UtcNow.AddHours(AppTokenStunden);
+        var ablaufUtc = DateTime.UtcNow.AddHours(Einsatzueberwachung.Server.Controllers.TeamMobileAppController.AppTokenStunden);
         var json = System.Text.Json.JsonSerializer.Serialize(new
         {
             apiVersion = Einsatzueberwachung.Server.Controllers.TeamMobileAppController.ApiVersion,
