@@ -168,7 +168,6 @@ public sealed class ElAppEreignisseTests : IDisposable
     private readonly EinsatzService _einsatz = new();
     private readonly CollarTrackingService _halsbaender;
     private readonly ElPositionService _positionen;
-    private readonly FunkEreignisse _funk = new();
     private readonly ElAppEreignisse _ereignisse;
     private readonly ElAppTokenService _tokens;
 
@@ -179,7 +178,7 @@ public sealed class ElAppEreignisseTests : IDisposable
         Assert.Null(_leitung.Setup(_leitung.SetupCode!, Passwort, Passwort));
         _halsbaender = new CollarTrackingService(_einsatz);
         _positionen = new ElPositionService(_einsatz);
-        _ereignisse = new ElAppEreignisse(_einsatz, _halsbaender, _positionen, _funk);
+        _ereignisse = new ElAppEreignisse(_einsatz, _halsbaender, _positionen);
         _tokens = new ElAppTokenService(RandomNumberGenerator.GetBytes(64), _leitung, Path.Combine(_dir, "abgemeldet.txt"));
     }
 
@@ -257,16 +256,19 @@ public sealed class ElAppEreignisseTests : IDisposable
     }
 
     [Fact]
-    public async Task FunkUndPositionen_WerdenGemeldet()
+    public async Task FunkAntwortElNotizUndPositionen_WerdenGemeldet()
     {
         await _einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Testwald", IstEinsatz = true, EinsatzDatum = new DateTime(2026, 10, 29, 9, 0, 0) });
         var (id, leser) = _ereignisse.Abonnieren(_tokens.Ausstellen(DateTime.UtcNow.AddHours(1)));
 
-        _funk.Melden("f-1");
+        var funk = await _einsatz.AddGlobalNoteWithSourceAsync("Team Rex im Gebiet", "t1", "Team Rex", "Funk");
+        await _einsatz.AddReplyToNoteAsync(funk.Id, "Verstanden", "einsatzleitung", "Einsatzleitung"); // meldet nur EinsatzChanged
+        await _einsatz.AddElNotizAsync("Presse vor Ort");
         _positionen.Melden("iPhone Anna", [(51.5, 7.4, 5.0, DateTime.UtcNow, 80)]);
         var ereignisse = Lesen(leser);
 
-        Assert.Contains("event: funk\ndata: {\"id\":\"f-1\"}\n\n", ereignisse);
+        Assert.Equal(2, ereignisse.Count(e => e == $"event: funk\ndata: {{\"id\":\"{funk.Id}\"}}\n\n")); // neu und Antwort
+        Assert.Contains($"event: notiz\ndata: {{\"id\":\"{_einsatz.CurrentEinsatz.ElNotizen[0].Id}\"}}\n\n", ereignisse);
         var position = Assert.Single(ereignisse, e => e.StartsWith("event: position", StringComparison.Ordinal));
         Assert.Contains("\"art\":\"el\"", position);
         Assert.Contains("\"id\":\"iPhone Anna\"", position);

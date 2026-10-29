@@ -362,7 +362,7 @@ Antwort `200`:
 | `GET /vermisste` | Vermisstenprofile mit `profilId`, `version` und allen Feldern wie in `/el` (Name, Alter, Beschreibung, Kleidung, Mobilität, Risiken, zuletzt gesehen mit Ort und Zeit …), je Profil die Checkliste `[ { "id", "text", "erledigt" } ]` |
 | `GET /karte` | `suchgebiete` (id, name, farbe, punkte, teamId, `abdeckungProzent`), `positionen` (`art`: `halsband` · `handy` · `el` · `elw`, `id`, `name`, `teamId`, `lat`, `lng`, `zeit`, `akku`) |
 | `GET /tracks?seit=<unix-ms>` | wie Abschnitt 7 der Team-Rolle, aber `laufend` als Liste je Team: `[ { "teamId", "hund": […], "mensch": […] } ]`, `abgeschlossen` mit `teamId` |
-| `GET /notizen?vor=<id>&anzahl=50` | Notizen und Funk, **neueste zuerst**: `id`, `art` (`notiz` · `funk` · `status` · `system`), `text`, `zeit`, `von`, `teamId`, `antworten` `[ { "id", "text", "zeit", "von" } ]`. Blättern mit `vor` = älteste geladene `id` |
+| `GET /notizen?vor=<id>&anzahl=50` | `{ "notizen": […], "weitere": true }` – Notizen und Funk wie in `/el`, **neueste zuerst**: `id`, `art` (`notiz` · `funk` · `status` · `system`), `text`, `zeit`, `von`, `teamId`, `loeschbar`, `antworten` `[ { "id", "text", "zeit", "von" } ]`. Blättern mit `vor` = älteste geladene `id`; `anzahl` höchstens 200 |
 | `GET /halsbaender` | freie Halsbänder für die Rückfrage beim Teamstart: `[ { "id", "name", "zeit", "akku" } ]`, dazu je Team das zuletzt benutzte (`zuletzt`) |
 | `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen" } ]` |
 
@@ -389,6 +389,19 @@ und wiederholen.
 
 Antwort jeder Aktion: `200` + `{ "doppelt": false, … }`, beim Anlegen mit der neuen Kennung des Objekts (z. B. `notizId`).
 
+Umgesetzt (Stufe 3), im Einzelnen:
+
+- Team-Aktionen antworten mit `suche` wie in `/lage`. Nicht erlaubte Übergänge → `409` (z. B. `pause`, obwohl keine Suche läuft;
+  `zuruecksetzen` während die Suche läuft; Hund läuft schon in einem anderen Team). Unbekanntes Team → `404` + `{ "error" }`.
+- `start` mit `halsbandId`: nur ein freies oder das dem Team schon zugewiesene Halsband, sonst `409`. Ohne `halsbandId` startet
+  die Suche mit dem bereits zugewiesenen Halsband (falls vorhanden). `stopp` gibt das Halsband frei.
+- `mitteilung` → `{ "mitteilungId" }`. `notizen` → `{ "notizId" }`; mit `teamId` steht der Teamname vor dem Text.
+- `notizen/{id}/loeschen`: nur Notizen mit `loeschbar = true` (die der Einsatzleitung), sonst `404`. Funk und Team-Meldungen bleiben.
+- `funk` → `{ "notizId" }` (Kennung in `/notizen`); mit `teamId` wie der Empfänger-Knopf in `/el` („@Team Rex …“).
+  `antwortAuf` = `id` aus `/notizen` → `{ "notizId", "antwortId" }`, unbekannt → `404`.
+- `text` ist Pflicht (höchstens 1000 Zeichen), sonst `400`. Ohne laufenden Einsatz → `409`.
+- Nur erfolgreiche Aktionen werden für die Entdopplung gemerkt; eine abgelehnte `id` darf die App erneut senden.
+
 **Gleichzeitiges Bearbeiten von Vermissten:** `GET /vermisste` liefert je Profil eine `version` (Text, ändert sich bei jeder
 Speicherung, auch durch `/el` im Browser mit Auto-Save). Beim Ändern schickt die App die `version` mit, auf der ihre Bearbeitung
 beruht. Weicht sie ab, speichert der Server nicht und antwortet `409` + `{ "error": "Das Profil wurde inzwischen geändert.",
@@ -410,8 +423,8 @@ aber mit diesen Ereignissen:
 | `warnung` | `{ "teamId", "stufe": 1, "text" }` | Warnton bzw. Vibration (`stufe` 1 oder 2) |
 
 `position`: bei `art = halsband` ist `id` die Halsband-Kennung (`teamId` des Teams, das es trägt, sonst `null`), bei `handy`
-die `teamId`, bei `el` der Gerätename (`teamId = null`). `funk` kommt bei einem neuen Funkspruch und bei einer neuen Antwort
-(`id` = Funkspruch). Ein Token, das abgemeldet wurde oder abgelaufen ist, beendet die Verbindung spätestens beim nächsten Ping mit `stop`.
+die `teamId`, bei `el` der Gerätename (`teamId = null`). `notiz`/`funk` kommen bei neuen Einträgen und Antworten,
+`notiz` auch beim Löschen über die App (`id` = Eintrag in `/notizen`; bei einer neuen EL-Notiz deren `id`). Ein Token, das abgemeldet wurde oder abgelaufen ist, beendet die Verbindung spätestens beim nächsten Ping mit `stop`.
 
 Die Grenze von 10 Verbindungen gilt **je Token**, nicht je Team. Bei Einsatzende kommt `einsatz` mit `{ "aktiv": false }`,
 **nicht** `stop`: Die Einsatzleitung bleibt angemeldet. `stop` nur bei ungültigem Token.

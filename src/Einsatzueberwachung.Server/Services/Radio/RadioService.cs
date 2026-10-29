@@ -5,7 +5,6 @@ using Einsatzueberwachung.Domain.Models.Enums;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Einsatzueberwachung.Domain.Services;
-using Einsatzueberwachung.Server.Services;
 
 namespace Einsatzueberwachung.Server.Services.Radio;
 
@@ -14,18 +13,15 @@ public sealed class RadioService : IRadioService
     private readonly IDbContextFactory<RuntimeDbContext> _dbContextFactory;
     private readonly IHubContext<EinsatzHub> _hubContext;
     private readonly IEinsatzService _einsatzService;
-    private readonly FunkEreignisse? _funk;
 
     public RadioService(
         IDbContextFactory<RuntimeDbContext> dbContextFactory,
         IHubContext<EinsatzHub> hubContext,
-        IEinsatzService einsatzService,
-        FunkEreignisse? funk = null)
+        IEinsatzService einsatzService)
     {
         _dbContextFactory = dbContextFactory;
         _hubContext = hubContext;
         _einsatzService = einsatzService;
-        _funk = funk;
     }
 
     public async Task<IReadOnlyList<RadioMessageDto>> GetMessagesAsync(CancellationToken cancellationToken = default)
@@ -60,7 +56,7 @@ public sealed class RadioService : IRadioService
 
         var dto = ToDto(entity);
         // Legacy desktop pages still consume GlobalNotes for Funk entries.
-        await _einsatzService.AddGlobalNoteWithSourceAsync(
+        var notiz = await _einsatzService.AddGlobalNoteWithSourceAsync(
             request.Text,
             request.SourceTeamId,
             request.SourceTeamName,
@@ -68,8 +64,7 @@ public sealed class RadioService : IRadioService
             GlobalNotesEntryType.Manual,
             request.CreatedBy);
         await PublishAsync("radio.added", dto);
-        _funk?.Melden(dto.Id);
-        return dto;
+        return dto with { NotizId = notiz.Id };
     }
 
     public async Task<RadioReplyDto> AddReplyAsync(string messageId, CreateRadioReplyRequest request, CancellationToken cancellationToken = default)
@@ -101,7 +96,6 @@ public sealed class RadioService : IRadioService
 
         var dto = ToReplyDto(reply);
         await PublishAsync("radio.reply.added", new { messageId, reply = dto });
-        _funk?.Melden(messageId);
         return dto;
     }
 

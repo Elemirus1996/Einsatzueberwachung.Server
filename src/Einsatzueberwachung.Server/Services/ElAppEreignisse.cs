@@ -8,17 +8,6 @@ using Einsatzueberwachung.Domain.Models;
 namespace Einsatzueberwachung.Server.Services;
 
 /// <summary>
-/// Meldet neue Funksprueche an die Live-Ereignisse der EL-App. Der RadioService ist scoped (je Browser-Sitzung),
-/// deshalb laeuft die Meldung ueber diesen Singleton.
-/// </summary>
-public sealed class FunkEreignisse
-{
-    public event Action<string>? Neu;
-
-    public void Melden(string funkId) => Neu?.Invoke(funkId);
-}
-
-/// <summary>
 /// Live-Ereignisse der nativen Einsatzleitung (GET /api/el/app/v1/ereignisse, docs/APP_API.md Abschnitt 8).
 /// Anders als in der Team-Rolle bleibt die Verbindung bei Einsatzende offen („einsatz“ mit aktiv = false).
 /// </summary>
@@ -33,22 +22,25 @@ public sealed class ElAppEreignisse : IDisposable
     private readonly IEinsatzService _einsatz;
     private readonly ICollarTrackingService _halsbaender;
     private readonly ElPositionService _positionen;
-    private readonly FunkEreignisse _funk;
     private readonly ConcurrentDictionary<Guid, Abo> _abos = new();
     private bool _aktiv;
+    // Antworten auf Notizen/Funk melden nur EinsatzChanged – deshalb Anzahl je Notiz vergleichen
+    private readonly Dictionary<string, int> _antworten = new(StringComparer.Ordinal);
+    private readonly object _antwortenSperre = new();
 
-    public ElAppEreignisse(IEinsatzService einsatz, ICollarTrackingService halsbaender, ElPositionService positionen, FunkEreignisse funk)
+    public ElAppEreignisse(IEinsatzService einsatz, ICollarTrackingService halsbaender, ElPositionService positionen)
     {
         _einsatz = einsatz;
         _halsbaender = halsbaender;
         _positionen = positionen;
-        _funk = funk;
         _aktiv = ElPositionService.Laeuft(einsatz.CurrentEinsatz);
+        AntwortenZaehlen();
 
         _einsatz.TeamAdded += OnTeam;
         _einsatz.TeamUpdated += OnTeam;
         _einsatz.TeamRemoved += OnTeam;
         _einsatz.NoteAdded += OnNotiz;
+        _einsatz.ElNotizAdded += OnElNotiz;
         _einsatz.TeamWarningTriggered += OnWarnung;
         _einsatz.VermisstenInfoChanged += OnVermisste;
         _einsatz.VermisstenAdded += OnVermissteProfil;
@@ -58,7 +50,6 @@ public sealed class ElAppEreignisse : IDisposable
         _einsatz.TeamPhoneLocationChanged += OnHandy;
         _halsbaender.CollarLocationReceived += OnHalsband;
         _positionen.Geaendert += OnEl;
-        _funk.Neu += OnFunk;
     }
 
     public int AnzahlVerbindungen => _abos.Count;
@@ -90,7 +81,8 @@ public sealed class ElAppEreignisse : IDisposable
         if (_abos.TryRemove(id, out var abo)) abo.Kanal.Writer.TryComplete();
     }
 
-    private void Senden(string ereignis, object daten)
+    /// <summary>Ereignis an alle Verbindungen, z. B. nach einer Aktion ohne eigenes Domain-Ereignis (Notiz geloescht)</summary>
+    public void Senden(string ereignis, object daten)
     {
         if (_abos.IsEmpty) return;
         var text = TeamAppEreignisse.Format(ereignis, daten);
@@ -99,9 +91,30 @@ public sealed class ElAppEreignisse : IDisposable
 
     private void OnTeam(Team team) => Senden("team", new { teamId = team.TeamId });
 
-    private void OnNotiz(GlobalNotesEntry notiz) => Senden("notiz", new { id = notiz.Id });
+    /// <summary>Funk steht als Notiz mit Quelle „Funk“ im Einsatz – die App sieht beides ueber /notizen</summary>
+    public static bool IstFunk(GlobalNotesEntry notiz) => string.Equals(notiz.SourceType, "Funk", StringComparison.OrdinalIgnoreCase);
 
-    private void OnFunk(string funkId) => Senden("funk", new { id = funkId });
+    private void OnNotiz(GlobalNotesEntry notiz)
+    {
+        lock (_antwortenSperre) _antworten[notiz.Id] = notiz.ReplyCount;
+        Senden(IstFunk(notiz) ? "funk" : "notiz", new { id = notiz.Id });
+    }
+
+    private void OnElNotiz() => Senden("notiz", new { id = _einsatz.CurrentEinsatz.ElNotizen?.FirstOrDefault()?.Id });
+
+    private void AntwortenZaehlen()
+    {
+        var geaendert = new List<GlobalNotesEntry>();
+        lock (_antwortenSperre)
+        {
+            foreach (var notiz in _einsatz.GlobalNotes.ToList())
+            {
+                if (_antworten.TryGetValue(notiz.Id, out var anzahl) && anzahl != notiz.ReplyCount) geaendert.Add(notiz);
+                _antworten[notiz.Id] = notiz.ReplyCount;
+            }
+        }
+        foreach (var notiz in geaendert) Senden(IstFunk(notiz) ? "funk" : "notiz", new { id = notiz.Id });
+    }
 
     private void OnVermisste() => Senden("vermisste", new { });
     private void OnVermissteProfil(VermisstenInfo _) => OnVermisste();
@@ -116,6 +129,7 @@ public sealed class ElAppEreignisse : IDisposable
 
     private void OnEinsatz()
     {
+        AntwortenZaehlen();
         var aktiv = ElPositionService.Laeuft(_einsatz.CurrentEinsatz);
         if (aktiv == _aktiv) return;
         _aktiv = aktiv;
@@ -151,6 +165,7 @@ public sealed class ElAppEreignisse : IDisposable
         _einsatz.TeamUpdated -= OnTeam;
         _einsatz.TeamRemoved -= OnTeam;
         _einsatz.NoteAdded -= OnNotiz;
+        _einsatz.ElNotizAdded -= OnElNotiz;
         _einsatz.TeamWarningTriggered -= OnWarnung;
         _einsatz.VermisstenInfoChanged -= OnVermisste;
         _einsatz.VermisstenAdded -= OnVermissteProfil;
@@ -160,7 +175,6 @@ public sealed class ElAppEreignisse : IDisposable
         _einsatz.TeamPhoneLocationChanged -= OnHandy;
         _halsbaender.CollarLocationReceived -= OnHalsband;
         _positionen.Geaendert -= OnEl;
-        _funk.Neu -= OnFunk;
         foreach (var id in _abos.Keys.ToList()) Abmelden(id);
     }
 }

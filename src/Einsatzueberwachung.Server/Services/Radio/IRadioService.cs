@@ -27,7 +27,11 @@ public sealed record RadioMessageDto(
     string SourceTeamName,
     string CreatedBy,
     IReadOnlyList<RadioReplyDto> Replies,
-    string FormattedTimestamp);
+    string FormattedTimestamp)
+{
+    /// <summary>Kennung der zugehoerigen Einsatz-Notiz (Quelle „Funk“), nur direkt nach dem Anlegen gesetzt</summary>
+    public string? NotizId { get; init; }
+}
 
 public sealed record RadioReplyDto(
     string Id,
