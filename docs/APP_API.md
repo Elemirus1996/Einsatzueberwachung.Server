@@ -359,7 +359,7 @@ Antwort `200`:
 
 | Endpunkt | Inhalt |
 |---|---|
-| `GET /vermisste` | Vermisstenprofile mit `profilId`, `version` und allen Feldern wie in `/el` (Name, Alter, Beschreibung, Kleidung, Mobilität, Risiken, zuletzt gesehen mit Ort und Zeit …), je Profil die Checkliste `[ { "id", "text", "erledigt" } ]` |
+| `GET /vermisste` | `{ "szenario", "mehrereErlaubt", "profile": […] }`, je Profil `profilId`, `version`, `vollerName`, `zuletztAktualisiert` und alle Felder wie in `/el` (siehe unten), dazu `checkliste` (`null` oder `{ "name", "punkte": [ { "id", "text", "typ", "pflicht", "auswahl", "wert", "erledigt" } ] }`) |
 | `GET /karte` | `suchgebiete` (id, name, farbe, punkte, teamId, `abdeckungProzent`), `positionen` (`art`: `halsband` · `handy` · `el` · `elw`, `id`, `name`, `teamId`, `lat`, `lng`, `zeit`, `akku`) |
 | `GET /tracks?seit=<unix-ms>` | wie Abschnitt 7 der Team-Rolle, aber `laufend` als Liste je Team: `[ { "teamId", "hund": […], "mensch": […] } ]`, `abgeschlossen` mit `teamId` |
 | `GET /notizen?vor=<id>&anzahl=50` | `{ "notizen": […], "weitere": true }` – Notizen und Funk wie in `/el`, **neueste zuerst**: `id`, `art` (`notiz` · `funk` · `status` · `system`), `text`, `zeit`, `von`, `teamId`, `loeschbar`, `antworten` `[ { "id", "text", "zeit", "von" } ]`. Blättern mit `vor` = älteste geladene `id`; `anzahl` höchstens 200 |
@@ -382,7 +382,7 @@ und wiederholen.
 | `/funk` | `text`, `teamId` (optional), `antwortAuf` (optional) | Funkspruch oder Antwort |
 | `/vermisste` | Profil wie bei `GET`, ohne `profilId` = neu; beim Ändern mit `version` | anlegen oder ändern (siehe unten) |
 | `/vermisste/{profilId}/entfernen` | – | entfernen |
-| `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` | Checklistenpunkt abhaken |
+| `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` (bei `typ = jaNein`) bzw. `wert` (bei `auswahl` und `text`) | Checklistenpunkt setzen, ohne `version` |
 | `/szenario` | `szenario` | Szenario des Einsatzes |
 | `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional) | wie `/el/start`; läuft schon ein Einsatz → `409` |
 | `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null }` | wie `/el/beenden` |
@@ -401,6 +401,17 @@ Umgesetzt (Stufe 3), im Einzelnen:
   `antwortAuf` = `id` aus `/notizen` → `{ "notizId", "antwortId" }`, unbekannt → `404`.
 - `text` ist Pflicht (höchstens 1000 Zeichen), sonst `400`. Ohne laufenden Einsatz → `409`.
 - Nur erfolgreiche Aktionen werden für die Entdopplung gemerkt; eine abgelehnte `id` darf die App erneut senden.
+
+**Felder eines Vermisstenprofils** (Stufe 4a umgesetzt), Namen wie im Server-Modell: Texte `vorname`, `nachname`, `alter`,
+`geburtsdatum`, `beschreibung`, `kleidung`, `besonderheiten`, `zuletztGesehenOrt`, `zuletztGesehenZeit`, `zuletztGesehenVon`,
+`vorerkrankungen`, `medikamente`, `polizeiKontaktName`, `polizeiDienstnummer`, `polizeiTelefon`, `bosEinheit`, `bosZugfuehrer`,
+`bosFunkrufname`, `bosAufgabenteilung` (höchstens 2000 Zeichen); Ja/Nein `polizeiVermisstenmeldungAufgenommen`,
+`polizeiKoordinationBesprochen`, `polizeiSuchabschnittAbgestimmt`, `polizeiRueckmeldepflichtVereinbart`, `polizeiDatenschutzGeklaert`,
+`bosAbschnittAbgestimmt`, `bosRessourcenBesprochen`; Auswahlen `orientierung` (`Unbekannt` · `Gut` · `Eingeschraenkt`),
+`mobilitaet` (`Unbekannt` · `ZuFuss` · `Rollator` · `Rollstuhl` · `Fahrzeug`), `suizidrisiko` und `bewaffnet` (`Unbekannt` · `Nein` · `Ja`).
+Beim Speichern übernimmt der Server **nur die mitgeschickten Felder**; unbekannte Felder oder Werte → `400`. Ein zweites Profil in
+einem Szenario, das nur eine Person erlaubt (`mehrereErlaubt = false`) → `409`. Antwort `{ "profilId", "version" }`.
+`/szenario`: `Unbestimmt` · `Mantrailer` · `Flaeche` · `Truemmer` · `Sonstige`, sonst `400`.
 
 **Gleichzeitiges Bearbeiten von Vermissten:** `GET /vermisste` liefert je Profil eine `version` (Text, ändert sich bei jeder
 Speicherung, auch durch `/el` im Browser mit Auto-Save). Beim Ändern schickt die App die `version` mit, auf der ihre Bearbeitung
