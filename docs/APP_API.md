@@ -259,3 +259,114 @@ Die Position der Einsatzleitung wird nicht gespeichert und erscheint nicht im Be
 
 Wie in der Team-Rolle (Abschnitt 10), mit EL-Token, nur intern. Kennung und `logoVersion` liefert die native EL-Anmeldung (Phase 1b)
 im selben Objekt `server`. Bei Einsatzende verschwindet der Marker.
+
+## Rolle Einsatzleitung – native App (#125)
+
+Die App baut `/el`, `/el/start` und `/el/beenden` **nativ** nach. Dafür gelten zusätzlich die folgenden Endpunkte unter
+`https://<interne Adresse>/api/el/app/v1`. Grundsätze:
+
+- **Nur intern** (VPN). Am öffentlichen Zugang antwortet jeder Endpunkt `404`.
+- Token wie oben (24 h, ungültig nach Änderung des Staffel-Passworts oder nach `/logout`), sonst `410` + `{"mode":"stop"}`.
+- Zeiten UTC mit `Z` bzw. Unix-ms. Nicht in der App (bleibt im Monitor): Teams anlegen, Stammdaten, Einstellungen, Archiv.
+- Jede Aktion steht mit dem Gerätenamen (VPN-Gerät, sonst „Einsatzleitung“) im Audit-Log. Token und Positionen nie.
+- Fehler, die die App anzeigen soll (z. B. „Team läuft schon“, „Halsband vergeben“): `409` + `{ "error": "<kurzer Text>" }`.
+  Falsche Eingaben: `400` + `{ "error": "…" }`.
+
+### 4. `POST /login` und `POST /logout`
+
+```json
+{ "passwort": "…", "geraet": "iPhone Anna" }
+```
+
+Antwort `200`:
+
+```json
+{ "apiVersion": 1, "rolle": "el", "token": "e1.…", "expiresAt": "…Z",
+  "server": { "kennung": "…", "staffel": "RHS Musterstadt", "logoVersion": "a1b2…" } }
+```
+
+- Gleiche Sperre wie die Anmeldeseite im Browser (gemeinsamer Zähler je Absender-IP): nach 5 Fehlversuchen 5 Minuten gesperrt,
+  dann `429` + `{ "error": "…", "wiederholenNachSec": 300 }`. Falsches Passwort `401`. Noch kein Staffel-Passwort eingerichtet `409`.
+- `geraet` (optional, höchstens 40 Zeichen) dient nur der Anzeige im Audit-Log, falls das VPN-Gerät keinen Namen hat.
+- nginx: strenges Limit wie `/team/login` (20/min je IP).
+- `POST /logout` (mit Token) → `204`. Dieses Token ist danach ungültig, auch nach einem Neustart des Servers.
+
+### 5. `GET /lage`
+
+```json
+{
+  "mode": "track", "serverZeit": "…Z",
+  "einsatz": { "aktiv": true, "text": "Vermisste Person · Testwald", "stichwort": "…", "ort": "…", "szenario": "Flaeche",
+               "uebung": false, "beginn": "…Z", "einsatzleiter": "…", "fuehrungsassistent": "…" },
+  "teams": [ {
+      "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"],
+      "suche": { "status": "laeuft", "seit": "…Z", "dauerSec": 2100 },
+      "warnstufe": 0, "warnung1Min": 45, "warnung2Min": 60,
+      "suchgebiet": { "id": "…", "name": "Gebiet A", "farbe": "#2f6fd6" },
+      "halsband": { "id": "HB-7", "name": "Halsband 7", "zeit": "…Z", "akku": 72 },
+      "handy": { "zeit": "…Z", "akku": 64 },
+      "pause": { "erforderlichBis": "…Z" }
+  } ],
+  "wetter": { "temperatur": 12.5, "wind": 14, "beschreibung": "Bewölkt", "zeit": "…Z" }
+}
+```
+
+- `einsatz.aktiv = false`: kein Einsatz, `teams` leer, `mode = pause`. `szenario`: `Unbestimmt` · `Mantrailer` · `Flaeche` · `Truemmer` · `Sonstige`.
+- `suche.status` wie in der Team-Rolle (`bereit` · `laeuft` · `kurzpause` · `beendet`). `warnstufe`: 0 normal, 1 erste, 2 zweite Warnung.
+- `halsband`, `handy`, `suchgebiet`, `pause` und `wetter` sind `null`, wenn nicht vorhanden. Die Positionen selbst liefert `/karte`.
+
+### 6. Weitere Lese-Endpunkte
+
+| Endpunkt | Inhalt |
+|---|---|
+| `GET /vermisste` | Vermisstenprofile mit allen Feldern wie in `/el` (Name, Alter, Beschreibung, Kleidung, Mobilität, Risiken, zuletzt gesehen mit Ort und Zeit …), je Profil die Checkliste `[ { "id", "text", "erledigt" } ]` |
+| `GET /karte` | `suchgebiete` (id, name, farbe, punkte, teamId, `abdeckungProzent`), `positionen` (`art`: `halsband` · `handy` · `el` · `elw`, `id`, `name`, `teamId`, `lat`, `lng`, `zeit`, `akku`) |
+| `GET /tracks?seit=<unix-ms>` | wie Abschnitt 7 der Team-Rolle, aber `laufend` als Liste je Team: `[ { "teamId", "hund": […], "mensch": […] } ]`, `abgeschlossen` mit `teamId` |
+| `GET /notizen?vor=<id>&anzahl=50` | Notizen und Funk, **neueste zuerst**: `id`, `art` (`notiz` · `funk` · `status` · `system`), `text`, `zeit`, `von`, `teamId`, `antworten` `[ { "id", "text", "zeit", "von" } ]`. Blättern mit `vor` = älteste geladene `id` |
+| `GET /halsbaender` | freie Halsbänder für die Rückfrage beim Teamstart: `[ { "id", "name", "zeit", "akku" } ]`, dazu je Team das zuletzt benutzte (`zuletzt`) |
+| `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen" } ]` |
+
+### 7. Aktionen
+
+Alle Aktionen sind `POST` mit JSON und tragen eine `id` (UUID der App, höchstens 64 Zeichen). Dieselbe `id` wird nur **einmal**
+ausgeführt, eine Wiederholung antwortet `200` mit `{ "doppelt": true }` (wie `/statusmeldung`). So darf die App im Funkloch puffern
+und wiederholen.
+
+| Endpunkt | Körper (zusätzlich zu `id`) | Wirkung wie in `/el` |
+|---|---|---|
+| `/teams/{teamId}/start` | `halsbandId` (optional, `null` = ohne Halsband) | Suche starten; Halsband vergeben → `409` |
+| `/teams/{teamId}/pause`, `/weiter`, `/stopp`, `/zuruecksetzen` | – | Kurzpause, fortsetzen, Suche beenden (Track wird gespeichert), Suchzeit zurücksetzen |
+| `/teams/{teamId}/mitteilung` | `text` | Mitteilung an das Team (in der Team-App als `mitteilung`) |
+| `/notizen` | `text`, `teamId` (optional) | Notiz der Einsatzleitung |
+| `/notizen/{notizId}/loeschen` | – | Notiz löschen |
+| `/funk` | `text`, `teamId` (optional), `antwortAuf` (optional) | Funkspruch oder Antwort |
+| `/vermisste` | Profil wie bei `GET`, ohne `profilId` = neu | anlegen oder ändern |
+| `/vermisste/{profilId}/entfernen` | – | entfernen |
+| `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` | Checklistenpunkt abhaken |
+| `/szenario` | `szenario` | Szenario des Einsatzes |
+| `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional) | wie `/el/start`; läuft schon ein Einsatz → `409` |
+| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null }` | wie `/el/beenden` |
+
+Antwort jeder Aktion: `200` + `{ "doppelt": false, … }`, beim Anlegen mit der neuen Kennung des Objekts (z. B. `notizId`).
+
+### 8. `GET /ereignisse` – Live
+
+Wie Abschnitt 9 der Team-Rolle (Server-Sent Events, Token nur im Header, `retry: 5000`, `: ping` alle 20 s, `verdraengt`),
+aber mit diesen Ereignissen:
+
+| Ereignis | Daten | App |
+|---|---|---|
+| `team` | `{ "teamId" }` | Team geändert (Suche, Status, Gebiet, Halsband), `/lage` neu laden |
+| `position` | `{ "art", "id", "teamId", "lat", "lng", "zeit", "akku" }` | Marker auf der Karte bewegen |
+| `notiz` / `funk` | `{ "id" }` | `/notizen` neu laden |
+| `vermisste` | `{}` | `/vermisste` neu laden |
+| `einsatz` | `{ "aktiv": true }` | gestartet oder beendet, `/lage` neu laden |
+| `warnung` | `{ "teamId", "stufe": 1, "text" }` | Warnton bzw. Vibration (`stufe` 1 oder 2) |
+
+Die Grenze von 10 Verbindungen gilt **je Token**, nicht je Team. Bei Einsatzende kommt `einsatz` mit `{ "aktiv": false }`,
+**nicht** `stop`: Die Einsatzleitung bleibt angemeldet. `stop` nur bei ungültigem Token.
+
+### 9. Reihenfolge der Umsetzung
+
+1. diese Beschreibung, 2. `/login`, `/logout`, `/lage`, `/ereignisse`, 3. Team-Aktionen, Notizen, Funk, Mitteilung,
+4. Vermisste, Karte, Tracks, Halsbänder, 5. Einsatz starten und beenden. Bis ein Teil umgesetzt ist, antwortet sein Endpunkt `404`.
