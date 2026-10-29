@@ -11,11 +11,14 @@ namespace Einsatzueberwachung.Server.Services;
 /// <summary>
 /// Token der Tracking-App fuer die Rolle Einsatzleitung (#110, docs/APP_API.md). Ausgestellt nur von der angemeldeten
 /// EL-Ansicht (/el) im VPN; gebunden an die Generation der EL-Anmeldung – eine Passwortaenderung entwertet es sofort.
-/// Format: „e1.&lt;generation&gt;.&lt;ablauf-unix&gt;.&lt;signatur&gt;“.
+/// Format: „e2.&lt;generation&gt;.&lt;ablauf-unix&gt;.&lt;kennung&gt;.&lt;signatur&gt;“ mit zufaelliger Kennung (16 Byte) – zwei
+/// Anmeldungen in derselben Sekunde ergeben verschiedene Tokens, ein Logout sperrt nur eins. Aeltere „e1“-Tokens ohne Kennung
+/// werden bis zu ihrem Ablauf weiter angenommen.
 /// </summary>
 public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitung, string? sperrDatei = null)
 {
-    private const string Version = "e1";
+    private const string Version = "e2";
+    private const string VersionAlt = "e1";
     public static readonly TimeSpan Laufzeit = TimeSpan.FromHours(24);
 
     // Abgemeldete Tokens (POST /logout): Hash → Ablauf. Dauerhaft in einer Datei, damit ein Neustart sie nicht wieder freigibt.
@@ -62,7 +65,8 @@ public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitun
     public string Ausstellen(DateTime ablaufUtc)
     {
         var ablauf = new DateTimeOffset(DateTime.SpecifyKind(ablaufUtc, DateTimeKind.Utc)).ToUnixTimeSeconds();
-        var payload = $"{Version}.{leitung.Generation}.{ablauf}";
+        var kennung = Convert.ToBase64String(RandomNumberGenerator.GetBytes(16)).Replace('+', '-').Replace('/', '_').TrimEnd('=');
+        var payload = $"{Version}.{leitung.Generation}.{ablauf}.{kennung}";
         return $"{payload}.{Signatur(payload)}";
     }
 
@@ -71,12 +75,14 @@ public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitun
         ablaufUtc = default;
         if (string.IsNullOrWhiteSpace(token) || token.Length > 256) return false;
         var teile = token.Split('.');
-        if (teile.Length != 4 || teile[0] != Version) return false;
+        var neu = teile.Length == 5 && teile[0] == Version;
+        var alt = teile.Length == 4 && teile[0] == VersionAlt;
+        if (!neu && !alt) return false;
         if (!int.TryParse(teile[1], out var generation) || !long.TryParse(teile[2], out var ablauf)) return false;
         if (generation != leitung.Generation) return false;
 
-        var erwartet = Signatur($"{teile[0]}.{teile[1]}.{teile[2]}");
-        if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(teile[3]), Encoding.ASCII.GetBytes(erwartet)))
+        var payload = string.Join('.', teile[..^1]);
+        if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(teile[^1]), Encoding.ASCII.GetBytes(Signatur(payload))))
             return false;
 
         ablaufUtc = DateTimeOffset.FromUnixTimeSeconds(ablauf).UtcDateTime;
