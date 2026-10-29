@@ -173,8 +173,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(sp => ElAppTokenService.MitDatenordner(secret, sp.GetRequiredService<LeitungAuthStore>()));
         services.AddSingleton<ElPositionService>();
         // Native Einsatzleitung, Live-Ereignisse (#125)
-        services.AddSingleton<FunkEreignisse>();
         services.AddSingleton<ElAppEreignisse>();
+        services.AddSingleton<ElAppAktionen>();
         // Native Team-Ansicht der App (#119)
         services.AddSingleton<TeamAppEreignisse>();
         services.AddSingleton<AppStatusmeldungen>();
