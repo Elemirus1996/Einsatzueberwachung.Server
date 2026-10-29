@@ -105,6 +105,9 @@ namespace Einsatzueberwachung.Domain.Models
         /// <summary>Tracking-App (#110): gepufferte Positionen gesammelt alle so viele Sekunden hochladen</summary>
         public int AppUploadSekunden { get; set; } = 60;
 
+        /// <summary>Tracking-App (#133): Teams duerfen die Suche selbst starten, pausieren und beenden</summary>
+        public bool AppTeamsSteuernSuche { get; set; } = true;
+
         // Karten-Marker Symbole
         // Collar: "paw" | "dog" | "bone" | "dot" | "crosshairs" | "location-arrow"
         // Human:  "phone" | "person" | "person_walking" | "radio" | "dot"

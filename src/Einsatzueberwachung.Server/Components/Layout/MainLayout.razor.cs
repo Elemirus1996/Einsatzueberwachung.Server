@@ -68,6 +68,16 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
             _lastWarning = warning;
             StateHasChanged();
         });
+        // Team steuert die Suche aus der App (#133): kurzer Ton, damit die Einsatzleitung es mitbekommt
+        if (warning.Source == WarningRuleDefinition.Sources.TeamAppSuche && BrowserPrefs.Preferences.SoundAlertsEnabled)
+        {
+            var prefs = BrowserPrefs.Preferences;
+            _ = InvokeAsync(async () =>
+            {
+                try { await JS.InvokeAsync<bool>("layoutTools.playWarningAlert", "chime", prefs.FirstWarningFrequency, prefs.SoundVolume, false, 1); }
+                catch { /* Ton ist Zusatz */ }
+            });
+        }
     }
 
     private string LastWarningBadgeClass => _lastWarning?.Level switch

@@ -71,7 +71,7 @@ public class TrackingAppTests
         Assert.Equal(OrtungsModus.Track, OrtungsSteuerung.FuerTeam(einsatz.CurrentEinsatz, team));
 
         team.PauseTimer();
-        Assert.Equal(OrtungsModus.Pause, OrtungsSteuerung.FuerTeam(einsatz.CurrentEinsatz, team));
+        Assert.Equal(OrtungsModus.Track, OrtungsSteuerung.FuerTeam(einsatz.CurrentEinsatz, team)); // Kurzpause: Ortung bleibt an (#133)
 
         team.StopTimer();
         Assert.Equal(OrtungsModus.Pause, OrtungsSteuerung.FuerTeam(einsatz.CurrentEinsatz, team)); // neue Suche moeglich

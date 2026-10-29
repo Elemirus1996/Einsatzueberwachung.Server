@@ -85,6 +85,13 @@ namespace Einsatzueberwachung.Domain.Models
                 Label = "Zertifikat der öffentlichen Adresse",
                 Description = "Wird ausgelöst, wenn das Zertifikat der öffentlichen Adresse ungültig ist oder in weniger als 14 Tagen abläuft – ohne gültiges Zertifikat senden Traccar und Team-Handys nichts.",
                 DefaultLevel = WarningLevel.Critical
+            },
+            new WarningRuleDefinition
+            {
+                Source = Sources.TeamAppSuche,
+                Label = "Team-App: Suche gesteuert",
+                Description = "Wird ausgelöst, wenn ein Team in der App die Suche startet, pausiert, fortsetzt oder beendet.",
+                DefaultLevel = WarningLevel.Info
             }
         ];
 
@@ -100,6 +107,7 @@ namespace Einsatzueberwachung.Domain.Models
             public const string PhoneNoSignal     = "PhoneNoSignal";
             public const string PhoneLowBattery   = "PhoneLowBattery";
             public const string ServerCertificate = "ServerCertificate";
+            public const string TeamAppSuche      = "TeamAppSuche";
         }
     }
 }
