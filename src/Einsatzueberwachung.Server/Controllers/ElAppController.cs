@@ -17,8 +17,17 @@ namespace Einsatzueberwachung.Server.Controllers;
 [AllowAnonymous] // eigene Pruefung des EL-Tokens
 public sealed class ElAppController(
     ElAppTokenService tokens, ElPositionService positionen, LeitungsGeraetNamen geraete, PublicAccess publicAccess,
-    ILogger<ElAppController> logger) : ControllerBase
+    ILogger<ElAppController> logger, AppLogo? logo = null) : ControllerBase
 {
+    /// <summary>Staffellogo als PNG (docs/APP_API.md, Einsatzleitung Abschnitt 3) – nur intern</summary>
+    [HttpGet("logo")]
+    public async Task<IActionResult> GetLogo()
+    {
+        if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _) || logo is null) return Gone();
+        return await AppLogoAntwort.ErstellenAsync(logo, Request, Response);
+    }
+
     [HttpGet("status")]
     public IActionResult GetStatus()
     {

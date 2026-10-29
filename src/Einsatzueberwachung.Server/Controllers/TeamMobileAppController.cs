@@ -29,11 +29,32 @@ public sealed class TeamMobileAppController : ControllerBase
     private readonly ICollarTrackingService? _halsbaender;
     private readonly TeamAppEreignisse? _ereignisse;
     private readonly AppStatusmeldungen? _statusmeldungen;
+    private readonly ServerKennung? _kennung;
+    private readonly AppLogo? _logo;
+
+    // Heimatstaffel (#121): Kennung, Name, Logo-Stand – zusaetzlich zum bisherigen Textfeld „staffel“
+    private async Task<object> ServerInfoAsync(string staffel) => new
+    {
+        kennung = _kennung?.Kennung,
+        staffel,
+        logoVersion = _logo is null ? null : (await _logo.HolenAsync())?.Version
+    };
+
+    /// <summary>Staffellogo als PNG (docs/APP_API.md Abschnitt 10)</summary>
+    [HttpGet("logo")]
+    public async Task<IActionResult> GetLogo()
+    {
+        if (!TryTeam(out _, out _) || _logo is null) return Gone();
+        return await AppLogoAntwort.ErstellenAsync(_logo, Request, Response);
+    }
 
     public TeamMobileAppController(ITeamMobileTokenService tokenService, IEinsatzService einsatzService,
         ISettingsService settings, ILogger<TeamMobileAppController> logger,
-        ICollarTrackingService? halsbaender = null, TeamAppEreignisse? ereignisse = null, AppStatusmeldungen? statusmeldungen = null)
+        ICollarTrackingService? halsbaender = null, TeamAppEreignisse? ereignisse = null, AppStatusmeldungen? statusmeldungen = null,
+        ServerKennung? kennung = null, AppLogo? logo = null)
     {
+        _kennung = kennung;
+        _logo = logo;
         _tokenService = tokenService;
         _einsatzService = einsatzService;
         _settings = settings;
@@ -164,6 +185,7 @@ public sealed class TeamMobileAppController : ControllerBase
             einsatz = EinsatzText(_einsatzService.CurrentEinsatz),
             uebung = !_einsatzService.CurrentEinsatz.IstEinsatz,
             staffel = staffel?.StaffelName ?? "",
+            server = await ServerInfoAsync(staffel?.StaffelName ?? ""),
             teams = _einsatzService.Teams
                 .OrderBy(t => t.TeamName)
                 .Select(t => new
@@ -220,6 +242,7 @@ public sealed class TeamMobileAppController : ControllerBase
             einsatz = EinsatzText(einsatz),
             uebung = !einsatz.IstEinsatz,
             staffel = staffel?.StaffelName ?? "",
+            server = await ServerInfoAsync(staffel?.StaffelName ?? ""),
             positionUrl = basis + "/positions",
             statusUrl = basis + "/status",
             expiresAt = ablaufUtc,

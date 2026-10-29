@@ -68,39 +68,28 @@ jobs:
       - name: Publish server linux-x64
         run: dotnet publish src/Einsatzueberwachung.Server -c Release -r linux-x64 --self-contained false -o artifacts/release/linux-x64/server-${{ steps.version.outputs.version }}
 
-      # Sicherstellen, dass libSkiaSharp.so im Publish-Output liegt.
-      # Mit `--self-contained false` und framework-dependent Publish kommt die native lib
-      # nicht zuverlaessig mit, obwohl SkiaSharp.NativeAssets.Linux referenziert ist.
-      # Wir holen sie deshalb deterministisch direkt von nuget.org.
-      - name: Ensure libSkiaSharp.so in publish output
+      # Native Linux-Bibliotheken (SkiaSharp fuer PDF/Karten/Logo, HarfBuzz fuer Text in SVG-Logos) sicher im Paket.
+      # Mit `--self-contained false` kommen sie nicht zuverlaessig mit. Immer genau die Version aus dem Projekt holen –
+      # eine andere Version passt nicht zur verwalteten DLL. Versionen: Einsatzueberwachung.Server.csproj.
+      - name: Ensure native libraries in publish output
         shell: bash
         run: |
+          set -euo pipefail
           PUBLISH_DIR="artifacts/release/linux-x64/server-${{ steps.version.outputs.version }}"
-          SKIA_VERSION="3.116.1"
+          CSPROJ="src/Einsatzueberwachung.Server/Einsatzueberwachung.Server.csproj"
+          version_von() { grep -oP "<PackageReference Include=\"$1\" Version=\"\K[^\"]+" "$CSPROJ"; }
 
-          if [ -f "$PUBLISH_DIR/libSkiaSharp.so" ] || [ -f "$PUBLISH_DIR/runtimes/linux-x64/native/libSkiaSharp.so" ]; then
-            echo "libSkiaSharp.so bereits im Publish-Output vorhanden"
-            exit 0
-          fi
+          hole() { # $1 NuGet-Paket, $2 Datei, $3 Version
+            if [ -f "$PUBLISH_DIR/$2" ]; then echo "$2 bereits vorhanden"; return; fi
+            curl -sfLo "/tmp/$1.nupkg" "https://www.nuget.org/api/v2/package/$1/$3"
+            rm -rf "/tmp/$1"; mkdir -p "/tmp/$1"
+            unzip -oq "/tmp/$1.nupkg" -d "/tmp/$1"
+            cp "/tmp/$1/runtimes/linux-x64/native/$2" "$PUBLISH_DIR/$2"
+            echo "$2 $3 kopiert ($(stat -c%s "$PUBLISH_DIR/$2") bytes)"
+          }
 
-          # Erst lokale Caches durchsuchen
-          SKIA_SO=$(find ~/.nuget /home/runner/.nuget /usr/share/dotnet -name "libSkiaSharp.so" 2>/dev/null | grep -E "/linux-x64/native/" | sort -V | tail -1 || true)
-
-          if [ -z "$SKIA_SO" ]; then
-            echo "Lib nicht im Cache gefunden — lade von nuget.org"
-            curl -sfLo /tmp/skia.nupkg "https://www.nuget.org/api/v2/package/SkiaSharp.NativeAssets.Linux/$SKIA_VERSION"
-            mkdir -p /tmp/skia-pkg
-            unzip -oq /tmp/skia.nupkg -d /tmp/skia-pkg
-            SKIA_SO="/tmp/skia-pkg/runtimes/linux-x64/native/libSkiaSharp.so"
-          fi
-
-          if [ ! -f "$SKIA_SO" ]; then
-            echo "::error::libSkiaSharp.so konnte nicht beschafft werden"
-            exit 1
-          fi
-
-          cp "$SKIA_SO" "$PUBLISH_DIR/libSkiaSharp.so"
-          echo "libSkiaSharp.so kopiert von $SKIA_SO ($(stat -c%s "$PUBLISH_DIR/libSkiaSharp.so") bytes)"
+          hole SkiaSharp.NativeAssets.Linux libSkiaSharp.so "$(version_von SkiaSharp)"
+          hole HarfBuzzSharp.NativeAssets.Linux libHarfBuzzSharp.so "$(version_von HarfBuzzSharp)"
 
       - name: Download livetracking artifact
         uses: actions/download-artifact@v4

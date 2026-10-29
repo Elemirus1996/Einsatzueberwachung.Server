@@ -12,7 +12,12 @@ Dieses Dokument listet alle Drittanbieter-Abhängigkeiten von Einsatzueberwachun
 | ClosedXML | 0.105.0 | MIT | |
 | FluentValidation | 12.1.1 | Apache-2.0 | |
 | FluentValidation.DependencyInjectionExtensions | 12.1.1 | Apache-2.0 | |
-| SkiaSharp | 3.116.1 | MIT | |
+| SkiaSharp | 3.119.2 | MIT | |
+| Svg.Skia | 5.1.1 | MIT | SVG-Staffellogo für die App als PNG (nur Rastern, SVG wird vorher bereinigt) |
+| Svg.Model, Svg.Animation, Svg.SceneGraph, ShimSkiaSharp | 5.1.1 | MIT | Abhängigkeiten von Svg.Skia |
+| Svg.Custom | 5.1.1 | MS-PL | Abhängigkeit von Svg.Skia (Grundlage SVG.NET) |
+| ExCSS | 4.3.1 | MIT | Abhängigkeit von Svg.Skia |
+| HarfBuzzSharp | 8.3.1.3 | MIT | Textdarstellung in SVG-Logos |
 | QRCoder | 1.6.0 | MIT | |
 | Microsoft.EntityFrameworkCore | 9.0.0 | MIT | |
 | Microsoft.EntityFrameworkCore.Sqlite | 9.0.0 | MIT | |
