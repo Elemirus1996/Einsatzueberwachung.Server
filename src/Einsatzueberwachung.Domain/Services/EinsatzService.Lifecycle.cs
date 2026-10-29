@@ -72,10 +72,7 @@ namespace Einsatzueberwachung.Domain.Services
             foreach (var team in _teams)
             {
                 team.StopTimer();
-                team.TimerStarted -= Team_TimerStarted;
-                team.TimerStopped -= Team_TimerStopped;
-                team.TimerReset -= Team_TimerReset;
-                team.WarningTriggered -= Team_WarningTriggered;
+                TeamEreignisseAbmelden(team);
             }
 
             _teams.Clear();
@@ -114,10 +111,7 @@ namespace Einsatzueberwachung.Domain.Services
 
             foreach (var team in _teams)
             {
-                team.TimerStarted -= Team_TimerStarted;
-                team.TimerStopped -= Team_TimerStopped;
-                team.TimerReset -= Team_TimerReset;
-                team.WarningTriggered -= Team_WarningTriggered;
+                TeamEreignisseAbmelden(team);
             }
 
             _teams.Clear();
@@ -131,10 +125,7 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 team.StartzeitWiederherstellen(_timeService?.Now ?? Ortszeit.Jetzt);
                 _teams.Add(team);
-                team.TimerStarted += Team_TimerStarted;
-                team.TimerStopped += Team_TimerStopped;
-                team.TimerReset += Team_TimerReset;
-                team.WarningTriggered += Team_WarningTriggered;
+                TeamEreignisseAbonnieren(team);
             }
 
             if (snapshot.DogPauses is { Count: > 0 })

@@ -26,11 +26,7 @@ namespace Einsatzueberwachung.Domain.Services
             }
 
             _teams.Add(team);
-            team.TimerStarted += Team_TimerStarted;
-            team.TimerStopped += Team_TimerStopped;
-            team.TimerReset += Team_TimerReset;
-            team.TimerPaused += Team_TimerPaused;
-            team.WarningTriggered += Team_WarningTriggered;
+            TeamEreignisseAbonnieren(team);
 
             TeamAdded?.Invoke(team);
             return team;
@@ -45,6 +41,7 @@ namespace Einsatzueberwachung.Domain.Services
             if (team != null)
             {
                 team.StopTimer();
+                TeamEreignisseAbmelden(team);
                 team.Dispose();
                 _teams.Remove(team);
                 TeamRemoved?.Invoke(team);
@@ -151,17 +148,59 @@ namespace Einsatzueberwachung.Domain.Services
             return _teams.Any(t => t.DogId == dogId && t.IsRunning);
         }
 
+        // Ein Ort fuer An- und Abmeldung – beim Anlegen, Wiederherstellen, Zuruecksetzen und Entfernen gleich
+        // (vorher fehlte TimerPaused nach einem Neustart: keine Pausen-Notizen mehr).
+        private void TeamEreignisseAbonnieren(Team team)
+        {
+            team.TimerStarted += Team_TimerStarted;
+            team.TimerStopped += Team_TimerStopped;
+            team.TimerReset += Team_TimerReset;
+            team.TimerPaused += Team_TimerPaused;
+            team.WarningTriggered += Team_WarningTriggered;
+        }
+
+        private void TeamEreignisseAbmelden(Team team)
+        {
+            team.TimerStarted -= Team_TimerStarted;
+            team.TimerStopped -= Team_TimerStopped;
+            team.TimerReset -= Team_TimerReset;
+            team.TimerPaused -= Team_TimerPaused;
+            team.WarningTriggered -= Team_WarningTriggered;
+        }
+
+        // Start, Pause, Stopp und Zuruecksetzen melden zusaetzlich TeamUpdated: Viele Wege (Monitor, /el, Halsband,
+        // TeamSucheService, Team-API) rufen nur team.StartTimer() & Co. auf – Abonnenten wie die Live-Ereignisse der App
+        // und die Speicherung erfuhren sonst nichts davon.
         private void Team_TimerStarted(Team team)
-            => _ = AddGlobalNoteAsync("Timer gestartet", GlobalNotesEntryType.TeamStart, team.TeamId);
+        {
+            _ = AddGlobalNoteAsync("Timer gestartet", GlobalNotesEntryType.TeamStart, team.TeamId);
+            SucheGeaendert(team);
+        }
 
         private void Team_TimerStopped(Team team)
-            => _ = AddGlobalNoteAsync("Timer gestoppt", GlobalNotesEntryType.TeamStop, team.TeamId);
+        {
+            _ = AddGlobalNoteAsync("Timer gestoppt", GlobalNotesEntryType.TeamStop, team.TeamId);
+            SucheGeaendert(team);
+        }
 
         private void Team_TimerReset(Team team)
-            => _ = AddGlobalNoteAsync("Timer zurückgesetzt", GlobalNotesEntryType.TeamReset, team.TeamId);
+        {
+            _ = AddGlobalNoteAsync("Timer zurückgesetzt", GlobalNotesEntryType.TeamReset, team.TeamId);
+            SucheGeaendert(team);
+        }
 
         private void Team_TimerPaused(Team team)
-            => _ = AddGlobalNoteAsync("Timer pausiert", GlobalNotesEntryType.TeamPause, team.TeamId);
+        {
+            _ = AddGlobalNoteAsync("Timer pausiert", GlobalNotesEntryType.TeamPause, team.TeamId);
+            SucheGeaendert(team);
+        }
+
+        private void SucheGeaendert(Team team)
+        {
+            if (!_teams.Contains(team)) return; // entferntes Team (StopTimer beim Loeschen)
+            try { TeamUpdated?.Invoke(team); }
+            catch { /* Abonnenten-Fehler duerfen Start/Stopp nicht abbrechen */ }
+        }
 
         private void Team_WarningTriggered(Team team, bool isSecondWarning)
         {
