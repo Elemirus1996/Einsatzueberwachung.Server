@@ -15,9 +15,13 @@ namespace Einsatzueberwachung.Server.Controllers;
 [Route("api/el/app/v1")]
 [IgnoreAntiforgeryToken]
 [AllowAnonymous] // eigene Pruefung des EL-Tokens
-public sealed class ElAppController(
+public sealed partial class ElAppController(
     ElAppTokenService tokens, ElPositionService positionen, LeitungsGeraetNamen geraete, PublicAccess publicAccess,
-    ILogger<ElAppController> logger, AppLogo? logo = null) : ControllerBase
+    ILogger<ElAppController> logger, AppLogo? logo = null,
+    // Native Einsatzleitung (#125, ElAppController.Native.cs)
+    LeitungAuthStore? leitung = null, LoginLockout? sperre = null, Einsatzueberwachung.Domain.Interfaces.IAuditLogService? audit = null,
+    Einsatzueberwachung.Domain.Interfaces.IEinsatzService? einsatz = null, Einsatzueberwachung.Domain.Interfaces.ICollarTrackingService? halsbaender = null,
+    Einsatzueberwachung.Domain.Interfaces.ISettingsService? einstellungen = null, ServerKennung? kennung = null) : ControllerBase
 {
     /// <summary>Staffellogo als PNG (docs/APP_API.md, Einsatzleitung Abschnitt 3) – nur intern</summary>
     [HttpGet("logo")]
