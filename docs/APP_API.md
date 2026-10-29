@@ -385,7 +385,7 @@ und wiederholen.
 | `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` (bei `typ = jaNein`) bzw. `wert` (bei `auswahl` und `text`) | Checklistenpunkt setzen, ohne `version` |
 | `/szenario` | `szenario` | Szenario des Einsatzes |
 | `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional) | wie `/el/start`; läuft schon ein Einsatz → `409` |
-| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null }` | wie `/el/beenden` |
+| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null }` – `kartenart`: `Streets` · `Topographic` · `Satellite`, sonst `400` | wie `/el/beenden` |
 
 Antwort jeder Aktion: `200` + `{ "doppelt": false, … }`, beim Anlegen mit der neuen Kennung des Objekts (z. B. `notizId`).
 
@@ -401,6 +401,46 @@ Umgesetzt (Stufe 3), im Einzelnen:
   `antwortAuf` = `id` aus `/notizen` → `{ "notizId", "antwortId" }`, unbekannt → `404`.
 - `text` ist Pflicht (höchstens 1000 Zeichen), sonst `400`. Ohne laufenden Einsatz → `409`.
 - Nur erfolgreiche Aktionen werden für die Entdopplung gemerkt; eine abgelehnte `id` darf die App erneut senden.
+
+**Beispiel `GET /vermisste`** (Stufe 4a, so liefert es der Server):
+
+```json
+{
+  "szenario": "Mantrailer",
+  "mehrereErlaubt": false,
+  "profile": [ {
+    "profilId": "3f2b8c1e-…", "version": "a1b2c3d4e5f60718", "vollerName": "Erna Muster", "zuletztAktualisiert": "2026-10-29T08:12:00Z",
+    "vorname": "Erna", "nachname": "Muster", "alter": "82", "geburtsdatum": "03.04.1944",
+    "beschreibung": "165 cm, schlank, graue kurze Haare", "kleidung": "rote Jacke, Hausschuhe", "besonderheiten": "Hörgerät",
+    "zuletztGesehenOrt": "Seniorenheim Lindenhof, Haupteingang", "zuletztGesehenZeit": "gestern ca. 18:30", "zuletztGesehenVon": "Pflegekraft",
+    "vorerkrankungen": "Demenz", "medikamente": "Blutverdünner",
+    "orientierung": "Eingeschraenkt", "mobilitaet": "Rollator", "suizidrisiko": "Nein", "bewaffnet": "Unbekannt",
+    "polizeiKontaktName": "PHK Meier", "polizeiDienstnummer": "", "polizeiTelefon": "0621 …",
+    "polizeiVermisstenmeldungAufgenommen": true, "polizeiKoordinationBesprochen": false, "polizeiSuchabschnittAbgestimmt": false,
+    "polizeiRueckmeldepflichtVereinbart": false, "polizeiDatenschutzGeklaert": false,
+    "bosEinheit": "", "bosZugfuehrer": "", "bosFunkrufname": "", "bosAufgabenteilung": "",
+    "bosAbschnittAbgestimmt": false, "bosRessourcenBesprochen": false,
+    "checkliste": { "name": "Mantrailer", "punkte": [
+      { "id": "9c…", "text": "Geruchsstück gesichert", "typ": "jaNein", "pflicht": true, "auswahl": [], "wert": "true", "erledigt": true },
+      { "id": "7d…", "text": "Art des Geruchsstücks", "typ": "auswahl", "pflicht": false, "auswahl": ["Kleidung", "Bettwäsche"], "wert": null, "erledigt": false },
+      { "id": "5e…", "text": "Bemerkung", "typ": "text", "pflicht": false, "auswahl": [], "wert": "", "erledigt": false } ] }
+  } ]
+}
+```
+
+- **Typen:** alle Textfelder sind `string` (nie `null`, leer = `""`), die Ja/Nein-Felder `bool`, Auswahlen `string` aus der Liste unten.
+  Ein Feld „Geschlecht“ gibt es im Server nicht.
+- **Pflichtfelder:** keine – auch ein leeres Profil ist erlaubt (Anzeige dann „Unbekannt“ in `vollerName`).
+- **Zuletzt gesehen:** alles Freitext wie in `/el`. `zuletztGesehenOrt` ist ein Text **ohne Koordinate**, `zuletztGesehenZeit` ist ein
+  **Freitext** (z. B. „gestern ca. 18:30“), keine UTC-Zeit. Nur `zuletztAktualisiert` ist eine echte Zeit (UTC mit `Z`).
+- **Szenario:** Die Felder sind in allen Szenarien gleich. Vom Szenario hängen nur ab: `mehrereErlaubt` (`true` bei `Flaeche` und
+  `Truemmer`, sonst nur ein Profil) und die Checkliste – ein neues Profil bekommt die Vorlage des aktuellen Szenarios aus den Stammdaten
+  (bei `Unbestimmt` keine, dann `checkliste: null`). Die Checkliste ändert sich nicht, wenn später das Szenario wechselt.
+- **`POST /vermisste`:** `{ "id": "<uuid>", "profilId": "…", "version": "…", <Felder> }`.
+  Neu: ohne `profilId` und ohne `version`, beliebige Felder. Ändern: `profilId` und `version` Pflicht.
+  **Weggelassene Felder bleiben unverändert.** Ein mitgeschicktes `""` (oder `null`) bei einem Textfeld **leert** es. Bei Ja/Nein und
+  Auswahlen ist `null` ein Fehler (`400`). `checkliste`, `vollerName` und `zuletztAktualisiert` werden beim Speichern nicht angenommen
+  (`400` als unbekanntes Feld) – die Checkliste ändert die App über `/vermisste/{profilId}/checkliste`.
 
 **Felder eines Vermisstenprofils** (Stufe 4a umgesetzt), Namen wie im Server-Modell: Texte `vorname`, `nachname`, `alter`,
 `geburtsdatum`, `beschreibung`, `kleidung`, `besonderheiten`, `zuletztGesehenOrt`, `zuletztGesehenZeit`, `zuletztGesehenVon`,

@@ -155,7 +155,8 @@ public sealed class ElAppTokenKennungTests : IDisposable
             .Replace('+', '-').Replace('/', '_').TrimEnd('=');
 
         Assert.True(tokens.TryPruefen($"{payload}.{signatur}", DateTime.UtcNow, out _));
-        Assert.False(tokens.TryPruefen($"{payload}.x{signatur[1..]}", DateTime.UtcNow, out _));
+        var gefaelscht = (signatur[0] == 'x' ? "y" : "x") + signatur[1..]; // sicher anders als die echte Signatur
+        Assert.False(tokens.TryPruefen($"{payload}.{gefaelscht}", DateTime.UtcNow, out _));
     }
 }
 
