@@ -21,7 +21,8 @@ public sealed partial class ElAppController(
     // Native Einsatzleitung (#125, ElAppController.Native.cs)
     LeitungAuthStore? leitung = null, LoginLockout? sperre = null, Einsatzueberwachung.Domain.Interfaces.IAuditLogService? audit = null,
     Einsatzueberwachung.Domain.Interfaces.IEinsatzService? einsatz = null, Einsatzueberwachung.Domain.Interfaces.ICollarTrackingService? halsbaender = null,
-    Einsatzueberwachung.Domain.Interfaces.ISettingsService? einstellungen = null, ServerKennung? kennung = null) : ControllerBase
+    Einsatzueberwachung.Domain.Interfaces.ISettingsService? einstellungen = null, ServerKennung? kennung = null,
+    ElAppEreignisse? ereignisse = null) : ControllerBase
 {
     /// <summary>Staffellogo als PNG (docs/APP_API.md, Einsatzleitung Abschnitt 3) – nur intern</summary>
     [HttpGet("logo")]

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Services;
 using Einsatzueberwachung.Server.Security;
@@ -68,6 +69,67 @@ public sealed partial class ElAppController
         if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _) || einsatz is null) return Gone();
         return Ok(ElLage.Erstellen(einsatz, halsbaender, positionen.Modus));
     }
+
+    /// <summary>Live-Ereignisse (Abschnitt 8). Bei Einsatzende kommt „einsatz“, „stop“ nur bei ungueltigem Token.</summary>
+    [HttpGet("ereignisse")]
+    public async Task GetEreignisse()
+    {
+        if (publicAccess.IsPublicRequest(HttpContext)) { Response.StatusCode = StatusCodes.Status404NotFound; return; }
+        var token = Bearer();
+        if (!tokens.TryPruefen(token, DateTime.UtcNow, out _) || ereignisse is null)
+        {
+            Response.StatusCode = StatusCodes.Status410Gone;
+            await Response.WriteAsJsonAsync(new { mode = "stop" });
+            return;
+        }
+
+        Response.Headers.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+        Response.Headers["X-Accel-Buffering"] = "no"; // nginx nicht puffern
+        await Response.WriteAsync("retry: 5000\n\n");
+        await Response.Body.FlushAsync();
+
+        var (id, leser) = ereignisse.Abonnieren(token!);
+        var abbruch = HttpContext.RequestAborted;
+        try
+        {
+            while (!abbruch.IsCancellationRequested)
+            {
+                // Abgemeldet, abgelaufen oder Staffel-Passwort geaendert: Verbindung beenden
+                if (!tokens.TryPruefen(token, DateTime.UtcNow, out _))
+                {
+                    await Response.WriteAsync(TeamAppEreignisse.Format("stop", new { }), abbruch);
+                    await Response.Body.FlushAsync(abbruch);
+                    break;
+                }
+
+                using var takt = CancellationTokenSource.CreateLinkedTokenSource(abbruch);
+                takt.CancelAfter(PingIntervall);
+                string? text = null;
+                try
+                {
+                    if (await leser.WaitToReadAsync(takt.Token)) leser.TryRead(out text);
+                    else break; // verdraengt
+                }
+                catch (OperationCanceledException) when (!abbruch.IsCancellationRequested)
+                {
+                    text = ": ping\n\n";
+                }
+                if (text is null) continue;
+                await Response.WriteAsync(text, abbruch);
+                await Response.Body.FlushAsync(abbruch);
+                if (text.StartsWith("event: verdraengt", StringComparison.Ordinal)) break;
+            }
+        }
+        catch (OperationCanceledException) { /* App hat die Verbindung getrennt */ }
+        finally
+        {
+            ereignisse.Abmelden(id);
+        }
+    }
+
+    /// <summary>Abstand der „: ping“-Kommentare (je Anfrage; Tests setzen ihn kleiner)</summary>
+    public TimeSpan PingIntervall { get; set; } = TimeSpan.FromSeconds(20);
 
     /// <summary>Name fuer das Audit-Log: VPN-Geraet, sonst Angabe der App, sonst „Einsatzleitung“</summary>
     private string Geraet(string? angabe)

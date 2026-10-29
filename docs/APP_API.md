@@ -234,7 +234,7 @@ Zweck: Der Führungsassistent sieht auf der Einsatzkarte, wo die Einsatzleitung 
 2. Anmeldung in der WebView mit dem Staffel-Passwort wie im Browser.
 3. Die EL-Ansicht übergibt über dieselbe Brücke wie die Team-Seite:
    ```json
-   { "apiVersion": 1, "rolle": "el", "server": "https://einsatz.intern", "token": "e1.…", "expiresAt": "…" }
+   { "apiVersion": 1, "rolle": "el", "server": "https://einsatz.intern", "token": "e2.…", "expiresAt": "…" }
    ```
    Die Team-Übergabe trägt `"rolle": "team"`. Die App übernimmt nur Übergaben, deren `server` der geöffneten Adresse entspricht.
 4. Das Token gilt 24 h und nur, solange das Staffel-Passwort nicht geändert wird. Es erlaubt ausschließlich die zwei Endpunkte unten.
@@ -281,7 +281,7 @@ Die App baut `/el`, `/el/start` und `/el/beenden` **nativ** nach. Dafür gelten 
 Antwort `200`:
 
 ```json
-{ "apiVersion": 1, "rolle": "el", "token": "e1.…", "expiresAt": "…Z",
+{ "apiVersion": 1, "rolle": "el", "token": "e2.…", "expiresAt": "…Z",
   "server": { "kennung": "…", "staffel": "RHS Musterstadt", "logoVersion": "a1b2…" } }
 ```
 
@@ -368,6 +368,10 @@ aber mit diesen Ereignissen:
 | `vermisste` | `{}` | `/vermisste` neu laden |
 | `einsatz` | `{ "aktiv": true }` | gestartet oder beendet, `/lage` neu laden |
 | `warnung` | `{ "teamId", "stufe": 1, "text" }` | Warnton bzw. Vibration (`stufe` 1 oder 2) |
+
+`position`: bei `art = halsband` ist `id` die Halsband-Kennung (`teamId` des Teams, das es trägt, sonst `null`), bei `handy`
+die `teamId`, bei `el` der Gerätename (`teamId = null`). `funk` kommt bei einem neuen Funkspruch und bei einer neuen Antwort
+(`id` = Funkspruch). Ein Token, das abgemeldet wurde oder abgelaufen ist, beendet die Verbindung spätestens beim nächsten Ping mit `stop`.
 
 Die Grenze von 10 Verbindungen gilt **je Token**, nicht je Team. Bei Einsatzende kommt `einsatz` mit `{ "aktiv": false }`,
 **nicht** `stop`: Die Einsatzleitung bleibt angemeldet. `stop` nur bei ungültigem Token.
