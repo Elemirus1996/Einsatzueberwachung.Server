@@ -111,3 +111,49 @@ public sealed class ElAppNativTests : IDisposable
         Assert.EndsWith("Z", t.GetProperty("suche").GetProperty("seit").GetString());
     }
 }
+
+/// <summary>Review zu #132: EL-Token mit zufaelliger Kennung</summary>
+public sealed class ElAppTokenKennungTests : IDisposable
+{
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), "eu-eltoken-" + Guid.NewGuid().ToString("N"));
+    private readonly LeitungAuthStore _leitung;
+
+    public ElAppTokenKennungTests()
+    {
+        Directory.CreateDirectory(_dir);
+        _leitung = new LeitungAuthStore(_dir);
+        Assert.Null(_leitung.Setup(_leitung.SetupCode!, "Rettungshund2026", "Rettungshund2026"));
+    }
+
+    public void Dispose() => Directory.Delete(_dir, recursive: true);
+
+    [Fact]
+    public void ZweiTokensInDerselbenSekunde_SindVerschieden_LogoutSperrtNurEins()
+    {
+        var tokens = new ElAppTokenService(RandomNumberGenerator.GetBytes(64), _leitung, Path.Combine(_dir, "gesperrt.txt"));
+        var ablauf = DateTime.UtcNow.AddHours(1);
+        var a = tokens.Ausstellen(ablauf);
+        var b = tokens.Ausstellen(ablauf);
+
+        Assert.NotEqual(a, b);
+        Assert.StartsWith("e2.", a);
+        tokens.Abmelden(a, ablauf);
+        Assert.False(tokens.TryPruefen(a, DateTime.UtcNow, out _));
+        Assert.True(tokens.TryPruefen(b, DateTime.UtcNow, out _));
+    }
+
+    [Fact]
+    public void AltesTokenOhneKennung_WirdBisZumAblaufAngenommen()
+    {
+        var geheim = RandomNumberGenerator.GetBytes(64);
+        var tokens = new ElAppTokenService(geheim, _leitung);
+        var ablauf = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds();
+        var payload = $"e1.{_leitung.Generation}.{ablauf}";
+        using var hmac = new HMACSHA256(geheim);
+        var signatur = Convert.ToBase64String(hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes("el|" + payload)))
+            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        Assert.True(tokens.TryPruefen($"{payload}.{signatur}", DateTime.UtcNow, out _));
+        Assert.False(tokens.TryPruefen($"{payload}.x{signatur[1..]}", DateTime.UtcNow, out _));
+    }
+}
