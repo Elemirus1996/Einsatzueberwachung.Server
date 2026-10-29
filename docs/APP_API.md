@@ -89,7 +89,10 @@ Leichte Abfrage ohne GPS, im Modus `pause` alle `pauseCheckSec` Sekunden und bei
 | `pause` | **Ortungsdienst beenden** (nicht nur das Senden), Puffer noch hochladen, dann alle `pauseCheckSec` `/status` abfragen |
 | `stop` | Ortungsdienst beenden, Token und Puffer löschen, Rolle Team beenden |
 
-Server-Logik: Suche läuft → `track`; Kurzpause, Suche nicht gestartet oder beendet → `pause`; Einsatz beendet oder Team gelöscht → `stop`.
+Server-Logik: Suche läuft **oder Kurzpause** → `track`; Suche noch nicht gestartet oder beendet → `pause`; Einsatz beendet oder Team gelöscht → `stop`.
+
+In der Kurzpause bleibt die Ortung also an (#133): Das Team ist weiter im Gelände. Diese Positionen zeigt der Server nur als
+**aktuelle Position**, in den Laufweg der Suche (`/tracks`, Bericht) kommen sie nicht.
 
 **Ungültiges, abgelaufenes oder fremdes Token, Einsatz vorbei, Team gelöscht:** HTTP **410 Gone** mit `{ "mode": "stop" }`. Die App behandelt 410 immer als `stop` und wiederholt nichts.
 
@@ -105,7 +108,7 @@ Alles, was die Ansicht beim Öffnen braucht (Grundlage: heutige Team-Seite).
   "serverZeit": "2026-10-28T09:15:00Z",
   "einsatz": { "text": "Vermisste Person · Testwald", "uebung": false, "staffel": "RHS Musterstadt" },
   "team": { "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"] },
-  "suche": { "status": "laeuft", "seit": "2026-10-28T08:40:00Z", "dauerSec": 2100 },
+  "suche": { "status": "laeuft", "seit": "2026-10-28T08:40:00Z", "dauerSec": 2100, "darfSteuern": true },
   "suchgebiet": { "id": "…", "name": "Gebiet A", "farbe": "#2f6fd6", "punkte": [ { "lat": 49.31, "lng": 8.43 } ] },
   "halsband": { "id": "HB-7", "name": "Halsband 7", "lat": 49.312, "lng": 8.431, "zeit": "2026-10-28T09:14:48Z", "akku": 72 },
   "mitteilungen": [ { "id": "…", "text": "Bitte Funkkontakt", "zeit": "2026-10-28T09:10:00Z" } ]
@@ -114,6 +117,8 @@ Alles, was die Ansicht beim Öffnen braucht (Grundlage: heutige Team-Seite).
 
 - `suche.status`: `bereit` (noch nicht gesucht) · `laeuft` · `kurzpause` · `beendet`. `seit` = Beginn der laufenden bzw. letzten Suche, `null` bei `bereit`.
   `dauerSec` = Suchzeit (ohne Kurzpausen) wie im Monitor.
+- `suche.darfSteuern`: `true`, wenn das Team die Suche selbst steuern darf (Abschnitt 11, Einstellung auf dem Server).
+  Bei `false` blendet die App die Knöpfe aus.
 - `suchgebiet` und `halsband` sind `null`, wenn keins zugewiesen ist bzw. noch keine Position vorliegt. `akku` fehlt, wenn unbekannt.
 - `helfer` ist eine Liste (ein Team kann mehrere Helfer haben).
 - `mitteilungen`: die letzten 20 Mitteilungen der Einsatzleitung an dieses Team, **älteste zuerst**. Sie bleiben für den
@@ -151,13 +156,15 @@ Alles, was die Ansicht beim Öffnen braucht (Grundlage: heutige Team-Seite).
 | `code` | Notiz im Einsatz (wie die Knöpfe der Team-Seite) |
 |---|---|
 | `im_gebiet` | „im Suchgebiet eingetroffen“ |
-| `pause` | „Pause“ |
+| `pause` | „Pause“ (veraltet, siehe unten) |
 | `funk` | „Funkkontakt benötigt“ |
-| `beendet` | „Auftrag beendet“ |
+| `beendet` | „Auftrag beendet“ (veraltet, siehe unten) |
 
 - Antwort `200`: `{ "zeit": "…Z", "doppelt": false }`. Unbekannter Code → `400`.
 - `id` (von der App erzeugt, max. 64 Zeichen) entdoppelt: Die App darf im Funkloch beliebig oft wiederholen, dieselbe `id`
   erzeugt nur **eine** Notiz (Antwort dann `"doppelt": true`).
+- `pause` und `beendet` ersetzt `POST /suche` (Abschnitt 11). Der Server nimmt sie von älteren Apps weiter an, schreibt aber nur
+  die Notiz und ändert die Suche nicht. Neue Apps schicken nur noch `im_gebiet` und `funk`.
 
 ### 9. `GET /ereignisse` – Live (Server-Sent Events)
 
@@ -214,6 +221,39 @@ data: {}
   Ereignis-Attribute, DTD/Entitäten und alle Verweise nach außen; nachgeladen oder ausgeführt wird nichts. Das Ergebnis wird
   zwischengespeichert und nur bei einem neuen Logo neu erzeugt.
 - `404`, wenn kein Logo hinterlegt ist oder die Datei nicht lesbar ist. Die App zeigt dann nur den Namen.
+
+### 11. `POST /suche` – Team steuert die Suche (#133)
+
+Ablauf im Einsatz: anmelden → zum Suchgebiet → „Suche starten“ → „Pause“ (Kurzpause, Ortung läuft weiter) → „Weiter“ →
+„Suche beendet“ (Ortung aus).
+
+```json
+{ "id": "6f1c…-uuid-der-app", "aktion": "starten" }
+```
+
+| `aktion` | erlaubt bei `suche.status` | Wirkung wie im Monitor bzw. in `/el` |
+|---|---|---|
+| `starten` | `bereit`, `beendet` | Suche starten, mit dem Halsband, das dem Team schon zugewiesen ist (sonst ohne). Keine Halsband-Auswahl in der App. |
+| `pause` | `laeuft` | Kurzpause, Suchzeit hält an, `mode` bleibt `track` |
+| `weiter` | `kurzpause` | Suche fortsetzen |
+| `beenden` | `laeuft`, `kurzpause` | Suche beenden (Track wird gespeichert), danach `mode = pause` |
+
+Antwort `200`:
+
+```json
+{ "doppelt": false, "mode": "track", "suche": { "status": "laeuft", "seit": "…Z", "dauerSec": 0, "darfSteuern": true } }
+```
+
+- `id` (UUID der App, höchstens 64 Zeichen) entdoppelt wie bei `/statusmeldung`: Dieselbe `id` wird nur **einmal** ausgeführt,
+  eine Wiederholung antwortet `200` mit `"doppelt": true` und dem aktuellen Stand. Abgelehnte Anfragen (`400`, `403`, `409`)
+  merkt sich der Server nicht.
+- Nicht erlaubter Übergang, z. B. `pause`, obwohl keine Suche läuft: `409` + `{ "error": "<kurzer Text>", "suche": { … } }`
+  mit dem aktuellen Stand. Die App zeigt den Text und übernimmt den Stand (die Einsatzleitung kann inzwischen umgeschaltet haben).
+- Einstellung „Teams dürfen die Suche selbst steuern“ aus: `403` + `{ "error": "…" }`. Standard ist **ein**.
+- Fehlende `id` oder unbekannte `aktion`: `400`. Ungültiges Token: `410` + `{ "mode": "stop" }` wie überall.
+- Danach kommt auf `/ereignisse` wie gewohnt `lage`.
+- Im Monitor und in `/el` erscheint ein deutlicher Hinweis mit Ton („Team Rex hat die Suche gestartet (App)“), dazu eine Notiz
+  mit Quelle „Team-App“ und ein Eintrag im Audit-Log. Die Einsatzleitung kann jederzeit korrigieren.
 
 ### Grenzen
 
