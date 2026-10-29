@@ -13,10 +13,51 @@ namespace Einsatzueberwachung.Server.Services;
 /// EL-Ansicht (/el) im VPN; gebunden an die Generation der EL-Anmeldung – eine Passwortaenderung entwertet es sofort.
 /// Format: „e1.&lt;generation&gt;.&lt;ablauf-unix&gt;.&lt;signatur&gt;“.
 /// </summary>
-public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitung)
+public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitung, string? sperrDatei = null)
 {
     private const string Version = "e1";
     public static readonly TimeSpan Laufzeit = TimeSpan.FromHours(24);
+
+    // Abgemeldete Tokens (POST /logout): Hash → Ablauf. Dauerhaft in einer Datei, damit ein Neustart sie nicht wieder freigibt.
+    private readonly object _sperre = new();
+    private Dictionary<string, DateTime>? _abgemeldet;
+
+    public static ElAppTokenService MitDatenordner(byte[] hmacSecret, LeitungAuthStore leitung) =>
+        new(hmacSecret, leitung, Path.Combine(AppPathResolver.GetDataDirectory(), "el-app-abgemeldet.txt"));
+
+    /// <summary>Token sofort und dauerhaft ungueltig machen (bis zu seinem Ablauf gemerkt)</summary>
+    public void Abmelden(string token, DateTime ablaufUtc)
+    {
+        lock (_sperre)
+        {
+            var liste = Abgemeldet();
+            liste[Hash(token)] = ablaufUtc;
+            foreach (var alt in liste.Where(p => p.Value <= DateTime.UtcNow).Select(p => p.Key).ToList()) liste.Remove(alt);
+            if (sperrDatei is not null)
+                File.WriteAllLines(sperrDatei, liste.Select(p => $"{p.Key}|{new DateTimeOffset(p.Value).ToUnixTimeSeconds()}"));
+        }
+    }
+
+    private bool IstAbgemeldet(string token)
+    {
+        lock (_sperre) return Abgemeldet().ContainsKey(Hash(token));
+    }
+
+    private Dictionary<string, DateTime> Abgemeldet()
+    {
+        if (_abgemeldet is not null) return _abgemeldet;
+        _abgemeldet = new Dictionary<string, DateTime>(StringComparer.Ordinal);
+        if (sperrDatei is not null && File.Exists(sperrDatei))
+            foreach (var zeile in File.ReadAllLines(sperrDatei))
+            {
+                var teile = zeile.Split('|');
+                if (teile.Length == 2 && long.TryParse(teile[1], out var ab))
+                    _abgemeldet[teile[0]] = DateTimeOffset.FromUnixTimeSeconds(ab).UtcDateTime;
+            }
+        return _abgemeldet;
+    }
+
+    private static string Hash(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
     public string Ausstellen(DateTime ablaufUtc)
     {
@@ -39,7 +80,7 @@ public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitun
             return false;
 
         ablaufUtc = DateTimeOffset.FromUnixTimeSeconds(ablauf).UtcDateTime;
-        return ablaufUtc > nowUtc;
+        return ablaufUtc > nowUtc && !IstAbgemeldet(token);
     }
 
     private string Signatur(string payload)

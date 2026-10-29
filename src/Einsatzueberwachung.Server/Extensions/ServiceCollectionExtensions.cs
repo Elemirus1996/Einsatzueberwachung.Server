@@ -170,7 +170,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ITeamMobileTokenService>(sp =>
             new TeamMobileTokenService(secret, sp.GetRequiredService<IEinsatzService>()));
         // Tracking-App, Rolle Einsatzleitung (#110)
-        services.AddSingleton(sp => new ElAppTokenService(secret, sp.GetRequiredService<LeitungAuthStore>()));
+        services.AddSingleton(sp => ElAppTokenService.MitDatenordner(secret, sp.GetRequiredService<LeitungAuthStore>()));
         services.AddSingleton<ElPositionService>();
         // Native Team-Ansicht der App (#119)
         services.AddSingleton<TeamAppEreignisse>();
