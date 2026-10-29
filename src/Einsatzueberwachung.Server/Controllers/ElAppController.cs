@@ -25,7 +25,9 @@ public sealed partial class ElAppController(
     ElAppEreignisse? ereignisse = null,
     // Stufe 3 (ElAppController.Aktionen.cs)
     ElAppAktionen? aktionen = null, TeamSucheService? suche = null, Einsatzueberwachung.Server.Services.Radio.IRadioService? funk = null,
-    Einsatzueberwachung.Domain.Interfaces.ITeamMobileTokenService? teamNachrichten = null) : ControllerBase
+    Einsatzueberwachung.Domain.Interfaces.ITeamMobileTokenService? teamNachrichten = null,
+    // Stufe 4b (ElAppController.Karte.cs)
+    LiveAbdeckungService? abdeckungen = null) : ControllerBase
 {
     /// <summary>Staffellogo als PNG (docs/APP_API.md, Einsatzleitung Abschnitt 3) – nur intern</summary>
     [HttpGet("logo")]
