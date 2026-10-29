@@ -281,3 +281,113 @@ public class TrackingAppTeamAnsichtReviewTests
         Assert.Single(einsatz.CurrentEinsatz.TeamMitteilungen);
     }
 }
+
+/// <summary>Jeder Weg der Suchsteuerung erzeugt ein „lage“-Ereignis (Fehler aus Pauls iPhone-Test mit 1.11.10)</summary>
+public class TrackingAppLageEreignisTests
+{
+    private static readonly byte[] Secret = System.Security.Cryptography.RandomNumberGenerator.GetBytes(64);
+
+    private static async Task<(EinsatzService Einsatz, CollarTrackingService Halsbaender, TeamAppEreignisse Ereignisse, Team Team,
+        System.Threading.Channels.ChannelReader<string> Leser)> AufbauAsync()
+    {
+        var einsatz = new EinsatzService();
+        var tokens = new TeamMobileTokenService(Secret, einsatz);
+        await einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Testwald", IstEinsatz = true, EinsatzDatum = new DateTime(2026, 10, 28, 9, 0, 0) });
+        var team = await einsatz.AddTeamAsync(new Team { TeamName = "Team Rex" });
+        var halsbaender = new CollarTrackingService(einsatz);
+        var ereignisse = new TeamAppEreignisse(einsatz, halsbaender, tokens);
+        var (_, leser) = ereignisse.Abonnieren(team.TeamId);
+        return (einsatz, halsbaender, ereignisse, team, leser);
+    }
+
+    private static int AnzahlLage(System.Threading.Channels.ChannelReader<string> leser)
+    {
+        var n = 0;
+        while (leser.TryRead(out var e)) if (e.StartsWith("event: lage", StringComparison.Ordinal)) n++;
+        return n;
+    }
+
+    public static IEnumerable<object[]> Wege() =>
+    [
+        ["Dienst: starten", (Func<EinsatzService, Team, Task>)((e, t) => e.StartTeamTimerAsync(t.TeamId))],
+        ["Direkt: team.StartTimer()", (Func<EinsatzService, Team, Task>)((_, t) => { t.StartTimer(); return Task.CompletedTask; })],
+    ];
+
+    [Theory]
+    [MemberData(nameof(Wege))]
+    public async Task Start_ErzeugtLage(string weg, Func<EinsatzService, Team, Task> starten)
+    {
+        var u = await AufbauAsync();
+        await starten(u.Einsatz, u.Team);
+        Assert.True(AnzahlLage(u.Leser) >= 1, weg);
+    }
+
+    [Fact]
+    public async Task PauseStoppZuruecksetzen_UeberDienstUndDirekt()
+    {
+        var u = await AufbauAsync();
+
+        await u.Einsatz.StartTeamTimerAsync(u.Team.TeamId); AnzahlLage(u.Leser);
+        await u.Einsatz.PauseTeamTimerAsync(u.Team.TeamId);
+        Assert.Equal(1, AnzahlLage(u.Leser));
+        u.Team.StartTimer(); AnzahlLage(u.Leser);
+        u.Team.PauseTimer();
+        Assert.Equal(1, AnzahlLage(u.Leser));
+        u.Team.StartTimer(); AnzahlLage(u.Leser);
+        await u.Einsatz.StopTeamTimerAsync(u.Team.TeamId);
+        Assert.Equal(1, AnzahlLage(u.Leser));
+        await u.Einsatz.ResetTeamTimerAsync(u.Team.TeamId);
+        Assert.Equal(1, AnzahlLage(u.Leser));
+    }
+
+    [Fact]
+    public async Task AblaufAusDemIPhoneTest_StoppGebietswechselStartPause()
+    {
+        var u = await AufbauAsync();
+        var a = await u.Einsatz.AddSearchAreaAsync(new SearchArea { Name = "A", Coordinates = [(49.31, 8.43), (49.32, 8.43), (49.32, 8.44)] });
+        var b = await u.Einsatz.AddSearchAreaAsync(new SearchArea { Name = "B", Coordinates = [(49.33, 8.43), (49.34, 8.43), (49.34, 8.44)] });
+        await u.Einsatz.AssignTeamToSearchAreaAsync(a.Id, u.Team.TeamId);
+        u.Team.StartTimer();
+        AnzahlLage(u.Leser);
+
+        u.Team.StopTimer();                                          // Suche 1 gestoppt
+        Assert.Equal(1, AnzahlLage(u.Leser));
+        await u.Einsatz.AssignTeamToSearchAreaAsync(b.Id, u.Team.TeamId); // anderes Gebiet
+        Assert.Equal(1, AnzahlLage(u.Leser));
+        u.Team.StartTimer();                                         // Suche 2
+        Assert.Equal(1, AnzahlLage(u.Leser));
+        u.Team.PauseTimer();                                         // spaeter Pause
+        Assert.Equal(1, AnzahlLage(u.Leser));
+    }
+
+    [Fact]
+    public async Task HalsbandZuweisung_ErkenntDerPruefTakt()
+    {
+        var u = await AufbauAsync();
+        await u.Halsbaender.AssignCollarToTeamAsync("HB-7", u.Team.TeamId); // setzt nur team.CollarId, kein Ereignis
+        AnzahlLage(u.Leser);
+
+        u.Ereignisse.AlleVerbundenenPruefen();
+        Assert.Equal(1, AnzahlLage(u.Leser));
+        u.Ereignisse.AlleVerbundenenPruefen();
+        Assert.Equal(0, AnzahlLage(u.Leser));                         // keine Wiederholung ohne Aenderung
+    }
+
+    [Fact]
+    public async Task NachNeustart_PauseErzeugtNotizUndLage()
+    {
+        var u = await AufbauAsync();
+        var json = JsonSerializer.Serialize(u.Einsatz.ExportRuntimeSnapshot());
+        var neu = new EinsatzService();
+        await neu.ImportRuntimeSnapshotAsync(JsonSerializer.Deserialize<EinsatzRuntimeSnapshot>(json)!);
+        var team = neu.Teams.Single();
+        var gemeldet = 0;
+        neu.TeamUpdated += _ => gemeldet++;
+
+        team.StartTimer();
+        team.PauseTimer();
+
+        Assert.Contains(neu.GlobalNotes, n => n.Text.Contains("Timer pausiert"));
+        Assert.Equal(2, gemeldet);
+    }
+}

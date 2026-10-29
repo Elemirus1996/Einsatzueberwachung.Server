@@ -25,6 +25,13 @@ public sealed class TeamAppEreignisse : IDisposable
     private readonly ITeamMobileTokenService _tokens;
     private readonly ConcurrentDictionary<Guid, Abo> _abos = new();
     private readonly ConcurrentDictionary<string, string> _signaturen = new(StringComparer.Ordinal);
+    private readonly Timer _pruefTakt;
+
+    /// <summary>
+    /// Sicherheitsnetz: Nicht jede Aenderung meldet ein Ereignis (z. B. Halsband-Zuweisung setzt nur team.CollarId).
+    /// Deshalb werden die Lage-Signaturen der verbundenen Teams zusaetzlich regelmaessig verglichen.
+    /// </summary>
+    public static readonly TimeSpan PruefIntervall = TimeSpan.FromSeconds(5);
 
     public TeamAppEreignisse(IEinsatzService einsatz, ICollarTrackingService halsbaender, ITeamMobileTokenService tokens)
     {
@@ -37,6 +44,18 @@ public sealed class TeamAppEreignisse : IDisposable
         _einsatz.TeamRemoved += OnTeamEntfernt;
         _einsatz.EinsatzChanged += OnEinsatzGeaendert;
         _tokens.GenerationChanged += OnGenerationGeaendert;
+        _pruefTakt = new Timer(_ => AlleVerbundenenPruefen(), null, PruefIntervall, PruefIntervall);
+    }
+
+    /// <summary>Signaturen aller verbundenen Teams vergleichen und bei Aenderung „lage“ senden</summary>
+    public void AlleVerbundenenPruefen()
+    {
+        try
+        {
+            foreach (var teamId in _abos.Values.Select(a => a.TeamId).Distinct().ToList())
+                LageWennGeaendert(teamId);
+        }
+        catch { /* naechster Takt */ }
     }
 
     public int AnzahlVerbindungen => _abos.Count;
@@ -143,6 +162,7 @@ public sealed class TeamAppEreignisse : IDisposable
 
     public void Dispose()
     {
+        _pruefTakt.Dispose();
         _halsbaender.CollarLocationReceived -= OnHalsband;
         _einsatz.TeamMitteilungGespeichert -= OnMitteilung;
         _einsatz.TeamUpdated -= OnTeamGeaendert;
