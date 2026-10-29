@@ -151,15 +151,17 @@ public sealed partial class ElAppController
         });
 
     /// <summary>Token, Einsatz und id pruefen, dann genau einmal ausfuehren</summary>
-    private async Task<IActionResult> Aktion(ElAktion? aktion, Func<Task<IActionResult>> ausfuehren)
+    private Task<IActionResult> Aktion(ElAktion? aktion, Func<Task<IActionResult>> ausfuehren) => Aktion(aktion?.Id, ausfuehren);
+
+    private async Task<IActionResult> Aktion(string? id, Func<Task<IActionResult>> ausfuehren)
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
         if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _) || einsatz is null || aktionen is null) return Gone();
-        if (string.IsNullOrWhiteSpace(aktion?.Id) || aktion.Id.Length > 64)
+        if (string.IsNullOrWhiteSpace(id) || id.Length > 64)
             return BadRequest(new { error = "id fehlt oder ist zu lang (höchstens 64 Zeichen)." });
         if (!ElPositionService.Laeuft(einsatz.CurrentEinsatz))
             return Konflikt("Kein laufender Einsatz.");
-        return await aktionen.AusfuehrenAsync(aktion.Id, ausfuehren, DateTime.UtcNow);
+        return await aktionen.AusfuehrenAsync(id, ausfuehren, DateTime.UtcNow);
     }
 
     private ConflictObjectResult Konflikt(string text) => Conflict(new { error = text });
