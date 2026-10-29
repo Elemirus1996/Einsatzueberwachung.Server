@@ -360,10 +360,10 @@ Antwort `200`:
 | Endpunkt | Inhalt |
 |---|---|
 | `GET /vermisste` | `{ "szenario", "mehrereErlaubt", "profile": […] }`, je Profil `profilId`, `version`, `vollerName`, `zuletztAktualisiert` und alle Felder wie in `/el` (siehe unten), dazu `checkliste` (`null` oder `{ "name", "punkte": [ { "id", "text", "typ", "pflicht", "auswahl", "wert", "erledigt" } ] }`) |
-| `GET /karte` | `suchgebiete` (id, name, farbe, punkte, teamId, `abdeckungProzent`), `positionen` (`art`: `halsband` · `handy` · `el` · `elw`, `id`, `name`, `teamId`, `lat`, `lng`, `zeit`, `akku`) |
+| `GET /karte` | `suchgebiete` (id, name, farbe, punkte, teamId, `abgeschlossen`, `abdeckungProzent` – `null`, solange nichts berechnet ist), `positionen` (`art`: `halsband` · `handy` · `el` · `elw`, `id`, `name`, `teamId`, `lat`, `lng`, `zeit`, `akku`; beim ELW sind `zeit` und `akku` `null`). Ohne laufenden Einsatz beide Listen leer |
 | `GET /tracks?seit=<unix-ms>` | wie Abschnitt 7 der Team-Rolle, aber `laufend` als Liste je Team: `[ { "teamId", "hund": […], "mensch": […] } ]`, `abgeschlossen` mit `teamId` |
 | `GET /notizen?vor=<id>&anzahl=50` | `{ "notizen": […], "weitere": true }` – Notizen und Funk wie in `/el`, **neueste zuerst**: `id`, `art` (`notiz` · `funk` · `status` · `system`), `text`, `zeit`, `von`, `teamId`, `loeschbar`, `antworten` `[ { "id", "text", "zeit", "von" } ]`. Blättern mit `vor` = älteste geladene `id`; `anzahl` höchstens 200 |
-| `GET /halsbaender` | freie Halsbänder für die Rückfrage beim Teamstart: `[ { "id", "name", "zeit", "akku" } ]`, dazu je Team das zuletzt benutzte (`zuletzt`) |
+| `GET /halsbaender` | `{ "frei": [ { "id", "name", "zeit", "akku" } ], "zuletzt": [ { "teamId", "halsbandId" } ] }` – freie Halsbänder für die Rückfrage beim Teamstart, dazu je Team das zuletzt benutzte (nur Teams, die schon eins hatten) |
 | `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen" } ]` |
 
 ### 7. Aktionen
