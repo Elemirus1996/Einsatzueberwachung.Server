@@ -1,6 +1,7 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text;
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Services;
@@ -155,5 +156,136 @@ public sealed class ElAppTokenKennungTests : IDisposable
 
         Assert.True(tokens.TryPruefen($"{payload}.{signatur}", DateTime.UtcNow, out _));
         Assert.False(tokens.TryPruefen($"{payload}.x{signatur[1..]}", DateTime.UtcNow, out _));
+    }
+}
+
+/// <summary>Native Einsatzleitung, Stufe 2b: Live-Ereignisse (#125)</summary>
+public sealed class ElAppEreignisseTests : IDisposable
+{
+    private const string Passwort = "Rettungshund2026";
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), "eu-elsse-" + Guid.NewGuid().ToString("N"));
+    private readonly LeitungAuthStore _leitung;
+    private readonly EinsatzService _einsatz = new();
+    private readonly CollarTrackingService _halsbaender;
+    private readonly ElPositionService _positionen;
+    private readonly FunkEreignisse _funk = new();
+    private readonly ElAppEreignisse _ereignisse;
+    private readonly ElAppTokenService _tokens;
+
+    public ElAppEreignisseTests()
+    {
+        Directory.CreateDirectory(_dir);
+        _leitung = new LeitungAuthStore(_dir);
+        Assert.Null(_leitung.Setup(_leitung.SetupCode!, Passwort, Passwort));
+        _halsbaender = new CollarTrackingService(_einsatz);
+        _positionen = new ElPositionService(_einsatz);
+        _ereignisse = new ElAppEreignisse(_einsatz, _halsbaender, _positionen, _funk);
+        _tokens = new ElAppTokenService(RandomNumberGenerator.GetBytes(64), _leitung, Path.Combine(_dir, "abgemeldet.txt"));
+    }
+
+    public void Dispose()
+    {
+        _ereignisse.Dispose();
+        Directory.Delete(_dir, recursive: true);
+    }
+
+    private ElAppController Controller(string? token, Stream? body = null, int port = 5000)
+    {
+        var c = new ElAppController(_tokens, _positionen, new LeitungsGeraetNamen(new VpnDeviceStore(_dir)),
+            new PublicAccess(5002), NullLogger<ElAppController>.Instance, null,
+            _leitung, new LoginLockout(), null, _einsatz, _halsbaender, null, null, _ereignisse);
+        var http = new DefaultHttpContext();
+        http.Connection.LocalPort = port;
+        http.Connection.RemoteIpAddress = IPAddress.Parse("10.10.0.9");
+        if (body is not null) http.Response.Body = body;
+        if (token is not null) http.Request.Headers.Authorization = "Bearer " + token;
+        c.ControllerContext = new ControllerContext { HttpContext = http };
+        c.PingIntervall = TimeSpan.FromMilliseconds(100);
+        return c;
+    }
+
+    private static List<string> Lesen(System.Threading.Channels.ChannelReader<string> leser)
+    {
+        var liste = new List<string>();
+        while (leser.TryRead(out var text)) liste.Add(text);
+        return liste;
+    }
+
+    [Fact]
+    public async Task Endpunkt_EinsatzTeamNotiz_EinsatzendeOhneStop_LogoutBeendet()
+    {
+        var token = _tokens.Ausstellen(DateTime.UtcNow.AddHours(1));
+        var body = new MemoryStream();
+        var c = Controller(token, body);
+        var lauf = c.GetEreignisse();
+        await Task.Delay(250);
+
+        await _einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Testwald", IstEinsatz = true, EinsatzDatum = new DateTime(2026, 10, 29, 9, 0, 0) });
+        var team = await _einsatz.AddTeamAsync(new Team { TeamName = "Team Rex" });
+        await _einsatz.AddGlobalNoteAsync("Lagebesprechung 10 Uhr");
+        await _einsatz.EndEinsatzAsync();
+        await Task.Delay(250);
+        Assert.False(lauf.IsCompleted); // Einsatzende beendet die Verbindung nicht
+
+        _tokens.Abmelden(token, DateTime.UtcNow.AddHours(1));
+        await lauf.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var text = Encoding.UTF8.GetString(body.ToArray());
+        Assert.Equal("text/event-stream", c.HttpContext.Response.ContentType);
+        Assert.StartsWith("retry: 5000\n\n", text);
+        Assert.Contains(": ping\n\n", text);
+        Assert.Contains("event: einsatz\ndata: {\"aktiv\":true}\n\n", text);
+        Assert.Contains($"event: team\ndata: {{\"teamId\":\"{team.TeamId}\"}}\n\n", text);
+        Assert.Contains("event: notiz\n", text);
+        Assert.Contains("event: einsatz\ndata: {\"aktiv\":false}\n\n", text);
+        Assert.EndsWith("event: stop\ndata: {}\n\n", text);
+        Assert.Equal(0, _ereignisse.AnzahlVerbindungen);
+    }
+
+    [Fact]
+    public async Task OeffentlicherZugang404_UngueltigesToken410()
+    {
+        var token = _tokens.Ausstellen(DateTime.UtcNow.AddHours(1));
+        var oeffentlich = Controller(token, port: 5002);
+        await oeffentlich.GetEreignisse();
+        Assert.Equal(404, oeffentlich.HttpContext.Response.StatusCode);
+
+        var ungueltig = Controller("e2.x.y.z.w");
+        await ungueltig.GetEreignisse();
+        Assert.Equal(410, ungueltig.HttpContext.Response.StatusCode);
+        Assert.Equal(0, _ereignisse.AnzahlVerbindungen);
+    }
+
+    [Fact]
+    public async Task FunkUndPositionen_WerdenGemeldet()
+    {
+        await _einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Testwald", IstEinsatz = true, EinsatzDatum = new DateTime(2026, 10, 29, 9, 0, 0) });
+        var (id, leser) = _ereignisse.Abonnieren(_tokens.Ausstellen(DateTime.UtcNow.AddHours(1)));
+
+        _funk.Melden("f-1");
+        _positionen.Melden("iPhone Anna", [(51.5, 7.4, 5.0, DateTime.UtcNow, 80)]);
+        var ereignisse = Lesen(leser);
+
+        Assert.Contains("event: funk\ndata: {\"id\":\"f-1\"}\n\n", ereignisse);
+        var position = Assert.Single(ereignisse, e => e.StartsWith("event: position", StringComparison.Ordinal));
+        Assert.Contains("\"art\":\"el\"", position);
+        Assert.Contains("\"id\":\"iPhone Anna\"", position);
+        Assert.Contains("\"akku\":80", position);
+        _ereignisse.Abmelden(id);
+    }
+
+    [Fact]
+    public void ZuVieleVerbindungenJeToken_AeltesteVerdraengt_AndereTokensNicht()
+    {
+        var a = _tokens.Ausstellen(DateTime.UtcNow.AddHours(1));
+        var b = _tokens.Ausstellen(DateTime.UtcNow.AddHours(1));
+        var (_, fremd) = _ereignisse.Abonnieren(b);
+        var (_, aeltester) = _ereignisse.Abonnieren(a);
+        for (var i = 0; i < ElAppEreignisse.MaxVerbindungenJeToken; i++) _ereignisse.Abonnieren(a);
+
+        Assert.StartsWith("event: verdraengt", Assert.Single(Lesen(aeltester)));
+        Assert.True(aeltester.Completion.IsCompleted);
+        Assert.Empty(Lesen(fremd));
+        Assert.Equal(ElAppEreignisse.MaxVerbindungenJeToken + 1, _ereignisse.AnzahlVerbindungen);
     }
 }

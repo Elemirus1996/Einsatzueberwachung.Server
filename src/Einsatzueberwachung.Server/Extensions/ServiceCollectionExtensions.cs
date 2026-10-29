@@ -172,6 +172,9 @@ internal static class ServiceCollectionExtensions
         // Tracking-App, Rolle Einsatzleitung (#110)
         services.AddSingleton(sp => ElAppTokenService.MitDatenordner(secret, sp.GetRequiredService<LeitungAuthStore>()));
         services.AddSingleton<ElPositionService>();
+        // Native Einsatzleitung, Live-Ereignisse (#125)
+        services.AddSingleton<FunkEreignisse>();
+        services.AddSingleton<ElAppEreignisse>();
         // Native Team-Ansicht der App (#119)
         services.AddSingleton<TeamAppEreignisse>();
         services.AddSingleton<AppStatusmeldungen>();

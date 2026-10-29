@@ -5,6 +5,7 @@ using Einsatzueberwachung.Domain.Models.Enums;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Einsatzueberwachung.Domain.Services;
+using Einsatzueberwachung.Server.Services;
 
 namespace Einsatzueberwachung.Server.Services.Radio;
 
@@ -13,15 +14,18 @@ public sealed class RadioService : IRadioService
     private readonly IDbContextFactory<RuntimeDbContext> _dbContextFactory;
     private readonly IHubContext<EinsatzHub> _hubContext;
     private readonly IEinsatzService _einsatzService;
+    private readonly FunkEreignisse? _funk;
 
     public RadioService(
         IDbContextFactory<RuntimeDbContext> dbContextFactory,
         IHubContext<EinsatzHub> hubContext,
-        IEinsatzService einsatzService)
+        IEinsatzService einsatzService,
+        FunkEreignisse? funk = null)
     {
         _dbContextFactory = dbContextFactory;
         _hubContext = hubContext;
         _einsatzService = einsatzService;
+        _funk = funk;
     }
 
     public async Task<IReadOnlyList<RadioMessageDto>> GetMessagesAsync(CancellationToken cancellationToken = default)
@@ -64,6 +68,7 @@ public sealed class RadioService : IRadioService
             GlobalNotesEntryType.Manual,
             request.CreatedBy);
         await PublishAsync("radio.added", dto);
+        _funk?.Melden(dto.Id);
         return dto;
     }
 
@@ -96,6 +101,7 @@ public sealed class RadioService : IRadioService
 
         var dto = ToReplyDto(reply);
         await PublishAsync("radio.reply.added", new { messageId, reply = dto });
+        _funk?.Melden(messageId);
         return dto;
     }
 
