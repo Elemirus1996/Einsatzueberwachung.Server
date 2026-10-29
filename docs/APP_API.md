@@ -319,7 +319,7 @@ Antwort `200`:
 
 | Endpunkt | Inhalt |
 |---|---|
-| `GET /vermisste` | Vermisstenprofile mit allen Feldern wie in `/el` (Name, Alter, Beschreibung, Kleidung, Mobilität, Risiken, zuletzt gesehen mit Ort und Zeit …), je Profil die Checkliste `[ { "id", "text", "erledigt" } ]` |
+| `GET /vermisste` | Vermisstenprofile mit `profilId`, `version` und allen Feldern wie in `/el` (Name, Alter, Beschreibung, Kleidung, Mobilität, Risiken, zuletzt gesehen mit Ort und Zeit …), je Profil die Checkliste `[ { "id", "text", "erledigt" } ]` |
 | `GET /karte` | `suchgebiete` (id, name, farbe, punkte, teamId, `abdeckungProzent`), `positionen` (`art`: `halsband` · `handy` · `el` · `elw`, `id`, `name`, `teamId`, `lat`, `lng`, `zeit`, `akku`) |
 | `GET /tracks?seit=<unix-ms>` | wie Abschnitt 7 der Team-Rolle, aber `laufend` als Liste je Team: `[ { "teamId", "hund": […], "mensch": […] } ]`, `abgeschlossen` mit `teamId` |
 | `GET /notizen?vor=<id>&anzahl=50` | Notizen und Funk, **neueste zuerst**: `id`, `art` (`notiz` · `funk` · `status` · `system`), `text`, `zeit`, `von`, `teamId`, `antworten` `[ { "id", "text", "zeit", "von" } ]`. Blättern mit `vor` = älteste geladene `id` |
@@ -340,7 +340,7 @@ und wiederholen.
 | `/notizen` | `text`, `teamId` (optional) | Notiz der Einsatzleitung |
 | `/notizen/{notizId}/loeschen` | – | Notiz löschen |
 | `/funk` | `text`, `teamId` (optional), `antwortAuf` (optional) | Funkspruch oder Antwort |
-| `/vermisste` | Profil wie bei `GET`, ohne `profilId` = neu | anlegen oder ändern |
+| `/vermisste` | Profil wie bei `GET`, ohne `profilId` = neu; beim Ändern mit `version` | anlegen oder ändern (siehe unten) |
 | `/vermisste/{profilId}/entfernen` | – | entfernen |
 | `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` | Checklistenpunkt abhaken |
 | `/szenario` | `szenario` | Szenario des Einsatzes |
@@ -348,6 +348,12 @@ und wiederholen.
 | `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null }` | wie `/el/beenden` |
 
 Antwort jeder Aktion: `200` + `{ "doppelt": false, … }`, beim Anlegen mit der neuen Kennung des Objekts (z. B. `notizId`).
+
+**Gleichzeitiges Bearbeiten von Vermissten:** `GET /vermisste` liefert je Profil eine `version` (Text, ändert sich bei jeder
+Speicherung, auch durch `/el` im Browser mit Auto-Save). Beim Ändern schickt die App die `version` mit, auf der ihre Bearbeitung
+beruht. Weicht sie ab, speichert der Server nicht und antwortet `409` + `{ "error": "Das Profil wurde inzwischen geändert.",
+"profil": { …aktueller Stand mit neuer version… } }`; die App zeigt den neuen Stand und lässt neu bearbeiten. Ohne `version`
+→ `400`. Die Antwort auf erfolgreiches Speichern enthält die neue `version`.
 
 ### 8. `GET /ereignisse` – Live
 
