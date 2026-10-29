@@ -191,10 +191,22 @@ public static class AppLage
         : team.IsSucheBeendet ? "beendet"
         : "bereit";
 
-    public static object Erstellen(EinsatzData einsatz, Team team, string staffel, ICollarTrackingService halsbaender,
-        IReadOnlyList<TeamMitteilung> mitteilungen, string modus)
+    /// <summary>Block „suche“ von /lage und der Antwort auf POST /suche</summary>
+    public static object Suche(Team team, bool darfSteuern)
     {
         var status = SucheStatus(team);
+        return new
+        {
+            status,
+            seit = status == "bereit" ? (DateTime?)null : AppZeit.Utc(team.StartTime),
+            dauerSec = (long)team.ElapsedTime.TotalSeconds,
+            darfSteuern
+        };
+    }
+
+    public static object Erstellen(EinsatzData einsatz, Team team, string staffel, ICollarTrackingService halsbaender,
+        IReadOnlyList<TeamMitteilung> mitteilungen, string modus, bool darfSteuern = true)
+    {
         var gebiet = einsatz.SearchAreas?.FirstOrDefault(a => a.Id == team.SearchAreaId);
         var ort = string.IsNullOrWhiteSpace(team.CollarId) ? null : halsbaender.GetLatestLocation(team.CollarId);
 
@@ -216,12 +228,7 @@ public static class AppLage
                 hundefuehrerName = team.HundefuehrerName ?? "",
                 helfer = team.HelferNames.Where(h => !string.IsNullOrWhiteSpace(h)).ToList()
             },
-            suche = new
-            {
-                status,
-                seit = status == "bereit" ? (DateTime?)null : AppZeit.Utc(team.StartTime),
-                dauerSec = (long)team.ElapsedTime.TotalSeconds
-            },
+            suche = Suche(team, darfSteuern),
             suchgebiet = gebiet is null ? null : new
             {
                 id = gebiet.Id,

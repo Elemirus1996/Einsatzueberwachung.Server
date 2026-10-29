@@ -31,6 +31,7 @@ public sealed class TeamMobileAppController : ControllerBase
     private readonly AppStatusmeldungen? _statusmeldungen;
     private readonly ServerKennung? _kennung;
     private readonly AppLogo? _logo;
+    private readonly TeamAppSuche? _suche;
 
     // Heimatstaffel (#121): Kennung, Name, Logo-Stand – zusaetzlich zum bisherigen Textfeld „staffel“
     private async Task<object> ServerInfoAsync(string staffel) => new
@@ -51,8 +52,9 @@ public sealed class TeamMobileAppController : ControllerBase
     public TeamMobileAppController(ITeamMobileTokenService tokenService, IEinsatzService einsatzService,
         ISettingsService settings, ILogger<TeamMobileAppController> logger,
         ICollarTrackingService? halsbaender = null, TeamAppEreignisse? ereignisse = null, AppStatusmeldungen? statusmeldungen = null,
-        ServerKennung? kennung = null, AppLogo? logo = null)
+        ServerKennung? kennung = null, AppLogo? logo = null, TeamAppSuche? suche = null)
     {
+        _suche = suche;
         _kennung = kennung;
         _logo = logo;
         _tokenService = tokenService;
@@ -83,7 +85,7 @@ public sealed class TeamMobileAppController : ControllerBase
         var einsatz = _einsatzService.CurrentEinsatz;
         var staffel = (await _settings.GetStaffelSettingsAsync())?.StaffelName ?? "";
         return Ok(AppLage.Erstellen(einsatz, team, staffel, _halsbaender, _einsatzService.TeamMitteilungen(teamId),
-            OrtungsSteuerung.AlsText(OrtungsSteuerung.FuerTeam(einsatz, team))));
+            OrtungsSteuerung.AlsText(OrtungsSteuerung.FuerTeam(einsatz, team)), await DarfSteuernAsync()));
     }
 
     [HttpGet("tracks")]
@@ -112,6 +114,32 @@ public sealed class TeamMobileAppController : ControllerBase
             "Mobile", Einsatzueberwachung.Domain.Models.Enums.GlobalNotesEntryType.Manual, "Team-App");
         return Ok(new { zeit = jetzt, doppelt = false });
     }
+
+    /// <summary>Team steuert die Suche selbst (#133, docs/APP_API.md Abschnitt 11)</summary>
+    [HttpPost("suche")]
+    public async Task<IActionResult> PostSuche([FromBody] AppSucheRequest? request)
+    {
+        if (!TryTeam(out var teamId, out _) || _suche is null) return Gone();
+        if (_einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return Gone();
+        if (request?.Aktion is null || !TeamAppSuche.Aktionen.Contains(request.Aktion))
+            return BadRequest(new { error = "Unbekannte Aktion.", aktionen = TeamAppSuche.Aktionen });
+        if (string.IsNullOrWhiteSpace(request.Id) || request.Id.Length > 64)
+            return BadRequest(new { error = "id fehlt oder ist zu lang (höchstens 64 Zeichen)." });
+        if (!await DarfSteuernAsync())
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Die Einsatzleitung steuert die Suche. Bitte per Funk melden." });
+
+        var ergebnis = await _suche.AusfuehrenAsync(team, request.Id, request.Aktion, DateTime.UtcNow);
+        var suche = AppLage.Suche(team, true);
+        if (!ergebnis.Ok) return Conflict(new { error = ergebnis.Fehler, suche });
+        return Ok(new
+        {
+            doppelt = ergebnis.Doppelt,
+            mode = OrtungsSteuerung.AlsText(OrtungsSteuerung.FuerTeam(_einsatzService.CurrentEinsatz, team)),
+            suche
+        });
+    }
+
+    private async Task<bool> DarfSteuernAsync() => (await _settings.GetAppSettingsAsync())?.AppTeamsSteuernSuche ?? true;
 
     /// <summary>Live-Ereignisse als Server-Sent Events; Token nur im Header</summary>
     [HttpGet("ereignisse")]
@@ -344,6 +372,14 @@ public sealed class TeamMobileAppController : ControllerBase
         /// <summary>Von der App erzeugte Kennung (z. B. UUID), entdoppelt Wiederholungen im Funkloch</summary>
         public string? Id { get; set; }
         public string? Code { get; set; }
+    }
+
+    public sealed class AppSucheRequest
+    {
+        /// <summary>Von der App erzeugte Kennung (z. B. UUID), entdoppelt Wiederholungen im Funkloch</summary>
+        public string? Id { get; set; }
+        /// <summary>starten · pause · weiter · beenden</summary>
+        public string? Aktion { get; set; }
     }
 
     public sealed class AppLoginRequest

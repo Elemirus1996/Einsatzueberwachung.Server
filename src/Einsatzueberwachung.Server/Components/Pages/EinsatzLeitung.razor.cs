@@ -937,14 +937,16 @@ public partial class EinsatzLeitung : IDisposable
 
     private void OnNoteChanged(GlobalNotesEntry note)
     {
+        var ausApp = string.Equals(note.SourceType, TeamAppSuche.QuelleTeamApp, StringComparison.Ordinal);
         if (note.Timestamp >= _pageOpenedAt
-            && string.Equals(note.SourceType, "Funk", StringComparison.OrdinalIgnoreCase))
+            && (ausApp || string.Equals(note.SourceType, "Funk", StringComparison.OrdinalIgnoreCase)))
         {
+            var art = ausApp ? "Team-App" : "Funk";
             var item = new PushToastItem
             {
-                Title = string.IsNullOrWhiteSpace(note.SourceTeamName) ? "Funk" : $"Funk · {note.SourceTeamName}",
+                Title = string.IsNullOrWhiteSpace(note.SourceTeamName) ? art : $"{art} · {note.SourceTeamName}",
                 Body = note.Text.Length > 140 ? note.Text[..137] + "…" : note.Text,
-                Icon = "bi-broadcast"
+                Icon = ausApp ? "bi-phone" : "bi-broadcast"
             };
             _pushToasts.Add(item);
             _ = AutoDismissToastAsync(item.Id);

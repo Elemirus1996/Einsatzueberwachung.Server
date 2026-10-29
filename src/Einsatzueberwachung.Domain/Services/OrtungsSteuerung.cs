@@ -14,7 +14,8 @@ namespace Einsatzueberwachung.Domain.Services
     }
 
     /// <summary>
-    /// Server steuert die Ortung der App (#110): Nur waehrend einer laufenden Suche wird geortet, nach dem Einsatz nie.
+    /// Server steuert die Ortung der App (#110): Nur waehrend einer laufenden Suche (auch in der Kurzpause) wird geortet,
+    /// nach dem Einsatz nie.
     /// </summary>
     public static class OrtungsSteuerung
     {
@@ -23,8 +24,8 @@ namespace Einsatzueberwachung.Domain.Services
             if (einsatz is null || einsatz.EinsatzEnde is not null || team is null)
                 return OrtungsModus.Stop;
 
-            // Kurzpause: Laufweg ruht, neue Suche oder „Weiter“ startet wieder
-            return team.IsRunning ? OrtungsModus.Track : OrtungsModus.Pause;
+            // Kurzpause (#133): Team ist weiter im Gelaende – Ortung bleibt an, die Punkte kommen aber nicht in den Laufweg
+            return team.IsRunning || team.IsManuallyPaused ? OrtungsModus.Track : OrtungsModus.Pause;
         }
 
         public static string AlsText(OrtungsModus modus) => modus switch
