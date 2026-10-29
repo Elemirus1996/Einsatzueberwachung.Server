@@ -415,6 +415,33 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.11.11</span>
+    <span class="changelog-date">29.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu (für die App „EinsatzSpur“)</h4>
+<ul>
+<li><strong>Heimatstaffel:</strong> Der Server hat eine feste Kennung und liefert der App Staffelname und Logo-Stand, damit sie die eigene Staffel erkennt und deren Logo zeigt, auch ohne Netz.</li>
+<li><strong>Staffellogo für die App</strong> als PNG, höchstens 512 px. Ein <strong>SVG-Logo</strong> wird auf dem Server umgewandelt. Vorher entfernt der Server Skripte und alle Verweise nach außen, es wird nichts nachgeladen oder ausgeführt.</li>
+<li><strong>Live-Verbindungen der App:</strong> Bis zu 10 Geräte je Team (vorher 3). Ein verdrängtes Gerät bleibt angemeldet und ortet weiter.</li>
+</ul>
+<h4>Korrekturen</h4>
+<ul>
+<li><strong>Live-Aktualisierung der App:</strong> Nach Stopp, Gebietswechsel, Start oder Pause bekam die App teilweise keine Meldung mehr. Jetzt meldet der Server jede Änderung der Suche, egal ob über Monitor, EL-Ansicht, Halsband oder App ausgelöst.</li>
+<li><strong>Pausen-Notizen nach Neustart:</strong> Nach einem Neustart des Servers wurden Pausen eines Teams nicht mehr in den Notizen vermerkt. Behoben.</li>
+</ul>
+<h4>Technik</h4>
+<ul>
+<li>SkiaSharp 3.116.1 → 3.119.2 (für PDF, Karten und Logo), dazu Svg.Skia 5.1.1 (MIT). Die passenden Linux-Bibliotheken liegen im Paket.</li>
+</ul>
+<h4>Einspielen</h4>
+<p><strong>Nur, wenn gerade kein Einsatz läuft.</strong></p>
+<p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.11.11“.</p>
+<p>2. Keine Änderung an nginx nötig (gegenüber 1.11.10).</p>
+<p>3. Kurz prüfen, ob PDF und Karten weiter funktionieren, weil die Grafikbibliothek aktualisiert wurde: im Archiv bei einem Einsatz „PDF“ öffnen, die Karte muss erscheinen.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.11.10</span>
     <span class="changelog-date">28.10.2026</span>
     <span class="changelog-name"></span>
@@ -574,18 +601,6 @@ certbot certonly --webroot -w /var/www/certbot -d &lt;domain&gt; --cert-name &lt
 certbot renew --dry-run
 </code></pre>
 <p>3. In der Traccar-App einmal „Stop“ und wieder „Start“ drücken. Die im Handy gesammelten Positionen werden dann nachgesendet.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.3</span>
-    <span class="changelog-date">27.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Hinweis</h4>
-<p>Inhaltlich gleich wie <strong>1.11.1</strong>. Die Divera-Änderungen der Beta 1.11.2 sind zurückgenommen, Divera funktioniert wieder wie vorher.</p>
-<p>Diese Version ist für Server gedacht, die die Beta installiert hatten. Mit dem normalen Update im Browser kommen sie damit zurück. Wer die Beta eingespielt hat, sollte in Einstellungen → System die <strong>Update-Adresse</strong> wieder leeren.</p>
-<h4>Einspielen</h4>
-<p>Normales Update, keine Änderung an der Konfiguration nötig.</p></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>
