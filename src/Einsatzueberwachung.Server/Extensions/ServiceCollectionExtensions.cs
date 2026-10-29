@@ -175,6 +175,9 @@ internal static class ServiceCollectionExtensions
         // Native Team-Ansicht der App (#119)
         services.AddSingleton<TeamAppEreignisse>();
         services.AddSingleton<AppStatusmeldungen>();
+        // Heimatstaffel in der App (#121)
+        services.AddSingleton(_ => ServerKennung.ForDataDirectory());
+        services.AddSingleton<AppLogo>();
 
         return services;
     }

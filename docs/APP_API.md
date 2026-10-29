@@ -210,9 +210,10 @@ data: {}
 
 - `200` mit `Content-Type: image/png`, höchstens 512 × 512 px (Seitenverhältnis bleibt), `ETag: "<logoVersion>"`,
   `Cache-Control: private, max-age=86400`. Mit `If-None-Match: "<logoVersion>"` → `304`.
-- `404`, wenn kein Logo hinterlegt ist **oder** das Logo ein SVG ist. Der Server rechnet PNG, JPG und WEBP in PNG um; SVG kann er
-  nicht umwandeln. Für die App muss die Staffel dann ein PNG oder JPG hochladen (Hinweis in Einstellungen → Staffel).
-  Die App zeigt bei `404` nur den Namen.
+- PNG, JPG und WEBP rechnet der Server in PNG um, **SVG rastert er** (Svg.Skia). Vorher entfernt er aus dem SVG Skripte,
+  Ereignis-Attribute, DTD/Entitäten und alle Verweise nach außen; nachgeladen oder ausgeführt wird nichts. Das Ergebnis wird
+  zwischengespeichert und nur bei einem neuen Logo neu erzeugt.
+- `404`, wenn kein Logo hinterlegt ist oder die Datei nicht lesbar ist. Die App zeigt dann nur den Namen.
 
 ### Grenzen
 
