@@ -378,6 +378,8 @@ public partial class KartePunkteTab
     private MapMarker? _navMarker;
     private string _navQrGeo = "";
     private string _navQrApple = "";
+    // Zuletzt gewähltes Handy bleibt für den nächsten Punkt eingestellt
+    private bool _navIphone;
 
     private void ZeigeNavigationsQr(MapMarker marker)
     {
