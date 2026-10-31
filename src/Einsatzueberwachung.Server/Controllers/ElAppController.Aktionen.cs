@@ -153,14 +153,15 @@ public sealed partial class ElAppController
     /// <summary>Token, Einsatz und id pruefen, dann genau einmal ausfuehren</summary>
     private Task<IActionResult> Aktion(ElAktion? aktion, Func<Task<IActionResult>> ausfuehren) => Aktion(aktion?.Id, ausfuehren);
 
-    private async Task<IActionResult> Aktion(string? id, Func<Task<IActionResult>> ausfuehren)
+    /// <summary>Token, Einsatz und id pruefen, dann genau einmal ausfuehren; beim Start (laufenderEinsatzNoetig = false) darf kein Einsatz laufen</summary>
+    private async Task<IActionResult> Aktion(string? id, Func<Task<IActionResult>> ausfuehren, bool laufenderEinsatzNoetig = true)
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
         if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _) || einsatz is null || aktionen is null) return Gone();
         if (string.IsNullOrWhiteSpace(id) || id.Length > 64)
             return BadRequest(new { error = "id fehlt oder ist zu lang (höchstens 64 Zeichen)." });
-        if (!ElPositionService.Laeuft(einsatz.CurrentEinsatz))
-            return Konflikt("Kein laufender Einsatz.");
+        if (ElPositionService.Laeuft(einsatz.CurrentEinsatz) != laufenderEinsatzNoetig)
+            return Konflikt(laufenderEinsatzNoetig ? "Kein laufender Einsatz." : "Es läuft bereits ein Einsatz.");
         return await aktionen.AusfuehrenAsync(id, ausfuehren, DateTime.UtcNow);
     }
 
