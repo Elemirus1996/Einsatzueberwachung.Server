@@ -233,6 +233,14 @@ public partial class Einstellungen
         return value.HasValue ? value.Value.ToString("dd.MM.yyyy HH:mm") : "-";
     }
 
+    /// <summary>Vorlage der Datenschutzerklaerung fuer die App einfuegen (#148); nur wenn noch kein Text da ist</summary>
+    private void DatenschutzVorlageEinfuegen()
+    {
+        if (!string.IsNullOrWhiteSpace(_appSettings.AppDatenschutzText)) return;
+        if (string.IsNullOrWhiteSpace(_appSettings.AppDatenschutzTitel)) _appSettings.AppDatenschutzTitel = AppDatenschutzAntwort.VorlageTitel;
+        _appSettings.AppDatenschutzText = AppDatenschutzAntwort.Vorlage;
+    }
+
     private async Task SaveAsync()
     {
         // --- Server-globale Einstellungen (Timer, Updates, Schnell-Notizen) ---

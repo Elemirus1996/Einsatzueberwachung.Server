@@ -38,7 +38,8 @@ public sealed class ElAppNativTests : IDisposable
     private ElAppController Controller(ElAppTokenService tokens, string? token = null, int port = 5000)
     {
         var settings = EinsatzAbschlussTests.Recorder<ISettingsService>.Create((m, _) =>
-            m.Name == nameof(ISettingsService.GetStaffelSettingsAsync) ? Task.FromResult(new StaffelSettings { StaffelName = "RHS Test" }) : null);
+            m.Name == nameof(ISettingsService.GetStaffelSettingsAsync) ? Task.FromResult(new StaffelSettings { StaffelName = "RHS Test" })
+            : m.Name == nameof(ISettingsService.GetAppSettingsAsync) ? Task.FromResult(new AppSettings()) : null);
         var audit = EinsatzAbschlussTests.Recorder<IAuditLogService>.Create((_, _) => null);
         var c = new ElAppController(tokens, new ElPositionService(_einsatz), new LeitungsGeraetNamen(new VpnDeviceStore(_dir)),
             new PublicAccess(5002), NullLogger<ElAppController>.Instance, null,
@@ -72,7 +73,7 @@ public sealed class ElAppNativTests : IDisposable
     public async Task Login_AmOeffentlichenZugang404()
     {
         Assert.IsType<NotFoundResult>(await Controller(Tokens(), port: 5002).Login(new(Passwort, null)));
-        Assert.IsType<NotFoundResult>(Controller(Tokens(), port: 5002).GetLage());
+        Assert.IsType<NotFoundResult>((await Controller(Tokens(), port: 5002).GetLage()));
     }
 
     [Fact]
@@ -84,7 +85,7 @@ public sealed class ElAppNativTests : IDisposable
         Assert.IsType<NoContentResult>(Controller(tokens, token).Logout());
         Assert.False(tokens.TryPruefen(token, DateTime.UtcNow, out _));
         Assert.False(Tokens().TryPruefen(token, DateTime.UtcNow, out _)); // neuer Dienst = Neustart
-        Assert.Equal(410, ((ObjectResult)Controller(tokens, token).GetLage()).StatusCode);
+        Assert.Equal(410, ((ObjectResult)(await Controller(tokens, token).GetLage())).StatusCode);
     }
 
     [Fact]
@@ -93,7 +94,7 @@ public sealed class ElAppNativTests : IDisposable
         var tokens = Tokens();
         var token = tokens.Ausstellen(DateTime.UtcNow.AddHours(1));
 
-        var leer = Json(Controller(tokens, token).GetLage());
+        var leer = Json((await Controller(tokens, token).GetLage()));
         Assert.False(leer.GetProperty("einsatz").GetProperty("aktiv").GetBoolean());
         Assert.Equal("pause", leer.GetProperty("mode").GetString());
         Assert.Equal(0, leer.GetProperty("teams").GetArrayLength());
@@ -102,7 +103,7 @@ public sealed class ElAppNativTests : IDisposable
         var team = await _einsatz.AddTeamAsync(new Team { TeamName = "Team Rex", FirstWarningMinutes = 1, SecondWarningMinutes = 2 });
         team.StartTimer(DateTime.Now.AddMinutes(-90)); // laeuft seit 90 min (Ortszeit wie ITimeService)
 
-        var lage = Json(Controller(tokens, token).GetLage());
+        var lage = Json((await Controller(tokens, token).GetLage()));
         Assert.True(lage.GetProperty("einsatz").GetProperty("aktiv").GetBoolean());
         Assert.True(lage.GetProperty("einsatz").GetProperty("uebung").GetBoolean());
         Assert.Equal("track", lage.GetProperty("mode").GetString());

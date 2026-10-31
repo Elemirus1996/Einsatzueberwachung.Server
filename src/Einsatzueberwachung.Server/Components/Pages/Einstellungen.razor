@@ -287,6 +287,24 @@
                             </label>
                         </div>
                     </div>
+                    <div class="cfg-field mt-3">
+                        <label class="cfg-label" for="cfg-ds-titel">Datenschutzerklärung für die App</label>
+                        <p class="text-muted small mb-2">Die App zeigt sie vor der ersten Anmeldung an diesem Server und lässt die Kenntnisnahme
+                            bestätigen. Nach jeder Änderung fragt die App erneut. Leer = keine Erklärung hinterlegt.</p>
+                        <input id="cfg-ds-titel" class="cfg-input mb-2" maxlength="@AppDatenschutz.MaxTitelLaenge"
+                               placeholder="Titel, z. B. Datenschutzerklärung RHS Musterstadt" @bind="_appSettings.AppDatenschutzTitel" />
+                        <textarea class="cfg-input" rows="12" maxlength="@AppDatenschutz.MaxTextLaenge" aria-label="Text der Datenschutzerklärung (Markdown)"
+                                  placeholder="Text (einfaches Markdown: ## Überschrift, - Liste, **fett**)" @bind="_appSettings.AppDatenschutzText"></textarea>
+                        @if (string.IsNullOrWhiteSpace(_appSettings.AppDatenschutzText))
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" @onclick="DatenschutzVorlageEinfuegen">Vorlage einfügen</button>
+                        }
+                        else if (_appSettings.AppDatenschutzStandUtc is { } stand)
+                        {
+                            <p class="text-muted small mt-2 mb-0">Gespeicherte Fassung vom @Ortszeit.AusUtc(stand).ToString("dd.MM.yyyy HH:mm") Uhr.
+                                Platzhalter in [eckigen Klammern] vor dem Einsatz ausfüllen.</p>
+                        }
+                    </div>
                 </div>
 
                 <div class="cfg-section">

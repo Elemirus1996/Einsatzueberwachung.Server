@@ -282,9 +282,10 @@ Einstellungen → Tracking-App (Vorlage per Knopf einfügbar, Platzhalter selbst
   Datenschutzerklärung hinterlegt“ und lässt die Anmeldung trotzdem zu.
 - Die Bestätigung („Zur Kenntnis genommen“) bleibt auf dem Gerät; der Server prüft sie nicht und lehnt keine Anmeldung ab.
 
-**Vorschlag, nicht umgesetzt (Entscheidung Paul):** Protokoll der Bestätigungen per `POST datenschutz/bestaetigt { "version" }`
-(Team-Token bzw. EL-Token) → `204`. Der Server schriebe Team bzw. Gerätename, `version` und Zeit ins Audit-Log oder in eine eigene,
-dauerhafte Liste, die die Staffel unter Einstellungen einsehen kann. Bis zur Entscheidung gibt es den Endpunkt nicht (`404`).
+**Protokoll der Bestätigungen: bewusst nicht vorgesehen** (Entscheidung 31.10.2026). Es gibt keinen Endpunkt dafür; der Server
+erfährt nicht, wer bestätigt hat.
+
+Umgesetzt (#148). Ohne gepflegten Text liefert `GET datenschutz` `404`.
 
 ### Grenzen
 
