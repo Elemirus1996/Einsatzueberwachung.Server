@@ -599,8 +599,8 @@ eindeutige Ereignisse, keine Töne. Arten:
 | EL | Punkt vom Team | `punkt` mit `aenderung = neu` und `teamId` |
 | EL | Funk | `funk` (neuer Eintrag eines Teams) |
 
-Voreinstellung: jede Art ein eigener, unterscheidbarer Ton; Warnung Stufe 2 lässt sich nicht auf „Aus“ stellen
-(Vorschlag, noch nicht entschieden). Die Einstellung gilt je Gerät, nicht je Server.
+Voreinstellung: jede Art ein eigener, unterscheidbarer Ton; Warnung Stufe 2 lässt sich nicht auf „Aus“
+stellen (Entscheidung 31.10.2026). Die Einstellung gilt je Gerät, nicht je Server.
 
 ### 8. `GET /ereignisse` – Live
 
