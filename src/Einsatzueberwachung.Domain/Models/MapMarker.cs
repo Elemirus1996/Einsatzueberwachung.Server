@@ -15,6 +15,9 @@ namespace Einsatzueberwachung.Domain.Models
         public double Longitude { get; set; }
         public string Color { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>Team, das den Punkt per App gesetzt hat (docs/APP_API.md Team-Rolle Abschnitt 13); null = Einsatzleitung</summary>
+        public string? TeamId { get; set; }
         
         /// <summary>
         /// UTM-Zone (z.B. "32U"), wird aus Lat/Long berechnet

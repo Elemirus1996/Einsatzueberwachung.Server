@@ -125,6 +125,64 @@ namespace Einsatzueberwachung.Domain.Services
             });
         }
 
+        /// <summary>Kartenpunkte (Variante C): Karte und Liste, Punkte der Teams mit Teamname</summary>
+        private void ComposeKartenpunkte(IContainer container, List<MapMarker> punkte, List<ArchivedTeam> teams, byte[]? karte)
+        {
+            container.Column(column =>
+            {
+                column.Item().Element(c => ComposeSectionHeader(c, $"Kartenpunkte ({punkte.Count})"));
+                if (karte != null)
+                    column.Item().PaddingTop(10).Image(karte).FitWidth();
+
+                column.Item().PaddingTop(10).Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.RelativeColumn(3);
+                        columns.RelativeColumn(1.2f);
+                        columns.RelativeColumn(1.5f);
+                        columns.RelativeColumn(2.5f);
+                        columns.RelativeColumn(3);
+                    });
+
+                    table.Header(header =>
+                    {
+                        header.Cell().Element(CellStyleHeader).Text("Bezeichnung").Bold();
+                        header.Cell().Element(CellStyleHeader).Text("Zeit").Bold();
+                        header.Cell().Element(CellStyleHeader).Text("Gesetzt von").Bold();
+                        header.Cell().Element(CellStyleHeader).Text("Koordinate").Bold();
+                        header.Cell().Element(CellStyleHeader).Text("Beschreibung").Bold();
+
+                        static IContainer CellStyleHeader(IContainer c) =>
+                            c.Background("#2C3E50").Padding(5).DefaultTextStyle(s => s.FontColor(Colors.White));
+                    });
+
+                    var rowIndex = 0;
+                    foreach (var punkt in punkte.OrderBy(p => p.CreatedAt))
+                    {
+                        var bg = rowIndex++ % 2 == 0 ? Colors.White : Colors.Grey.Lighten4;
+                        var von = string.IsNullOrWhiteSpace(punkt.TeamId)
+                            ? "Einsatzleitung"
+                            : teams.FirstOrDefault(t => t.TeamId == punkt.TeamId)?.TeamName ?? "Team";
+
+                        table.Cell().Element(c => CellStyle(c, bg)).Text(string.IsNullOrWhiteSpace(punkt.Label) ? "-" : punkt.Label);
+                        table.Cell().Element(c => CellStyle(c, bg)).Text(punkt.CreatedAt.ToString("dd.MM. HH:mm")).FontSize(9);
+                        table.Cell().Element(c => CellStyle(c, bg)).Text(von).FontSize(9);
+                        table.Cell().Element(c => CellStyle(c, bg)).Column(col =>
+                        {
+                            col.Item().Text(punkt.FormattedLatLng).FontSize(9);
+                            if (!string.IsNullOrWhiteSpace(punkt.FormattedUtm))
+                                col.Item().Text(punkt.FormattedUtm).FontSize(8).Italic();
+                        });
+                        table.Cell().Element(c => CellStyle(c, bg)).Text(string.IsNullOrWhiteSpace(punkt.Description) ? "-" : punkt.Description).FontSize(9);
+                    }
+
+                    static IContainer CellStyle(IContainer c, string bg) =>
+                        c.Background(bg).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5);
+                });
+            });
+        }
+
         private void ComposeVermisste(IContainer container, List<VermisstenInfo> vermisste)
         {
             container.Column(column =>

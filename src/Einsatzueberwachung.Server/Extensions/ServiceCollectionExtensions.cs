@@ -179,6 +179,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<TeamAppEreignisse>();
         services.AddSingleton<AppStatusmeldungen>();
         services.AddSingleton<TeamAppSuche>(); // Team steuert die Suche (#133)
+        services.AddSingleton<Navigationspunkte>(); // Navigationsziele und Team-Punkte (Variante C)
         // Heimatstaffel in der App (#121)
         services.AddSingleton(_ => ServerKennung.ForDataDirectory());
         services.AddSingleton<AppLogo>();

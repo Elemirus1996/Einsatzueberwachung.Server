@@ -87,7 +87,7 @@ public sealed partial class ElAppController
         return Ok(new { doppelt = false, einsatz = new { aktiv = true, beginn = AppZeit.Utc(modell.EinsatzDatum) } });
     }, laufenderEinsatzNoetig: false);
 
-    public sealed record ElPdfWahl(bool Tracks = true, string? Kartenart = null, IReadOnlyList<string>? TeamIds = null);
+    public sealed record ElPdfWahl(bool Tracks = true, string? Kartenart = null, IReadOnlyList<string>? TeamIds = null, bool Punkte = false);
 
     public sealed record ElEinsatzEnde(string? Id, string? Ergebnis, bool RessourcenGeprueft, string? Bemerkungen = null,
         string? Endzeit = null, ElPdfWahl? Pdf = null);
@@ -134,7 +134,8 @@ public sealed partial class ElAppController
                 hunde.Where(d => hundeIds.Contains(d.Id)).Select(d => d.Name).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().OrderBy(n => n).ToList(),
                 kartenart,
                 a.Pdf?.TeamIds,
-                ende));
+                ende,
+                a.Pdf?.Punkte ?? false));
         }
         catch (InvalidOperationException ex)
         {

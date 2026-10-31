@@ -11,7 +11,8 @@ namespace Einsatzueberwachung.Server.Controllers;
 public sealed partial class ElAppController
 {
     /// <summary>Koerper aller Aktionen; je Endpunkt werden nur die passenden Felder gelesen</summary>
-    public sealed record ElAktion(string? Id, string? HalsbandId = null, string? Text = null, string? TeamId = null, string? AntwortAuf = null);
+    public sealed record ElAktion(string? Id, string? HalsbandId = null, string? Text = null, string? TeamId = null, string? AntwortAuf = null,
+        string? PunktId = null);
 
     public const int MaxTextLaenge = 1000;
 
@@ -70,6 +71,19 @@ public sealed partial class ElAppController
         audit?.Log("Mitteilung an Team (EL-App)", $"{Geraet(null)}: {text}", team.TeamName);
         return Task.FromResult<IActionResult>(
             Ok(new { doppelt = false, mitteilungId = einsatz.TeamMitteilungen(team.TeamId).LastOrDefault()?.Id }));
+    });
+
+    /// <summary>Kartenpunkt als Navigationsziel an das Team (Variante C, docs/APP_API.md Team-Rolle Abschnitt 13)</summary>
+    [HttpPost("teams/{teamId}/ziel")]
+    public Task<IActionResult> TeamZiel(string teamId, [FromBody] ElAktion? aktion) => Aktion(aktion, async () =>
+    {
+        if (navigationspunkte is null) return NotFound();
+        if (einsatz!.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return TeamFehlt();
+        if (string.IsNullOrWhiteSpace(aktion!.PunktId)
+            || einsatz.CurrentEinsatz.MapMarkers.FirstOrDefault(m => m.Id == aktion.PunktId) is not { } punkt)
+            return NotFound(new { error = "Kartenpunkt nicht gefunden." });
+        var mitteilung = await navigationspunkte.ZielSendenAsync(team, punkt, Geraet(null));
+        return Ok(new { doppelt = false, mitteilungId = mitteilung.Id });
     });
 
     [HttpPost("notizen")]

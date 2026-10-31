@@ -77,7 +77,8 @@ namespace Einsatzueberwachung.Domain.Services
                     (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, archivedEinsatz.ElwPosition, optionen.Kartenart);
                 }
 
-                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, coverage, coverageHeatmap);
+                var punkteKarte = await RenderPunkteKarteAsync(archivedEinsatz, optionen.Kartenart);
+                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, coverage, coverageHeatmap, punkteKarte);
 
                 await Task.Run(() =>
                 {
@@ -119,7 +120,8 @@ namespace Einsatzueberwachung.Domain.Services
                 (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, archivedEinsatz.ElwPosition, optionen.Kartenart);
             }
 
-            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, coverage, coverageHeatmap);
+            var punkteKarte = await RenderPunkteKarteAsync(archivedEinsatz, optionen.Kartenart);
+            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, coverage, coverageHeatmap, punkteKarte);
 
             return await Task.Run(() =>
             {
@@ -263,7 +265,24 @@ namespace Einsatzueberwachung.Domain.Services
             });
         }
 
-        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null, List<SearchAreaCoverageResult>? coverage = null, byte[]? coverageHeatmap = null)
+        /// <summary>Karte der Kartenpunkte, nur wenn sie beim Einsatzende fuer den Bericht archiviert wurden (Variante C)</summary>
+        private async Task<byte[]?> RenderPunkteKarteAsync(ArchivedEinsatz archivedEinsatz, MapTileType kartenart)
+        {
+            if (archivedEinsatz.MapMarkers?.Any() != true || _mapRenderer == null) return null;
+            try
+            {
+                return await _mapRenderer.RenderSearchAreaMapAsync(archivedEinsatz.SearchAreas ?? new List<SearchArea>(),
+                    archivedEinsatz.ElwPosition, new MapPrintOptions { TileType = kartenart, ShowPointMarkers = true },
+                    archivedEinsatz.MapMarkers);
+            }
+            catch (Exception)
+            {
+                // Ohne Kartenkacheln (offline) bleibt die Liste der Punkte im Bericht
+                return null;
+            }
+        }
+
+        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null, List<SearchAreaCoverageResult>? coverage = null, byte[]? coverageHeatmap = null, byte[]? punkteKarte = null)
         {
             return Document.Create(container =>
             {
@@ -301,6 +320,8 @@ namespace Einsatzueberwachung.Domain.Services
                                 column.Item().PaddingVertical(10).Element(c => ComposeArchivedTeams(c, einsatz.Teams, einsatz.GlobalNotesEntries ?? new()));
                             if (einsatz.SearchAreas?.Any() == true)
                                 column.Item().PaddingVertical(10).Element(c => ComposeSuchgebiete(c, einsatz.SearchAreas));
+                            if (einsatz.MapMarkers?.Any() == true)
+                                column.Item().PaddingVertical(10).Element(c => ComposeKartenpunkte(c, einsatz.MapMarkers, einsatz.Teams ?? new(), punkteKarte));
                             if (tracks?.Any() == true)
                             {
                                 column.Item().PageBreak();

@@ -92,6 +92,13 @@ namespace Einsatzueberwachung.Domain.Models
                 Label = "Team-App: Suche gesteuert",
                 Description = "Wird ausgelöst, wenn ein Team in der App die Suche startet, pausiert, fortsetzt oder beendet.",
                 DefaultLevel = WarningLevel.Info
+            },
+            new WarningRuleDefinition
+            {
+                Source = Sources.TeamAppPunkt,
+                Label = "Team-App: Punkt gesetzt",
+                Description = "Wird ausgelöst, wenn ein Team in der App an seinem Standort einen Punkt setzt (z. B. einen Fund).",
+                DefaultLevel = WarningLevel.Info
             }
         ];
 
@@ -108,6 +115,7 @@ namespace Einsatzueberwachung.Domain.Models
             public const string PhoneLowBattery   = "PhoneLowBattery";
             public const string ServerCertificate = "ServerCertificate";
             public const string TeamAppSuche      = "TeamAppSuche";
+            public const string TeamAppPunkt      = "TeamAppPunkt";
         }
     }
 }

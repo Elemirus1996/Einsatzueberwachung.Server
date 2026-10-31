@@ -287,7 +287,7 @@ erfährt nicht, wer bestätigt hat.
 
 Umgesetzt (#148). Ohne gepflegten Text liefert `GET datenschutz` `404`.
 
-### 13. Navigationsziele und Punkte (Variante C, Entwurf)
+### 13. Navigationsziele und Punkte (Variante C)
 
 Zwei Richtungen: Die Einsatzleitung schickt einem Team einen Kartenpunkt als **Ziel**, das Team startet damit seine Navi-App.
 Das Team setzt an seinem Standort einen **Punkt** (Fund, Hinweis), der bei der Einsatzleitung live auf der Karte erscheint.
@@ -324,16 +324,18 @@ Das Team setzt an seinem Standort einen **Punkt** (Fund, Hinweis), der bei der E
 - Die App nimmt die **aktuelle** Position (nicht älter als 60 s, sonst neu orten). Ohne Ortungsfreigabe gibt es den Knopf nicht.
 - Antwort `200`: `{ "doppelt": false, "punktId": "…" }`. Entdopplung über `id` wie bei `/statusmeldung` (Wiederholung im Funkloch
   erzeugt nur einen Punkt, Antwort dann `"doppelt": true` mit derselben `punktId`).
-- Wirkung: ein Kartenpunkt im Einsatz („Team Rex: Fund: Jacke“, Farbe des Teams, Beschreibung mit Zeit und Genauigkeit) und eine
-  Notiz mit Quelle „Team-App“ und Koordinate. Im Monitor und in `/el` ein Hinweis mit Ton; Einsatzleitung sieht den Punkt live.
-- Höchstens 50 Punkte je Team und Einsatz, danach `429` + `{ "error" }`. Fehlende oder ungültige Felder → `400`.
+- Wirkung: ein Kartenpunkt im Einsatz („Team Rex: Fund: Jacke“, orange `#E67E22`, Beschreibung mit Zeit und Genauigkeit,
+  Koordinate auf 6 Nachkommastellen) und eine Notiz mit Quelle „Team-App“ und Koordinate. Im Monitor und in `/el` ein Hinweis mit
+  Ton; die Einsatzkarte zeigt den Punkt sofort.
+- Höchstens 50 Punkte je Team und Einsatz, danach `409` + `{ "error" }` (nicht `429` – das bedeutet „kurz warten“).
+  Fehlende oder ungültige Felder, `zeit` ohne `Z` oder mehr als 5 min in der Zukunft → `400`.
   Kein laufender Einsatz bzw. `mode = stop` → `410` + `{ "mode": "stop" }` wie überall.
 - Die Team-App sieht ihre eigenen Punkte nicht über den Server (keine Liste); sie merkt sich gesendete Punkte nur bis zum Abmelden.
 
 **Lebensdauer, Löschfrist, Bericht** (Entscheidung 31.10.2026):
 
 - Punkte leben wie alle Kartenpunkte bis zum Einsatzende; die Einsatzleitung kann sie löschen. Ziele bleiben als Mitteilung beim Team.
-- Keine eigene Löschfrist. Die Notiz zum Team-Punkt fällt unter die Frist „Notizen, Statusmeldungen und Funk“.
+- Keine eigene Löschfrist. Die Notiz zum Team-Punkt fällt unter die Frist „Notizen, Statusmeldungen, Funk und Kartenpunkte“.
 - Bericht: Beim Einsatzende wählt die Einsatzleitung „Kartenpunkte im Bericht“ (`/el/beenden` und EL-App `pdf.punkte`).
   Nur dann übernimmt der Server die Kartenpunkte ins Archiv; sie erscheinen im Bericht auf der Karte und als Liste und werden mit
   der Notizen-Frist gelöscht. Ohne Auswahl wird kein Punkt archiviert.
@@ -577,7 +579,7 @@ beruht. Weicht sie ab, speichert der Server nicht und antwortet `409` + `{ "erro
 "profil": { …aktueller Stand mit neuer version… } }`; die App zeigt den neuen Stand und lässt neu bearbeiten. Ohne `version`
 → `400`. Die Antwort auf erfolgreiches Speichern enthält die neue `version`.
 
-**Navigationsziele und Punkte (Variante C, Entwurf):**
+**Navigationsziele und Punkte (Variante C):**
 
 - `GET /karte` liefert zusätzlich `punkte`: `[ { "id", "name", "beschreibung", "farbe", "lat", "lng", "zeit", "teamId" } ]` –
   alle Kartenpunkte des Einsatzes; `teamId` ist gesetzt, wenn ein Team den Punkt per App gesetzt hat, sonst `null`.

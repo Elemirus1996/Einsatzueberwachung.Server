@@ -54,6 +54,7 @@ public static class AppDatenschutzAntwort
         - Standort (GPS) nur während einer Suche, gesammelt an unseren Server. In einer Kurzpause innerhalb der Suche bleibt die Ortung an; diese Positionen gelten nur als aktuelle Position, nicht als Laufweg.
         - Vor der ersten Suche und zwischen zwei Suchen nutzt die App nur eine grobe Ortung ohne GPS, damit das System sie nicht beendet. Diese Position wird nicht gesendet.
         - Akkustand des Geräts, Statusmeldungen (z. B. „im Suchgebiet eingetroffen“) und die Steuerung der Suche (Start, Pause, Ende).
+        - Punkte, die das Team selbst setzt (z. B. ein Fund): Standort des Handys in diesem Moment, Genauigkeit und ein kurzer Text. Nur auf Knopfdruck.
         - Nach dem Ende des Einsatzes ortet und sendet die App nichts mehr; der Zugang ist dann ungültig.
 
         **Einsatzleitung**
@@ -71,7 +72,8 @@ public static class AppDatenschutzAntwort
         - Angaben zur vermissten Person: im Archiv und im PDF-Bericht. Aufbewahrung: {frist.vermisste}.
         - Bei Übungen gilt: {frist.uebungen}.
         - Die Fristen sind in den Einstellungen unseres Servers festgelegt; der Server setzt sie hier automatisch ein. Laufende Einsätze werden nie gelöscht.
-        - Mitteilungen der Einsatzleitung an ein Team: höchstens 20 je Team, bis zum Einsatzende; nicht im Archiv.
+        - Kartenpunkte (auch die vom Team gesetzten): bis zum Einsatzende. Ins Archiv und in den PDF-Bericht nur, wenn die Einsatzleitung das beim Einsatzende wählt; dann Aufbewahrung wie Notizen ({frist.notizen}). Ein vom Team gesetzter Punkt steht außerdem als Notiz im Einsatz.
+        - Mitteilungen der Einsatzleitung an ein Team: höchstens 20 je Team, bis zum Einsatzende; nicht im Archiv. Dazu gehören auch Navigationsziele.
         - Protokoll der Aktionen (ohne Positionen): nur im Arbeitsspeicher, höchstens 2000 Einträge, gelöscht beim Neustart.
         - Protokolle des Webservers (IP-Adresse, Zeit): [Einstellung unseres Servers]
 

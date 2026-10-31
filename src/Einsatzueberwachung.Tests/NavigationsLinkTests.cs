@@ -65,4 +65,12 @@ public class NavigationsLinkTests
     {
         Assert.StartsWith("data:image/png;base64,", QrBild.DataUrl(NavigationsLink.Geo(49.3188, 8.4312, "Test")));
     }
+
+    [Fact]
+    public void GoogleMapsUndWaze()
+    {
+        Assert.Equal("comgooglemaps://?daddr=49.318800,8.431200&directionsmode=walking", NavigationsLink.GoogleMaps(49.3188, 8.4312));
+        Assert.Equal("waze://?ll=49.318800,8.431200&navigate=yes", NavigationsLink.Waze(49.3188, 8.4312));
+        Assert.Throws<ArgumentOutOfRangeException>(() => NavigationsLink.Waze(91, 8));
+    }
 }

@@ -107,7 +107,7 @@ public sealed class TeamAppEreignisse : IDisposable
     }
 
     private void OnMitteilung(TeamMitteilung m) =>
-        Senden(m.TeamId, "mitteilung", new { id = m.Id, text = m.Text, zeit = DateTime.SpecifyKind(m.ZeitUtc, DateTimeKind.Utc) });
+        Senden(m.TeamId, "mitteilung", Navigationspunkte.MitteilungJson(m));
 
     private void OnTeamGeaendert(Team team) => LageWennGeaendert(team.TeamId);
 
@@ -247,7 +247,7 @@ public static class AppLage
                 akku = ort.BatteryLevel
             },
             mitteilungen = mitteilungen.TakeLast(EinsatzService.MaxTeamMitteilungen)
-                .Select(m => new { id = m.Id, text = m.Text, zeit = DateTime.SpecifyKind(m.ZeitUtc, DateTimeKind.Utc) }).ToList()
+                .Select(Navigationspunkte.MitteilungJson).ToList()
         };
     }
 

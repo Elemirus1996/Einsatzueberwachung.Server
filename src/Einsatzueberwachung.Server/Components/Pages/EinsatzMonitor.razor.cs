@@ -73,6 +73,8 @@ public partial class EinsatzMonitor
     private bool _closeMissionChecklistConfirmed;
     private bool _closingMission;
     private bool _closeMissionIncludeTracks;
+    private bool _closeMissionIncludePunkte;
+    private int _closeMissionPunktCount;
     private Einsatzueberwachung.Domain.Models.Enums.MapTileType _closeMissionKartenart = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets;
     private string _closeMissionResult = string.Empty;
     private TimeOnly? _closeMissionEndTime;
@@ -870,6 +872,8 @@ public partial class EinsatzMonitor
         _closeMissionModalError = string.Empty;
         _closeMissionChecklistConfirmed = false;
         _closeMissionIncludeTracks = false;
+        _closeMissionIncludePunkte = false;
+        _closeMissionPunktCount = EinsatzService.CurrentEinsatz.MapMarkers?.Count ?? 0;
         _closeMissionResult = string.Empty;
         _closeMissionRemarks = string.Empty;
         _closeMissionEndTime = TimeOnly.FromDateTime(TimeService.Now);
@@ -955,7 +959,8 @@ public partial class EinsatzMonitor
                 _closeMissionIncludeTracks,
                 SelectedPersonnelNames,
                 SelectedDogNames,
-                _closeMissionKartenart));
+                _closeMissionKartenart,
+                PunkteImBericht: _closeMissionIncludePunkte));
 
             _showCloseMissionModal = false;
 

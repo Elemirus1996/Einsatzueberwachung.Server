@@ -32,6 +32,17 @@ namespace Einsatzueberwachung.Domain.Services
                 : $"https://maps.apple.com/?ll={punkt}&q={Uri.EscapeDataString(name)}";
         }
 
+        /// <summary>Google Maps auf dem iPhone (App-Schema), Fussweg-Navigation zum Punkt</summary>
+        public static string GoogleMaps(double lat, double lng)
+            => $"comgooglemaps://?daddr={Koordinaten(lat, lng)}&directionsmode=walking";
+
+        /// <summary>Waze (App-Schema), startet die Navigation zum Punkt</summary>
+        public static string Waze(double lat, double lng)
+            => $"waze://?ll={Koordinaten(lat, lng)}&navigate=yes";
+
+        /// <summary>Bezeichnung so, wie sie in den Links steht (ohne Klammern, hoechstens 60 Zeichen); leer, wenn keine</summary>
+        public static string Name(string? bezeichnung) => Bereinigen(bezeichnung) ?? string.Empty;
+
         private static string Koordinaten(double lat, double lng)
         {
             if (double.IsNaN(lat) || double.IsNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180)

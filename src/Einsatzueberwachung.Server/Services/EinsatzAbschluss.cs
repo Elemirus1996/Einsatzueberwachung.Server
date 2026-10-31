@@ -15,7 +15,9 @@ public sealed record EinsatzAbschlussAnfrage(
     Einsatzueberwachung.Domain.Models.Enums.MapTileType Kartenart = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets,
     IReadOnlyCollection<string>? TeamIds = null,
     // Genauer Zeitpunkt des Endes in Ortszeit (EL-App); hat Vorrang vor Endzeit
-    DateTime? Ende = null);
+    DateTime? Ende = null,
+    // Kartenpunkte ins Archiv und in den Bericht (Variante C); sonst wird kein Punkt archiviert
+    bool PunkteImBericht = false);
 
 public sealed record EinsatzAbschlussErgebnis(ArchivedEinsatz Archiviert, PdfExportResult Pdf);
 
@@ -82,6 +84,7 @@ public sealed class EinsatzAbschlussService
 
             var snapshot = BuildArchiveSnapshot(_einsatzService);
             snapshot.EinsatzEnde = anfrage.Ende ?? ResolveEndTime(anfrage.Endzeit, _timeService.Now);
+            snapshot.MapMarkers = anfrage.PunkteImBericht ? _einsatzService.CurrentEinsatz.MapMarkers.ToList() : new List<MapMarker>();
 
             var archived = await _archivService.ArchiveEinsatzAsync(
                 snapshot,
@@ -91,7 +94,8 @@ public sealed class EinsatzAbschlussService
                 anfrage.HundeVorOrt.ToList());
 
             var pdf = await _pdfExportService.ExportArchivedEinsatzToPdfAsync(archived,
-                anfrage.TracksImPdf ? new PdfBerichtOptionen(Kartenart: anfrage.Kartenart, TeamIds: anfrage.TeamIds) : PdfBerichtOptionen.OhneTracks);
+                anfrage.TracksImPdf ? new PdfBerichtOptionen(Kartenart: anfrage.Kartenart, TeamIds: anfrage.TeamIds)
+                    : new PdfBerichtOptionen(Tracks: false, Kartenart: anfrage.Kartenart));
 
             _einsatzService.ResetEinsatz();
             return new EinsatzAbschlussErgebnis(archived, pdf);

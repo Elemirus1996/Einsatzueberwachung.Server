@@ -68,8 +68,9 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
             _lastWarning = warning;
             StateHasChanged();
         });
-        // Team steuert die Suche aus der App (#133): kurzer Ton, damit die Einsatzleitung es mitbekommt
-        if (warning.Source == WarningRuleDefinition.Sources.TeamAppSuche && BrowserPrefs.Preferences.SoundAlertsEnabled)
+        // Team steuert die Suche oder setzt einen Punkt aus der App (#133, Variante C): kurzer Ton, damit die Einsatzleitung es mitbekommt
+        if (warning.Source is WarningRuleDefinition.Sources.TeamAppSuche or WarningRuleDefinition.Sources.TeamAppPunkt
+            && BrowserPrefs.Preferences.SoundAlertsEnabled)
         {
             var prefs = BrowserPrefs.Preferences;
             _ = InvokeAsync(async () =>

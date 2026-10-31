@@ -1,3 +1,4 @@
+using Einsatzueberwachung.Domain.Models;
 using System.Security.Cryptography;
 using System.Text;
 using Einsatzueberwachung.Domain.Interfaces;
@@ -47,11 +48,11 @@ public sealed class TeamMobileTokenService : ITeamMobileTokenService, IDisposabl
     public event Action? GenerationChanged;
     public event Action<string, string, DateTime>? TeamMessageBroadcasted;
 
-    public void BroadcastTeamMessage(string teamId, string message)
+    public void BroadcastTeamMessage(string teamId, string message, NavigationsZiel? ziel = null)
     {
         if (string.IsNullOrWhiteSpace(teamId) || string.IsNullOrWhiteSpace(message)) return;
         // Gespeichert, damit die App sie nach Funkloch oder aus dem Hintergrund nachholt (#119)
-        _einsatzService.TeamMitteilungSpeichern(teamId, message);
+        _einsatzService.TeamMitteilungSpeichern(teamId, message, ziel);
         TeamMessageBroadcasted?.Invoke(teamId, message, Ortszeit.Jetzt);
     }
 
