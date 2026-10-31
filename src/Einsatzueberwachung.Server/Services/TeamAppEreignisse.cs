@@ -205,7 +205,7 @@ public static class AppLage
     }
 
     public static object Erstellen(EinsatzData einsatz, Team team, string staffel, ICollarTrackingService halsbaender,
-        IReadOnlyList<TeamMitteilung> mitteilungen, string modus, bool darfSteuern = true)
+        IReadOnlyList<TeamMitteilung> mitteilungen, string modus, bool darfSteuern = true, object? datenschutz = null)
     {
         var gebiet = einsatz.SearchAreas?.FirstOrDefault(a => a.Id == team.SearchAreaId);
         var ort = string.IsNullOrWhiteSpace(team.CollarId) ? null : halsbaender.GetLatestLocation(team.CollarId);
@@ -229,6 +229,7 @@ public static class AppLage
                 helfer = team.HelferNames.Where(h => !string.IsNullOrWhiteSpace(h)).ToList()
             },
             suche = Suche(team, darfSteuern),
+            datenschutz,
             suchgebiet = gebiet is null ? null : new
             {
                 id = gebiet.Id,

@@ -71,8 +71,9 @@ public sealed partial class ElAppController
             staffel,
             logoVersion = logo is null ? null : (await logo.HolenAsync())?.Version
         };
+        var datenschutz = await AppDatenschutzAntwort.GanzAsync(einstellungen); // #148: die EL-App fragt beim ersten Login
         if (!mitAnmeldung)
-            return new { apiVersion = TeamMobileAppController.ApiVersion, rolle = "el", token, expiresAt = ablaufUtc, server };
+            return new { apiVersion = TeamMobileAppController.ApiVersion, rolle = "el", token, expiresAt = ablaufUtc, server, datenschutz };
         return new
         {
             apiVersion = TeamMobileAppController.ApiVersion,
@@ -81,7 +82,8 @@ public sealed partial class ElAppController
             expiresAt = ablaufUtc,
             anmeldungAt = DateTime.SpecifyKind(anmeldungUtc, DateTimeKind.Utc),
             verlaengerbarBis = DateTime.SpecifyKind(anmeldungUtc + ElAppTokenService.HoechstensVerlaengertBis, DateTimeKind.Utc),
-            server
+            server,
+            datenschutz
         };
     }
 
@@ -97,11 +99,20 @@ public sealed partial class ElAppController
     }
 
     [HttpGet("lage")]
-    public IActionResult GetLage()
+    public async Task<IActionResult> GetLage()
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
         if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _) || einsatz is null) return Gone();
-        return Ok(ElLage.Erstellen(einsatz, halsbaender, positionen.Modus));
+        return Ok(ElLage.Erstellen(einsatz, halsbaender, positionen.Modus, await AppDatenschutzAntwort.VersionAsync(einstellungen)));
+    }
+
+    /// <summary>Datenschutzerklaerung der Staffel zum Nachlesen (#148); 404, wenn keine hinterlegt ist</summary>
+    [HttpGet("datenschutz")]
+    public async Task<IActionResult> GetDatenschutz()
+    {
+        if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _)) return Gone();
+        return await AppDatenschutzAntwort.GanzAsync(einstellungen) is { } datenschutz ? Ok(datenschutz) : NotFound();
     }
 
     /// <summary>Live-Ereignisse (Abschnitt 8). Bei Einsatzende kommt „einsatz“, „stop“ nur bei ungueltigem Token.</summary>
@@ -179,7 +190,7 @@ public sealed partial class ElAppController
 public static class ElLage
 {
     public static object Erstellen(Einsatzueberwachung.Domain.Interfaces.IEinsatzService einsatzService,
-        Einsatzueberwachung.Domain.Interfaces.ICollarTrackingService? halsbaender, OrtungsModus modus)
+        Einsatzueberwachung.Domain.Interfaces.ICollarTrackingService? halsbaender, OrtungsModus modus, object? datenschutz = null)
     {
         var e = einsatzService.CurrentEinsatz;
         var aktiv = ElPositionService.Laeuft(e);
@@ -200,6 +211,7 @@ public static class ElLage
                 fuehrungsassistent = e.Fuehrungsassistent ?? ""
             },
             teams = !aktiv ? [] : einsatzService.Teams.OrderBy(t => t.TeamName).Select(t => Team(t, e, einsatzService, halsbaender)).ToList(),
+            datenschutz,
             wetter = (object?)null // folgt (Wetterdienst noch nicht angebunden)
         };
     }

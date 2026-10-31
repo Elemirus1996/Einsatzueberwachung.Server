@@ -86,6 +86,7 @@ namespace Einsatzueberwachung.Domain.Services
 
         public async Task SaveAppSettingsAsync(AppSettings settings)
         {
+            AppDatenschutz.Aktualisieren(settings, DateTime.UtcNow);
             _appSettings = settings;
             var filePath = Path.Combine(_dataPath, "AppSettings.json");
             var options = new JsonSerializerOptions { WriteIndented = true };

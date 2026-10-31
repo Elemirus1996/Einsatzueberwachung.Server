@@ -85,7 +85,16 @@ public sealed class TeamMobileAppController : ControllerBase
         var einsatz = _einsatzService.CurrentEinsatz;
         var staffel = (await _settings.GetStaffelSettingsAsync())?.StaffelName ?? "";
         return Ok(AppLage.Erstellen(einsatz, team, staffel, _halsbaender, _einsatzService.TeamMitteilungen(teamId),
-            OrtungsSteuerung.AlsText(OrtungsSteuerung.FuerTeam(einsatz, team)), await DarfSteuernAsync()));
+            OrtungsSteuerung.AlsText(OrtungsSteuerung.FuerTeam(einsatz, team)), await DarfSteuernAsync(),
+            await AppDatenschutzAntwort.VersionAsync(_settings)));
+    }
+
+    /// <summary>Datenschutzerklaerung der Staffel zum Nachlesen (#148); 404, wenn keine hinterlegt ist</summary>
+    [HttpGet("datenschutz")]
+    public async Task<IActionResult> GetDatenschutz()
+    {
+        if (!TryTeam(out _, out _)) return Gone();
+        return await AppDatenschutzAntwort.GanzAsync(_settings) is { } datenschutz ? Ok(datenschutz) : NotFound();
     }
 
     [HttpGet("tracks")]
@@ -214,6 +223,7 @@ public sealed class TeamMobileAppController : ControllerBase
             uebung = !_einsatzService.CurrentEinsatz.IstEinsatz,
             staffel = staffel?.StaffelName ?? "",
             server = await ServerInfoAsync(staffel?.StaffelName ?? ""),
+            datenschutz = await AppDatenschutzAntwort.GanzAsync(_settings), // vor dem Token: die App fragt vor der Anmeldung (#148)
             teams = _einsatzService.Teams
                 .OrderBy(t => t.TeamName)
                 .Select(t => new
@@ -271,6 +281,7 @@ public sealed class TeamMobileAppController : ControllerBase
             uebung = !einsatz.IstEinsatz,
             staffel = staffel?.StaffelName ?? "",
             server = await ServerInfoAsync(staffel?.StaffelName ?? ""),
+            datenschutz = await AppDatenschutzAntwort.VersionAsync(_settings),
             positionUrl = basis + "/positions",
             statusUrl = basis + "/status",
             expiresAt = ablaufUtc,
