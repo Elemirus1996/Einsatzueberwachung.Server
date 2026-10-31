@@ -146,14 +146,19 @@
       72 Stunden nach der Anmeldung.</li>
       <li><strong>Positionspuffer:</strong> Positionen, die wegen eines Funklochs noch nicht gesendet wurden, bis zum
       erfolgreichen Senden.</li>
+      <li><strong>Einsatzleitung:</strong> Der Gerätename liegt zusammen mit dem Zugang im Schlüsselbund bzw. Keystore. Die
+      interne Adresse des Servers bleibt auch nach dem Abmelden gespeichert; sie ist nicht geheim.</li>
+      <li><strong>Gelesene Mitteilungen:</strong> eine Liste der Kennungen gelesener Mitteilungen je Team, gelöscht beim
+      Einsatzende.</li>
       <li><strong>Anmelde-Code des Einsatzes</strong> im Schlüsselbund bzw. Keystore, damit das Team ohne neuen Scan gewechselt
       werden kann. Er wird beim Einsatzende oder mit „Vom Einsatz abmelden“ gelöscht.</li>
       <li><strong>Warteschlange:</strong> Statusmeldungen und Aktionen, die im Funkloch noch nicht gesendet wurden, bis zum
       erfolgreichen Senden.</li>
       <li><strong>Heimatstaffel:</strong> Name und Logo der eigenen Staffel und die Kennung ihres Servers, damit die App sie
-      wiedererkennt.</li>
+      wiedererkennt. Auch die Kennungen von Servern, die nicht als Heimatstaffel gewählt wurden, bleiben gespeichert, damit die
+      App nicht erneut fragt.</li>
       <li><strong>Bestätigung der Datenschutzerklärung</strong> je Server und Fassung, damit die App nur bei einer neuen Fassung
-      erneut fragt.</li>
+      erneut fragt. Sie liegt nur auf dem Gerät; der Server führt kein Protokoll darüber.</li>
       <li><strong>Nur Android:</strong> zwischengespeicherte Kartenkacheln, höchstens 200 MB. Das sind nur Kartenbilder, keine
       Positionen.</li>
       <li>Beim Abmelden bzw. nach dem Einsatzende löscht die App Zugang, Anmelde-Code, Puffer und Warteschlange. Name und Logo der
@@ -168,6 +173,9 @@
       gesendet.</li>
       <li><strong>Dauerhafte Benachrichtigung (nur Android):</strong> Während der Ortung zeigt Android eine Benachrichtigung an,
       weil die App dann als Vordergrunddienst läuft. Das schreibt das System vor.</li>
+      <li><strong>Hintergrundaktualisierung (iOS)</strong> und <strong>Vibration (Android)</strong>: damit die Ortung während
+      der Suche weiterläuft und Warnungen spürbar sind.</li>
+      <li><strong>Warnungen der Einsatzleitung</strong> erklingen in der geöffneten App als Ton bzw. Vibration.</li>
       <li><strong>Mitteilungen:</strong> für Hinweise der Einsatzleitung und Warnungen auf dem Sperrbildschirm. Die Mitteilungen
       erzeugt die App auf dem Gerät; es wird kein Push-Dienst eines Dritten verwendet.</li>
     </ul>
@@ -188,6 +196,8 @@
         OpenTopoMap – <a href="https://opentopomap.org/about">Angaben von OpenTopoMap</a>
         <span class="platzhalter">[Link zur Datenschutzerklärung von OpenTopoMap prüfen]</span></li>
     </ul>
+    <p>Unter Android sendet die App an den Kartenanbieter zusätzlich eine Kennung mit App-Name und Version (User-Agent); das
+    verlangt OpenStreetMap für den Abruf der Kartenbilder.</p>
 
     <h2>8. Rechtsgrundlage</h2>
     <p><span class="platzhalter">[Von der Staffel festzulegen, z. B. Art. 6 Abs. 1 lit. b DSGVO (Mitgliedschaft und Einsatzdienst)
