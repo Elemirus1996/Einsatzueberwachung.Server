@@ -2,6 +2,7 @@ using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Domain.Services;
+using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -215,6 +216,12 @@ public partial class KartePunkteTab
         StateHasChanged();
     }
 
+    // Karte auf den Punkt setzen, Zoomstufe bleibt
+    private async Task HinspringenZuMarker(MapMarker marker)
+    {
+        await JSRuntime.InvokeVoidAsync("LeafletMap.centerMap", "einsatzMap", marker.Latitude, marker.Longitude, null);
+    }
+
     private async Task ZoomToMarker(MapMarker marker)
     {
         await JSRuntime.InvokeVoidAsync("LeafletMap.zoomToCoordinateMarker", "einsatzMap", marker.Id);
@@ -366,6 +373,20 @@ public partial class KartePunkteTab
         await OnMarkersChanged.InvokeAsync();
         StateHasChanged();
     }
+
+    // QR-Code zur Navigation: Team scannt mit der Handy-Kamera und landet in seiner Navi-App
+    private MapMarker? _navMarker;
+    private string _navQrGeo = "";
+    private string _navQrApple = "";
+
+    private void ZeigeNavigationsQr(MapMarker marker)
+    {
+        _navMarker = marker;
+        _navQrGeo = QrBild.DataUrl(NavigationsLink.Geo(marker.Latitude, marker.Longitude, marker.Label), 8);
+        _navQrApple = QrBild.DataUrl(NavigationsLink.AppleKarten(marker.Latitude, marker.Longitude, marker.Label), 8);
+    }
+
+    private void SchliesseNavigationsQr() => _navMarker = null;
 
     private async Task DownloadMarkerGpx(MapMarker marker)
     {

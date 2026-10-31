@@ -2,7 +2,7 @@ using Einsatzueberwachung.Domain.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Options;
 using Einsatzueberwachung.Server.Security;
-using QRCoder;
+using Einsatzueberwachung.Server.Services;
 
 namespace Einsatzueberwachung.Server.Components.Pages;
 
@@ -61,7 +61,7 @@ public partial class EinsatzMonitor
                 ? $"/team/login/{token}"
                 : $"{baseUrl}/team/login/{token}";
 
-            _teamMobileQrDataUrl = GenerateQrDataUrl(_teamMobileFullUrl);
+            _teamMobileQrDataUrl = QrBild.DataUrl(_teamMobileFullUrl, 8);
         }
         _showTeamMobileModal = true;
     }
@@ -99,12 +99,4 @@ public partial class EinsatzMonitor
 
     private void CloseTeamMobileModal() => _showTeamMobileModal = false;
 
-    private static string GenerateQrDataUrl(string content)
-    {
-        using var generator = new QRCodeGenerator();
-        var data = generator.CreateQrCode(content, QRCodeGenerator.ECCLevel.M);
-        var pngQr = new PngByteQRCode(data);
-        var bytes = pngQr.GetGraphic(8);
-        return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
-    }
 }
