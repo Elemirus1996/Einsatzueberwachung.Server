@@ -415,6 +415,62 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.12.0</span>
+    <span class="changelog-date">31.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu (für die App „EinsatzSpur“)</h4>
+<h4>Einsatzleitung in der App (nur im VPN)</h4>
+<ul>
+<li><strong>Anmeldung</strong> mit dem Staffel-Passwort, mit derselben Sperre nach Fehlversuchen wie im Browser. Abmelden sperrt den Zugang des Geräts dauerhaft. Jede Anmeldung bekommt einen eigenen Zugang, Geräte stören sich nicht gegenseitig.</li>
+<li><strong>Übersicht und Live-Daten:</strong> Teams mit Suchzeit, Positionen, Notizen, Funk, Vermisste und Warnungen kommen ohne Neuladen. Höchstens 10 Verbindungen je Gerät.</li>
+<li><strong>Teams steuern:</strong> starten (mit Halsband-Auswahl), pausieren, weiter, stoppen, zurücksetzen, wie in der Ansicht Einsatzleitung im Browser. Doppelt gesendete Aktionen werden nur einmal ausgeführt.</li>
+<li><strong>Notizen, Funk und Mitteilungen an Teams</strong>, mit Antworten. Einträge der App stehen mit Gerätename im Audit-Log.</li>
+<li><strong>Vermisste:</strong> Profile anlegen und bearbeiten, Checkliste, Szenario. Ändern zwei Geräte gleichzeitig, wird nichts still überschrieben, das zweite Gerät bekommt den aktuellen Stand.</li>
+<li><strong>Karte:</strong> Suchgebiete mit Abdeckung in Prozent, Halsbänder, Team-Handys, Einsatzleitung und ELW, dazu die Laufwege.</li>
+<li><strong>Einsatz starten und beenden</strong> wie im Browser, auch mit Übernahme eines offenen Divera-Alarms. Beim Beenden sind Ergebnis und Prüfung der Ressourcen Pflicht, der Bericht entsteht wie gewohnt.</li>
+<li><strong>Zugang verlängern:</strong> Während eines Einsatzes oder einer Übung kann die App ihren Zugang ohne erneute Passworteingabe verlängern, höchstens bis 72 Stunden nach der Anmeldung.</li>
+</ul>
+<h4>Team steuert die Suche selbst</h4>
+<ul>
+<li>Teams können ihre Suche in der App starten, pausieren, fortsetzen und beenden. Die Wirkung ist dieselbe wie im Monitor. Die Einsatzleitung bekommt einen Hinweis mit kurzem Ton im Monitor und in der Ansicht Einsatzleitung, dazu eine Notiz mit Quelle „Team-App“.</li>
+<li>Neue Einstellung <strong>„Teams dürfen die Suche selbst steuern“</strong> unter Einstellungen → Tracking-App, Standard ein.</li>
+<li>In der <strong>Kurzpause</strong> bleibt die Ortung des Handys an. Die Position wird angezeigt, kommt aber nicht in den Laufweg.</li>
+</ul>
+<h4>Datenschutzerklärung der Staffel</h4>
+<ul>
+<li>Unter Einstellungen → Tracking-App pflegt die Staffel ihre Datenschutzerklärung (Titel und Text). Der Knopf „Vorlage einfügen“ setzt eine Vorlage mit Platzhaltern in eckigen Klammern ein.</li>
+<li>Die App zeigt den Text vor der ersten Anmeldung und nach jeder Änderung erneut. Die Kenntnisnahme bleibt auf dem Gerät, der Server speichert nicht, wer bestätigt hat.</li>
+<li>Ist kein Text hinterlegt, zeigt die App nur einen Hinweis. Die Anmeldung bleibt möglich.</li>
+</ul>
+<h4>Löschfristen</h4>
+<ul>
+<li>Unter Einstellungen → Tracking-App, Abschnitt „Löschfristen (Datenschutz)“, legt die Staffel Fristen in Tagen ab Einsatzende fest: für Laufwege, für Notizen, Statusmeldungen und Funk, für Angaben zur vermissten Person, dazu eine eigene Frist für Übungen.</li>
+<li><strong>Ab Werk wird nichts gelöscht.</strong> Erst wenn Fristen eingetragen sind, löscht ein täglicher Lauf die fälligen Daten aus dem Archiv und aus der Funk-Datenbank, nie aus dem laufenden Einsatz. Das gespeicherte PDF wird dabei gelöscht und lässt sich im Archiv ohne die gelöschten Daten neu erzeugen.</li>
+<li>Würden neue Fristen sofort Daten löschen, fragt die Seite vorher nach und zeigt, wie viele Einsätze betroffen sind.</li>
+<li>Im Audit-Log steht nur, welcher Einsatz und welche Datenart gelöscht wurde, keine Inhalte.</li>
+<li>Die Platzhalter <code>{frist.laufwege}</code>, <code>{frist.notizen}</code>, <code>{frist.vermisste}</code> und <code>{frist.uebungen}</code> in der Datenschutzerklärung werden durch die eingestellten Fristen ersetzt.</li>
+</ul>
+<h4>Technik</h4>
+<ul>
+<li>Neue Schnittstelle <code>api/el/app/v1/</code> für die Einsatzleitung, nur intern über das VPN erreichbar. Beschreibung in <code>docs/APP_API.md</code>.</li>
+<li>Interne nginx-Konfiguration: strenges Limit für die Anmeldung der App (20 pro Minute) und ein eigener Abschnitt für die Live-Verbindung ohne Pufferung.</li>
+<li>Keine neuen Pakete.</li>
+</ul>
+<h4>Einspielen</h4>
+<p><strong>Nur, wenn gerade kein Einsatz läuft.</strong></p>
+<p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.12.0“.</p>
+<p>2. <strong>Interne nginx-Konfiguration</strong> neu übernehmen: <code>deploy/nginx/einsatzueberwachung.conf</code>. Die öffentliche Konfiguration (<code>einsatzueberwachung-public.conf</code>) bleibt unverändert. Danach:</p>
+<pre><code>
+   sudo nginx -t &amp;&amp; sudo systemctl reload nginx
+</code></pre>
+<p>3. Kurz prüfen, ob das PDF mit Karte weiter funktioniert: im Archiv bei einem Einsatz „PDF“ öffnen, die Karte muss erscheinen.</p>
+<p>4. Unter Einstellungen → Tracking-App die <strong>Datenschutzerklärung</strong> eintragen („Vorlage einfügen“, Platzhalter ausfüllen, speichern).</p>
+<p>5. Im selben Abschnitt die <strong>Löschfristen</strong> festlegen. Ohne Eintrag bleibt alles wie bisher, es wird nichts automatisch gelöscht.</p>
+<p>6. Prüfen, ob die Einstellung „Teams dürfen die Suche selbst steuern“ so gewollt ist (Standard ein).</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.11.11</span>
     <span class="changelog-date">29.10.2026</span>
     <span class="changelog-name"></span>
@@ -573,34 +629,6 @@ sudo certbot renew --dry-run
 <h4>Einspielen</h4>
 <p>Normales Update, keine Änderung an der Konfiguration nötig.</p>
 <p>Falls noch nicht geschehen, den Zertifikatsschritt aus <strong>1.11.4</strong> ausführen (siehe <code>DEPLOYMENT.md</code>, „Zertifikat der öffentlichen Domain“). Danach unter Einstellungen → System „Jetzt prüfen“ drücken, das Zertifikat sollte grün sein. Anschließend unter Einstellungen → Integration den <strong>Traccar-Test</strong> mit einem Handy machen.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.4</span>
-    <span class="changelog-date">27.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Korrekturen</h4>
-<ul>
-<li><strong>Traccar sendet wieder:</strong> Das Let's-Encrypt-Zertifikat konnte sich nicht automatisch verlängern. Port 80 hat auch die Prüfanfragen auf HTTPS umgeleitet, dort kam ein 404 zurück. Die Traccar-App lehnt ein abgelaufenes Zertifikat still ab, der Browser zeigt nur eine Warnung. Die nginx-Vorlage lässt die Prüfanfragen jetzt durch (siehe „Einspielen“).</li>
-<li>Der Traccar-Endpunkt versteht zusätzlich das <strong>JSON-Format</strong> der neueren Traccar-Apps.</li>
-</ul>
-<h4>Neu</h4>
-<ul>
-<li><strong>Nach Ende einer Suche:</strong> Auf dem Team-Handy erscheint „Suche beendet – Traccar jetzt stoppen“ mit einem Knopf, der den Stopp in Traccar öffnet. Auf Android vibriert das Handy dazu. Bei einer neuen Suche erscheint „Traccar starten“. Bei einer Kurzpause kommt kein Hinweis.</li>
-<li><strong>Lagekarte:</strong> Nach dem Stopp einer Suche zeigt die Karte das Handy des Teams nicht mehr als „live“, auch wenn Traccar noch sendet. Beim nächsten Start ist es wieder da.</li>
-</ul>
-<p>Hinweis: Traccar lässt sich nicht vom Server aus beenden, iOS und Android erlauben das nicht. Deshalb kommt der Stopp per Tipp.</p>
-<h4>Einspielen</h4>
-<p>1. Update wie gewohnt installieren.</p>
-<p>2. <strong>Einmalig auf dem Server</strong>: neue <code>einsatzueberwachung-public.conf</code> übernehmen und das Zertifikat verlängern. Die Befehle stehen in <code>DEPLOYMENT.md</code> unter „Zertifikat der öffentlichen Domain“:</p>
-<pre><code>
-mkdir -p /var/www/certbot
-nginx -t &amp;&amp; systemctl reload nginx
-certbot certonly --webroot -w /var/www/certbot -d &lt;domain&gt; --cert-name &lt;domain&gt; --force-renewal --deploy-hook "systemctl reload nginx"
-certbot renew --dry-run
-</code></pre>
-<p>3. In der Traccar-App einmal „Stop“ und wieder „Start“ drücken. Die im Handy gesammelten Positionen werden dann nachgesendet.</p></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>
