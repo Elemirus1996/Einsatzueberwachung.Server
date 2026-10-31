@@ -138,7 +138,7 @@ public sealed class AppDatenschutzTests : IDisposable
     public void Vorlage_HatPlatzhalterUndKeineHtmlTags()
     {
         Assert.Contains("[Name der Staffel", AppDatenschutzAntwort.Vorlage);
-        Assert.Contains("Frist, in den Einstellungen des Servers festgelegt", AppDatenschutzAntwort.Vorlage);
+        Assert.Contains("{frist.notizen}", AppDatenschutzAntwort.Vorlage);
         Assert.DoesNotContain("<", AppDatenschutzAntwort.Vorlage);
         Assert.True(AppDatenschutzAntwort.Vorlage.Length < AppDatenschutz.MaxTextLaenge);
     }

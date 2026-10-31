@@ -16,11 +16,18 @@ namespace Einsatzueberwachung.Domain.Services
 
         public static bool Hinterlegt(AppSettings s) => !string.IsNullOrWhiteSpace(s.AppDatenschutzText);
 
-        /// <summary>16 Zeichen Hash aus Titel und Text; null, wenn nichts hinterlegt ist</summary>
+        /// <summary>Text fuer die App: Platzhalter der Loeschfristen (#151) durch die eingestellten Fristen ersetzt</summary>
+        public static string Text(AppSettings s) => (s.AppDatenschutzText ?? "").Trim()
+            .Replace("{frist.laufwege}", Loeschfristen.Text(s.LoeschfristLaufwegeTage))
+            .Replace("{frist.notizen}", Loeschfristen.Text(s.LoeschfristNotizenTage))
+            .Replace("{frist.vermisste}", Loeschfristen.Text(s.LoeschfristVermissteTage))
+            .Replace("{frist.uebungen}", s.LoeschfristUebungenTage is null ? "wie bei Einsätzen" : Loeschfristen.Text(s.LoeschfristUebungenTage));
+
+        /// <summary>16 Zeichen Hash aus Titel und Text (mit eingesetzten Fristen); null, wenn nichts hinterlegt ist</summary>
         public static string? Version(AppSettings s)
         {
             if (!Hinterlegt(s)) return null;
-            var inhalt = (s.AppDatenschutzTitel ?? "").Trim() + "\n" + s.AppDatenschutzText!.Trim();
+            var inhalt = (s.AppDatenschutzTitel ?? "").Trim() + "\n" + Text(s);
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(inhalt)))[..16].ToLowerInvariant();
         }
 

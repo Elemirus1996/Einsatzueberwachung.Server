@@ -115,6 +115,13 @@ namespace Einsatzueberwachung.Domain.Models
         public string? AppDatenschutzVersion { get; set; }
         public DateTime? AppDatenschutzStandUtc { get; set; }
 
+        // Loeschfristen im Archiv in Tagen ab Einsatzende (#151); null = nicht automatisch loeschen (ab Werk)
+        public int? LoeschfristLaufwegeTage { get; set; }
+        public int? LoeschfristNotizenTage { get; set; }
+        public int? LoeschfristVermissteTage { get; set; }
+        /// <summary>Gemeinsame Frist fuer Uebungen; null = wie bei Einsaetzen</summary>
+        public int? LoeschfristUebungenTage { get; set; }
+
         // Karten-Marker Symbole
         // Collar: "paw" | "dog" | "bone" | "dot" | "crosshairs" | "location-arrow"
         // Human:  "phone" | "person" | "person_walking" | "radio" | "dot"

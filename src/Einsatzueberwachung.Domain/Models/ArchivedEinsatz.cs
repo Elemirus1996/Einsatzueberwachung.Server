@@ -76,6 +76,9 @@ namespace Einsatzueberwachung.Domain.Models
         /// </summary>
         public List<CompletedSearch>? CompletedSearches { get; set; }
 
+        /// <summary>Nach Loeschfrist entfernte Datenarten (Loeschfristen.Laufwege usw.) mit Zeitpunkt (#151)</summary>
+        public Dictionary<string, DateTime>? Geloescht { get; set; }
+
         // === Zusammenführungs-Protokoll ===
         /// <summary>Zeitpunkt der letzten Import-Zusammenführung (null = noch nie zusammengeführt).</summary>
         public DateTime? LastMergedAt { get; set; }
