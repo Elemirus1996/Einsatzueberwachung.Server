@@ -311,7 +311,7 @@ Das Team setzt an seinem Standort einen **Punkt** (Fund, Hinweis), der bei der E
 - `lat`/`lng` mit 6 Nachkommastellen, `name` höchstens 60 Zeichen (ohne Klammern). Die Links baut der Server (`NavigationsLink`);
   die App setzt keine eigenen zusammen.
 - Das Ziel ist ein Schnappschuss: Verschiebt die Einsatzleitung den Punkt danach, ändert sich das gesendete Ziel nicht; sie schickt es neu.
-- Für Ton und „neu“/„gelesen“ gilt dasselbe wie bei jeder Mitteilung.
+- „neu“/„gelesen“ wie bei jeder Mitteilung. Ton: eigene Tonart „Navigationsziel“ (Einstellung in der App, siehe Einsatzleitung Abschnitt 7).
 
 **Team → EL: `POST /punkt`.**
 
@@ -577,8 +577,24 @@ beruht. Weicht sie ab, speichert der Server nicht und antwortet `409` + `{ "erro
   alle Kartenpunkte des Einsatzes; `teamId` ist gesetzt, wenn ein Team den Punkt per App gesetzt hat, sonst `null`.
 - Aktion `/teams/{teamId}/ziel` mit `punktId` (aus `punkte`): schickt den Punkt als Ziel an das Team (Team-Rolle Abschnitt 13).
   Antwort `{ "doppelt": false, "mitteilungId" }`. Unbekanntes Team oder unbekannter Punkt → `404`.
-- Ereignis `punkt` `{ "id", "teamId" }`: Kartenpunkt neu, geändert oder gelöscht → `/karte` neu laden. Setzt ein Team einen
-  Punkt, kommt zusätzlich `notiz` und (für Ton bzw. Vibration) `warnung` mit `stufe` 1 und dem Text „Team Rex: Fund: Jacke“.
+- Ereignis `punkt` `{ "id", "teamId", "aenderung", "text" }`: Kartenpunkt neu, geändert oder gelöscht → `/karte` neu laden.
+  `aenderung`: `neu` · `geaendert` · `geloescht`. `text` nur bei `neu` von einem Team („Team Rex: Fund: Jacke“), sonst `null`.
+  Setzt ein Team einen Punkt, kommt zusätzlich `notiz`. **Kein** `warnung` – der Ton gehört zur Tonart „Punkt vom Team“ (unten).
+
+**Töne in den Apps (Einstellung auf dem Gerät):** Der Benutzer legt in den Einstellungen der App fest, welcher Ton zu welcher
+Art von Meldung gehört (Auswahl aus den Tönen der App, „Nur Vibration“ oder „Aus“, mit Probehören). Der Server schickt dafür nur
+eindeutige Ereignisse, keine Töne. Arten:
+
+| Rolle | Tonart | ausgelöst durch |
+|---|---|---|
+| Team | Mitteilung | `mitteilung` ohne `ziel` |
+| Team | Navigationsziel | `mitteilung` mit `ziel` |
+| EL | Warnung Stufe 1 / Stufe 2 | `warnung` mit `stufe` 1 bzw. 2 |
+| EL | Punkt vom Team | `punkt` mit `aenderung = neu` und `teamId` |
+| EL | Funk | `funk` (neuer Eintrag eines Teams) |
+
+Voreinstellung: jede Art ein eigener, unterscheidbarer Ton; Warnung Stufe 2 lässt sich nicht auf „Aus“ stellen (nur leiser
+nicht – sie bleibt hörbar). Die Einstellung gilt je Gerät, nicht je Server.
 
 ### 8. `GET /ereignisse` – Live
 
