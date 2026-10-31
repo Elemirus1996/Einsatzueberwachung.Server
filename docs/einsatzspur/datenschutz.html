@@ -100,8 +100,8 @@
       <li><strong>Standort (GPS) nur während einer Suche:</strong> Die App ortet erst, wenn die Suche des Teams läuft, und
       sendet die Positionen gesammelt an den Server der Staffel. Während einer Kurzpause innerhalb der Suche bleibt die Ortung an
       (das Team ist weiter im Gelände); diese Positionen zeigt der Server nur als aktuelle Position, nicht im Laufweg.</li>
-      <li><strong>Pause zwischen zwei Suchen:</strong> Die App nutzt nur eine grobe Ortung ohne GPS, damit das Betriebssystem
-      sie nicht beendet. Diese grobe Position wird <strong>nicht</strong> gesendet.</li>
+      <li><strong>Vor der ersten Suche und zwischen zwei Suchen:</strong> Die App nutzt nur eine grobe Ortung ohne GPS, damit
+      das Betriebssystem sie nicht beendet. Diese grobe Position wird <strong>nicht</strong> gesendet.</li>
       <li><strong>Akkustand</strong> des Geräts, zusammen mit den Positionen, damit die Einsatzleitung leere Akkus erkennt.</li>
       <li><strong>Statusmeldungen und Suchsteuerung:</strong> z. B. „im Suchgebiet eingetroffen“, „Funkkontakt benötigt“,
       Suche starten, pausieren, beenden.</li>
@@ -120,17 +120,17 @@
     </ul>
 
     <h2>3. Was der Server der Staffel speichert und wie lange</h2>
-    <p>So verhält sich der Server „Einsatzüberwachung“ ab Werk. Die Staffel kann Einträge im Archiv von Hand löschen;
-    automatische Löschfristen sind nicht eingebaut und von der Staffel festzulegen.</p>
+    <p>So verhält sich der Server „Einsatzüberwachung“. Die Löschfristen für das Archiv und die Funk-Datenbank legt die
+    Staffel in den Einstellungen ihres Servers fest; außerdem kann sie Einträge im Archiv jederzeit von Hand löschen.</p>
     <div class="table-scroll">
     <table>
       <thead><tr><th>Daten</th><th>Speicherung</th></tr></thead>
       <tbody>
         <tr><td>Aktuelle Position eines Team-Handys</td><td>Während der Suche; bei „Suche beendet“ wird sie aus der Karte entfernt.</td></tr>
         <tr><td>Position der Einsatzleitung</td><td>Nur im Arbeitsspeicher, beim Einsatzende gelöscht; nicht im Bericht.</td></tr>
-        <tr><td>Laufweg einer Suche (Handy und GPS-Halsband)</td><td>Bei „Suche beendet“ als abgeschlossene Suche gespeichert, beim Einsatzende im <strong>Archiv</strong> und im PDF-Bericht. Aufbewahrung bis zur Löschung durch die Staffel: <span class="platzhalter">[Frist der Staffel]</span></td></tr>
-        <tr><td>Notizen, Statusmeldungen, Funk</td><td>Im Einsatz und danach im <strong>Archiv</strong>; Funksprüche zusätzlich in der Funk-Datenbank des Servers. Aufbewahrung: <span class="platzhalter">[Frist der Staffel]</span></td></tr>
-        <tr><td>Angaben zur vermissten Person</td><td>Im Einsatz und danach im <strong>Archiv</strong> und im Bericht. Aufbewahrung: <span class="platzhalter">[Frist der Staffel]</span></td></tr>
+        <tr><td>Laufweg einer Suche (Handy und GPS-Halsband)</td><td>Bei „Suche beendet“ als abgeschlossene Suche gespeichert, beim Einsatzende im <strong>Archiv</strong> und im PDF-Bericht. Aufbewahrung bis zur Löschung durch die Staffel: <span class="platzhalter">[Frist, in den Einstellungen des Servers festgelegt]</span></td></tr>
+        <tr><td>Notizen, Statusmeldungen, Funk</td><td>Im Einsatz und danach im <strong>Archiv</strong>; Funksprüche zusätzlich in der Funk-Datenbank des Servers. Aufbewahrung: <span class="platzhalter">[Frist, in den Einstellungen des Servers festgelegt]</span></td></tr>
+        <tr><td>Angaben zur vermissten Person</td><td>Im Einsatz und danach im <strong>Archiv</strong> und im Bericht. Aufbewahrung: <span class="platzhalter">[Frist, in den Einstellungen des Servers festgelegt]</span></td></tr>
         <tr><td>Mitteilungen der Einsatzleitung an ein Team</td><td>Höchstens 20 je Team, bis zum Ende des Einsatzes; nicht im Archiv.</td></tr>
         <tr><td>Audit-Log (Aktionen mit Gerätename, keine Positionen)</td><td>Nur im Arbeitsspeicher, höchstens die letzten 2000 Einträge, gelöscht beim Neustart des Servers.</td></tr>
         <tr><td>Abgemeldete Zugänge der Einsatzleitung</td><td>Nur ein Prüfwert (Hash), bis der Zugang ohnehin abgelaufen wäre (höchstens 72 Stunden).</td></tr>
@@ -146,10 +146,18 @@
       72 Stunden nach der Anmeldung.</li>
       <li><strong>Positionspuffer:</strong> Positionen, die wegen eines Funklochs noch nicht gesendet wurden, bis zum
       erfolgreichen Senden.</li>
+      <li><strong>Anmelde-Code des Einsatzes</strong> im Schlüsselbund bzw. Keystore, damit das Team ohne neuen Scan gewechselt
+      werden kann. Er wird beim Einsatzende oder mit „Vom Einsatz abmelden“ gelöscht.</li>
+      <li><strong>Warteschlange:</strong> Statusmeldungen und Aktionen, die im Funkloch noch nicht gesendet wurden, bis zum
+      erfolgreichen Senden.</li>
       <li><strong>Heimatstaffel:</strong> Name und Logo der eigenen Staffel und die Kennung ihres Servers, damit die App sie
       wiedererkennt.</li>
-      <li>Beim Abmelden bzw. nach dem Einsatzende löscht die App Zugang und Puffer. Name und Logo der Heimatstaffel bleiben, bis
-      sie in der App entfernt oder die App gelöscht wird.</li>
+      <li><strong>Bestätigung der Datenschutzerklärung</strong> je Server und Fassung, damit die App nur bei einer neuen Fassung
+      erneut fragt.</li>
+      <li><strong>Nur Android:</strong> zwischengespeicherte Kartenkacheln, höchstens 200 MB. Das sind nur Kartenbilder, keine
+      Positionen.</li>
+      <li>Beim Abmelden bzw. nach dem Einsatzende löscht die App Zugang, Anmelde-Code, Puffer und Warteschlange. Name und Logo der
+      Heimatstaffel, die Bestätigungen und die Kartenkacheln bleiben, bis sie in der App entfernt oder die App gelöscht wird.</li>
     </ul>
 
     <h2>5. Berechtigungen</h2>
@@ -158,6 +166,8 @@
       Abschnitt 2).</li>
       <li><strong>Kamera:</strong> nur zum Scannen des QR-Codes der Einsatzleitung. Es werden keine Bilder gespeichert oder
       gesendet.</li>
+      <li><strong>Dauerhafte Benachrichtigung (nur Android):</strong> Während der Ortung zeigt Android eine Benachrichtigung an,
+      weil die App dann als Vordergrunddienst läuft. Das schreibt das System vor.</li>
       <li><strong>Mitteilungen:</strong> für Hinweise der Einsatzleitung und Warnungen auf dem Sperrbildschirm. Die Mitteilungen
       erzeugt die App auf dem Gerät; es wird kein Push-Dienst eines Dritten verwendet.</li>
     </ul>
