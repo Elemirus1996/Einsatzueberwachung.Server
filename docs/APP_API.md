@@ -365,6 +365,7 @@ Antwort `200`:
 | `GET /notizen?vor=<id>&anzahl=50` | `{ "notizen": […], "weitere": true }` – Notizen und Funk wie in `/el`, **neueste zuerst**: `id`, `art` (`notiz` · `funk` · `status` · `system`), `text`, `zeit`, `von`, `teamId`, `loeschbar`, `antworten` `[ { "id", "text", "zeit", "von" } ]`. Blättern mit `vor` = älteste geladene `id`; `anzahl` höchstens 200 |
 | `GET /halsbaender` | `{ "frei": [ { "id", "name", "zeit", "akku" } ], "zuletzt": [ { "teamId", "halsbandId" } ] }` – freie Halsbänder für die Rückfrage beim Teamstart, dazu je Team das zuletzt benutzte (nur Teams, die schon eins hatten) |
 | `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen" } ]` |
+| `GET /einsatz/vorlage` | Auswahllisten wie in `/el/start`: `{ "aktiv", "szenarien": ["Mantrailer", …], "divera": [ { "id", "titel", "ort", "lat", "lng", "zeit" } ], "einsatzleiter": ["Anna Berg"], "fuehrungsassistenten": […], "ergebnisse": […], "kartenarten": [ { "wert": "Streets", "anzeige": "Straßenkarte" } ] }` – `divera` leer, wenn Divera nicht eingerichtet oder nicht erreichbar ist |
 
 ### 7. Aktionen
 
@@ -401,6 +402,19 @@ Umgesetzt (Stufe 3), im Einzelnen:
   `antwortAuf` = `id` aus `/notizen` → `{ "notizId", "antwortId" }`, unbekannt → `404`.
 - `text` ist Pflicht (höchstens 1000 Zeichen), sonst `400`. Ohne laufenden Einsatz → `409`.
 - Nur erfolgreiche Aktionen werden für die Entdopplung gemerkt; eine abgelehnte `id` darf die App erneut senden.
+
+Einsatz starten und beenden (Stufe 5 umgesetzt):
+
+- `/einsatz/start`: `ort` und `szenario` (nicht `Unbestimmt`) sind Pflicht, sonst `400` – außer der Ort kommt aus dem Divera-Alarm.
+  Mit `diveraAlarmId` übernimmt der Server Ort, Koordinate, Stichwort, Melder, Nummer, Lagetext und Alarmzeit wie `/el/start`;
+  mitgeschickte Angaben der App gehen vor. Unbekannter Alarm → `404`. `lat`/`lng` nur zusammen, setzen Kartenadresse und ELW-Position.
+  `uebung` (Standard `false`). Läuft schon ein Einsatz → `409`. Antwort `{ "einsatz": { "aktiv": true, "beginn": "…Z" } }`.
+- `/einsatz/beenden`: `ergebnis` muss ein `wert` aus `/einsatz/ergebnisse` sein, `ressourcenGeprueft` muss `true` sein, sonst `400`.
+  Optional `bemerkungen` und `endzeit` als `"HH:mm"` in **Ortszeit** (wie die Uhrzeitwahl in `/el/beenden`; liegt sie nach der
+  aktuellen Uhrzeit, gilt der Vortag). `pdf.tracks` Standard `true`, `pdf.teamIds` `null` = alle Teams. Die Vor-Ort-Liste übernimmt
+  der Server aus den eingeteilten Teams (wie die Vorauswahl in `/el/beenden`). Antwort `{ "archivId", "einsatzNummer",
+  "pdf": { "erstellt": true, "fehler": null } }`; den Bericht gibt es danach im Archiv. Schon an einem anderen Leitungsplatz beendet
+  oder kein laufender Einsatz → `409`. Danach kommt auf `/ereignisse` `einsatz` mit `{ "aktiv": false }`.
 
 **Beispiel `GET /vermisste`** (Stufe 4a, so liefert es der Server):
 
