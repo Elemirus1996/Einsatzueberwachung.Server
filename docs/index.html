@@ -415,6 +415,58 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.13.0</span>
+    <span class="changelog-date">31.10.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
+<h4>Navigationspunkte: Ziel aufs Handy des Teams</h4>
+<ul>
+<li>In der Einsatzkarte gibt es in der Seitenleiste „Punkte“ je Punkt einen <strong>QR-Code zur Navigation</strong>. Das Team scannt ihn mit der Handy-Kamera und wird von seiner Navi-App hingeführt. Über einen Umschalter wählt man den Code für <strong>Android</strong> (Auswahl der installierten Navi-Apps, auch offline) oder für <strong>iPhone</strong> (Apple Karten). Darunter stehen die Koordinaten in Dezimalgrad und UTM.</li>
+<li><strong>Hinspringen</strong> setzt die Karte auf den Punkt, die Zoomstufe bleibt.</li>
+<li><strong>An Team senden:</strong> Die Einsatzleitung schickt einen Punkt als Ziel an ein Team, im Browser oder aus der EL-App. In der Team-App erscheint „Neues Ziel“ mit „Navigation starten“: auf dem iPhone mit Apple Karten, Google Maps oder Waze, auf Android mit Auswahl der Navi-App. Im Funk/Notizen steht „Navigationsziel gesendet“.</li>
+</ul>
+<h4>Punkte vom Team</h4>
+<ul>
+<li>Das Team kann in der App an seinem aktuellen Standort einen Punkt mit kurzem Text setzen, zum Beispiel einen Fund oder einen Hinweis.</li>
+<li>Der Punkt erscheint sofort orange auf der Einsatzkarte und als Notiz mit Quelle „Team-App“. Monitor und Ansicht Einsatzleitung zeigen einen Hinweis mit Ton.</li>
+<li>Die Punkte gelten bis zum Einsatzende.</li>
+</ul>
+<h4>Bericht</h4>
+<ul>
+<li>Beim Einsatzende gibt es das neue Häkchen <strong>„Kartenpunkte in den Bericht übernehmen“</strong> (im Monitor, in <code>/el/beenden</code> und in der EL-App). Nur wenn es gesetzt ist, werden die Punkte archiviert. Der Bericht bekommt dann einen Abschnitt „Kartenpunkte“ mit Karte und Liste.</li>
+<li>Archivierte Punkte werden mit der Löschfrist für Notizen gelöscht.</li>
+</ul>
+<h4>Datenschutz</h4>
+<ul>
+<li>Die Vorlage der Datenschutzerklärung hat einen Absatz zu Kartenpunkten. Er gilt nur für neu eingefügte Texte. Wer schon eine eigene Erklärung hat, ergänzt den Absatz selbst.</li>
+</ul>
+<h4>Apps</h4>
+<ul>
+<li>Für Navigationsziele, Punkte vom Team und die neuen Töne braucht es die neue Version der App (iOS und Android).</li>
+<li>In der App lassen sich die Töne je Meldungsart einstellen. Die Warnung Stufe 2 lässt sich nicht abschalten.</li>
+</ul>
+<h4>Technik</h4>
+<ul>
+<li>Schnittstelle erweitert: Team-App <code>POST /punkt</code> und <code>ziel</code> in Mitteilungen, EL-App <code>punkte</code> in <code>/karte</code>, Aktion <code>/teams/{teamId}/ziel</code>, Ereignis <code>punkt</code>. Beschreibung in <code>docs/APP_API.md</code>.</li>
+<li>Die Erzeugung der QR-Codes ist an einer Stelle zusammengefasst (Team-Anmeldung, VPN, Traccar-Test, Navigationspunkte). Die Codes sehen aus wie bisher.</li>
+<li>Keine neuen Pakete, keine nginx-Änderung gegenüber 1.12.0, keine Datenmigration. Alte Daten laden unverändert.</li>
+</ul>
+<h4>Einspielen</h4>
+<p><strong>Nur, wenn gerade kein Einsatz läuft.</strong></p>
+<p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.13.0“.</p>
+<p>2. <strong>Wer von 1.11.x kommt und 1.12.0 übersprungen hat:</strong></p>
+<p>- Die interne nginx-Konfiguration <code>deploy/nginx/einsatzueberwachung.conf</code> neu übernehmen. Die öffentliche Konfiguration bleibt unverändert. Danach:</p>
+<pre><code>
+     sudo nginx -t &amp;&amp; sudo systemctl reload nginx
+</code></pre>
+<p>- Unter Einstellungen → Tracking-App die <strong>Datenschutzerklärung</strong> eintragen („Vorlage einfügen“, Platzhalter ausfüllen) und die <strong>Löschfristen</strong> festlegen. Ohne Löschfristen wird nichts automatisch gelöscht.</p>
+<p>- Prüfen, ob die Einstellung „Teams dürfen die Suche selbst steuern“ so gewollt ist (Standard: ein).</p>
+<p>3. Kurz prüfen, ob der Bericht weiter funktioniert: im Archiv bei einem Einsatz „PDF“ öffnen, die Karte muss erscheinen.</p>
+<p>4. In der Einsatzkarte einen Punkt setzen und den QR-Code einmal mit einem iPhone und einem Android-Handy scannen.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.12.0</span>
     <span class="changelog-date">31.10.2026</span>
     <span class="changelog-name"></span>
@@ -609,26 +661,6 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.mywire.org
 sudo certbot renew --dry-run
 </code></pre>
 <p>Details stehen in <code>DEPLOYMENT.md</code> unter „Zertifikat der öffentlichen Domain“.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.5</span>
-    <span class="changelog-date">27.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Neu: rechtzeitig merken, wenn etwas nicht läuft</h4>
-<ul>
-<li><strong>Zertifikatswarnung:</strong> Die App prüft alle 6 Stunden das Zertifikat ihrer öffentlichen Adresse. Ist es ungültig oder läuft es in weniger als 14 Tagen ab, erscheint ein Hinweis auf der Startseite und in der EL-Ansicht und eine Meldung im Warnzentrum. Ohne gültiges Zertifikat senden Traccar und Team-Handys nichts.</li>
-<li><strong>Funkstille beim Team-Handy:</strong> Hat das Handy eines Teams im Einsatz schon gesendet und meldet sich während der Suche zu lange nicht, kommt „Handy sendet nicht – Traccar gestartet?“. Das Zeitfenster stellt man in Einstellungen → Einsatzbetrieb ein, Standard sind 3 Minuten.</li>
-<li><strong>Akku:</strong> Der Akkustand aus Traccar wird angezeigt, unter 20 % gibt es eine Warnung. Teamkarte und EL-Ansicht zeigen zum Beispiel „Handy vor 2 Min · 74 %“.</li>
-<li><strong>Systemzustand</strong> (Einstellungen → System): Zertifikat, letztes Backup, freier Speicher, Divera, Uhrzeit und Zeitzone auf einen Blick.</li>
-<li><strong>Leitungsplatz erkennbar:</strong> Funk und Notizen der Einsatzleitung zeigen das Gerät, zum Beispiel „Einsatzleitung · Tablet EL“. Der Name kommt aus den VPN-Geräten. Die Anmeldung der Einsatzleitung steht mit Gerät im Audit-Log.</li>
-<li><strong>Anmeldecode</strong> im QR-Dialog groß und in Viererblöcken, zum Vorlesen per Funk. Beim Abtippen sind Leerzeichen egal.</li>
-<li><strong>Traccar testen</strong> (Einstellungen → Integration): Test per QR-Code oder Link, die App zeigt sofort „Position empfangen … – Traccar funktioniert“. Das geht ohne Einsatz.</li>
-</ul>
-<h4>Einspielen</h4>
-<p>Normales Update, keine Änderung an der Konfiguration nötig.</p>
-<p>Falls noch nicht geschehen, den Zertifikatsschritt aus <strong>1.11.4</strong> ausführen (siehe <code>DEPLOYMENT.md</code>, „Zertifikat der öffentlichen Domain“). Danach unter Einstellungen → System „Jetzt prüfen“ drücken, das Zertifikat sollte grün sein. Anschließend unter Einstellungen → Integration den <strong>Traccar-Test</strong> mit einem Handy machen.</p></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>
