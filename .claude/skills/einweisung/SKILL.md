@@ -15,7 +15,8 @@ Du baust den Server Einsatzüberwachung (Blazor Server, .NET 9) und dort die Sch
 3. Die Regeln der App lesen: `CLAUDE.md` im Repo `Elemirus1996/Einsatzueberwachung-App`, mit `gh api repos/Elemirus1996/Einsatzueberwachung-App/contents/CLAUDE.md --jq .content | base64 -d`.
 4. Board lesen: https://claude.ai/artifact/EDiazzj2cArneXUVzCHb8K, Sammlung `aufgaben`. Zuerst die Karten `server-1b` und `leitung-uebergabe`, dann alle Karten mit `zustaendig` = Windows, die nicht `fertig` sind.
 5. Offene PRs, Issues mit „App:“ im Titel: `gh pr list`, `gh issue list --search "App: in:title"`.
-6. Kurzmeldung an die Leitung mit Skill `meldung`.
+6. Für Builds und Tests immer Skill `tests-kurz` nutzen.
+7. Kurzmeldung an die Leitung mit Skill `meldung`.
 
 ## Arbeitsweise
 
