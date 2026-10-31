@@ -248,17 +248,18 @@
                     <button type="button" class="btn-close" @onclick="SchliesseNavigationsQr"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row g-3 text-center">
-                        <div class="col-6">
-                            <img src="@_navQrGeo" alt="QR-Code für Android" class="img-fluid" />
-                            <div class="fw-semibold mt-1">Android</div>
-                            <small class="text-muted">Navi-App zur Auswahl, auch offline</small>
+                    <div class="text-center">
+                        <div class="btn-group mb-3" role="group" aria-label="Handy wählen">
+                            <button type="button" class="btn @(_navIphone ? "btn-outline-primary" : "btn-primary")" @onclick="() => _navIphone = false">
+                                <i class="bi bi-android2"></i> Android
+                            </button>
+                            <button type="button" class="btn @(_navIphone ? "btn-primary" : "btn-outline-primary")" @onclick="() => _navIphone = true">
+                                <i class="bi bi-apple"></i> iPhone
+                            </button>
                         </div>
-                        <div class="col-6">
-                            <img src="@_navQrApple" alt="QR-Code für iPhone" class="img-fluid" />
-                            <div class="fw-semibold mt-1">iPhone</div>
-                            <small class="text-muted">öffnet Apple Karten</small>
-                        </div>
+                        <img src="@(_navIphone ? _navQrApple : _navQrGeo)" alt="QR-Code für @(_navIphone ? "iPhone" : "Android")"
+                             class="img-fluid d-block mx-auto" style="max-width: 320px;" />
+                        <small class="text-muted">@(_navIphone ? "Öffnet Apple Karten" : "Navi-App zur Auswahl, auch offline")</small>
                     </div>
                     <div class="mt-3 small text-center">
                         <div>@nav.FormattedLatLng</div>
