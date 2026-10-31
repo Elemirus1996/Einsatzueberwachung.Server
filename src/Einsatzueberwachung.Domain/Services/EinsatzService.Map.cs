@@ -113,6 +113,8 @@ namespace Einsatzueberwachung.Domain.Services
             return Task.CompletedTask;
         }
 
+        public event Action<MapMarker, string>? MapMarkerChanged;
+
         public Task<MapMarker> AddMapMarkerAsync(MapMarker marker)
         {
             if (string.IsNullOrWhiteSpace(marker.UtmZone))
@@ -124,6 +126,7 @@ namespace Einsatzueberwachung.Domain.Services
             }
             _currentEinsatz.MapMarkers.Add(marker);
             EinsatzChanged?.Invoke();
+            MapMarkerChanged?.Invoke(marker, KartenpunktAenderung.Neu);
             return Task.FromResult(marker);
         }
 
@@ -147,6 +150,7 @@ namespace Einsatzueberwachung.Domain.Services
             }
 
             EinsatzChanged?.Invoke();
+            MapMarkerChanged?.Invoke(marker, KartenpunktAenderung.Geaendert);
             return Task.FromResult<MapMarker?>(marker);
         }
 
@@ -157,6 +161,7 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 _currentEinsatz.MapMarkers.Remove(marker);
                 EinsatzChanged?.Invoke();
+                MapMarkerChanged?.Invoke(marker, KartenpunktAenderung.Geloescht);
             }
             return Task.CompletedTask;
         }

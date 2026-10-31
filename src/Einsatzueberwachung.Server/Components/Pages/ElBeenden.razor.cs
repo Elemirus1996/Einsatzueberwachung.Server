@@ -32,6 +32,8 @@ public partial class ElBeenden : IDisposable
     private TimeOnly? _endzeit;
     private string _bemerkungen = string.Empty;
     private bool _tracksImPdf;
+    private int _punktCount;
+    private bool _punkteImPdf;
     private Einsatzueberwachung.Domain.Models.Enums.MapTileType _kartenart = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets;
     private bool _ressourcenGeprueft;
 
@@ -60,6 +62,7 @@ public partial class ElBeenden : IDisposable
         _einsatzBeginn = einsatz.EinsatzDatum;
         _laufendeTeams = EinsatzService.Teams.Count(t => t.IsRunning);
         _trackCount = einsatz.TrackSnapshots?.Count ?? 0;
+        _punktCount = einsatz.MapMarkers?.Count ?? 0;
         _endzeit = TimeOnly.FromDateTime(_now);
 
         _personal = await MasterDataService.GetPersonalListAsync();
@@ -111,7 +114,8 @@ public partial class ElBeenden : IDisposable
                 _tracksImPdf,
                 SelectedNames(ActivePersonnel, _personalIds, p => p.Id, p => p.FullName),
                 SelectedNames(ActiveDogs, _hundeIds, d => d.Id, d => d.Name),
-                _kartenart));
+                _kartenart,
+                PunkteImBericht: _punkteImPdf));
         }
         catch (Exception ex)
         {

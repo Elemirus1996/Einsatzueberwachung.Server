@@ -142,9 +142,24 @@ public class PdfExportSmokeTests
         Assert.Equal("#000000", mapRenderer.TrackColor);
     }
 
+    [Fact]
+    public async Task ArchivBericht_MitKartenpunkten_RendertKarteUndListe()
+    {
+        var mapRenderer = new RecordingMapRenderer();
+        var service = new PdfExportService(mapRenderer: mapRenderer);
+        var archiviert = ArchivedEinsatz.FromEinsatzData(MinimalEinsatz());
+        archiviert.MapMarkers = [new MapMarker { Label = "Team 1: Fund", Latitude = 49.3, Longitude = 8.4, TeamId = "t1", Description = "Gesetzt von Team 1" }];
+
+        var bytes = await service.ExportArchivedEinsatzToPdfBytesAsync(archiviert, new PdfBerichtOptionen(Tracks: false));
+
+        Assert.Equal("%PDF-", Encoding.ASCII.GetString(bytes, 0, 5));
+        Assert.Equal(1, mapRenderer.MarkerAnzahl);
+    }
+
     private sealed class RecordingMapRenderer : IStaticMapRenderer
     {
         public string? TrackColor { get; private set; }
+        public int? MarkerAnzahl { get; private set; }
 
         public Task<byte[]?> RenderTrackMapAsync(List<TrackPoint> trackPoints,
             List<(double Latitude, double Longitude)>? searchAreaCoords, string trackColor,
@@ -168,7 +183,10 @@ public class PdfExportSmokeTests
             List<MapMarker>? markers = null, List<TeamTrackSnapshot>? gpsTracks = null,
             Dictionary<string, List<TeamPhoneLocation>>? phoneTrackHistories = null,
             List<Team>? teams = null, int width = 1500, int height = 1060)
-            => Task.FromResult<byte[]?>(null);
+        {
+            MarkerAnzahl = options.ShowPointMarkers ? markers?.Count : null;
+            return Task.FromResult<byte[]?>(null);
+        }
 
         public Task<byte[]?> RenderCoverageHeatmapAsync(List<SearchAreaCoverageResult> coverageResults,
             (double Latitude, double Longitude)? elwPosition, int width = 1200, int height = 780, MapTileType tileType = MapTileType.Streets)

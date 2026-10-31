@@ -12,6 +12,7 @@ public partial class KartePunkteTab
 {
     [Inject] private IEinsatzService EinsatzService { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private Navigationspunkte Navigationspunkte { get; set; } = default!;
 
     private const double CoordinateEpsilon = 0.0000001;
 
@@ -389,6 +390,52 @@ public partial class KartePunkteTab
     }
 
     private void SchliesseNavigationsQr() => _navMarker = null;
+
+    // ── An Team senden (Variante C) ─────────────────────────────────────
+    private MapMarker? _zielMarker;
+    private string _zielTeamId = "";
+    private string _zielMeldung = "";
+    private string _zielMeldungKlasse = "alert-info";
+    private bool _zielSendet;
+
+    private List<Team> ZielTeams => EinsatzService.Teams.OrderBy(t => t.TeamName).ToList();
+
+    private void ZeigeZielSenden(MapMarker marker)
+    {
+        _zielMarker = marker;
+        _zielTeamId = "";
+        _zielMeldung = "";
+    }
+
+    private void SchliesseZielSenden() => _zielMarker = null;
+
+    private async Task SendeZiel()
+    {
+        if (_zielMarker is not { } punkt || EinsatzService.Teams.FirstOrDefault(t => t.TeamId == _zielTeamId) is not { } team) return;
+        // Punkt kann inzwischen geloescht sein (anderer Leitungsplatz)
+        if (EinsatzService.CurrentEinsatz.MapMarkers.All(m => m.Id != punkt.Id))
+        {
+            _zielMeldung = "Der Punkt wurde inzwischen gelöscht.";
+            _zielMeldungKlasse = "alert-warning";
+            return;
+        }
+        _zielSendet = true;
+        try
+        {
+            await Navigationspunkte.ZielSendenAsync(team, punkt, "Einsatzkarte");
+            _zielMeldung = $"An {team.TeamName} gesendet.";
+            _zielMeldungKlasse = "alert-success";
+        }
+        catch (Exception ex)
+        {
+            _zielMeldung = $"Senden fehlgeschlagen: {ex.Message}";
+            _zielMeldungKlasse = "alert-danger";
+        }
+        finally
+        {
+            _zielSendet = false;
+        }
+    }
 
     private async Task DownloadMarkerGpx(MapMarker marker)
     {

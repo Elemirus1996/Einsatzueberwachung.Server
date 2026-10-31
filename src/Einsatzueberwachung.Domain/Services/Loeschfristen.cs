@@ -22,7 +22,7 @@ namespace Einsatzueberwachung.Domain.Services
         public static string Anzeige(string art) => art switch
         {
             Laufwege => "Laufwege",
-            Notizen => "Notizen, Statusmeldungen und Funk",
+            Notizen => "Notizen, Statusmeldungen, Funk und Kartenpunkte",
             _ => "Angaben zur vermissten Person"
         };
 
@@ -61,6 +61,7 @@ namespace Einsatzueberwachung.Domain.Services
                         break;
                     case Notizen:
                         a.GlobalNotesEntries = [];
+                        a.MapMarkers = [];
                         break;
                     case Vermisste:
                         a.Vermisste = [];

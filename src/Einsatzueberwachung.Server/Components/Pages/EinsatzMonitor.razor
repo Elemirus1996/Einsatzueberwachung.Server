@@ -721,7 +721,24 @@
                             </span>
                         </label>
                     </div>
-                    @if (_closeMissionIncludeTracks)
+                    <div class="col-12">
+                        <label class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" @bind="_closeMissionIncludePunkte" disabled="@(_closeMissionPunktCount == 0)" />
+                            <span class="form-check-label">
+                                <i class="bi bi-pin-map me-1"></i>Kartenpunkte dem PDF hinzufügen
+                                @if (_closeMissionPunktCount > 0)
+                                {
+                                    <span class="badge bg-info ms-1">@_closeMissionPunktCount Punkt(e)</span>
+                                    <span class="text-muted ms-1">(werden dafür archiviert)</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted ms-1">(keine Punkte vorhanden)</span>
+                                }
+                            </span>
+                        </label>
+                    </div>
+                    @if (_closeMissionIncludeTracks || _closeMissionIncludePunkte)
                     {
                         <div class="col-12 col-md-6">
                             <label class="form-label">Karte im Bericht</label>

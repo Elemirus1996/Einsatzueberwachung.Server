@@ -44,6 +44,8 @@ public static class HilfeContent
                 "Navigation -> Karte",
                 "Suchgebiet einzeichnen: Tab 'Gebiete' -> 'Gebiet zeichnen'",
                 "Kartenpunkt setzen: Tab 'Punkte' -> Karte anklicken",
+                "Punkt als Navigationsziel an ein Team: Tab 'Punkte' -> Senden-Symbol am Punkt -> Team wählen",
+                "Orange Punkte hat ein Team in der App gesetzt (z. B. Fund); sie erscheinen sofort, dazu eine Notiz",
                 "GPS-Track ansehen: Tab 'GPS'"
             }),
 

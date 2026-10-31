@@ -32,6 +32,7 @@ public sealed class TeamMobileAppController : ControllerBase
     private readonly ServerKennung? _kennung;
     private readonly AppLogo? _logo;
     private readonly TeamAppSuche? _suche;
+    private readonly Navigationspunkte? _punkte;
 
     // Heimatstaffel (#121): Kennung, Name, Logo-Stand – zusaetzlich zum bisherigen Textfeld „staffel“
     private async Task<object> ServerInfoAsync(string staffel) => new
@@ -52,8 +53,9 @@ public sealed class TeamMobileAppController : ControllerBase
     public TeamMobileAppController(ITeamMobileTokenService tokenService, IEinsatzService einsatzService,
         ISettingsService settings, ILogger<TeamMobileAppController> logger,
         ICollarTrackingService? halsbaender = null, TeamAppEreignisse? ereignisse = null, AppStatusmeldungen? statusmeldungen = null,
-        ServerKennung? kennung = null, AppLogo? logo = null, TeamAppSuche? suche = null)
+        ServerKennung? kennung = null, AppLogo? logo = null, TeamAppSuche? suche = null, Navigationspunkte? punkte = null)
     {
+        _punkte = punkte;
         _suche = suche;
         _kennung = kennung;
         _logo = logo;
@@ -146,6 +148,22 @@ public sealed class TeamMobileAppController : ControllerBase
             mode = OrtungsSteuerung.AlsText(OrtungsSteuerung.FuerTeam(_einsatzService.CurrentEinsatz, team)),
             suche
         });
+    }
+
+    /// <summary>Team setzt an seinem Standort einen Punkt (Variante C, docs/APP_API.md Abschnitt 13)</summary>
+    [HttpPost("punkt")]
+    public async Task<IActionResult> PostPunkt([FromBody] AppPunktRequest? request)
+    {
+        if (!TryTeam(out var teamId, out _) || _punkte is null) return Gone();
+        if (_einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return Gone();
+        if (request is null) return BadRequest(new { error = "Körper fehlt." });
+
+        var ergebnis = await _punkte.PunktSetzenAsync(team, request.Id ?? "", request.Text, request.Lat, request.Lng,
+            request.Genauigkeit, request.Zeit, DateTime.UtcNow);
+        // 409 statt 429: 429 bedeutet in der App „kurz warten“ (nginx), die Grenze gilt aber fuer den ganzen Einsatz
+        if (ergebnis.GrenzeErreicht) return Conflict(new { error = ergebnis.Fehler });
+        if (ergebnis.Fehler is not null) return BadRequest(new { error = ergebnis.Fehler });
+        return Ok(new { doppelt = ergebnis.Doppelt, punktId = ergebnis.PunktId });
     }
 
     private async Task<bool> DarfSteuernAsync() => (await _settings.GetAppSettingsAsync())?.AppTeamsSteuernSuche ?? true;
@@ -391,6 +409,19 @@ public sealed class TeamMobileAppController : ControllerBase
         public string? Id { get; set; }
         /// <summary>starten · pause · weiter · beenden</summary>
         public string? Aktion { get; set; }
+    }
+
+    public sealed class AppPunktRequest
+    {
+        /// <summary>Von der App erzeugte Kennung (z. B. UUID), entdoppelt Wiederholungen im Funkloch</summary>
+        public string? Id { get; set; }
+        public string? Text { get; set; }
+        public double? Lat { get; set; }
+        public double? Lng { get; set; }
+        /// <summary>Genauigkeit der Ortung in Metern</summary>
+        public double? Genauigkeit { get; set; }
+        /// <summary>Zeitpunkt der Ortung (UTC)</summary>
+        public DateTime? Zeit { get; set; }
     }
 
     public sealed class AppLoginRequest

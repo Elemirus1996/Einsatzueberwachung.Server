@@ -12,7 +12,8 @@ public sealed partial class ElAppController
     {
         if (!Lesen()) return Zugang();
         var e = einsatz!.CurrentEinsatz;
-        if (!ElPositionService.Laeuft(e)) return Ok(new { suchgebiete = Array.Empty<object>(), positionen = Array.Empty<object>() });
+        if (!ElPositionService.Laeuft(e))
+            return Ok(new { suchgebiete = Array.Empty<object>(), positionen = Array.Empty<object>(), punkte = Array.Empty<object>() });
 
         var abdeckung = abdeckungen?.Aktuell().ToDictionary(a => a.AreaId, a => Math.Round(a.Prozent, 1)) ?? [];
         var teams = einsatz.Teams.ToDictionary(t => t.TeamId, t => t.TeamName);
@@ -59,7 +60,19 @@ public sealed partial class ElAppController
                 abdeckungProzent = abdeckung.TryGetValue(a.Id, out var prozent) ? prozent : (double?)null,
                 punkte = (a.Coordinates ?? []).Select(c => new { lat = c.Latitude, lng = c.Longitude }).ToList()
             }).ToList(),
-            positionen = positionenListe
+            positionen = positionenListe,
+            // Kartenpunkte (Variante C); teamId nur bei Punkten, die ein Team per App gesetzt hat
+            punkte = (e.MapMarkers ?? []).ToList().Select(m => new
+            {
+                id = m.Id,
+                name = m.Label,
+                beschreibung = m.Description,
+                farbe = m.Color,
+                lat = m.Latitude,
+                lng = m.Longitude,
+                zeit = AppZeit.Utc(m.CreatedAt),
+                teamId = string.IsNullOrWhiteSpace(m.TeamId) ? null : m.TeamId
+            }).ToList()
         });
     }
 

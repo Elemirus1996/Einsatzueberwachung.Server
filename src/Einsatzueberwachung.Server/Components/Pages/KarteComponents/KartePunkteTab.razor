@@ -132,6 +132,9 @@
                         }
                     </div>
                     <div class="card-actions">
+                        <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => ZeigeZielSenden(marker)" title="An Team senden">
+                            <i class="bi bi-send"></i>
+                        </button>
                         <button class="btn btn-xs btn-link" @onclick:stopPropagation="true" @onclick="() => ZeigeNavigationsQr(marker)" title="QR-Code zur Navigation">
                             <i class="bi bi-qr-code"></i>
                         </button>
@@ -229,6 +232,50 @@
                     <button type="button" class="btn btn-secondary" @onclick="CloseMarkerEditDialog">Abbrechen</button>
                     <button type="button" class="btn btn-success" @onclick="SaveMarkerEdit">
                         <i class="bi bi-check-lg"></i> Speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Punkt als Navigationsziel an ein Team (Variante C): Die Team-App zeigt „Navigation starten“ *@
+@if (_zielMarker is { } zielPunkt)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-send"></i> „@(string.IsNullOrEmpty(zielPunkt.Label) ? $"Punkt {zielPunkt.FormattedTimestamp}" : zielPunkt.Label)“ an Team senden</h5>
+                    <button type="button" class="btn-close" @onclick="SchliesseZielSenden"></button>
+                </div>
+                <div class="modal-body">
+                    @if (ZielTeams.Count == 0)
+                    {
+                        <p class="text-muted mb-0">Im Einsatz gibt es noch keine Teams.</p>
+                    }
+                    else
+                    {
+                        <label class="form-label" for="ziel-team">Team</label>
+                        <select id="ziel-team" class="form-select" @bind="_zielTeamId">
+                            <option value="">Team wählen …</option>
+                            @foreach (var team in ZielTeams)
+                            {
+                                <option value="@team.TeamId">@team.TeamName</option>
+                            }
+                        </select>
+                        <p class="small text-muted mt-2 mb-0">Das Team bekommt den Punkt als Mitteilung. In der App startet es damit die Navigation.</p>
+                    }
+                    @if (!string.IsNullOrEmpty(_zielMeldung))
+                    {
+                        <div class="alert @_zielMeldungKlasse py-2 mt-3 mb-0 small">@_zielMeldung</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="SchliesseZielSenden">Schließen</button>
+                    <button type="button" class="btn btn-primary" disabled="@(string.IsNullOrEmpty(_zielTeamId) || _zielSendet)" @onclick="SendeZiel">
+                        <i class="bi bi-send"></i> Senden
                     </button>
                 </div>
             </div>

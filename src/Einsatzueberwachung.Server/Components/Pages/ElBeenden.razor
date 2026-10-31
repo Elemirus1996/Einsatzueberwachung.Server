@@ -119,7 +119,12 @@
                     <span>GPS-Tracks in den Bericht übernehmen
                         <small>(@(_trackCount == 0 ? "keine Tracks vorhanden" : $"{_trackCount} Track(s)"))</small></span>
                 </label>
-                @if (_tracksImPdf)
+                <label class="els-check">
+                    <input type="checkbox" @bind="_punkteImPdf" disabled="@(_punktCount == 0)" />
+                    <span>Kartenpunkte in den Bericht übernehmen
+                        <small>(@(_punktCount == 0 ? "keine Punkte vorhanden" : $"{_punktCount} Punkt(e), werden dafür archiviert"))</small></span>
+                </label>
+                @if (_tracksImPdf || _punkteImPdf)
                 {
                     <label class="els-label" for="elb-karte">Karte im Bericht</label>
                     <select id="elb-karte" class="els-input" @bind="_kartenart">

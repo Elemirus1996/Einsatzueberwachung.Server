@@ -274,6 +274,7 @@ public partial class EinsatzKarte
                 ElPositionen.Geleert += OnElPositionenGeleert;
                 EinsatzService.TeamPhoneTrackPointAdded += OnTeamPhoneTrackPointAdded;
                 EinsatzService.TrackSnapshotAdded += OnTrackSnapshotSaved;
+                EinsatzService.MapMarkerChanged += OnMapMarkerChanged;
 
                 // Bestehende Tracking-Daten automatisch laden (falls Daten vor Seitenbesuch gesendet wurden)
                 _collars = CollarTrackingService.Collars.ToList();
@@ -1193,6 +1194,34 @@ public partial class EinsatzKarte
     });
 
     // Suche beendet: Handy nicht mehr als live zeigen (Traccar sendet evtl. weiter)
+    // Kartenpunkte live: von einem Team per App gesetzt (Variante C) oder an einem anderen Leitungsplatz geaendert
+    private void OnMapMarkerChanged(MapMarker marker, string aenderung)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                _mapMarkers = EinsatzService.CurrentEinsatz.MapMarkers.ToList();
+                if (_mapInitialized)
+                {
+                    if (aenderung == KartenpunktAenderung.Geloescht)
+                        await JSRuntime.InvokeVoidAsync("LeafletMap.removeCoordinateMarker", "einsatzMap", marker.Id);
+                    else
+                    {
+                        await JSRuntime.InvokeVoidAsync("LeafletMap.setCoordinateMarker",
+                            "einsatzMap", marker.Id, marker.Latitude, marker.Longitude,
+                            marker.Label, marker.Description, marker.Color);
+                        if (!_pointMarkersVisible)
+                            await JSRuntime.InvokeVoidAsync("LeafletMap.toggleCoordinateMarkers", "einsatzMap", false);
+                    }
+                }
+                StateHasChanged();
+            }
+            catch (ObjectDisposedException) { }
+            catch (JSDisconnectedException) { }
+        });
+    }
+
     private void OnTeamPhoneLocationRemoved(string teamId)
     {
         _ = InvokeAsync(async () =>
@@ -1693,6 +1722,7 @@ public partial class EinsatzKarte
             EinsatzService.TeamPhoneLocationRemoved -= OnTeamPhoneLocationRemoved;
             EinsatzService.TeamPhoneTrackPointAdded -= OnTeamPhoneTrackPointAdded;
             EinsatzService.TrackSnapshotAdded -= OnTrackSnapshotSaved;
+            EinsatzService.MapMarkerChanged -= OnMapMarkerChanged;
             await JSRuntime.InvokeVoidAsync("LeafletMap.dispose", "einsatzMap");
             _dotNetReference?.Dispose();
         }

@@ -11,9 +11,9 @@ namespace Einsatzueberwachung.Domain.Services
 
         public event Action<TeamMitteilung>? TeamMitteilungGespeichert;
 
-        public TeamMitteilung TeamMitteilungSpeichern(string teamId, string text)
+        public TeamMitteilung TeamMitteilungSpeichern(string teamId, string text, NavigationsZiel? ziel = null)
         {
-            var mitteilung = new TeamMitteilung { TeamId = teamId, Text = text.Trim(), ZeitUtc = DateTime.UtcNow };
+            var mitteilung = new TeamMitteilung { TeamId = teamId, Text = text.Trim(), ZeitUtc = DateTime.UtcNow, Ziel = ziel };
             lock (_mitteilungenLock)
             {
                 // Neue Liste statt Aenderung der alten: Die Speicherung serialisiert EinsatzData ohne diese Sperre

@@ -287,6 +287,59 @@ erfährt nicht, wer bestätigt hat.
 
 Umgesetzt (#148). Ohne gepflegten Text liefert `GET datenschutz` `404`.
 
+### 13. Navigationsziele und Punkte (Variante C)
+
+Zwei Richtungen: Die Einsatzleitung schickt einem Team einen Kartenpunkt als **Ziel**, das Team startet damit seine Navi-App.
+Das Team setzt an seinem Standort einen **Punkt** (Fund, Hinweis), der bei der Einsatzleitung live auf der Karte erscheint.
+
+**EL → Team: Ziel in der Mitteilung.** Ein Ziel kommt als `mitteilung` mit dem zusätzlichen Feld `ziel` (in `/lage` und auf
+`/ereignisse`). Mitteilungen ohne Ziel haben `ziel: null` bzw. kein Feld.
+
+```json
+{ "id": "…", "text": "Ziel: Wegkreuzung Nord", "zeit": "2026-10-31T09:10:00Z",
+  "ziel": { "punktId": "…", "name": "Wegkreuzung Nord", "lat": 49.312345, "lng": 8.431234,
+            "links": { "geo": "geo:49.312345,8.431234?q=49.312345,8.431234(Wegkreuzung%20Nord)",
+                       "appleKarten": "https://maps.apple.com/?ll=49.312345,8.431234&q=Wegkreuzung%20Nord",
+                       "googleMaps": "comgooglemaps://?daddr=49.312345,8.431234&directionsmode=walking",
+                       "waze": "waze://?ll=49.312345,8.431234&navigate=yes" } } }
+```
+
+- Die App zeigt einen Hinweis „Neues Ziel: <name>“ mit „Navigation starten“.
+  **Android** öffnet `links.geo` als Intent mit Auswahl (`Intent.createChooser`). **iOS** bietet die installierten Apps an
+  (`canOpenURL` auf `comgooglemaps://` und `waze://`, beide in `LSApplicationQueriesSchemes`); Apple Karten immer.
+  Ist nur Apple Karten da, öffnet die App es direkt.
+- `lat`/`lng` mit 6 Nachkommastellen, `name` höchstens 60 Zeichen (ohne Klammern). Die Links baut der Server (`NavigationsLink`);
+  die App setzt keine eigenen zusammen.
+- Das Ziel ist ein Schnappschuss: Verschiebt die Einsatzleitung den Punkt danach, ändert sich das gesendete Ziel nicht; sie schickt es neu.
+- „neu“/„gelesen“ wie bei jeder Mitteilung. Ton: eigene Tonart „Navigationsziel“ (Einstellung in der App, siehe Einsatzleitung Abschnitt 7).
+
+**Team → EL: `POST /punkt`.**
+
+```json
+{ "id": "6f1c…-uuid-der-app", "text": "Fund: Jacke", "lat": 49.312345, "lng": 8.431234, "genauigkeit": 8, "zeit": "2026-10-31T09:12:03Z" }
+```
+
+- `text` Pflicht, höchstens 200 Zeichen. `lat`/`lng` Pflicht, gültiger Bereich. `genauigkeit` (Meter, optional) und `zeit`
+  (Zeitpunkt der Ortung, UTC mit `Z`, optional; ohne Angabe = Eingang beim Server) aus der Ortung des Handys.
+- Die App nimmt die **aktuelle** Position (nicht älter als 60 s, sonst neu orten). Ohne Ortungsfreigabe gibt es den Knopf nicht.
+- Antwort `200`: `{ "doppelt": false, "punktId": "…" }`. Entdopplung über `id` wie bei `/statusmeldung` (Wiederholung im Funkloch
+  erzeugt nur einen Punkt, Antwort dann `"doppelt": true` mit derselben `punktId`).
+- Wirkung: ein Kartenpunkt im Einsatz („Team Rex: Fund: Jacke“, orange `#E67E22`, Beschreibung mit Zeit und Genauigkeit,
+  Koordinate auf 6 Nachkommastellen) und eine Notiz mit Quelle „Team-App“ und Koordinate. Im Monitor und in `/el` ein Hinweis mit
+  Ton; die Einsatzkarte zeigt den Punkt sofort.
+- Höchstens 50 Punkte je Team und Einsatz, danach `409` + `{ "error" }` (nicht `429` – das bedeutet „kurz warten“).
+  Fehlende oder ungültige Felder, `zeit` ohne `Z` oder mehr als 5 min in der Zukunft → `400`.
+  Kein laufender Einsatz bzw. `mode = stop` → `410` + `{ "mode": "stop" }` wie überall.
+- Die Team-App sieht ihre eigenen Punkte nicht über den Server (keine Liste); sie merkt sich gesendete Punkte nur bis zum Abmelden.
+
+**Lebensdauer, Löschfrist, Bericht** (Entscheidung 31.10.2026):
+
+- Punkte leben wie alle Kartenpunkte bis zum Einsatzende; die Einsatzleitung kann sie löschen. Ziele bleiben als Mitteilung beim Team.
+- Keine eigene Löschfrist. Die Notiz zum Team-Punkt fällt unter die Frist „Notizen, Statusmeldungen, Funk und Kartenpunkte“.
+- Bericht: Beim Einsatzende wählt die Einsatzleitung „Kartenpunkte im Bericht“ (`/el/beenden` und EL-App `pdf.punkte`).
+  Nur dann übernimmt der Server die Kartenpunkte ins Archiv; sie erscheinen im Bericht auf der Karte und als Liste und werden mit
+  der Notizen-Frist gelöscht. Ohne Auswahl wird kein Punkt archiviert.
+
 ### Grenzen
 
 - nginx: eigenes Limit für `/api/team-mobile/app/` (300 Anfragen/min je IP, Burst 120), weil sich im Mobilfunk viele Handys eine IP teilen.
@@ -438,7 +491,7 @@ und wiederholen.
 | `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` (bei `typ = jaNein`) bzw. `wert` (bei `auswahl` und `text`) | Checklistenpunkt setzen, ohne `version` |
 | `/szenario` | `szenario` | Szenario des Einsatzes |
 | `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional) | wie `/el/start`; läuft schon ein Einsatz → `409` |
-| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null }` – `kartenart`: `Streets` · `Topographic` · `Satellite`, sonst `400` | wie `/el/beenden` |
+| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null, "punkte": false }` – `kartenart`: `Streets` · `Topographic` · `Satellite`, sonst `400` | wie `/el/beenden` |
 
 Antwort jeder Aktion: `200` + `{ "doppelt": false, … }`, beim Anlegen mit der neuen Kennung des Objekts (z. B. `notizId`).
 
@@ -464,7 +517,7 @@ Einsatz starten und beenden (Stufe 5 umgesetzt):
 - `/einsatz/beenden`: `ergebnis` muss ein `wert` aus `/einsatz/ergebnisse` sein, `ressourcenGeprueft` muss `true` sein, sonst `400`.
   Optional `bemerkungen` und `endzeit` als Zeitpunkt in **UTC** (z. B. `"2026-10-31T17:45:00Z"`, auch mit Versatz wie `+01:00`;
   ohne Angabe = jetzt). Ohne Zeitzone, in der Zukunft oder vor dem Einsatzbeginn → `400`. Für den Bericht rechnet der Server in
-  Ortszeit um. `pdf.tracks` Standard `true`, `pdf.teamIds` `null` = alle Teams. Die Vor-Ort-Liste übernimmt
+  Ortszeit um. `pdf.tracks` Standard `true`, `pdf.punkte` (Kartenpunkte ins Archiv und in den Bericht, Team-Rolle Abschnitt 13) Standard `false`, `pdf.teamIds` `null` = alle Teams. Die Vor-Ort-Liste übernimmt
   der Server aus den eingeteilten Teams (wie die Vorauswahl in `/el/beenden`). Antwort `{ "archivId", "einsatzNummer",
   "pdf": { "erstellt": true, "fehler": null } }`; den Bericht gibt es danach im Archiv. Schon an einem anderen Leitungsplatz beendet
   oder kein laufender Einsatz → `409`. Danach kommt auf `/ereignisse` `einsatz` mit `{ "aktiv": false }`.
@@ -525,6 +578,31 @@ Speicherung, auch durch `/el` im Browser mit Auto-Save). Beim Ändern schickt di
 beruht. Weicht sie ab, speichert der Server nicht und antwortet `409` + `{ "error": "Das Profil wurde inzwischen geändert.",
 "profil": { …aktueller Stand mit neuer version… } }`; die App zeigt den neuen Stand und lässt neu bearbeiten. Ohne `version`
 → `400`. Die Antwort auf erfolgreiches Speichern enthält die neue `version`.
+
+**Navigationsziele und Punkte (Variante C):**
+
+- `GET /karte` liefert zusätzlich `punkte`: `[ { "id", "name", "beschreibung", "farbe", "lat", "lng", "zeit", "teamId" } ]` –
+  alle Kartenpunkte des Einsatzes; `teamId` ist gesetzt, wenn ein Team den Punkt per App gesetzt hat, sonst `null`.
+- Aktion `/teams/{teamId}/ziel` mit `punktId` (aus `punkte`): schickt den Punkt als Ziel an das Team (Team-Rolle Abschnitt 13).
+  Antwort `{ "doppelt": false, "mitteilungId" }`. Unbekanntes Team oder unbekannter Punkt → `404`.
+- Ereignis `punkt` `{ "id", "teamId", "aenderung", "text" }`: Kartenpunkt neu, geändert oder gelöscht → `/karte` neu laden.
+  `aenderung`: `neu` · `geaendert` · `geloescht`. `text` nur bei `neu` von einem Team („Team Rex: Fund: Jacke“), sonst `null`.
+  Setzt ein Team einen Punkt, kommt zusätzlich `notiz`. **Kein** `warnung` – der Ton gehört zur Tonart „Punkt vom Team“ (unten).
+
+**Töne in den Apps (Einstellung auf dem Gerät):** Der Benutzer legt in den Einstellungen der App fest, welcher Ton zu welcher
+Art von Meldung gehört (Auswahl aus den Tönen der App, „Nur Vibration“ oder „Aus“, mit Probehören). Der Server schickt dafür nur
+eindeutige Ereignisse, keine Töne. Arten:
+
+| Rolle | Tonart | ausgelöst durch |
+|---|---|---|
+| Team | Mitteilung | `mitteilung` ohne `ziel` |
+| Team | Navigationsziel | `mitteilung` mit `ziel` |
+| EL | Warnung Stufe 1 / Stufe 2 | `warnung` mit `stufe` 1 bzw. 2 |
+| EL | Punkt vom Team | `punkt` mit `aenderung = neu` und `teamId` |
+| EL | Funk | `funk` (neuer Eintrag eines Teams) |
+
+Voreinstellung: jede Art ein eigener, unterscheidbarer Ton; Warnung Stufe 2 lässt sich nicht auf „Aus“
+stellen (Entscheidung 31.10.2026). Die Einstellung gilt je Gerät, nicht je Server.
 
 ### 8. `GET /ereignisse` – Live
 

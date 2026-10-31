@@ -1,3 +1,5 @@
+using Einsatzueberwachung.Domain.Models;
+
 namespace Einsatzueberwachung.Domain.Interfaces;
 
 /// <summary>
@@ -37,5 +39,5 @@ public interface ITeamMobileTokenService
     event Action<string, string, DateTime>? TeamMessageBroadcasted;
 
     /// <summary>Broadcast einer Nachricht an ein Team (vom Einsatzleiter).</summary>
-    void BroadcastTeamMessage(string teamId, string message);
+    void BroadcastTeamMessage(string teamId, string message, NavigationsZiel? ziel = null);
 }

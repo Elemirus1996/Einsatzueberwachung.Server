@@ -67,6 +67,9 @@ namespace Einsatzueberwachung.Domain.Models
         // === Kartendaten ===
         public (double Latitude, double Longitude)? ElwPosition { get; set; }
 
+        /// <summary>Kartenpunkte, nur wenn beim Einsatzende „Kartenpunkte im Bericht“ gewaehlt wurde; Loeschfrist wie Notizen</summary>
+        public List<MapMarker> MapMarkers { get; set; } = new();
+
         // === GPS-Tracks ===
         public List<TeamTrackSnapshot> TrackSnapshots { get; set; } = new();
 
@@ -132,6 +135,7 @@ namespace Einsatzueberwachung.Domain.Models
                 SearchAreas = data.SearchAreas ?? new List<SearchArea>(),
                 Vermisste = data.Vermisste?.ToList() ?? new List<VermisstenInfo>(),
                 ElwPosition = data.ElwPosition,
+                MapMarkers = data.MapMarkers?.ToList() ?? new List<MapMarker>(),
                 TrackSnapshots = data.TrackSnapshots?.ToList() ?? new(),
                 CompletedSearches = data.CompletedSearches?.ToList() ?? new()
             };

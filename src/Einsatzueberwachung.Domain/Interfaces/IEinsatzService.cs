@@ -98,6 +98,9 @@ namespace Einsatzueberwachung.Domain.Interfaces
         Task RemoveMapMarkerAsync(string markerId);
         Task<List<MapMarker>> GetMapMarkersAsync();
 
+        /// <summary>Kartenpunkt neu, geaendert oder geloescht (Art: <see cref="KartenpunktAenderung"/>) – fuer Live-Karte und EL-App</summary>
+        event Action<MapMarker, string>? MapMarkerChanged;
+
         EinsatzRuntimeSnapshot ExportRuntimeSnapshot();
         Task ImportRuntimeSnapshotAsync(EinsatzRuntimeSnapshot snapshot);
         
@@ -168,7 +171,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         bool EntferneHandyDaten(string teamId);
 
         /// <summary>Mitteilung der Einsatzleitung an ein Team speichern (letzte 20 je Team, fuer die App)</summary>
-        TeamMitteilung TeamMitteilungSpeichern(string teamId, string text);
+        TeamMitteilung TeamMitteilungSpeichern(string teamId, string text, NavigationsZiel? ziel = null);
 
         /// <summary>Gespeicherte Mitteilungen an ein Team, aelteste zuerst</summary>
         IReadOnlyList<TeamMitteilung> TeamMitteilungen(string teamId);

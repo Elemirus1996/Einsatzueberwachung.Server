@@ -48,6 +48,7 @@ public sealed class ElAppEreignisse : IDisposable
         _einsatz.VermisstenRemoved += OnVermissteEntfernt;
         _einsatz.EinsatzChanged += OnEinsatz;
         _einsatz.TeamPhoneLocationChanged += OnHandy;
+        _einsatz.MapMarkerChanged += OnPunkt;
         _halsbaender.CollarLocationReceived += OnHalsband;
         _positionen.Geaendert += OnEl;
     }
@@ -120,6 +121,15 @@ public sealed class ElAppEreignisse : IDisposable
     private void OnVermissteProfil(VermisstenInfo _) => OnVermisste();
     private void OnVermissteEntfernt(Guid _) => OnVermisste();
 
+    // Kartenpunkt (Variante C); text nur bei einem neuen Punkt eines Teams – dafuer hat die App eine eigene Tonart
+    private void OnPunkt(MapMarker punkt, string aenderung) => Senden("punkt", new
+    {
+        id = punkt.Id,
+        teamId = string.IsNullOrWhiteSpace(punkt.TeamId) ? null : punkt.TeamId,
+        aenderung,
+        text = aenderung == KartenpunktAenderung.Neu && !string.IsNullOrWhiteSpace(punkt.TeamId) ? punkt.Label : null
+    });
+
     private void OnWarnung(Team team, bool zweite)
     {
         var stufe = zweite ? 2 : 1;
@@ -173,6 +183,7 @@ public sealed class ElAppEreignisse : IDisposable
         _einsatz.VermisstenRemoved -= OnVermissteEntfernt;
         _einsatz.EinsatzChanged -= OnEinsatz;
         _einsatz.TeamPhoneLocationChanged -= OnHandy;
+        _einsatz.MapMarkerChanged -= OnPunkt;
         _halsbaender.CollarLocationReceived -= OnHalsband;
         _positionen.Geaendert -= OnEl;
         foreach (var id in _abos.Keys.ToList()) Abmelden(id);
