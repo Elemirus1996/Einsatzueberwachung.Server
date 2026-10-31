@@ -4,7 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.12.0</Version>
+    <Version>1.13.0</Version>
     <!-- AssemblyVersion, FileVersion und InformationalVersion leitet das SDK aus Version ab (Anzeige und Updater nutzen AssemblyVersion) -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
