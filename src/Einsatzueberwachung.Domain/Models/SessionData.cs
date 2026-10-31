@@ -108,6 +108,13 @@ namespace Einsatzueberwachung.Domain.Models
         /// <summary>Tracking-App (#133): Teams duerfen die Suche selbst starten, pausieren und beenden</summary>
         public bool AppTeamsSteuernSuche { get; set; } = true;
 
+        /// <summary>Datenschutzerklaerung der Staffel fuer die App (#148); leer = keine hinterlegt</summary>
+        public string? AppDatenschutzTitel { get; set; }
+        public string? AppDatenschutzText { get; set; }
+        /// <summary>Wird beim Speichern gesetzt (AppDatenschutz.Aktualisieren), nicht von Hand</summary>
+        public string? AppDatenschutzVersion { get; set; }
+        public DateTime? AppDatenschutzStandUtc { get; set; }
+
         // Karten-Marker Symbole
         // Collar: "paw" | "dog" | "bone" | "dot" | "crosshairs" | "location-arrow"
         // Human:  "phone" | "person" | "person_walking" | "radio" | "dot"

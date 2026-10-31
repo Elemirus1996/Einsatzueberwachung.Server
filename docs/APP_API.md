@@ -255,6 +255,38 @@ Antwort `200`:
 - Im Monitor und in `/el` erscheint ein deutlicher Hinweis mit Ton („Team Rex hat die Suche gestartet (App)“), dazu eine Notiz
   mit Quelle „Team-App“ und ein Eintrag im Audit-Log. Die Einsatzleitung kann jederzeit korrigieren.
 
+### 12. Datenschutzerklärung der Staffel (#148)
+
+Verantwortlich für die Daten ist die Staffel, die den Server betreibt. Sie pflegt ihre Datenschutzerklärung unter
+Einstellungen → Tracking-App (Vorlage per Knopf einfügbar, Platzhalter selbst ausfüllen). Der Server liefert sie an die App:
+
+```json
+"datenschutz": { "version": "3f9c0a7b12de4e55", "titel": "Datenschutzerklärung RHS Musterstadt", "text": "## 1. Wer ist verantwortlich?
+…", "stand": "2026-10-31T09:00:00Z" }
+```
+
+| Wo | Inhalt |
+|---|---|
+| `POST login/teams` (Abschnitt 1, **vor** dem Token) | ganzes Objekt `datenschutz` |
+| `GET config`, `GET lage` | nur `{ "version" }` |
+| Einsatzleitung `POST /login` und `POST /verlaengern` | ganzes Objekt |
+| Einsatzleitung `GET /lage` | nur `{ "version" }` |
+| `GET datenschutz` (Team-Token) bzw. `GET /api/el/app/v1/datenschutz` (EL-Token) | ganzes Objekt, zum Nachlesen in den Einstellungen der App |
+
+- `version`: ändert sich genau dann, wenn Titel oder Text geändert werden (Hash, 16 Zeichen). Die App speichert die Bestätigung
+  **je Server-`kennung` und `version`** und fragt bei einer neuen `version` erneut, sobald sie sie in `config`/`lage` bemerkt.
+- `text`: Markdown in einfacher Form (Überschriften `#`/`##`, Absätze, Listen mit `-`, **fett**, Links). Zeigt die App kein
+  Markdown an, ist der Text trotzdem lesbar. Höchstens 50 000 Zeichen.
+- `stand`: Zeitpunkt der letzten Änderung (UTC).
+- Hat die Staffel nichts hinterlegt: `datenschutz: null` überall. Die App zeigt dann „Diese Staffel hat noch keine
+  Datenschutzerklärung hinterlegt“ und lässt die Anmeldung trotzdem zu.
+- Die Bestätigung („Zur Kenntnis genommen“) bleibt auf dem Gerät; der Server prüft sie nicht und lehnt keine Anmeldung ab.
+
+**Protokoll der Bestätigungen: bewusst nicht vorgesehen** (Entscheidung 31.10.2026). Es gibt keinen Endpunkt dafür; der Server
+erfährt nicht, wer bestätigt hat.
+
+Umgesetzt (#148). Ohne gepflegten Text liefert `GET datenschutz` `404`.
+
 ### Grenzen
 
 - nginx: eigenes Limit für `/api/team-mobile/app/` (300 Anfragen/min je IP, Burst 120), weil sich im Mobilfunk viele Handys eine IP teilen.
