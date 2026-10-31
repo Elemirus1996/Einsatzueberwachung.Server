@@ -22,6 +22,16 @@
         </button>
     </header>
 
+    @if (_loeschRueckfrage is { } betroffen)
+    {
+        <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2 m-3" role="alert">
+            <span><i class="bi bi-exclamation-triangle-fill me-1"></i>Mit diesen Löschfristen werden <strong>sofort</strong> Daten aus
+                @betroffen archivierten @(betroffen == 1 ? "Einsatz" : "Einsätzen") gelöscht. Das lässt sich nicht rückgängig machen.</span>
+            <button type="button" class="btn btn-sm btn-danger" @onclick="LoeschenBestaetigenAsync">Speichern und löschen</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _loeschRueckfrage = null">Abbrechen</button>
+        </div>
+    }
+
     <div class="cfg-body">
 
         <!-- AKTENREGISTER (links) -->
@@ -305,6 +315,47 @@
                                 Platzhalter in [eckigen Klammern] vor dem Einsatz ausfüllen.</p>
                         }
                     </div>
+                </div>
+
+                <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-shield-lock me-1"></i>Löschfristen (Datenschutz)</h3>
+                    @if (_appSettings.LoeschfristLaufwegeTage is null && _appSettings.LoeschfristNotizenTage is null && _appSettings.LoeschfristVermissteTage is null)
+                    {
+                        <p class="alert alert-warning py-2 mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Noch keine Löschfristen festgelegt: Der Server löscht
+                            archivierte Einsätze nie automatisch. Bitte legt als Staffel fest, wie lange ihr die Daten aufbewahrt.</p>
+                    }
+                    <p class="text-muted small mb-2">Tage ab Ende des Einsatzes; leer = nicht automatisch löschen. Der Server prüft einmal täglich und löscht
+                        dann nur die gewählte Datenart aus dem Archiv, dazu den gespeicherten PDF-Bericht (im Archiv neu erzeugbar). Laufende Einsätze
+                        werden nie gelöscht. In der Datenschutzerklärung für die App setzen <code>{frist.laufwege}</code>, <code>{frist.notizen}</code>,
+                        <code>{frist.vermisste}</code> und <code>{frist.uebungen}</code> die Fristen automatisch ein.</p>
+                    <div class="cfg-grid cfg-grid-2">
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Laufwege">Laufwege (Handy und Halsband)</label>
+                            <InputNumber id="cfg-lf-Laufwege" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristLaufwegeTage" />
+                            <small class="text-muted">Tracks und abgeschlossene Suchen im Archiv</small>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Notizen">Notizen, Statusmeldungen, Funk</label>
+                            <InputNumber id="cfg-lf-Notizen" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristNotizenTage" />
+                            <small class="text-muted">im Archiv, dazu alte Einträge der Funk-Datenbank</small>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Vermisste">Angaben zur vermissten Person</label>
+                            <InputNumber id="cfg-lf-Vermisste" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristVermissteTage" />
+                            <small class="text-muted">Vermisstenprofile im Archiv</small>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Uebungen">Übungen (alle Datenarten)</label>
+                            <InputNumber id="cfg-lf-Uebungen" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristUebungenTage" />
+                            <small class="text-muted">leer = wie bei Einsätzen</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">Die Protokolle des Webservers (nginx, mit IP-Adressen) liegen außerhalb der Anwendung und werden dort
+                        eingestellt (z. B. logrotate).</p>
                 </div>
 
                 <div class="cfg-section">

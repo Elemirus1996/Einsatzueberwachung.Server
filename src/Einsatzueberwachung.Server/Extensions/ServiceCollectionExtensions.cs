@@ -287,6 +287,14 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IEinsatzExportService, EinsatzExportService>();
         services.AddSingleton<IAuditLogService, AuditLogService>();
         services.AddHostedService<AuditLogRelayService>();
+        // Loeschfristen der Staffel (#151): taeglich abgelaufene Daten aus Archiv und Funk-Datenbank loeschen
+        services.AddSingleton(sp => new LoeschfristenService(
+            sp.GetRequiredService<IArchivService>(),
+            sp.GetRequiredService<IEinsatzService>(),
+            sp.GetRequiredService<ISettingsService>(),
+            sp.GetRequiredService<IAuditLogService>(),
+            sp.GetRequiredService<IDbContextFactory<RuntimeDbContext>>()));
+        services.AddHostedService<LoeschfristenHintergrund>();
         services.AddSingleton<ToastService>();
         services.AddSingleton<IWarningService, WarningService>();
         services.AddSingleton<IHomeNotesService, HomeNotesService>();

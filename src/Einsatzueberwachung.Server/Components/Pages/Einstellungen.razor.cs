@@ -24,6 +24,17 @@ public partial class Einstellungen
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private IDiveraService DiveraService { get; set; } = default!;
+    [Inject] private LoeschfristenService Loeschen { get; set; } = default!;
+
+    // Rueckfrage, bevor neue Loeschfristen sofort Daten im Archiv entfernen (#151)
+    private int? _loeschRueckfrage;
+    private bool _loeschBestaetigt;
+
+    private async Task LoeschenBestaetigenAsync()
+    {
+        _loeschBestaetigt = true;
+        await SaveAsync();
+    }
 
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -243,6 +254,15 @@ public partial class Einstellungen
 
     private async Task SaveAsync()
     {
+        var betroffen = await Loeschen.BetroffenAsync(_appSettings, Ortszeit.Jetzt);
+        if (betroffen > 0 && !_loeschBestaetigt)
+        {
+            _loeschRueckfrage = betroffen;
+            return;
+        }
+        _loeschRueckfrage = null;
+        _loeschBestaetigt = false;
+
         // --- Server-globale Einstellungen (Timer, Updates, Schnell-Notizen) ---
         _appSettings.QuickNoteTemplates = _quickNoteList
             .Select(t => t.Trim())
@@ -258,6 +278,7 @@ public partial class Einstellungen
 
         await SettingsService.SaveStaffelSettingsAsync(_staffelSettings);
         await SettingsService.SaveAppSettingsAsync(_appSettings);
+        if (betroffen > 0) await Loeschen.AusfuehrenAsync(Ortszeit.Jetzt); // bestaetigt: nicht bis zum naechsten Tageslauf warten
 
         // Divera-Konfiguration sofort uebernehmen
         await DiveraService.RefreshConfigurationAsync();

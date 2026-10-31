@@ -18,7 +18,7 @@ public static class AppDatenschutzAntwort
         {
             version,
             titel = string.IsNullOrWhiteSpace(s.AppDatenschutzTitel) ? "Datenschutzerklärung" : s.AppDatenschutzTitel.Trim(),
-            text = s.AppDatenschutzText!.Trim(),
+            text = AppDatenschutz.Text(s),
             stand = s.AppDatenschutzStandUtc is { } stand ? DateTime.SpecifyKind(stand, DateTimeKind.Utc) : (DateTime?)null
         };
     }
@@ -66,16 +66,22 @@ public static class AppDatenschutzAntwort
 
         - Aktuelle Position eines Team-Handys: während der Suche; bei „Suche beendet“ entfernt.
         - Position der Einsatzleitung: nur im Arbeitsspeicher, beim Einsatzende gelöscht.
-        - Laufwege, Notizen, Statusmeldungen, Funk und Angaben zur vermissten Person: im Einsatz und danach im Archiv und im PDF-Bericht, Funk zusätzlich in der Funk-Datenbank. Aufbewahrung: [Frist, in den Einstellungen des Servers festgelegt]
+        - Laufwege (Handy und Halsband): im Einsatz und danach im Archiv und im PDF-Bericht. Aufbewahrung: {frist.laufwege}.
+        - Notizen, Statusmeldungen und Funk: im Archiv und im PDF-Bericht, Funk zusätzlich in der Funk-Datenbank. Aufbewahrung: {frist.notizen}.
+        - Angaben zur vermissten Person: im Archiv und im PDF-Bericht. Aufbewahrung: {frist.vermisste}.
+        - Bei Übungen gilt: {frist.uebungen}.
+        - Die Fristen sind in den Einstellungen unseres Servers festgelegt; der Server setzt sie hier automatisch ein. Laufende Einsätze werden nie gelöscht.
         - Mitteilungen der Einsatzleitung an ein Team: höchstens 20 je Team, bis zum Einsatzende; nicht im Archiv.
         - Protokoll der Aktionen (ohne Positionen): nur im Arbeitsspeicher, höchstens 2000 Einträge, gelöscht beim Neustart.
         - Protokolle des Webservers (IP-Adresse, Zeit): [Einstellung unseres Servers]
 
         ## 4. Was auf dem Gerät bleibt
 
-        - Zugang (Token) und Anmelde-Code des Einsatzes im Schlüsselbund (iOS) bzw. Keystore (Android); gelöscht beim Einsatzende oder mit „Vom Einsatz abmelden“.
+        - Zugang (Token) und Anmelde-Code des Einsatzes im Schlüsselbund (iOS) bzw. Keystore (Android); gelöscht beim Einsatzende oder mit „Vom Einsatz abmelden“. Bei der Einsatzleitung liegt dort auch der Gerätename; die interne Adresse des Servers bleibt nach dem Abmelden gespeichert, sie ist nicht geheim.
+        - Kennungen gelesener Mitteilungen je Team, gelöscht beim Einsatzende.
         - Positionen sowie Statusmeldungen und Aktionen, die im Funkloch noch nicht gesendet wurden, bis zum Senden.
-        - Name, Logo und Server-Kennung der Heimatstaffel und die Bestätigung dieser Erklärung je Server und Fassung.
+        - Name, Logo und Server-Kennung der Heimatstaffel; auch nicht gewählte Server-Kennungen, damit die App nicht erneut fragt.
+        - Die Bestätigung dieser Erklärung je Server und Fassung, nur auf dem Gerät; unser Server führt kein Protokoll darüber.
         - Nur Android: zwischengespeicherte Kartenkacheln, höchstens 200 MB, nur Kartenbilder.
 
         ## 5. Berechtigungen
@@ -83,6 +89,7 @@ public static class AppDatenschutzAntwort
         - Standort „beim Verwenden der App“: für die Ortung während einer Suche bzw. eines Einsatzes.
         - Kamera: nur zum Scannen des QR-Codes; es werden keine Bilder gespeichert oder gesendet.
         - Mitteilungen: Hinweise der Einsatzleitung und Warnungen auf dem Sperrbildschirm, erzeugt auf dem Gerät, ohne Push-Dienst eines Dritten.
+        - Hintergrundaktualisierung (iOS) und Vibration (Android): damit die Ortung während der Suche weiterläuft und Warnungen spürbar sind. Warnungen der Einsatzleitung erklingen in der geöffneten App als Ton bzw. Vibration.
         - Android zeigt während der Ortung eine dauerhafte Benachrichtigung (Vordergrunddienst); das schreibt das System vor.
 
         ## 6. Keine Analyse, keine Werbung, keine Weitergabe
@@ -94,7 +101,7 @@ public static class AppDatenschutzAntwort
         Zum Anzeigen der Karte lädt die App Kartenbilder direkt vom Anbieter; dabei erhält er die IP-Adresse und den Kartenausschnitt, aber keine Angaben zum Einsatz oder zur Person.
 
         - iOS: Apple Karten – [Datenschutzrichtlinie von Apple](https://www.apple.com/de/legal/privacy/)
-        - Android: OpenStreetMap – [Datenschutzrichtlinie der OSMF](https://osmfoundation.org/wiki/Privacy_Policy); OpenTopoMap – [Angaben von OpenTopoMap](https://opentopomap.org/about)
+        - Android: OpenStreetMap – [Datenschutzrichtlinie der OSMF](https://osmfoundation.org/wiki/Privacy_Policy); OpenTopoMap – [Angaben von OpenTopoMap](https://opentopomap.org/about). Unter Android sendet die App dabei eine Kennung mit App-Name und Version (User-Agent), wie OpenStreetMap es verlangt.
 
         ## 8. Rechtsgrundlage
 
