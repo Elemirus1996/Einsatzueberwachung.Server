@@ -73,11 +73,9 @@ public static class AppDatenschutzAntwort
 
         ## 4. Was auf dem Gerät bleibt
 
-        - Zugang (Token) und Anmelde-Code des Einsatzes im Schlüsselbund (iOS) bzw. Keystore (Android); gelöscht beim Einsatzende oder mit „Vom Einsatz abmelden“. Bei der Einsatzleitung liegt dort auch der Gerätename; die interne Adresse des Servers bleibt nach dem Abmelden gespeichert, sie ist nicht geheim.
-        - Kennungen gelesener Mitteilungen je Team, gelöscht beim Einsatzende.
+        - Zugang (Token) und Anmelde-Code des Einsatzes im Schlüsselbund (iOS) bzw. Keystore (Android); gelöscht beim Einsatzende oder mit „Vom Einsatz abmelden“.
         - Positionen sowie Statusmeldungen und Aktionen, die im Funkloch noch nicht gesendet wurden, bis zum Senden.
-        - Name, Logo und Server-Kennung der Heimatstaffel; auch nicht gewählte Server-Kennungen, damit die App nicht erneut fragt.
-        - Die Bestätigung dieser Erklärung je Server und Fassung, nur auf dem Gerät; unser Server führt kein Protokoll darüber.
+        - Name, Logo und Server-Kennung der Heimatstaffel und die Bestätigung dieser Erklärung je Server und Fassung.
         - Nur Android: zwischengespeicherte Kartenkacheln, höchstens 200 MB, nur Kartenbilder.
 
         ## 5. Berechtigungen
@@ -85,7 +83,6 @@ public static class AppDatenschutzAntwort
         - Standort „beim Verwenden der App“: für die Ortung während einer Suche bzw. eines Einsatzes.
         - Kamera: nur zum Scannen des QR-Codes; es werden keine Bilder gespeichert oder gesendet.
         - Mitteilungen: Hinweise der Einsatzleitung und Warnungen auf dem Sperrbildschirm, erzeugt auf dem Gerät, ohne Push-Dienst eines Dritten.
-        - Hintergrundaktualisierung (iOS) und Vibration (Android): damit die Ortung während der Suche weiterläuft und Warnungen spürbar sind. Warnungen der Einsatzleitung erklingen in der geöffneten App als Ton bzw. Vibration.
         - Android zeigt während der Ortung eine dauerhafte Benachrichtigung (Vordergrunddienst); das schreibt das System vor.
 
         ## 6. Keine Analyse, keine Werbung, keine Weitergabe
@@ -97,7 +94,7 @@ public static class AppDatenschutzAntwort
         Zum Anzeigen der Karte lädt die App Kartenbilder direkt vom Anbieter; dabei erhält er die IP-Adresse und den Kartenausschnitt, aber keine Angaben zum Einsatz oder zur Person.
 
         - iOS: Apple Karten – [Datenschutzrichtlinie von Apple](https://www.apple.com/de/legal/privacy/)
-        - Android: OpenStreetMap – [Datenschutzrichtlinie der OSMF](https://osmfoundation.org/wiki/Privacy_Policy); OpenTopoMap – [Angaben von OpenTopoMap](https://opentopomap.org/about). Unter Android sendet die App dabei eine Kennung mit App-Name und Version (User-Agent), wie OpenStreetMap es verlangt.
+        - Android: OpenStreetMap – [Datenschutzrichtlinie der OSMF](https://osmfoundation.org/wiki/Privacy_Policy); OpenTopoMap – [Angaben von OpenTopoMap](https://opentopomap.org/about)
 
         ## 8. Rechtsgrundlage
 
