@@ -287,6 +287,51 @@ erfährt nicht, wer bestätigt hat.
 
 Umgesetzt (#148). Ohne gepflegten Text liefert `GET datenschutz` `404`.
 
+### 13. Navigationsziele und Punkte (Variante C, Entwurf)
+
+Zwei Richtungen: Die Einsatzleitung schickt einem Team einen Kartenpunkt als **Ziel**, das Team startet damit seine Navi-App.
+Das Team setzt an seinem Standort einen **Punkt** (Fund, Hinweis), der bei der Einsatzleitung live auf der Karte erscheint.
+
+**EL → Team: Ziel in der Mitteilung.** Ein Ziel kommt als `mitteilung` mit dem zusätzlichen Feld `ziel` (in `/lage` und auf
+`/ereignisse`). Mitteilungen ohne Ziel haben `ziel: null` bzw. kein Feld.
+
+```json
+{ "id": "…", "text": "Ziel: Wegkreuzung Nord", "zeit": "2026-10-31T09:10:00Z",
+  "ziel": { "punktId": "…", "name": "Wegkreuzung Nord", "lat": 49.312345, "lng": 8.431234,
+            "links": { "geo": "geo:49.312345,8.431234?q=49.312345,8.431234(Wegkreuzung%20Nord)",
+                       "appleKarten": "https://maps.apple.com/?ll=49.312345,8.431234&q=Wegkreuzung%20Nord",
+                       "googleMaps": "comgooglemaps://?daddr=49.312345,8.431234&directionsmode=walking",
+                       "waze": "waze://?ll=49.312345,8.431234&navigate=yes" } } }
+```
+
+- Die App zeigt einen Hinweis „Neues Ziel: <name>“ mit „Navigation starten“.
+  **Android** öffnet `links.geo` als Intent mit Auswahl (`Intent.createChooser`). **iOS** bietet die installierten Apps an
+  (`canOpenURL` auf `comgooglemaps://` und `waze://`, beide in `LSApplicationQueriesSchemes`); Apple Karten immer.
+  Ist nur Apple Karten da, öffnet die App es direkt.
+- `lat`/`lng` mit 6 Nachkommastellen, `name` höchstens 60 Zeichen (ohne Klammern). Die Links baut der Server (`NavigationsLink`);
+  die App setzt keine eigenen zusammen.
+- Das Ziel ist ein Schnappschuss: Verschiebt die Einsatzleitung den Punkt danach, ändert sich das gesendete Ziel nicht; sie schickt es neu.
+- Für Ton und „neu“/„gelesen“ gilt dasselbe wie bei jeder Mitteilung.
+
+**Team → EL: `POST /punkt`.**
+
+```json
+{ "id": "6f1c…-uuid-der-app", "text": "Fund: Jacke", "lat": 49.312345, "lng": 8.431234, "genauigkeit": 8, "zeit": "2026-10-31T09:12:03Z" }
+```
+
+- `text` Pflicht, höchstens 200 Zeichen. `lat`/`lng` Pflicht, gültiger Bereich. `genauigkeit` (Meter, optional) und `zeit`
+  (Zeitpunkt der Ortung, UTC mit `Z`, optional; ohne Angabe = Eingang beim Server) aus der Ortung des Handys.
+- Die App nimmt die **aktuelle** Position (nicht älter als 60 s, sonst neu orten). Ohne Ortungsfreigabe gibt es den Knopf nicht.
+- Antwort `200`: `{ "doppelt": false, "punktId": "…" }`. Entdopplung über `id` wie bei `/statusmeldung` (Wiederholung im Funkloch
+  erzeugt nur einen Punkt, Antwort dann `"doppelt": true` mit derselben `punktId`).
+- Wirkung: ein Kartenpunkt im Einsatz („Team Rex: Fund: Jacke“, Farbe des Teams, Beschreibung mit Zeit und Genauigkeit) und eine
+  Notiz mit Quelle „Team-App“ und Koordinate. Im Monitor und in `/el` ein Hinweis mit Ton; Einsatzleitung sieht den Punkt live.
+- Höchstens 50 Punkte je Team und Einsatz, danach `429` + `{ "error" }`. Fehlende oder ungültige Felder → `400`.
+  Kein laufender Einsatz bzw. `mode = stop` → `410` + `{ "mode": "stop" }` wie überall.
+- Die Team-App sieht ihre eigenen Punkte nicht über den Server (keine Liste); sie merkt sich gesendete Punkte nur bis zum Abmelden.
+
+**Lebensdauer, Löschfrist, Bericht:** _offen, mit Paul zu klären (siehe PR)._
+
 ### Grenzen
 
 - nginx: eigenes Limit für `/api/team-mobile/app/` (300 Anfragen/min je IP, Burst 120), weil sich im Mobilfunk viele Handys eine IP teilen.
@@ -525,6 +570,15 @@ Speicherung, auch durch `/el` im Browser mit Auto-Save). Beim Ändern schickt di
 beruht. Weicht sie ab, speichert der Server nicht und antwortet `409` + `{ "error": "Das Profil wurde inzwischen geändert.",
 "profil": { …aktueller Stand mit neuer version… } }`; die App zeigt den neuen Stand und lässt neu bearbeiten. Ohne `version`
 → `400`. Die Antwort auf erfolgreiches Speichern enthält die neue `version`.
+
+**Navigationsziele und Punkte (Variante C, Entwurf):**
+
+- `GET /karte` liefert zusätzlich `punkte`: `[ { "id", "name", "beschreibung", "farbe", "lat", "lng", "zeit", "teamId" } ]` –
+  alle Kartenpunkte des Einsatzes; `teamId` ist gesetzt, wenn ein Team den Punkt per App gesetzt hat, sonst `null`.
+- Aktion `/teams/{teamId}/ziel` mit `punktId` (aus `punkte`): schickt den Punkt als Ziel an das Team (Team-Rolle Abschnitt 13).
+  Antwort `{ "doppelt": false, "mitteilungId" }`. Unbekanntes Team oder unbekannter Punkt → `404`.
+- Ereignis `punkt` `{ "id", "teamId" }`: Kartenpunkt neu, geändert oder gelöscht → `/karte` neu laden. Setzt ein Team einen
+  Punkt, kommt zusätzlich `notiz` und (für Ton bzw. Vibration) `warnung` mit `stufe` 1 und dem Text „Team Rex: Fund: Jacke“.
 
 ### 8. `GET /ereignisse` – Live
 
