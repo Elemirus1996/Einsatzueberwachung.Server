@@ -11,15 +11,19 @@ namespace Einsatzueberwachung.Server.Services;
 /// <summary>
 /// Token der Tracking-App fuer die Rolle Einsatzleitung (#110, docs/APP_API.md). Ausgestellt nur von der angemeldeten
 /// EL-Ansicht (/el) im VPN; gebunden an die Generation der EL-Anmeldung – eine Passwortaenderung entwertet es sofort.
-/// Format: „e2.&lt;generation&gt;.&lt;ablauf-unix&gt;.&lt;kennung&gt;.&lt;signatur&gt;“ mit zufaelliger Kennung (16 Byte) – zwei
-/// Anmeldungen in derselben Sekunde ergeben verschiedene Tokens, ein Logout sperrt nur eins. Aeltere „e1“-Tokens ohne Kennung
-/// werden bis zu ihrem Ablauf weiter angenommen.
+/// Format: „e3.&lt;generation&gt;.&lt;ablauf-unix&gt;.&lt;anmeldung-unix&gt;.&lt;kennung&gt;.&lt;signatur&gt;“ mit zufaelliger Kennung
+/// (16 Byte) – zwei Anmeldungen in derselben Sekunde ergeben verschiedene Tokens, ein Logout sperrt nur eins. Der Zeitpunkt der
+/// Anmeldung mit Passwort begrenzt das Verlaengern (#141). Aeltere „e2“- und „e1“-Tokens werden bis zu ihrem Ablauf weiter
+/// angenommen; als Anmeldung gilt bei ihnen Ablauf − Laufzeit.
 /// </summary>
 public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitung, string? sperrDatei = null)
 {
-    private const string Version = "e2";
+    private const string Version = "e3";
+    private const string VersionMitKennung = "e2";
     private const string VersionAlt = "e1";
     public static readonly TimeSpan Laufzeit = TimeSpan.FromHours(24);
+    /// <summary>Hoechstens so lange nach der Anmeldung mit Passwort darf verlaengert werden (#141)</summary>
+    public static readonly TimeSpan HoechstensVerlaengertBis = TimeSpan.FromHours(72);
 
     // Abgemeldete Tokens (POST /logout): Hash → Ablauf. Dauerhaft in einer Datei, damit ein Neustart sie nicht wieder freigibt.
     private readonly object _sperre = new();
@@ -62,23 +66,31 @@ public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitun
 
     private static string Hash(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
-    public string Ausstellen(DateTime ablaufUtc)
+    /// <param name="ablaufUtc">Ablauf des Tokens</param>
+    /// <param name="anmeldungUtc">Anmeldung mit Passwort; ohne Angabe jetzt (beim Verlaengern die des alten Tokens)</param>
+    public string Ausstellen(DateTime ablaufUtc, DateTime? anmeldungUtc = null)
     {
-        var ablauf = new DateTimeOffset(DateTime.SpecifyKind(ablaufUtc, DateTimeKind.Utc)).ToUnixTimeSeconds();
+        static long Unix(DateTime zeit) => new DateTimeOffset(DateTime.SpecifyKind(zeit, DateTimeKind.Utc)).ToUnixTimeSeconds();
         var kennung = Convert.ToBase64String(RandomNumberGenerator.GetBytes(16)).Replace('+', '-').Replace('/', '_').TrimEnd('=');
-        var payload = $"{Version}.{leitung.Generation}.{ablauf}.{kennung}";
+        var payload = $"{Version}.{leitung.Generation}.{Unix(ablaufUtc)}.{Unix(anmeldungUtc ?? DateTime.UtcNow)}.{kennung}";
         return $"{payload}.{Signatur(payload)}";
     }
 
-    public bool TryPruefen(string? token, DateTime nowUtc, out DateTime ablaufUtc)
+    public bool TryPruefen(string? token, DateTime nowUtc, out DateTime ablaufUtc) => TryPruefen(token, nowUtc, out ablaufUtc, out _);
+
+    public bool TryPruefen(string? token, DateTime nowUtc, out DateTime ablaufUtc, out DateTime anmeldungUtc)
     {
         ablaufUtc = default;
+        anmeldungUtc = default;
         if (string.IsNullOrWhiteSpace(token) || token.Length > 256) return false;
         var teile = token.Split('.');
-        var neu = teile.Length == 5 && teile[0] == Version;
-        var alt = teile.Length == 4 && teile[0] == VersionAlt;
-        if (!neu && !alt) return false;
+        var e3 = teile.Length == 6 && teile[0] == Version;
+        var e2 = teile.Length == 5 && teile[0] == VersionMitKennung;
+        var e1 = teile.Length == 4 && teile[0] == VersionAlt;
+        if (!e3 && !e2 && !e1) return false;
         if (!int.TryParse(teile[1], out var generation) || !long.TryParse(teile[2], out var ablauf)) return false;
+        long anmeldung = 0;
+        if (e3 && !long.TryParse(teile[3], out anmeldung)) return false;
         if (generation != leitung.Generation) return false;
 
         var payload = string.Join('.', teile[..^1]);
@@ -86,6 +98,7 @@ public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitun
             return false;
 
         ablaufUtc = DateTimeOffset.FromUnixTimeSeconds(ablauf).UtcDateTime;
+        anmeldungUtc = e3 ? DateTimeOffset.FromUnixTimeSeconds(anmeldung).UtcDateTime : ablaufUtc - Laufzeit;
         return ablaufUtc > nowUtc && !IstAbgemeldet(token);
     }
 

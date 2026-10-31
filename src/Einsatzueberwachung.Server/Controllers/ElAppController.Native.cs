@@ -35,20 +35,54 @@ public sealed partial class ElAppController
 
         var ablaufUtc = jetzt + ElAppTokenService.Laufzeit;
         audit?.Log("Anmeldung Einsatzleitung (App)", Geraet(anfrage.Geraet));
+        return Ok(await AnmeldeAntwortAsync(tokens.Ausstellen(ablaufUtc, jetzt), ablaufUtc, jetzt));
+    }
+
+    public sealed record ElVerlaengernRequest(string? Geraet);
+
+    /// <summary>Neues Token im laufenden Einsatz, hoechstens 72 h ab der Anmeldung mit Passwort (#141); das alte wird gesperrt</summary>
+    [HttpPost("verlaengern")]
+    public async Task<IActionResult> Verlaengern([FromBody] ElVerlaengernRequest? anfrage)
+    {
+        if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
+        var alt = Bearer();
+        var jetzt = DateTime.UtcNow;
+        if (!tokens.TryPruefen(alt, jetzt, out var altAblauf, out var anmeldung) || einsatz is null) return Gone();
+        if (!ElPositionService.Laeuft(einsatz.CurrentEinsatz))
+            return Conflict(new { error = "Verlängern geht nur während eines Einsatzes oder einer Übung." });
+
+        var grenze = anmeldung + ElAppTokenService.HoechstensVerlaengertBis;
+        var neuAblauf = jetzt + ElAppTokenService.Laufzeit < grenze ? jetzt + ElAppTokenService.Laufzeit : grenze;
+        if (neuAblauf <= altAblauf)
+            return Conflict(new { error = "Bitte neu mit dem Staffel-Passwort anmelden (höchstens 72 Stunden ohne Passwort)." });
+
+        var neu = tokens.Ausstellen(neuAblauf, anmeldung);
+        tokens.Abmelden(alt!, altAblauf);
+        audit?.Log("Zugang verlängert (EL-App)", Geraet(anfrage?.Geraet));
+        return Ok(await AnmeldeAntwortAsync(neu, neuAblauf, anmeldung, mitAnmeldung: true));
+    }
+
+    private async Task<object> AnmeldeAntwortAsync(string token, DateTime ablaufUtc, DateTime anmeldungUtc, bool mitAnmeldung = false)
+    {
         var staffel = einstellungen is null ? "" : (await einstellungen.GetStaffelSettingsAsync())?.StaffelName ?? "";
-        return Ok(new
+        var server = new
+        {
+            kennung = kennung?.Kennung,
+            staffel,
+            logoVersion = logo is null ? null : (await logo.HolenAsync())?.Version
+        };
+        if (!mitAnmeldung)
+            return new { apiVersion = TeamMobileAppController.ApiVersion, rolle = "el", token, expiresAt = ablaufUtc, server };
+        return new
         {
             apiVersion = TeamMobileAppController.ApiVersion,
             rolle = "el",
-            token = tokens.Ausstellen(ablaufUtc),
+            token,
             expiresAt = ablaufUtc,
-            server = new
-            {
-                kennung = kennung?.Kennung,
-                staffel,
-                logoVersion = logo is null ? null : (await logo.HolenAsync())?.Version
-            }
-        });
+            anmeldungAt = DateTime.SpecifyKind(anmeldungUtc, DateTimeKind.Utc),
+            verlaengerbarBis = DateTime.SpecifyKind(anmeldungUtc + ElAppTokenService.HoechstensVerlaengertBis, DateTimeKind.Utc),
+            server
+        };
     }
 
     [HttpPost("logout")]

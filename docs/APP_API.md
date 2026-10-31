@@ -321,7 +321,7 @@ Die App baut `/el`, `/el/start` und `/el/beenden` **nativ** nach. Dafür gelten 
 Antwort `200`:
 
 ```json
-{ "apiVersion": 1, "rolle": "el", "token": "e2.…", "expiresAt": "…Z",
+{ "apiVersion": 1, "rolle": "el", "token": "e3.…", "expiresAt": "…Z",
   "server": { "kennung": "…", "staffel": "RHS Musterstadt", "logoVersion": "a1b2…" } }
 ```
 
@@ -430,8 +430,9 @@ Einsatz starten und beenden (Stufe 5 umgesetzt):
   mitgeschickte Angaben der App gehen vor. Unbekannter Alarm → `404`. `lat`/`lng` nur zusammen, setzen Kartenadresse und ELW-Position.
   `uebung` (Standard `false`). Läuft schon ein Einsatz → `409`. Antwort `{ "einsatz": { "aktiv": true, "beginn": "…Z" } }`.
 - `/einsatz/beenden`: `ergebnis` muss ein `wert` aus `/einsatz/ergebnisse` sein, `ressourcenGeprueft` muss `true` sein, sonst `400`.
-  Optional `bemerkungen` und `endzeit` als `"HH:mm"` in **Ortszeit** (wie die Uhrzeitwahl in `/el/beenden`; liegt sie nach der
-  aktuellen Uhrzeit, gilt der Vortag). `pdf.tracks` Standard `true`, `pdf.teamIds` `null` = alle Teams. Die Vor-Ort-Liste übernimmt
+  Optional `bemerkungen` und `endzeit` als Zeitpunkt in **UTC** (z. B. `"2026-10-31T17:45:00Z"`, auch mit Versatz wie `+01:00`;
+  ohne Angabe = jetzt). Ohne Zeitzone, in der Zukunft oder vor dem Einsatzbeginn → `400`. Für den Bericht rechnet der Server in
+  Ortszeit um. `pdf.tracks` Standard `true`, `pdf.teamIds` `null` = alle Teams. Die Vor-Ort-Liste übernimmt
   der Server aus den eingeteilten Teams (wie die Vorauswahl in `/el/beenden`). Antwort `{ "archivId", "einsatzNummer",
   "pdf": { "erstellt": true, "fehler": null } }`; den Bericht gibt es danach im Archiv. Schon an einem anderen Leitungsplatz beendet
   oder kein laufender Einsatz → `409`. Danach kommt auf `/ereignisse` `einsatz` mit `{ "aktiv": false }`.
