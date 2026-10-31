@@ -225,7 +225,8 @@ public sealed class ElAppEreignisseTests : IDisposable
         var team = await _einsatz.AddTeamAsync(new Team { TeamName = "Team Rex" });
         await _einsatz.AddGlobalNoteAsync("Lagebesprechung 10 Uhr");
         await _einsatz.EndEinsatzAsync();
-        await Task.Delay(250);
+        // Langsame CI-Rechner: warten, bis das letzte Ereignis geschrieben ist (nach dem Abmelden kaeme nur noch „stop“)
+        for (var i = 0; i < 50 && !Encoding.UTF8.GetString(body.ToArray()).Contains("{\"aktiv\":false}"); i++) await Task.Delay(100);
         Assert.False(lauf.IsCompleted); // Einsatzende beendet die Verbindung nicht
 
         _tokens.Abmelden(token, DateTime.UtcNow.AddHours(1));
