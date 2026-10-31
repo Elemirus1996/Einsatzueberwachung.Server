@@ -910,7 +910,7 @@ private async Task SetDesignModeAsync(bool darkMode)
             var now = DateTime.UtcNow;
             DateTime? expires = _vpnValidityDays > 0 ? now.AddDays(_vpnValidityDays) : null;
             _vpnCreated = await VpnDevices.CreateAsync(_vpnName, expires, now);
-            _vpnQrDataUrl = GenerateQrDataUrl(_vpnCreated.ClientConfig);
+            _vpnQrDataUrl = QrBild.DataUrl(_vpnCreated.ClientConfig);
             _vpnConfigDataUrl = "data:text/plain;charset=utf-8," + Uri.EscapeDataString(_vpnCreated.ClientConfig);
             _vpnConfigFileName = "einsatz-" + new string(_vpnCreated.Device.Name.Select(c => char.IsAsciiLetterOrDigit(c) ? c : '-').ToArray()) + ".conf";
             _vpnName = string.Empty;
@@ -953,14 +953,6 @@ private async Task SetDesignModeAsync(bool darkMode)
     {
         _vpnMessage = message;
         _vpnError = isError;
-    }
-
-    private static string GenerateQrDataUrl(string content)
-    {
-        using var generator = new QRCoder.QRCodeGenerator();
-        using var data = generator.CreateQrCode(content, QRCoder.QRCodeGenerator.ECCLevel.M);
-        var png = new QRCoder.PngByteQRCode(data).GetGraphic(6);
-        return $"data:image/png;base64,{Convert.ToBase64String(png)}";
     }
 
     private string _pwCurrent = string.Empty;
@@ -1125,7 +1117,7 @@ private async Task SetDesignModeAsync(bool darkMode)
         _traccarTestEndpoint = basis.TrimEnd('/') + "/api/team-mobile/traccar";
         _traccarTestKennung = TraccarTest.NeueKennung(DateTime.UtcNow);
         _traccarTestLink = TraccarTestService.EinrichtungsLink(_traccarTestEndpoint, _traccarTestKennung, _appSettings);
-        _traccarTestQr = GenerateQrDataUrl(_traccarTestLink);
+        _traccarTestQr = QrBild.DataUrl(_traccarTestLink);
         if (!_traccarTestAbonniert)
         {
             TraccarTest.Geaendert += OnTraccarTestEmpfang;
