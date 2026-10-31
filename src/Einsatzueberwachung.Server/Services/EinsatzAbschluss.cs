@@ -13,7 +13,9 @@ public sealed record EinsatzAbschlussAnfrage(
     IReadOnlyList<string> PersonalVorOrt,
     IReadOnlyList<string> HundeVorOrt,
     Einsatzueberwachung.Domain.Models.Enums.MapTileType Kartenart = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets,
-    IReadOnlyCollection<string>? TeamIds = null);
+    IReadOnlyCollection<string>? TeamIds = null,
+    // Genauer Zeitpunkt des Endes in Ortszeit (EL-App); hat Vorrang vor Endzeit
+    DateTime? Ende = null);
 
 public sealed record EinsatzAbschlussErgebnis(ArchivedEinsatz Archiviert, PdfExportResult Pdf);
 
@@ -79,7 +81,7 @@ public sealed class EinsatzAbschlussService
             await _einsatzService.EndEinsatzAsync();
 
             var snapshot = BuildArchiveSnapshot(_einsatzService);
-            snapshot.EinsatzEnde = ResolveEndTime(anfrage.Endzeit, _timeService.Now);
+            snapshot.EinsatzEnde = anfrage.Ende ?? ResolveEndTime(anfrage.Endzeit, _timeService.Now);
 
             var archived = await _archivService.ArchiveEinsatzAsync(
                 snapshot,

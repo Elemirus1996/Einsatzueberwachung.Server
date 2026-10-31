@@ -27,6 +27,7 @@ public sealed class ElAppEinsatzTests : IDisposable
     private readonly List<PdfBerichtOptionen> _pdfOptionen = [];
     private readonly EinsatzAbschlussTests.Recorder<IArchivService> _archiv;
     private readonly EinsatzAbschlussService _abschluss;
+    private DateTime? _archiviertesEnde;
 
     private sealed class Uhr : ITimeService
     {
@@ -42,9 +43,11 @@ public sealed class ElAppEinsatzTests : IDisposable
         _tokens = new ElAppTokenService(RandomNumberGenerator.GetBytes(64), _leitung);
         _token = _tokens.Ausstellen(DateTime.UtcNow.AddHours(1));
         _archiv = EinsatzAbschlussTests.Recorder<IArchivService>.Create((m, args) =>
-            m.Name == nameof(IArchivService.ArchiveEinsatzAsync)
-                ? Task.FromResult(ArchivedEinsatz.FromEinsatzData((EinsatzData)args![0]!, (string)args[1]!, (string)args[2]!, Ortszeit.Jetzt))
-                : null);
+        {
+            if (m.Name != nameof(IArchivService.ArchiveEinsatzAsync)) return null;
+            _archiviertesEnde = ((EinsatzData)args![0]!).EinsatzEnde;
+            return Task.FromResult(ArchivedEinsatz.FromEinsatzData((EinsatzData)args[0]!, (string)args[1]!, (string)args[2]!, Ortszeit.Jetzt));
+        });
         var pdf = EinsatzAbschlussTests.Recorder<IPdfExportService>.Create((_, args) =>
         {
             if (args?.Length == 2 && args[1] is PdfBerichtOptionen o) _pdfOptionen.Add(o);
@@ -139,6 +142,7 @@ public sealed class ElAppEinsatzTests : IDisposable
     {
         Assert.IsType<OkObjectResult>(await Controller().EinsatzStarten(Start()));
         var team = await _einsatz.AddTeamAsync(new Team { TeamName = "Team Rex", HundefuehrerName = "Anna Berg" });
+        _einsatz.CurrentEinsatz.EinsatzDatum = Ortszeit.Jetzt.AddHours(-2); // Einsatz laeuft seit zwei Stunden
 
         ElAppController.ElEinsatzEnde Ende(string? ergebnis = "Suche erfolglos abgeschlossen", bool geprueft = true, string? karte = "Topographic") =>
             new(NeueId(), ergebnis, geprueft, "ohne Befund", null, new ElAppController.ElPdfWahl(true, karte, [team.TeamId]));
@@ -147,10 +151,16 @@ public sealed class ElAppEinsatzTests : IDisposable
         Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende(geprueft: false)));
         Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende(karte: "Google")));
         Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende(karte: "2")));
-        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende() with { Endzeit = "18 Uhr" }));
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende() with { Endzeit = "18:00" }));
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende() with { Endzeit = "2026-10-31T17:45:00" })); // ohne Zone
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende() with { Endzeit = DateTime.UtcNow.AddHours(1).ToString("O") }));
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende() with { Endzeit = DateTime.UtcNow.AddDays(-1).ToString("O") }));
 
-        var ok = Json(await Controller().EinsatzBeenden(Ende()));
+        var endeUtc = DateTime.SpecifyKind(DateTime.UtcNow.AddSeconds(-30), DateTimeKind.Utc);
+        endeUtc = endeUtc.AddTicks(-(endeUtc.Ticks % TimeSpan.TicksPerSecond));
+        var ok = Json(await Controller().EinsatzBeenden(Ende() with { Endzeit = endeUtc.ToString("yyyy-MM-ddTHH:mm:ssZ") }));
         Assert.True(ok.GetProperty("pdf").GetProperty("erstellt").GetBoolean());
+        Assert.Equal(Ortszeit.AusUtc(endeUtc), _archiviertesEnde); // fuer den Bericht in Ortszeit
         var optionen = Assert.Single(_pdfOptionen);
         Assert.Equal(MapTileType.Topographic, optionen.Kartenart);
         Assert.Equal([team.TeamId], optionen.TeamIds);

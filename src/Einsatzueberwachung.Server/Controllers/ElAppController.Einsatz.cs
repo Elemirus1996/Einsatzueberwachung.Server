@@ -104,11 +104,16 @@ public sealed partial class ElAppController
         if (a.Pdf?.Kartenart is { } wahl && !(Enum.TryParse(wahl, ignoreCase: false, out kartenart)
             && !int.TryParse(wahl, out _) && PdfBerichtOptionen.Kartenarten.Any(k => k.Art == kartenart)))
             return BadRequest(new { error = "Unbekannte Kartenart.", kartenarten = PdfBerichtOptionen.Kartenarten.Select(k => k.Art.ToString()) });
-        TimeOnly? endzeit = null;
+        // Ende als Zeitpunkt in UTC (wie alle Zeiten der App-Schnittstelle); fuer den Bericht in Ortszeit
+        DateTime? ende = null;
         if (!string.IsNullOrWhiteSpace(a.Endzeit))
         {
-            if (!TimeOnly.TryParseExact(a.Endzeit, "HH:mm", out var ende)) return BadRequest(new { error = "Endzeit als „HH:mm“ (Ortszeit)." });
-            endzeit = ende;
+            if (!MitZeitzone(a.Endzeit) || !DateTimeOffset.TryParse(a.Endzeit, System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var zeitpunkt))
+                return BadRequest(new { error = "endzeit als Zeitpunkt in UTC, z. B. „2026-10-31T17:45:00Z“." });
+            ende = Ortszeit.AusUtc(zeitpunkt.UtcDateTime);
+            if (ende > (zeit?.Now ?? Ortszeit.Jetzt).AddMinutes(1)) return BadRequest(new { error = "endzeit liegt in der Zukunft." });
+            if (ende < einsatz!.CurrentEinsatz.EinsatzDatum) return BadRequest(new { error = "endzeit liegt vor dem Einsatzbeginn." });
         }
 
         // Vor-Ort-Liste wie die Vorauswahl in /el/beenden: Personal und Hunde aus den eingeteilten Teams
@@ -123,12 +128,13 @@ public sealed partial class ElAppController
                 einsatz.CurrentEinsatz.EinsatzDatum,
                 a.Ergebnis,
                 a.Bemerkungen ?? "",
-                endzeit,
+                null,
                 a.Pdf?.Tracks ?? true,
                 personal.Where(p => personalIds.Contains(p.Id)).Select(p => p.FullName).Where(n => n.Length > 0).Distinct().OrderBy(n => n).ToList(),
                 hunde.Where(d => hundeIds.Contains(d.Id)).Select(d => d.Name).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().OrderBy(n => n).ToList(),
                 kartenart,
-                a.Pdf?.TeamIds));
+                a.Pdf?.TeamIds,
+                ende));
         }
         catch (InvalidOperationException ex)
         {
@@ -144,6 +150,9 @@ public sealed partial class ElAppController
             pdf = new { erstellt = ergebnis.Pdf.Success, fehler = ergebnis.Pdf.Success ? null : ergebnis.Pdf.ErrorMessage }
         });
     });
+
+    private static bool MitZeitzone(string text) =>
+        text.EndsWith('Z') || System.Text.RegularExpressions.Regex.IsMatch(text, @"[+-]\d{2}:\d{2}$");
 
     private static IEnumerable<object> Ergebnisse() =>
         EinsatzAbschlussService.ErgebnisOptionen.Select(o => new { wert = o, anzeige = ErgebnisText.Anzeige(o) });
