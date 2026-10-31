@@ -312,7 +312,7 @@ Die App baut `/el`, `/el/start` und `/el/beenden` **nativ** nach. Dafür gelten 
 - Fehler, die die App anzeigen soll (z. B. „Team läuft schon“, „Halsband vergeben“): `409` + `{ "error": "<kurzer Text>" }`.
   Falsche Eingaben: `400` + `{ "error": "…" }`.
 
-### 4. `POST /login` und `POST /logout`
+### 4. `POST /login`, `POST /logout` und `POST /verlaengern`
 
 ```json
 { "passwort": "…", "geraet": "iPhone Anna" }
@@ -330,6 +330,26 @@ Antwort `200`:
 - `geraet` (optional, höchstens 40 Zeichen) dient nur der Anzeige im Audit-Log, falls das VPN-Gerät keinen Namen hat.
 - nginx: strenges Limit wie `/team/login` (20/min je IP).
 - `POST /logout` (mit Token) → `204`. Dieses Token ist danach ungültig, auch nach einem Neustart des Servers.
+
+**`POST /verlaengern`** (#141, mit gültigem Token, Körper optional `{ "geraet": "iPhone Anna" }`): neues Token für einen langen Einsatz,
+ohne das Staffel-Passwort erneut einzugeben. Antwort `200` wie `/login`, zusätzlich mit der ursprünglichen Anmeldung:
+
+```json
+{ "apiVersion": 1, "rolle": "el", "token": "e3.…", "expiresAt": "…Z",
+  "anmeldungAt": "2026-10-31T06:00:00Z", "verlaengerbarBis": "2026-11-03T06:00:00Z",
+  "server": { "kennung": "…", "staffel": "RHS Musterstadt", "logoVersion": "a1b2…" } }
+```
+
+- Nur während eines laufenden Einsatzes oder einer Übung, sonst `409` + `{ "error" }`. Die App meldet sich dann nach Ablauf normal neu an.
+- Höchstens **72 h** ab der Anmeldung mit Passwort (`anmeldungAt`, steht signiert im Token und wandert beim Verlängern mit).
+  Das neue Token läuft 24 h, aber nie über `verlaengerbarBis` hinaus. Ist dieser Zeitpunkt erreicht (das neue Token würde nicht länger
+  gelten als das alte), → `409`: Anmeldung mit Passwort nötig.
+- Das alte Token ist danach gesperrt wie nach `/logout` (`410`); es gilt immer nur eins. Laufende `/ereignisse`-Verbindungen mit dem
+  alten Token enden beim nächsten Ping mit `stop` – die App verbindet sich mit dem neuen Token neu.
+- Passwortänderung und `/logout` machen das neue Token wie bisher ungültig. Eintrag im Audit-Log mit Gerätename.
+- Ungültiges Token → `410` + `{"mode":"stop"}`. Die App ruft `/verlaengern` auf, wenn weniger als 6 h Laufzeit übrig sind und ein Einsatz läuft.
+- Token-Format ab jetzt `e3.…` (mit Anmeldezeitpunkt); `e2`-Tokens gelten bis zu ihrem Ablauf weiter, beim Verlängern zählt bei ihnen
+  der Ausstellungszeitpunkt (Ablauf − 24 h) als Anmeldung.
 
 ### 5. `GET /lage`
 
