@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# Einstellungen der Staffel an einer Stelle: /etc/einsatzueberwachung/staffel.conf. Alle Einrichtungsskripte lesen
+# Domain, VPN-Netz und VPN-Port von hier, statt Beispielwerte fest zu verwenden.
+#
+#   einsatz-staffel zeigen                     alle Werte (mit abgeleiteten), eine Zeile je Wert
+#   einsatz-staffel wert <schluessel>          ein Wert, z. B. vpn_server_ip
+#   einsatz-staffel setzen <schluessel> <wert> Wert pruefen und speichern (root)
+#   einsatz-staffel pruefen                    Datei vollstaendig und gueltig?
+#   einsatz-staffel vorlage <datei>            Vorlage aus deploy/ mit den Werten der Staffel ausgeben
+#
+# Schluessel: domain (oeffentlicher Name, z. B. staffel-x.mywire.org), vpn_netz (Standard 10.10.0.0/24),
+# vpn_port (Standard 51820), dns_anbieter (dynu oder andere, Standard dynu).
+# Abgeleitet: vpn_server_ip (erste Adresse im VPN-Netz), intern_adresse (el.<domain>).
+#
+# Vorlagen enthalten die Beispielwerte dein-einsatz.mywire.org, 10.10.0.0/24 und 10.10.0.1; sie bleiben so gueltige
+# nginx-Dateien (CI, bestehende Server) und werden hier ersetzt.
+set -euo pipefail
+
+CONF="${EINSATZ_STAFFEL_CONF:-/etc/einsatzueberwachung/staffel.conf}"
+SCHLUESSEL="domain vpn_netz vpn_port dns_anbieter"
+
+fehler() { echo "einsatz-staffel: $*" >&2; exit 1; }
+
+standard() {
+	case "$1" in
+		vpn_netz) echo "10.10.0.0/24" ;;
+		vpn_port) echo "51820" ;;
+		dns_anbieter) echo "dynu" ;;
+		*) echo "" ;;
+	esac
+}
+
+# Gespeicherter Wert oder Standard. Die Datei wird gelesen, nicht ausgefuehrt (laeuft als root).
+gelesen() {
+	local v=""
+	if [[ -f "$CONF" ]]; then
+		v="$(awk -F= -v k="$1" '$1 == k { sub(/^[^=]*=/, ""); w = $0 } END { print w }' "$CONF")"
+	fi
+	[[ -n "$v" ]] && echo "$v" || standard "$1"
+}
+
+# Leere Ausgabe = gueltig, sonst die Fehlermeldung
+pruefe_wert() {
+	local k="$1" v="$2"
+	case "$k" in
+		domain)
+			[[ "$v" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]] \
+				|| echo "domain: ungueltiger Name '$v' (z. B. staffel-x.mywire.org)"
+			;;
+		vpn_netz)
+			if [[ "$v" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)\.0/24$ ]]; then
+				local a="${BASH_REMATCH[1]}" b="${BASH_REMATCH[2]}" c="${BASH_REMATCH[3]}"
+				if (( a > 255 || b > 255 || c > 255 )); then
+					echo "vpn_netz: ungueltige Adresse '$v'"
+				elif ! (( a == 10 || (a == 172 && b >= 16 && b <= 31) || (a == 192 && b == 168) )); then
+					echo "vpn_netz: '$v' ist kein privates Netz (10.x, 172.16-31.x oder 192.168.x)"
+				fi
+			else
+				echo "vpn_netz: '$v' muss die Form a.b.c.0/24 haben"
+			fi
+			;;
+		vpn_port)
+			[[ "$v" =~ ^[0-9]+$ ]] && (( v >= 1 && v <= 65535 )) || echo "vpn_port: '$v' ist kein Port (1-65535)"
+			;;
+		dns_anbieter)
+			[[ "$v" == dynu || "$v" == andere ]] || echo "dns_anbieter: '$v' muss dynu oder andere sein"
+			;;
+		*) echo "unbekannter Schluessel '$k' (erlaubt: $SCHLUESSEL)" ;;
+	esac
+}
+
+wert() {
+	local netz domain
+	case "$1" in
+		vpn_server_ip) netz="$(gelesen vpn_netz)"; echo "${netz%.0/24}.1" ;;
+		intern_adresse) domain="$(gelesen domain)"; [[ -n "$domain" ]] && echo "el.$domain" || echo "" ;;
+		*)
+			[[ " $SCHLUESSEL " == *" $1 "* ]] || fehler "unbekannter Schluessel '$1' (erlaubt: $SCHLUESSEL vpn_server_ip intern_adresse)"
+			gelesen "$1"
+			;;
+	esac
+}
+
+pruefen() {
+	local k v m ok=0
+	[[ -f "$CONF" ]] || { echo "$CONF fehlt. Anlegen mit: einsatz-staffel setzen domain <name>"; return 1; }
+	for k in $SCHLUESSEL; do
+		v="$(gelesen "$k")"
+		if [[ -z "$v" ]]; then
+			echo "$k: fehlt"; ok=1; continue
+		fi
+		m="$(pruefe_wert "$k" "$v")"
+		[[ -z "$m" ]] || { echo "$m"; ok=1; }
+	done
+	while IFS= read -r k; do
+		echo "unbekannter Schluessel '$k' in $CONF"; ok=1
+	done < <(awk -F= '/^[^#[:space:]]/ { print $1 }' "$CONF" | grep -vxE "$(echo "$SCHLUESSEL" | tr ' ' '|')" || true)
+	return $ok
+}
+
+setzen() {
+	local k="$1" v="$2" m tmp
+	[[ "$k" == domain ]] && v="$(echo "$v" | tr 'A-Z' 'a-z')"
+	m="$(pruefe_wert "$k" "$v")"
+	[[ -z "$m" ]] || fehler "$m"
+	mkdir -p "$(dirname "$CONF")"
+	tmp="$(mktemp "$CONF.XXXXXX")"
+	{
+		echo "# Einstellungen der Staffel (einsatz-staffel), nur von root aenderbar"
+		local s
+		for s in $SCHLUESSEL; do
+			if [[ "$s" == "$k" ]]; then echo "$s=$v"
+			elif [[ -f "$CONF" ]] && grep -q "^$s=" "$CONF"; then echo "$s=$(gelesen "$s")"
+			fi
+		done
+	} >"$tmp"
+	chmod 644 "$tmp"
+	mv "$tmp" "$CONF"
+}
+
+vorlage() {
+	local datei="$1" domain netz ip
+	[[ -f "$datei" ]] || fehler "Vorlage $datei nicht gefunden"
+	domain="$(gelesen domain)"
+	netz="$(gelesen vpn_netz)"
+	ip="$(wert vpn_server_ip)"
+	if [[ -z "$domain" ]] && grep -q 'dein-einsatz\.mywire\.org' "$datei"; then
+		fehler "domain fehlt, Vorlage $datei braucht sie (einsatz-staffel setzen domain <name>)"
+	fi
+	sed -E -e "s#dein-einsatz\.mywire\.org#${domain:-dein-einsatz.mywire.org}#g" \
+		-e "s#10\.10\.0\.0/24#$netz#g" \
+		-e "s#10\.10\.0\.1([^0-9]|\$)#$ip\1#g" "$datei"
+}
+
+case "${1:-}" in
+	zeigen)
+		for k in $SCHLUESSEL vpn_server_ip intern_adresse; do echo "$k=$(wert "$k")"; done
+		;;
+	wert) [[ $# -eq 2 ]] || fehler "Aufruf: einsatz-staffel wert <schluessel>"; wert "$2" ;;
+	setzen)
+		[[ $# -eq 3 ]] || fehler "Aufruf: einsatz-staffel setzen <schluessel> <wert>"
+		[[ $EUID -eq 0 || -n "${EINSATZ_STAFFEL_CONF:-}" ]] || fehler "bitte als root ausfuehren (sudo)"
+		setzen "$2" "$3"
+		;;
+	pruefen) pruefen ;;
+	vorlage) [[ $# -eq 2 ]] || fehler "Aufruf: einsatz-staffel vorlage <datei>"; vorlage "$2" ;;
+	*) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac
