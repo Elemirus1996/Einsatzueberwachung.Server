@@ -59,6 +59,19 @@ PersistentKeepalive = 25'
 	&& ok "Geraete-Konfiguration mit DNS" || bad "Geraete-Konfiguration"
 client_konfig PRIV 10.77.0.10 "" PUB e:1 n | grep -q '^DNS' && bad "DNS ohne dnsmasq" || ok "ohne DNS keine DNS-Zeile"
 
+# Fremder AAAA-Eintrag (z. B. Standard des Domain-Anbieters), Gross-/Kleinschreibung egal
+[[ "$(fremde_ipv6 "2001:8d8:100f:f000::200" "2a01:238:4000::1")" == "2001:8d8:100f:f000::200" ]] && ok "fremder AAAA erkannt" || bad "fremder AAAA"
+[[ -z "$(fremde_ipv6 "2a01:238:4000::1" "2A01:238:4000::1")" ]] && ok "eigener AAAA ok" || bad "eigener AAAA"
+[[ -z "$(fremde_ipv6 "" "2a01:238:4000::1")" ]] && ok "kein AAAA ok" || bad "kein AAAA"
+[[ "$(fremde_ipv6 "2001:db8::1" "")" == "2001:db8::1" ]] && ok "AAAA ohne IPv6 am Server ist fremd" || bad "AAAA ohne IPv6"
+
+# Kontakt eines Geraets (wg show wg0 latest-handshakes: Schluessel, Unix-Zeit, 0 = nie)
+wg() { printf 'AAA=\t0\nBBB=\t1792900000\n'; }
+kontakt AAA= && bad "Geraet ohne Handshake" || ok "kein Kontakt bei 0"
+kontakt BBB= && ok "Kontakt erkannt" || bad "Kontakt"
+kontakt CCC= && bad "unbekanntes Geraet" || ok "unbekanntes Geraet ohne Kontakt"
+unset -f wg
+
 # Paket zum Prozessor
 [[ "$(paket_fuer_prozessor x86_64)" == linux-x64 && "$(paket_fuer_prozessor aarch64)" == linux-arm64 ]] \
 	&& ok "Paket zum Prozessor" || bad "Paket zum Prozessor"

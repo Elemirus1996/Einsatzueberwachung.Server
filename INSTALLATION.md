@@ -30,10 +30,13 @@ Erst wenn alle Punkte erfüllt sind, mit Schritt 1 beginnen.
       IP“-Webseite anzeigt. Ohne öffentliche IPv4: Server auf einem Mietserver betreiben oder beim Anbieter eine öffentliche
       IPv4 bestellen.
 - [ ] **Portfreigaben im Router** auf den Server: `443/tcp` (Team-Zugang), `80/tcp` (Verlängerung des Zertifikats),
-      `51820/udp` (WireGuard). Bei einem Mietserver entfällt das, die Firewall richtet `setup.sh` ein.
+      `51820/udp` (WireGuard). Bei einem Mietserver entfällt das, dort aber dieselben Ports in der Firewall im
+      Kundenmenü des Anbieters freigeben (z. B. Strato, IONOS, Hetzner), besonders `51820/udp`.
 - [ ] **Domain bei Dynu:** Ein kostenloser Hostname bei [Dynu](https://www.dynu.com) (z. B. `….mywire.org`) mit
       API-Key (empfohlen). Bei wechselnder IP die DDNS-Aktualisierung im Router oder mit dem Dynu-Client einrichten.
       Andere DNS-Anbieter gehen auch, dann muss das interne Zertifikat alle 90 Tage von Hand erneuert werden.
+- [ ] **Kein fremder IPv6-Eintrag:** Viele Domain-Anbieter setzen selbst einen AAAA-Eintrag. Zeigt er nicht auf den
+      Server, erreichen Handys im Mobilfunk weder VPN noch Team-Zugang. Löschen oder auf die IPv6 des Servers setzen.
 - [ ] **VPN-Netz frei:** Das VPN nutzt `10.10.0.0/24`. Nutzt das Heimnetz am Server diesen Bereich schon, in Schritt 2
       ein anderes Netz wählen (z. B. `10.77.0.0/24`). Der Installationsmanager wählt selbst ein freies Netz.
 - [ ] **Passwort der Einsatzleitung** festlegen: gemeinsam für die Staffel, mindestens 10 Zeichen.
@@ -56,10 +59,11 @@ Er holt das neueste Release von GitHub, prüft Prozessor, Ubuntu-Version, Speich
 Domain, wählt ein VPN-Netz, das sich nicht mit dem Heimnetz überschneidet, und richtet Server, WireGuard,
 Zertifikate und das erste VPN-Gerät (QR-Code im Terminal) ein. Am Ende zeigt er Einrichtungscode und Adressen.
 
-Zustand später prüfen, ohne etwas zu ändern:
+Zustand später prüfen, ohne etwas zu ändern, und ein weiteres VPN-Gerät anlegen (QR-Code oder Text für einen PC):
 
 ```bash
 sudo bash einsatz-installation pruefen
+sudo bash einsatz-installation geraet
 ```
 
 Die folgenden Schritte beschreiben dasselbe von Hand, zum Nachvollziehen oder bei Problemen.

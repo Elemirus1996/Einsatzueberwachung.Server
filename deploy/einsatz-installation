@@ -5,6 +5,7 @@
 #
 #   sudo bash einsatz-installation            gefuehrte Installation (oder Fortsetzung)
 #   sudo bash einsatz-installation pruefen    nur pruefen, was fertig ist, nichts aendern
+#   sudo bash einsatz-installation geraet     weiteres VPN-Geraet anlegen (QR-Code oder Text fuer PC)
 #
 # Laeuft aus einem Checkout des Repos (deploy/einsatz-installation) oder einzeln heruntergeladen; dann holt er das
 # neueste Release von GitHub nach /var/lib/einsatz-installation/ (nur root, nicht unter /opt/einsatzueberwachung, das
@@ -110,6 +111,25 @@ oeffentliche_ipv4() { curl -4 -fsS --max-time 10 https://api.ipify.org 2>/dev/nu
 ist_lokale_adresse() { ip -4 -o addr show 2>/dev/null | awk '{ sub(/\/.*/, "", $4); print $4 }' | grep -qxF "$1"; }
 
 aufloesen() { getent ahostsv4 "$1" 2>/dev/null | awk '{ print $1; exit }'; }
+
+# IPv6-Adressen (AAAA) eines Namens, eine je Zeile; ::ffff:… sind nur umgerechnete IPv4-Adressen
+aufloesen_v6() { getent ahostsv6 "$1" 2>/dev/null | awk '$1 !~ /^::ffff:/ { print $1 }' | sort -u; }
+
+lokale_ipv6() { ip -6 -o addr show scope global 2>/dev/null | awk '{ sub(/\/.*/, "", $4); print $4 }'; }
+
+# fremde_ipv6 <AAAA-Adressen> <eigene IPv6-Adressen> (je eine Zeile): AAAA-Adressen, die nicht zu diesem Server gehoeren.
+# Haeufig setzt der Domain-Anbieter selbst einen AAAA-Eintrag; Handys im Mobilfunk nehmen bevorzugt IPv6 und landen dann
+# woanders (VPN ohne Handshake, Team-Zugang nicht erreichbar).
+fremde_ipv6() {
+	local a
+	while IFS= read -r a; do
+		[[ -n "$a" ]] || continue
+		grep -qixF "$a" <<<"$2" || echo "$a"
+	done <<<"$1"
+}
+
+# Hatte das Geraet mit diesem oeffentlichen Schluessel schon Kontakt (Handshake)?
+kontakt() { wg show wg0 latest-handshakes 2>/dev/null | awk -v k="$1" '$1 == k && $2 > 0 { f = 1 } END { exit !f }'; }
 
 lan_adresse() { ip -4 route get 1.1.1.1 2>/dev/null | awk '{ for (i = 1; i < NF; i++) if ($i == "src") { print $(i + 1); exit } }'; }
 
@@ -269,7 +289,7 @@ schritt_einstellungen() {
 
 schritt_erreichbarkeit() {
 	titel "4. Erreichbarkeit aus dem Internet"
-	local pub lan domain aufgeloest port
+	local pub lan domain aufgeloest port fremd
 	domain="$(staffel wert domain)"
 	port="$(staffel wert vpn_port)"
 	while true; do
@@ -284,7 +304,12 @@ schritt_erreichbarkeit() {
 	done
 	gut "Oeffentliche IPv4: $pub"
 	if ist_lokale_adresse "$pub"; then
-		gut "Adresse liegt direkt am Server (z. B. Mietserver), keine Portfreigabe noetig"
+		gut "Adresse liegt direkt am Server (z. B. Mietserver), keine Portfreigabe im Router noetig"
+		cat <<-TXT
+		  Viele Anbieter (z. B. Strato, IONOS, Hetzner, Oracle) haben zusaetzlich eine Firewall im Kundenmenue.
+		  Dort eingehend freigeben: 80/tcp, 443/tcp und $port/udp. UDP wird dabei oft vergessen, dann geht das VPN nicht.
+		TXT
+		ja_nein "Freigaben beim Anbieter geprueft?" j || abbruch "Erst die Freigaben beim Anbieter einrichten, dann erneut starten."
 	else
 		lan="$(lan_adresse)"
 		cat <<-TXT
@@ -308,6 +333,17 @@ schritt_erreichbarkeit() {
 		warten
 	done
 	gut "$domain zeigt auf $pub"
+	while true; do
+		fremd="$(fremde_ipv6 "$(aufloesen_v6 "$domain")" "$(lokale_ipv6)")"
+		[[ -n "$fremd" ]] || break
+		cat <<-TXT
+		  $domain hat einen IPv6-Eintrag (AAAA) auf $(echo $fremd), der nicht zu diesem Server gehoert.
+		  Handys im Mobilfunk nehmen bevorzugt IPv6 und erreichen den Server dann nicht (VPN, Team-Zugang).
+		  Beim DNS-Anbieter den AAAA-Eintrag von $domain loeschen$(lokale_ipv6 | head -n1 | sed 's/^/ oder auf diese IPv6 des Servers setzen: /').
+		TXT
+		warten
+	done
+	[[ -n "$(aufloesen_v6 "$domain")" ]] && gut "IPv6-Eintrag gehoert zu diesem Server" || gut "Kein fremder IPv6-Eintrag"
 }
 
 schritt_grundinstallation() {
@@ -382,28 +418,59 @@ schritt_intern() {
 	bash "$QUELLE/deploy/scripts/setup-intern-zertifikat.sh" "$host" || abbruch "setup-intern-zertifikat.sh ist fehlgeschlagen (Meldungen oben)."
 }
 
+# Legt ein VPN-Geraet an, zeigt die Konfiguration als QR-Code (Handy, Tablet) oder als Text (PC) und wartet auf den
+# ersten Kontakt. Der private Schluessel wird nur angezeigt, nirgends gespeichert.
+neues_geraet() {
+	local ausgabe ip privat geraet info pub dns konfig port i
+	command -v qrencode >/dev/null || DEBIAN_FRONTEND=noninteractive apt-get install -y qrencode >/dev/null
+	port="$(staffel wert vpn_port)"
+	ausgabe="$(/usr/local/sbin/einsatz-wg-peer add)"
+	ip="$(sed -n 's/^ip=//p' <<<"$ausgabe")"
+	privat="$(sed -n 's/^private_key=//p' <<<"$ausgabe")"
+	geraet="$(sed -n 's/^public_key=//p' <<<"$ausgabe")"
+	info="$(/usr/local/sbin/einsatz-wg-peer info)"
+	pub="$(sed -n 's/^public_key=//p' <<<"$info")"
+	dns=""
+	grep -qx 'dns=yes' <<<"$info" && dns="$(staffel wert vpn_server_ip)"
+	konfig="$(client_konfig "$privat" "$ip" "$dns" "$pub" "$(staffel wert domain):$port" "$(staffel wert vpn_netz)")"
+	unset privat ausgabe
+	if ja_nein "Geraet mit Kamera (Handy, Tablet)? Sonst Text fuer einen PC" j; then
+		qrencode -t ansiutf8 <<<"$konfig"
+		info "WireGuard-App: Tunnel hinzufuegen -> QR-Code scannen."
+	else
+		printf '\n%s\n\n' "$konfig"
+		info "WireGuard am PC: Tunnel hinzufuegen -> Leeren Tunnel hinzufuegen, den Inhalt ganz durch den Text oben ersetzen."
+		info "Den Text nirgends aufheben, er enthaelt den privaten Schluessel des Geraets."
+	fi
+	unset konfig
+	gut "Geraet $ip angelegt (erscheint in der Oberflaeche unter Einstellungen -> System -> VPN-Geraete)"
+	info "Jetzt den Tunnel am Geraet einschalten. Handy zum Testen nicht im selben WLAN wie der Server (mobile Daten)."
+	while true; do
+		for i in $(seq 1 30); do
+			kontakt "$geraet" && { gut "Geraet $ip ist verbunden"; return 0; }
+			sleep 2
+		done
+		cat <<-TXT
+		  Noch kein Kontakt vom Geraet. Haeufige Ursachen:
+		    - UDP $port nicht freigegeben: Portfreigabe im Router bzw. Firewall im Kundenmenue des Anbieters
+		    - Geraet im selben WLAN wie der Server: mobile Daten nutzen
+		    - IPv6-Eintrag (AAAA) der Domain zeigt nicht auf diesen Server (Schritt 4)
+		  Ob Pakete ankommen, zeigt in einem zweiten Fenster: sudo tcpdump -ni any udp port $port
+		TXT
+		ja_nein "Weiter warten?" j || { warnung "Geraet ohne Kontakt. Spaeter pruefen: sudo bash $0 pruefen"; return 0; }
+	done
+}
+
 schritt_erstes_geraet() {
 	titel "8. Erstes Geraet der Einsatzleitung"
-	local code="$APP_ROOT/data/LEITUNG-EINRICHTUNGSCODE.txt" ausgabe ip privat info pub dns
+	local code="$APP_ROOT/data/LEITUNG-EINRICHTUNGSCODE.txt"
 	if grep -q '^# einsatzueberwachung' /etc/wireguard/wg0.conf 2>/dev/null; then
-		gut "VPN-Geraet vorhanden (weitere in der Oberflaeche: Einstellungen -> System -> VPN-Geraete)"
+		gut "VPN-Geraet vorhanden (weitere: sudo bash $0 geraet, oder in der Oberflaeche)"
 	else
-		info "Das erste Geraet (z. B. Laptop der Einsatzleitung) bekommt hier einen QR-Code fuer die WireGuard-App."
-		info "Alle weiteren Geraete legt die Einsatzleitung spaeter in der Oberflaeche an."
+		info "Das erste Geraet (z. B. Handy oder Laptop der Einsatzleitung) wird hier angelegt."
+		info "Weitere Geraete: sudo bash $0 geraet, oder spaeter in der Oberflaeche (Einstellungen -> System -> VPN-Geraete)."
 		ja_nein "Jetzt anlegen?" j || return 0
-		command -v qrencode >/dev/null || DEBIAN_FRONTEND=noninteractive apt-get install -y qrencode >/dev/null
-		ausgabe="$(/usr/local/sbin/einsatz-wg-peer add)"
-		ip="$(sed -n 's/^ip=//p' <<<"$ausgabe")"
-		privat="$(sed -n 's/^private_key=//p' <<<"$ausgabe")"
-		info="$(/usr/local/sbin/einsatz-wg-peer info)"
-		pub="$(sed -n 's/^public_key=//p' <<<"$info")"
-		dns=""
-		grep -qx 'dns=yes' <<<"$info" && dns="$(staffel wert vpn_server_ip)"
-		client_konfig "$privat" "$ip" "$dns" "$pub" "$(staffel wert domain):$(staffel wert vpn_port)" "$(staffel wert vpn_netz)" \
-			| qrencode -t ansiutf8
-		unset privat ausgabe
-		info "WireGuard-App: Tunnel hinzufuegen -> QR-Code scannen. Der Code wird nicht gespeichert."
-		ja_nein "Gescannt?" j || true
+		neues_geraet
 	fi
 	if [[ -f "$code" ]]; then
 		info "Im VPN https://$(staffel wert intern_adresse) oeffnen, „Erstes Einrichten“ waehlen und eingeben:"
@@ -430,14 +497,19 @@ zusammenfassung() {
 
 # ---------- Nur pruefen ----------
 
+# Fuer pruefen und geraet: Quellen einer laufenden oder fertigen Installation
+quelle_finden() {
+	[[ $EUID -eq 0 ]] || abbruch "Bitte als root starten (sudo)."
+	QUELLE="${QUELLE:-$(cd "$(dirname "$0")/.." && pwd)}"
+	[[ -f "$QUELLE/deploy/scripts/einsatz-staffel" ]] || QUELLE="$(ls -dt "$DOWNLOADS"/v* 2>/dev/null | head -n1)"
+	[[ -n "$QUELLE" ]] || abbruch "Keine Quellen gefunden, Installation noch nicht begonnen."
+}
+
 pruefen() {
 	local domain intern fehlt=0
 	punkt() { if eval "$2" >/dev/null 2>&1; then printf '  [ok] %s\n' "$1"; else printf '  [  ] %s\n' "$1"; fehlt=1; fi; }
 	titel "Zustand der Installation"
-	[[ $EUID -eq 0 ]] || abbruch "Bitte als root starten: sudo bash $0 pruefen"
-	QUELLE="${QUELLE:-$(cd "$(dirname "$0")/.." && pwd)}"
-	[[ -f "$QUELLE/deploy/scripts/einsatz-staffel" ]] || QUELLE="$(ls -dt "$DOWNLOADS"/v* 2>/dev/null | head -n1)"
-	[[ -n "$QUELLE" ]] || abbruch "Keine Quellen gefunden, Installation noch nicht begonnen."
+	quelle_finden
 	domain="$(staffel wert domain)"
 	intern="$(staffel wert intern_adresse)"
 	punkt "Einstellungen der Staffel vollstaendig" "staffel pruefen"
@@ -449,6 +521,7 @@ pruefen() {
 	punkt "Team-Zugang in nginx" "[[ -L /etc/nginx/sites-enabled/einsatzueberwachung-public ]]"
 	punkt "Zertifikat $intern" "[[ \"\$(readlink $CRT)\" == /etc/letsencrypt/live/$intern/fullchain.pem ]]"
 	punkt "VPN-Geraet angelegt" "grep -q '^# einsatzueberwachung' /etc/wireguard/wg0.conf"
+	punkt "VPN-Geraet hatte Kontakt" "wg show wg0 latest-handshakes | awk '\$2 > 0' | grep -q ."
 	punkt "Einsatzleitung eingerichtet" "[[ ! -f $APP_ROOT/data/LEITUNG-EINRICHTUNGSCODE.txt ]]"
 	return $fehlt
 }
@@ -456,6 +529,12 @@ pruefen() {
 main() {
 	case "${1:-}" in
 		pruefen) pruefen ;;
+		geraet)
+			quelle_finden
+			[[ -x /usr/local/sbin/einsatz-wg-peer ]] || abbruch "VPN noch nicht eingerichtet, erst die Installation abschliessen."
+			titel "Weiteres VPN-Geraet"
+			neues_geraet
+			;;
 		"")
 			echo "Installationsmanager Einsatzueberwachung. Abbruch jederzeit mit Strg+C, erneuter Start macht weiter."
 			schritt_vorab
@@ -468,7 +547,7 @@ main() {
 			schritt_erstes_geraet
 			zusammenfassung
 			;;
-		*) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+		*) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 	esac
 }
 
