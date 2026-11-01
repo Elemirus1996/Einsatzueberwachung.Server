@@ -1,5 +1,8 @@
 # Deployment auf Ubuntu (VPN-intern)
 
+Neuinstallation für eine Staffel: Schritt für Schritt in [INSTALLATION.md](INSTALLATION.md). Diese Datei beschreibt
+Updates bestehender Server und Hintergründe.
+
 ## 1. Voraussetzungen
 
 - Ubuntu Server 22.04 oder 24.04
