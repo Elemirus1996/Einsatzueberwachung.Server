@@ -17,8 +17,13 @@ Platzhalter in dieser Anleitung:
 
 Erst wenn alle Punkte erfüllt sind, mit Schritt 1 beginnen.
 
-- [ ] **Rechner:** eigener Rechner oder Mietserver (VPS) mit Ubuntu Server 22.04 oder 24.04, 64 Bit (x86_64), dauerhaft
-      eingeschaltet. Der Server ist nur für `linux-x64` gebaut, ein Raspberry Pi (ARM) geht nicht.
+- [ ] **Rechner:** dauerhaft eingeschaltet, 64 Bit, mindestens 1 GB Arbeitsspeicher und 5 GB frei. Eine der Möglichkeiten:
+      - Mietserver (VPS) oder eigener PC mit Ubuntu Server 22.04/24.04 oder Debian 12/13 (x86_64)
+      - Raspberry Pi 4 oder 5 (ab 4 GB) mit Raspberry Pi OS 64 Bit oder Ubuntu Server 24.04; besser mit SSD statt
+        SD-Karte. Das ARM64-Paket gibt es ab der Version nach 1.13.0.
+
+      Gibt es die .NET-Laufzeit nicht als Paket (Debian, Raspberry Pi OS), installiert `setup.sh` sie mit dem Skript von
+      Microsoft. Sie aktualisiert sich dann nicht mit `apt upgrade`, sondern beim erneuten Lauf von `setup.sh`.
 - [ ] **Öffentliche IPv4-Adresse:** Der Internetanschluss braucht eine eigene öffentliche IPv4. Bei DS-Lite oder CGNAT
       (häufig bei Kabel, Glasfaser und Starlink) geht es nicht. Erkennbar daran, dass der Router keine IPv4 oder eine aus
       `100.64.0.0/10` als WAN-Adresse anzeigt, oder dass sie von der Adresse abweicht, die eine „Wie ist meine

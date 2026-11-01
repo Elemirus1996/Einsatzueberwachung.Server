@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Einsatzueberwachung.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -64,7 +65,7 @@ namespace Einsatzueberwachung.Domain.Services
                 foreach (var asset in assets.EnumerateArray())
                 {
                     var name = asset.GetProperty("name").GetString() ?? "";
-                    if (IsLinuxX64Asset(name))
+                    if (IsLinuxAssetFor(name, RuntimeInformation.ProcessArchitecture))
                     {
                         installerUrl = asset.GetProperty("browser_download_url").GetString();
                         break;

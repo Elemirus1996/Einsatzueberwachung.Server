@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Grundinstallation des Servers. Werte der Staffel (Domain, VPN-Netz, VPN-Port) kommen aus
+# Grundinstallation des Servers (Ubuntu 22.04/24.04, Debian 12/13 bzw. Raspberry Pi OS; x86_64 oder ARM64). Werte der Staffel (Domain, VPN-Netz, VPN-Port) kommen aus
 # /etc/einsatzueberwachung/staffel.conf, vorher setzen mit:
 #   sudo bash deploy/scripts/einsatz-staffel setzen domain <name>
 # Kann mehrfach ausgefuehrt werden.
@@ -36,15 +36,29 @@ VPN_PORT="$(bash "$STAFFEL" wert vpn_port)"
 echo "[1/9] Pakete installieren"
 apt-get update
 apt-get install -y nginx ufw curl rsync unzip chrony certbot python3 openssl wireguard
-# Der Server braucht die ASP.NET-Core-Laufzeit (enthaelt die .NET-Laufzeit). Ubuntu 22.04 und 24.04 haben .NET 9
-# nicht in den eigenen Quellen, dort kommt es aus der Paketquelle „dotnet/backports“.
-if ! apt-cache show aspnetcore-runtime-9.0 >/dev/null 2>&1; then
-	echo "  aspnetcore-runtime-9.0 nicht in den Paketquellen, Quelle dotnet/backports einrichten"
-	apt-get install -y software-properties-common
-	add-apt-repository -y ppa:dotnet/backports
-	apt-get update
+# Der Server braucht die ASP.NET-Core-Laufzeit 9 (enthaelt die .NET-Laufzeit). Ubuntu 22.04/24.04 haben sie nicht in den
+# eigenen Quellen, dort kommt sie aus „dotnet/backports“. Gibt es kein Paket (Debian, Raspberry Pi OS, ARM64 ohne Paket),
+# installiert das offizielle Skript von Microsoft nach /usr/share/dotnet; Updates der Laufzeit dann mit setup.sh.
+laufzeit_da() { dotnet --list-runtimes 2>/dev/null | grep -q '^Microsoft.AspNetCore.App 9\.'; }
+if ! laufzeit_da; then
+	OS_ID="$(. /etc/os-release; echo "${ID:-}")"
+	if ! apt-cache show aspnetcore-runtime-9.0 >/dev/null 2>&1 && [[ "$OS_ID" == ubuntu ]]; then
+		echo "  aspnetcore-runtime-9.0 nicht in den Paketquellen, Quelle dotnet/backports einrichten"
+		apt-get install -y software-properties-common
+		add-apt-repository -y ppa:dotnet/backports
+		apt-get update
+	fi
+	if ! apt-get install -y aspnetcore-runtime-9.0; then
+		echo "  Kein Paket aspnetcore-runtime-9.0, installiere mit dem Skript von Microsoft (dot.net)"
+		SKRIPT="$(mktemp)"
+		curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$SKRIPT"
+		bash "$SKRIPT" --channel 9.0 --runtime aspnetcore --install-dir /usr/share/dotnet
+		rm -f "$SKRIPT"
+		ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
+	fi
 fi
-apt-get install -y aspnetcore-runtime-9.0
+laufzeit_da || { echo "ASP.NET-Core-Laufzeit 9 fehlt nach der Installation."; exit 1; }
+echo "  $(dotnet --list-runtimes | grep '^Microsoft.AspNetCore.App 9\.' | tail -n1)"
 
 echo "[1b/9] Zeit-Synchronisierung (chrony) aktivieren"
 systemctl enable chrony
