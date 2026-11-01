@@ -29,14 +29,15 @@ Erst wenn alle Punkte erfüllt sind, mit Schritt 1 beginnen.
 - [ ] **Domain bei Dynu:** Ein kostenloser Hostname bei [Dynu](https://www.dynu.com) (z. B. `….mywire.org`) mit
       API-Key. Bei wechselnder IP die DDNS-Aktualisierung im Router oder mit dem Dynu-Client einrichten. Andere
       DNS-Anbieter sind für die interne Adresse (Schritt 7) noch nicht vorgesehen, siehe „Bekannte Lücken“.
-- [ ] **VPN-Netz frei:** Das VPN nutzt fest `10.10.0.0/24`. Das Heimnetz am Server darf diesen Bereich nicht nutzen.
+- [ ] **VPN-Netz frei:** Das VPN nutzt `10.10.0.0/24`. Nutzt das Heimnetz am Server diesen Bereich schon, in Schritt 2
+      ein anderes Netz wählen (z. B. `10.77.0.0/24`).
 - [ ] **Passwort der Einsatzleitung** festlegen: gemeinsam für die Staffel, mindestens 10 Zeichen.
 - [ ] **Geräte:** WireGuard-App auf allen Geräten der Einsatzleitung (Laptop, Tablet, Handy).
 
 ## 1. Server vorbereiten
 
 ```bash
-sudo apt-get update && sudo apt-get install -y git certbot python3 wireguard
+sudo apt-get update && sudo apt-get install -y git unzip
 git clone https://github.com/Elemirus1996/Einsatzueberwachung.Server.git
 cd Einsatzueberwachung.Server
 git checkout v<version>
@@ -49,15 +50,24 @@ mkdir -p publish/server
 unzip linux-x64-server-<version>.zip -d publish/server
 ```
 
-## 2. Vorläufiges Zertifikat für die interne Adresse
+## 2. Einstellungen der Staffel
 
-`setup.sh` erwartet ein Zertifikat unter `/etc/ssl/certs/einsatz.crt`, sonst bricht `nginx -t` ab. Für den Anfang
-reicht ein selbst ausgestelltes. Es wird in Schritt 7 durch ein gültiges ersetzt.
+Alle Skripte lesen Domain und VPN-Netz aus `/etc/einsatzueberwachung/staffel.conf`. Anlegen mit:
 
 ```bash
-sudo openssl req -x509 -nodes -newkey rsa:2048 -days 30 -subj "/CN=einsatz" \
-  -keyout /etc/ssl/private/einsatz.key -out /etc/ssl/certs/einsatz.crt
+sudo bash deploy/scripts/einsatz-staffel setzen domain <domain>
+sudo bash deploy/scripts/einsatz-staffel zeigen
 ```
+
+Nur wenn nötig (siehe Checkliste):
+
+```bash
+sudo bash deploy/scripts/einsatz-staffel setzen vpn_netz 10.77.0.0/24      # Heimnetz nutzt schon 10.10.0.x
+sudo bash deploy/scripts/einsatz-staffel setzen vpn_port 51821             # 51820 schon belegt
+```
+
+`zeigen` gibt auch die abgeleiteten Werte aus: `vpn_server_ip` (VPN-Adresse des Servers, Standard `10.10.0.1`) und
+`intern_adresse` (`el.<domain>`). In dieser Anleitung steht `<vpn-ip>` für `vpn_server_ip`.
 
 ## 3. Grundinstallation
 
@@ -65,54 +75,33 @@ sudo openssl req -x509 -nodes -newkey rsa:2048 -days 30 -subj "/CN=einsatz" \
 sudo bash deploy/setup.sh
 ```
 
-Installiert nginx, chrony und die .NET-Laufzeit. Legt den Benutzer `einsatz` und `/opt/einsatzueberwachung`
-an, kopiert `publish/server` dorthin, aktiviert Dienst, Backup (täglich 03:30) und Healthcheck und richtet die
-Firewall ein (22, 443, 51820/udp).
+Installiert nginx, chrony, certbot, WireGuard und die ASP.NET-Core-Laufzeit 9 (bei Bedarf aus der Paketquelle
+`dotnet/backports`). Legt den Benutzer `einsatz` und `/opt/einsatzueberwachung` an, kopiert `publish/server` dorthin,
+aktiviert Dienst, Backup (täglich 03:30) und Healthcheck, stellt ein vorläufiges Zertifikat für die interne Adresse aus
+(wird in Schritt 7 ersetzt), legt `/etc/wireguard/wg0.conf` an und richtet die Firewall ein (22, 80, 443 und den
+VPN-Port per UDP). Bricht ab, wenn die Einstellungen aus Schritt 2 fehlen oder ungültig sind.
 
-Der Server braucht die **ASP.NET Core Runtime 9** (`aspnetcore-runtime-9.0`). `setup.sh` installiert nur
-`dotnet-runtime-9.0`. Startet der Dienst nicht (`systemctl status einsatzueberwachung-server.service`), zusätzlich
-installieren:
-
-```bash
-sudo apt-get install -y aspnetcore-runtime-9.0
-sudo systemctl restart einsatzueberwachung-server.service
-```
-
-Findet apt das Paket nicht, die Paketquelle von Microsoft für Ubuntu einrichten (Microsoft-Doku „.NET unter Ubuntu
-installieren“).
-
-## 4. WireGuard einrichten
+Prüfen:
 
 ```bash
-wg genkey | sudo tee /etc/wireguard/server.key | wg pubkey | sudo tee /etc/wireguard/server.pub
-sudo chmod 600 /etc/wireguard/server.key
+systemctl status einsatzueberwachung-server.service
+sudo wg show wg0                      # muss "listening port: 51820" (bzw. vpn_port) zeigen
 ```
 
-`/etc/wireguard/wg0.conf` anlegen, nur der `[Interface]`-Teil aus `deploy/wireguard/wg0.conf.example`:
+## 4. WireGuard
 
-```ini
-[Interface]
-Address = 10.10.0.1/24
-ListenPort = 51820
-PrivateKey = <Inhalt von /etc/wireguard/server.key>
-```
-
-```bash
-sudo chmod 600 /etc/wireguard/wg0.conf
-sudo systemctl enable --now wg-quick@wg0
-sudo wg show wg0                      # muss "listening port: 51820" zeigen
-```
-
-Geräte werden nicht von Hand eingetragen, sondern in Schritt 9 per QR-Code.
+`setup.sh` hat WireGuard schon eingerichtet. Eine vorhandene `/etc/wireguard/wg0.conf` lässt es unverändert und warnt,
+wenn Adresse oder Port nicht zu `staffel.conf` passen. Geräte werden nicht von Hand eingetragen, sondern in Schritt 9
+per QR-Code.
 
 ## 5. VPN-Geräte und DNS im VPN
 
 ```bash
-sudo bash deploy/scripts/setup-vpn.sh <domain>
+sudo bash deploy/scripts/setup-vpn.sh
 ```
 
 Installiert das Hilfsprogramm für VPN-Geräte (QR-Code aus der Oberfläche) und `dnsmasq`, das nur im VPN antwortet:
-Dort zeigt `<domain>` auf `10.10.0.1`, Geräte im VPN bekommen so die volle Oberfläche.
+Dort zeigt `<domain>` auf `<vpn-ip>`, Geräte im VPN bekommen so die volle Oberfläche.
 
 ## 6. Öffentliche Domain und Team-Zugang
 
@@ -121,17 +110,15 @@ Bei Dynu muss `<domain>` auf die öffentliche IPv4 zeigen (DDNS aus Schritt 0).
 Erstes Zertifikat ausstellen. nginx kurz anhalten, weil certbot dafür selbst Port 80 braucht:
 
 ```bash
-sudo ufw allow 80/tcp
 sudo systemctl stop nginx
 sudo certbot certonly --standalone -d <domain> --cert-name <domain>
 sudo systemctl start nginx
 ```
 
-nginx-Konfiguration für den Team-Zugang übernehmen. Die Vorlage enthält die Beispiel-Domain `dein-einsatz.mywire.org`,
-die hier ersetzt wird:
+nginx-Konfiguration für den Team-Zugang aus der Vorlage übernehmen, `einsatz-staffel` setzt Domain und VPN-Netz ein:
 
 ```bash
-sed "s/dein-einsatz\.mywire\.org/<domain>/g" deploy/nginx/einsatzueberwachung-public.conf \
+sudo einsatz-staffel vorlage deploy/nginx/einsatzueberwachung-public.conf \
   | sudo tee /etc/nginx/sites-available/einsatzueberwachung-public >/dev/null
 sudo ln -sf /etc/nginx/sites-available/einsatzueberwachung-public /etc/nginx/sites-enabled/einsatzueberwachung-public
 sudo nginx -t && sudo systemctl reload nginx
@@ -140,7 +127,7 @@ sudo nginx -t && sudo systemctl reload nginx
 Verlängerung auf den Webroot-Weg umstellen und den Knopf „Jetzt erneuern“ freischalten:
 
 ```bash
-sudo bash deploy/scripts/setup-zertifikat.sh <domain>
+sudo bash deploy/scripts/setup-zertifikat.sh
 sudo certbot renew --dry-run          # muss „Congratulations, all simulated renewals succeeded“ melden
 ```
 
@@ -148,23 +135,24 @@ Prüfen, von außen (Handy ohne WLAN, ohne VPN): `https://<domain>/team` zeigt d
 
 ## 7. Gültiges Zertifikat für die interne Adresse
 
-Die EL-App lehnt das vorläufige Zertifikat aus Schritt 2 ab.
+Die EL-App lehnt das vorläufige Zertifikat aus Schritt 3 ab.
 
-1. Bei Dynu (DDNS → Hostname → DNS Records) einen A-Eintrag anlegen: Node Name `el`, IPv4 `10.10.0.1`.
+1. Bei Dynu (DDNS → Hostname → DNS Records) einen A-Eintrag anlegen: Node Name `el`, IPv4 `<vpn-ip>`.
 2. Bei Dynu unter „API Credentials“ den API-Key nachsehen.
 3. Auf dem Server:
 
 ```bash
-sudo bash deploy/scripts/setup-intern-zertifikat.sh el.<domain>    # fragt einmal nach dem API-Key
+sudo bash deploy/scripts/setup-intern-zertifikat.sh                # fragt einmal nach dem API-Key
 sudo certbot renew --dry-run --cert-name el.<domain>
 ```
 
-Das Skript holt das Zertifikat über einen TXT-Eintrag bei Dynu und ersetzt `/etc/ssl/certs/einsatz.crt`. Der Server
-muss dafür nicht von außen erreichbar sein.
+Das Skript holt das Zertifikat für `el.<domain>` über einen TXT-Eintrag bei Dynu und ersetzt
+`/etc/ssl/certs/einsatz.crt`. Der Server muss dafür nicht von außen erreichbar sein.
 
 ## 8. Erstes Gerät und Passwort der Einsatzleitung
 
-Die interne Oberfläche ist nur aus dem VPN erreichbar (nginx lässt nur `10.10.0.0/24` zu). QR-Codes für Geräte gibt es
+Die interne Oberfläche ist nur aus dem VPN erreichbar (nginx lässt nur `vpn_netz` zu, Standard `10.10.0.0/24`; die
+Beispiele unten nutzen das Standardnetz). QR-Codes für Geräte gibt es
 erst nach der Anmeldung, das erste Gerät (Laptop der Einsatzleitung) wird deshalb einmalig von Hand eingetragen.
 
 Auf dem Server:
@@ -217,10 +205,8 @@ prüfen (Abschnitt 5 dort).
 
 Diese Punkte sind noch nicht gelöst und werden in den Skripten nachgezogen:
 
-- Die Schritte 2, 4, 6 (erstes Zertifikat, nginx-Vorlage) und die zusätzliche ASP.NET-Laufzeit macht `setup.sh` noch
-  nicht selbst.
+- Schritt 6 (öffentliches Zertifikat und nginx-Vorlage) geht noch von Hand.
 - Das interne Zertifikat (Schritt 7) geht nur mit Dynu. Bei anderem DNS-Anbieter bleibt nur die Ausstellung von Hand
   (`certbot certonly --manual --preferred-challenges dns -d el.<domain>`), die alle 90 Tage wiederholt werden muss.
-- Das VPN-Netz `10.10.0.0/24` steht fest in `wg0.conf.example`, beiden nginx-Dateien und `setup-vpn.sh`.
 - Ein vorhandenes VPN (z. B. im Router) statt WireGuard auf dem Server ist nicht vorgesehen.
 - Diese Anleitung ist noch nicht auf einem frischen Server durchgespielt worden.

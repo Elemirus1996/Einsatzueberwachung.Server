@@ -2,6 +2,7 @@
 # Einmalige Einrichtung: Zertifikat der oeffentlichen Domain per Webroot verlaengern und den Knopf
 # „Jetzt erneuern“ (Einstellungen → System, Hinweis auf Startseite/EL) freischalten (Einsatzueberwachung ab 1.11.6).
 #
+#   sudo bash deploy/scripts/setup-zertifikat.sh              Domain aus staffel.conf (einsatz-staffel)
 #   sudo bash deploy/scripts/setup-zertifikat.sh <domain>     z. B. dein-einsatz.mywire.org
 #
 # Voraussetzung: certbot ist installiert, die neue einsatzueberwachung-public.conf (Port-80-Block mit
@@ -11,7 +12,7 @@ set -euo pipefail
 APP_USER="einsatz"
 WEBROOT="/var/www/certbot"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-DOMAIN="${1:-}"
+DOMAIN="${1:-$(bash "$HERE/einsatz-staffel" wert domain)}"
 
 [[ $EUID -eq 0 ]] || { echo "Bitte als root ausfuehren (sudo)."; exit 1; }
 [[ "$DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || { echo "Aufruf: setup-zertifikat.sh <domain>"; exit 1; }

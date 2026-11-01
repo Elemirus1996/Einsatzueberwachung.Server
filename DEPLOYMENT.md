@@ -94,7 +94,8 @@ sudo systemctl start einsatzueberwachung-server.service einsatzueberwachung-mobi
 
 Beispielkonfiguration in `deploy/wireguard/wg0.conf.example`.
 
-Das VPN-Netz ist `10.10.0.0/24` und muss zu `allow 10.10.0.0/24` in `deploy/nginx/einsatzueberwachung.conf` passen.
+Das VPN-Netz ist standardmäßig `10.10.0.0/24` und steht in `/etc/einsatzueberwachung/staffel.conf` (`einsatz-staffel`, siehe
+[INSTALLATION.md](INSTALLATION.md)). `setup.sh` und `einsatz-staffel vorlage` setzen es in die nginx-Dateien ein.
 
 ### VPN-Geräte per QR-Code und DNS im VPN (ab 1.10)
 

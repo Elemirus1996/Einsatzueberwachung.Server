@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Einmalige Einrichtung: gueltiges Let's-Encrypt-Zertifikat fuer die interne Adresse (nur im VPN erreichbar),
-# z. B. el.dein-einsatz.mywire.org → 10.10.0.1. Ersetzt das selbst ausgestellte Zertifikat, dem die EL-App nicht vertraut.
+# z. B. el.dein-einsatz.mywire.org → VPN-IP des Servers (Standard 10.10.0.1). Ersetzt das selbst ausgestellte Zertifikat, dem die EL-App nicht vertraut.
 # Die Pruefung laeuft ueber einen TXT-Eintrag bei Dynu (DNS-01), der Server muss dafuer nicht von aussen erreichbar sein.
 #
+#   sudo bash deploy/scripts/setup-intern-zertifikat.sh                       el.<domain> aus staffel.conf
 #   sudo bash deploy/scripts/setup-intern-zertifikat.sh <interne-adresse>     z. B. el.dein-einsatz.mywire.org
 #
 # Voraussetzung: certbot, curl und python3 sind installiert; bei Dynu zeigt der A-Eintrag der internen Adresse auf die
@@ -10,7 +11,8 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-HOST="${1:-}"
+HOST="${1:-$(bash "$HERE/einsatz-staffel" wert intern_adresse)}"
+VPN_IP="$(bash "$HERE/einsatz-staffel" wert vpn_server_ip)"
 CONF="/etc/einsatzueberwachung/dynu.conf"
 HOOK="/usr/local/sbin/einsatz-dynu-dns"
 CRT="/etc/ssl/certs/einsatz.crt"
@@ -22,10 +24,10 @@ for p in certbot curl python3; do command -v "$p" >/dev/null || { echo "$p fehlt
 
 echo "[1/5] Adresse pruefen"
 IP="$(python3 -c 'import socket,sys; print(socket.gethostbyname(sys.argv[1]))' "$HOST" 2>/dev/null || true)"
-if [[ "$IP" =~ ^10\. ]]; then
+if [[ "$IP" == "$VPN_IP" ]]; then
 	echo "  $HOST → $IP"
 else
-	echo "  WARNUNG: $HOST zeigt nicht auf eine VPN-IP (${IP:-nicht aufloesbar}). Eintrag bei Dynu pruefen."
+	echo "  WARNUNG: $HOST zeigt nicht auf die VPN-IP $VPN_IP (${IP:-nicht aufloesbar}). Eintrag bei Dynu pruefen."
 fi
 
 echo "[2/5] Dynu-API-Key"
@@ -65,7 +67,7 @@ systemctl reload nginx
 
 echo "[5/5] Pruefen"
 # Vom Server selbst ueber die VPN-IP; ein gueltiges Zertifikat ist Voraussetzung, sonst bricht curl ab
-if CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 --resolve "$HOST:443:${IP:-10.10.0.1}" "https://$HOST/")"; then
+if CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 --resolve "$HOST:443:${IP:-$VPN_IP}" "https://$HOST/")"; then
 	echo "  https://$HOST/ antwortet mit Zertifikat von Let's Encrypt (HTTP $CODE)."
 else
 	echo "  WARNUNG: https://$HOST/ nicht pruefbar (siehe Meldung oben)."

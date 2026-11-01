@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Einmalige Einrichtung fuer VPN-Geraete per QR-Code und DNS im VPN (Einsatzueberwachung ab 1.10).
 #
+#   sudo bash deploy/scripts/setup-vpn.sh              Domain aus staffel.conf (einsatz-staffel)
 #   sudo bash deploy/scripts/setup-vpn.sh <domain>     z. B. dein-einsatz.mywire.org
-#   sudo bash deploy/scripts/setup-vpn.sh              nur VPN-Geraete, ohne DNS
+#   sudo bash deploy/scripts/setup-vpn.sh -            nur VPN-Geraete, ohne DNS
 #
 # Voraussetzung: WireGuard laeuft auf diesem Server als wg0 (deploy/wireguard/wg0.conf.example).
 # Das Skript kann mehrfach ausgefuehrt werden.
@@ -11,7 +12,8 @@ set -euo pipefail
 APP_USER="einsatz"
 WG_IF="wg0"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-DOMAIN="${1:-}"
+DOMAIN="${1:-$(bash "$HERE/einsatz-staffel" wert domain)}"
+[[ "$DOMAIN" == "-" ]] && DOMAIN=""
 
 [[ $EUID -eq 0 ]] || { echo "Bitte als root ausfuehren (sudo)."; exit 1; }
 ip link show "$WG_IF" >/dev/null 2>&1 || { echo "WireGuard-Schnittstelle $WG_IF nicht gefunden."; exit 1; }
