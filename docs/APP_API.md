@@ -110,7 +110,7 @@ Alles, was die Ansicht beim Öffnen braucht (Grundlage: heutige Team-Seite).
   "team": { "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"] },
   "suche": { "status": "laeuft", "seit": "2026-10-28T08:40:00Z", "dauerSec": 2100, "darfSteuern": true },
   "suchgebiet": { "id": "…", "name": "Gebiet A", "farbe": "#2f6fd6", "punkte": [ { "lat": 49.31, "lng": 8.43 } ] },
-  "halsband": { "id": "HB-7", "name": "Halsband 7", "lat": 49.312, "lng": 8.431, "zeit": "2026-10-28T09:14:48Z", "akku": 72 },
+  "halsband": { "id": "HB-7", "name": "Halsband 7", "lat": 49.312, "lng": 8.431, "zeit": "2026-10-28T09:14:48Z", "akku": 3 },
   "mitteilungen": [ { "id": "…", "text": "Bitte Funkkontakt", "zeit": "2026-10-28T09:10:00Z" } ]
 }
 ```
@@ -120,6 +120,7 @@ Alles, was die Ansicht beim Öffnen braucht (Grundlage: heutige Team-Seite).
 - `suche.darfSteuern`: `true`, wenn das Team die Suche selbst steuern darf (Abschnitt 11, Einstellung auf dem Server).
   Bei `false` blendet die App die Knöpfe aus.
 - `suchgebiet` und `halsband` sind `null`, wenn keins zugewiesen ist bzw. noch keine Position vorliegt. `akku` fehlt, wenn unbekannt.
+- Garmin-Halsband-`akku` ist eine Stufe, kein Prozentwert: 4 voll, 3 hoch, 2 mittel, 1 niedrig (Warnung). Die Bedeutung von 0 und 1 ist noch nicht am Gerät bestätigt; 0 löst keine Akkuwarnung aus. Unbekannte bzw. ungültige Werte sind `null` oder fehlen. Handy-Akkuwerte sind dagegen Prozentwerte.
 - `helfer` ist eine Liste (ein Team kann mehrere Helfer haben).
 - `mitteilungen`: die letzten 20 Mitteilungen der Einsatzleitung an dieses Team, **älteste zuerst**. Sie bleiben für den
   laufenden Einsatz gespeichert (auch über einen Neustart des Servers), damit die App sie nach Funkloch oder Hintergrund nachholt.
@@ -448,7 +449,7 @@ ohne das Staffel-Passwort erneut einzugeben. Antwort `200` wie `/login`, zusätz
       "suche": { "status": "laeuft", "seit": "…Z", "dauerSec": 2100 },
       "warnstufe": 0, "warnung1Min": 45, "warnung2Min": 60,
       "suchgebiet": { "id": "…", "name": "Gebiet A", "farbe": "#2f6fd6" },
-      "halsband": { "id": "HB-7", "name": "Halsband 7", "zeit": "…Z", "akku": 72 },
+      "halsband": { "id": "HB-7", "name": "Halsband 7", "zeit": "…Z", "akku": 3 },
       "handy": { "zeit": "…Z", "akku": 64 },
       "pause": { "erforderlichBis": "…Z" }
   } ],

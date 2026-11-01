@@ -139,15 +139,14 @@ namespace Einsatzueberwachung.LiveTracking.Services
             BitConverter.GetBytes(gpsTimestamp).CopyTo(payload, 8);
             // Offset 12-15: Altitude (float)
             BitConverter.GetBytes(altitude).CopyTo(payload, 12);
-            // Offset 16-19: RawStatusA — battery=3, comm=3, gps=3 (all max)
-            //   LSB: gps(2bits)<<4 | comm(2bits)<<2 | batt(2bits) = 0b00_11_11_11 = 0x3F
+            // Offset 16-19: RawStatusA — simulated communication and GPS status
             BitConverter.GetBytes((uint)0x0000003F).CopyTo(payload, 16);
             // Offset 20-23: RawStatusB — ID lives at bytes 22-23
             payload[20] = 0x01; // StatusByte20
             payload[21] = 0x00; // ColorCandidateByte21
             BitConverter.GetBytes(id).CopyTo(payload, 22); // ID at byte 22-23
-            // Offset 24-25: RawStatusC
-            BitConverter.GetBytes((ushort)0).CopyTo(payload, 24);
+            // Offset 24-25: RawStatusC; byte 25 is the observed battery level (4 = full)
+            payload[25] = 4;
             // Offset 26-30: reserved (zeros)
             // Offset 31+: Dog name (null-terminated ASCII)
             byte[] nameBytes = Encoding.ASCII.GetBytes(name);

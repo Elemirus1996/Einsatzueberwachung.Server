@@ -171,7 +171,7 @@ public sealed class CollarTrackingRelayService : IHostedService
         _warningService.AddWarning(new WarningEntry
         {
             Title = "Halsband-Akku niedrig",
-            Message = $"Halsband \"{collarLabel}\" (Team: {teamLabel}) meldet niedrigen Akkustand (1/3).",
+            Message = $"Halsband \"{collarLabel}\" (Team: {teamLabel}) meldet niedrigen Akkustand (Stufe 1/4).",
             Level = WarningLevel.Warning,
             TeamId = team.TeamId,
             NavigationUrl = $"/einsatz-karte?focusCollarId={Uri.EscapeDataString(collarId)}",
