@@ -77,7 +77,7 @@ Für die Handys der Teams ist eine öffentliche Adresse mit Zertifikat nötig, z
 
 ## 🚀 Installation auf Ubuntu
 
-Vollständige Anleitung: [`DEPLOYMENT.md`](DEPLOYMENT.md)
+Neuinstallation für eine Staffel: [`INSTALLATION.md`](INSTALLATION.md). Updates und Hintergründe: [`DEPLOYMENT.md`](DEPLOYMENT.md)
 
 ```bash
 sudo bash deploy/setup.sh                                          # .NET-Laufzeit, nginx, systemd, Firewall, Backups
