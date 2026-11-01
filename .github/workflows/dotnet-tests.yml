@@ -44,6 +44,9 @@ jobs:
       - name: Einstellungen der Staffel testen (einsatz-staffel)
         run: bash deploy/scripts/test-einsatz-staffel.sh
 
+      - name: Installationsmanager testen (Hilfsfunktionen)
+        run: bash -n deploy/einsatz-installation && bash deploy/scripts/test-einsatz-installation.sh
+
       - name: nginx-Vorlagen pruefen (nginx -t)
         run: |
           command -v nginx >/dev/null || (sudo apt-get update && sudo apt-get install -y nginx)
