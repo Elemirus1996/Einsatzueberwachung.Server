@@ -742,6 +742,10 @@ public partial class EinsatzMonitor
         _ => string.Empty
     };
 
+    internal static IOrderedEnumerable<Team> OrderTeamsForMonitor(IEnumerable<Team> teams) =>
+        teams.OrderBy(team => team.IsPausing ? 3 : team.IsRunning || team.IsManuallyPaused ? 0 : 1)
+            .ThenBy(team => team.TeamName);
+
     private IEnumerable<Team> GetFilteredTeams()
     {
         var teams = EinsatzService.Teams.AsEnumerable();
