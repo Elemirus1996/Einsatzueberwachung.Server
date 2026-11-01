@@ -7,11 +7,13 @@
 #   sudo bash einsatz-installation pruefen    nur pruefen, was fertig ist, nichts aendern
 #
 # Laeuft aus einem Checkout des Repos (deploy/einsatz-installation) oder einzeln heruntergeladen; dann holt er das
-# neueste Release von GitHub nach /opt/einsatzueberwachung/installation/.
+# neueste Release von GitHub nach /var/lib/einsatz-installation/ (nur root, nicht unter /opt/einsatzueberwachung, das
+# setup.sh dem Dienstbenutzer uebergibt: dort koennte der Dienst Skripte veraendern, die root spaeter ausfuehrt).
 set -euo pipefail
 
 GH_REPO="Elemirus1996/Einsatzueberwachung.Server"
 APP_ROOT="/opt/einsatzueberwachung"
+DOWNLOADS="/var/lib/einsatz-installation"
 STAFFEL_CONF="${EINSATZ_STAFFEL_CONF:-/etc/einsatzueberwachung/staffel.conf}"
 SITE_PUBLIC="/etc/nginx/sites-available/einsatzueberwachung-public"
 CRT="/etc/ssl/certs/einsatz.crt"
@@ -174,7 +176,8 @@ schritt_quelle() {
 		|| abbruch "Neuestes Release nicht abrufbar."
 	{ read -r tag; read -r url; } < <(release_aus_json <<<"$json") || abbruch "Release ohne Linux-Paket."
 	[[ "$tag" =~ ^v[0-9A-Za-z.-]+$ ]] || abbruch "Unerwarteter Release-Name: $tag"
-	ziel="$APP_ROOT/installation/$tag"
+	install -d -o root -g root -m 700 "$DOWNLOADS"
+	ziel="$DOWNLOADS/$tag"
 	if [[ -z "$QUELLE" ]]; then
 		QUELLE="$ziel"
 		if [[ ! -f "$QUELLE/deploy/setup.sh" ]]; then
@@ -417,7 +420,7 @@ pruefen() {
 	titel "Zustand der Installation"
 	[[ $EUID -eq 0 ]] || abbruch "Bitte als root starten: sudo bash $0 pruefen"
 	QUELLE="${QUELLE:-$(cd "$(dirname "$0")/.." && pwd)}"
-	[[ -f "$QUELLE/deploy/scripts/einsatz-staffel" ]] || QUELLE="$(ls -dt "$APP_ROOT"/installation/v* 2>/dev/null | head -n1)"
+	[[ -f "$QUELLE/deploy/scripts/einsatz-staffel" ]] || QUELLE="$(ls -dt "$DOWNLOADS"/v* 2>/dev/null | head -n1)"
 	[[ -n "$QUELLE" ]] || abbruch "Keine Quellen gefunden, Installation noch nicht begonnen."
 	domain="$(staffel wert domain)"
 	intern="$(staffel wert intern_adresse)"
