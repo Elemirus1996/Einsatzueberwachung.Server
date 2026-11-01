@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Hook fuer certbot (DNS-Pruefung) beim Zertifikat der internen Adresse, z. B. el.dein-einsatz.mywire.org:
+# setzt bzw. loescht den TXT-Eintrag _acme-challenge.<name> ueber die Dynu-API v2.
+# Eingerichtet von setup-intern-zertifikat.sh; der API-Key steht root-eigen in /etc/einsatzueberwachung/dynu.conf.
+#
+#   einsatz-dynu-dns auth      (--manual-auth-hook)     certbot setzt CERTBOT_DOMAIN und CERTBOT_VALIDATION
+#   einsatz-dynu-dns cleanup   (--manual-cleanup-hook)
+#
+# Der API-Key wird nie ausgegeben; curl bekommt ihn ueber eine Header-Datei, nicht ueber die Befehlszeile.
+set -euo pipefail
+
+CONF="/etc/einsatzueberwachung/dynu.conf"
+API="https://api.dynu.com/v2"
+CURL="curl"
+WARTEN_SEC=60
+# Nur fuer den Test ohne root (deploy/scripts/test-einsatz-dynu-dns.sh) umbiegbar
+if [[ $EUID -ne 0 ]]; then
+	CONF="${EINSATZ_DYNU_CONF:-$CONF}"
+	CURL="${EINSATZ_DYNU_CURL:-$CURL}"
+	WARTEN_SEC="${EINSATZ_DYNU_WARTEN:-$WARTEN_SEC}"
+fi
+
+[[ -r "$CONF" ]] || { echo "Nicht eingerichtet: $CONF fehlt (setup-intern-zertifikat.sh ausfuehren)." >&2; exit 2; }
+KEY="$(awk -F= '$1=="api_key" {print substr($0, index($0, "=") + 1)}' "$CONF")"
+[[ -n "$KEY" ]] || { echo "api_key fehlt in $CONF" >&2; exit 2; }
+DOMAIN="${CERTBOT_DOMAIN:-}"
+WERT="${CERTBOT_VALIDATION:-}"
+[[ "$DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || { echo "CERTBOT_DOMAIN fehlt oder ungueltig" >&2; exit 2; }
+
+HEADER="$(mktemp)"
+trap 'rm -f "$HEADER"' EXIT
+chmod 600 "$HEADER"
+printf 'API-Key: %s\nAccept: application/json\n' "$KEY" >"$HEADER"
+
+# $1 Methode, $2 Pfad, $3 JSON-Koerper (optional)
+api() {
+	if [[ -n "${3:-}" ]]; then
+		"$CURL" -fsS --max-time 30 -X "$1" -H @"$HEADER" -H "Content-Type: application/json" --data "$3" "$API$2"
+	else
+		"$CURL" -fsS --max-time 30 -X "$1" -H @"$HEADER" "$API$2"
+	fi
+}
+
+json() { # $1 Python-Ausdruck auf j (geparste Antwort von stdin)
+	python3 -c "import json,sys; j=json.load(sys.stdin); print($1)"
+}
+
+# Domain bei Dynu (z. B. dein-einsatz.mywire.org) und Knotenname des TXT-Eintrags (z. B. _acme-challenge.el)
+WURZEL="$(api GET "/dns/getroot/$DOMAIN")"
+DNS_ID="$(json 'j["id"]' <<<"$WURZEL")"
+WURZELNAME="$(json 'j["domainName"]' <<<"$WURZEL")"
+[[ "$DNS_ID" =~ ^[0-9]+$ ]] || { echo "Domain $DOMAIN bei Dynu nicht gefunden" >&2; exit 1; }
+KNOTEN="_acme-challenge"
+[[ "$DOMAIN" == "$WURZELNAME" ]] || KNOTEN="_acme-challenge.${DOMAIN%."$WURZELNAME"}"
+
+case "${1:-}" in
+	auth)
+		[[ -n "$WERT" ]] || { echo "CERTBOT_VALIDATION fehlt" >&2; exit 2; }
+		KOERPER="$(KNOTEN="$KNOTEN" WERT="$WERT" python3 -c 'import json,os; print(json.dumps({"nodeName": os.environ["KNOTEN"], "recordType": "TXT", "textData": os.environ["WERT"], "state": True, "ttl": 90}))')"
+		api POST "/dns/$DNS_ID/record" "$KOERPER" >/dev/null
+		echo "TXT $KNOTEN.$WURZELNAME gesetzt, warte ${WARTEN_SEC}s auf die Verteilung."
+		sleep "$WARTEN_SEC"
+		;;
+	cleanup)
+		# Alle TXT-Eintraege mit genau diesem Knoten und Pruefwert entfernen
+		IDS="$(api GET "/dns/$DNS_ID/record" | KNOTEN="$KNOTEN" WERT="$WERT" python3 -c '
+import json, os, sys
+for r in json.load(sys.stdin).get("dnsRecords", []):
+    if r.get("recordType") == "TXT" and r.get("nodeName") == os.environ["KNOTEN"] and r.get("textData") == os.environ["WERT"]:
+        print(r["id"])')"
+		for id in $IDS; do
+			[[ "$id" =~ ^[0-9]+$ ]] && api DELETE "/dns/$DNS_ID/record/$id" >/dev/null
+		done
+		;;
+	*)
+		echo "Aufruf: einsatz-dynu-dns auth|cleanup" >&2
+		exit 2
+		;;
+esac

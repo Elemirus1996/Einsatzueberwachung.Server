@@ -38,6 +38,9 @@ jobs:
       - name: Zertifikat-Hilfsprogramm testen
         run: bash deploy/scripts/test-einsatz-zertifikat.sh
 
+      - name: Dynu-Hook fuer das interne Zertifikat testen
+        run: bash deploy/scripts/test-einsatz-dynu-dns.sh
+
       - name: nginx-Vorlagen pruefen (nginx -t)
         run: |
           command -v nginx >/dev/null || (sudo apt-get update && sudo apt-get install -y nginx)

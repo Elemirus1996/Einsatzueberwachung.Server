@@ -184,6 +184,31 @@ vermerkt den Vorgang im Audit-Log. Schlägt er fehl, ist meist Port 80 von auße
 
 Prüfen, bis wann das Zertifikat gilt: `sudo certbot certificates`.
 
+### Zertifikat der internen Adresse für die EL-App (ab 1.13)
+
+Die interne nginx-Konfiguration nutzte bisher ein selbst ausgestelltes Zertifikat. Im Browser lässt sich die Warnung
+wegklicken, **die EL-App (iOS und Android) lehnt es ab** und meldet beim Anmelden einen Fehler. Abhilfe ist eine eigene
+interne Adresse mit gültigem Let's-Encrypt-Zertifikat, z. B. `el.dein-einsatz.mywire.org`:
+
+1. Bei Dynu (DDNS → Hostname → DNS Records) einen A-Eintrag anlegen: Node Name `el`, IPv4 = VPN-IP des Servers
+   (`10.10.0.1`). Der Name ist öffentlich auflösbar, erreichbar ist der Server darunter aber nur im VPN.
+2. Bei Dynu unter „API Credentials“ den API-Key nachsehen.
+3. Auf dem Server:
+
+```bash
+sudo bash deploy/scripts/setup-intern-zertifikat.sh el.dein-einsatz.mywire.org   # fragt einmal nach dem API-Key
+sudo certbot renew --dry-run --cert-name el.dein-einsatz.mywire.org              # automatische Verlängerung prüfen
+```
+
+Das Skript speichert den API-Key root-eigen in `/etc/einsatzueberwachung/dynu.conf` (nur root lesbar), installiert den
+certbot-Hook `/usr/local/sbin/einsatz-dynu-dns` (setzt und löscht den TXT-Eintrag `_acme-challenge.el` über die Dynu-API),
+stellt das Zertifikat über die DNS-Prüfung aus und verweist `/etc/ssl/certs/einsatz.crt` und `/etc/ssl/private/einsatz.key`
+auf das neue Zertifikat. Das alte selbst ausgestellte bleibt als `*.selbst-<datum>` liegen. Die interne nginx-Konfiguration
+bleibt unverändert. Verlängert wird mit dem vorhandenen certbot-Timer, ohne dass der Server von außen erreichbar sein muss.
+
+In der EL-App und im Browser (bei eingeschaltetem WireGuard) dann `el.dein-einsatz.mywire.org` als Adresse verwenden.
+Nicht die WireGuard-Adresse (`…:51820`) und nicht die öffentliche Adresse der Teams.
+
 ### Anmeldung der Einsatzleitung (ab 1.10)
 
 Alle Seiten und Schnittstellen außer der Team-Ansicht verlangen eine Anmeldung mit dem gemeinsamen Passwort der Staffel.
