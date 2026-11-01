@@ -12,7 +12,9 @@ set -euo pipefail
 CONF="/etc/einsatzueberwachung/dynu.conf"
 API="https://api.dynu.com/v2"
 CURL="curl"
-WARTEN_SEC=60
+# Laenger als die TTL des TXT-Eintrags (90 s): sonst sieht Let's Encrypt bei schnell aufeinanderfolgenden Laeufen
+# (z. B. Testverlaengerung direkt nach dem Ausstellen) noch den zwischengespeicherten alten Pruefwert
+WARTEN_SEC=120
 # Nur fuer den Test ohne root (deploy/scripts/test-einsatz-dynu-dns.sh) umbiegbar
 if [[ $EUID -ne 0 ]]; then
 	CONF="${EINSATZ_DYNU_CONF:-$CONF}"
