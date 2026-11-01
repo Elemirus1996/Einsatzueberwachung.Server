@@ -15,6 +15,7 @@
         </div>
     }
 
+
     @if (!HasActiveEinsatz)
     {
         <div class="monitor-screensaver">
@@ -219,9 +220,7 @@
                                     else
                                     {
                                         <div class="teams-monitor-list">
-                                            @foreach (var team in GetFilteredTeams()
-                                                .OrderBy(team => team.IsPausing ? 3 : team.IsManuallyPaused ? 2 : team.IsRunning ? 0 : 1)
-                                                .ThenBy(team => team.TeamName))
+                                            @foreach (var team in OrderTeamsForMonitor(GetFilteredTeams()))
                                             {
                                                 var isDogConflict = !team.IsRunning && !team.IsPausing && !team.IsManuallyPaused
                                                     && !string.IsNullOrWhiteSpace(team.DogId)
@@ -1192,7 +1191,7 @@
                     {
                         <div class="col-12">
                             <label class="form-label">Hund</label>
-                            <select class="form-select" @bind="_teamForm.DogId" @bind:after="OnDogChangedAsync">
+                            <select class="form-select" value="@_teamForm.DogId" @onchange="OnDogChangedAsync">
                                 <option value="">Hund auswählen</option>
                                 @foreach (var dog in AvailableDogs)
                                 {
@@ -1442,4 +1441,3 @@
         </div>
     </div>
 }
-

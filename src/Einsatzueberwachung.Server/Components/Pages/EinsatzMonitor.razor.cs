@@ -742,6 +742,10 @@ public partial class EinsatzMonitor
         _ => string.Empty
     };
 
+    internal static IOrderedEnumerable<Team> OrderTeamsForMonitor(IEnumerable<Team> teams) =>
+        teams.OrderBy(team => team.IsPausing ? 3 : team.IsRunning || team.IsManuallyPaused ? 0 : 1)
+            .ThenBy(team => team.TeamName);
+
     private IEnumerable<Team> GetFilteredTeams()
     {
         var teams = EinsatzService.Teams.AsEnumerable();
@@ -1376,21 +1380,26 @@ public partial class EinsatzMonitor
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task OnDogChangedAsync()
+    private async Task OnDogChangedAsync(ChangeEventArgs args)
     {
-        var dog = _dogList.FirstOrDefault(entry => entry.Id == _teamForm.DogId);
+        ApplyDogSelection(_teamForm, _dogList, args.Value?.ToString());
+        await InvokeAsync(StateHasChanged);
+    }
+
+    internal static void ApplyDogSelection(TeamEditorModel form, IEnumerable<DogEntry> dogs, string? dogId)
+    {
+        form.DogId = dogId ?? string.Empty;
+        var dog = dogs.FirstOrDefault(entry => entry.Id == form.DogId);
         if (dog != null)
         {
-            if (string.IsNullOrWhiteSpace(_teamForm.HundefuehrerId)
-                || !dog.HundefuehrerIds.Contains(_teamForm.HundefuehrerId))
+            if (string.IsNullOrWhiteSpace(form.HundefuehrerId)
+                || !dog.HundefuehrerIds.Contains(form.HundefuehrerId))
             {
-                _teamForm.HundefuehrerId = dog.PrimaryHundefuehrerId;
+                form.HundefuehrerId = dog.PrimaryHundefuehrerId;
             }
         }
 
-        SyncTeamNameFromSelection();
-
-        await InvokeAsync(StateHasChanged);
+        form.TeamName = dog?.Name?.Trim() ?? string.Empty;
     }
 
     private async Task OnDroneChangedAsync()
@@ -1622,7 +1631,7 @@ public partial class EinsatzMonitor
         _teamFormIsError = false;
     }
 
-    private sealed class TeamEditorModel
+    internal sealed class TeamEditorModel
     {
         public string TeamType { get; set; } = "dog";
         public string TeamName { get; set; } = string.Empty;
