@@ -59,10 +59,19 @@ PersistentKeepalive = 25'
 	&& ok "Geraete-Konfiguration mit DNS" || bad "Geraete-Konfiguration"
 client_konfig PRIV 10.77.0.10 "" PUB e:1 n | grep -q '^DNS' && bad "DNS ohne dnsmasq" || ok "ohne DNS keine DNS-Zeile"
 
+# Paket zum Prozessor
+[[ "$(paket_fuer_prozessor x86_64)" == linux-x64 && "$(paket_fuer_prozessor aarch64)" == linux-arm64 ]] \
+	&& ok "Paket zum Prozessor" || bad "Paket zum Prozessor"
+paket_fuer_prozessor armv7l >/dev/null && bad "32-Bit-ARM angenommen" || ok "32-Bit-ARM abgelehnt"
+
 # Release-Antwort von GitHub
 JSON='{"tag_name":"v1.14.0","assets":[{"name":"livetracking.zip","browser_download_url":"https://x/l.zip"},
+ {"name":"linux-arm64-server-1.14.0.zip","browser_download_url":"https://x/a.zip"},
  {"name":"linux-x64-server-1.14.0.zip","browser_download_url":"https://x/s.zip"}]}'
-[[ "$(release_aus_json <<<"$JSON" | tr '\n' ' ')" == "v1.14.0 https://x/s.zip " ]] && ok "Release-Paket gefunden" || bad "Release"
-release_aus_json <<<'{"tag_name":"v1","assets":[]}' >/dev/null 2>&1 && bad "Release ohne Paket" || ok "Release ohne Paket erkannt"
+[[ "$(release_aus_json linux-x64 <<<"$JSON" | tr '\n' ' ')" == "v1.14.0 https://x/s.zip " ]] && ok "Release-Paket x64" || bad "Release x64"
+[[ "$(release_aus_json linux-arm64 <<<"$JSON" | tr '\n' ' ')" == "v1.14.0 https://x/a.zip " ]] && ok "Release-Paket arm64" || bad "Release arm64"
+release_aus_json linux-arm64 <<<'{"tag_name":"v1.13.0","assets":[{"name":"linux-x64-server-1.13.0.zip","browser_download_url":"u"}]}' \
+	>/dev/null 2>&1 && bad "arm64 aus x64-Release" || ok "altes Release ohne arm64 erkannt"
+release_aus_json linux-x64 <<<'{"tag_name":"v1","assets":[]}' >/dev/null 2>&1 && bad "Release ohne Paket" || ok "Release ohne Paket erkannt"
 
 exit $FEHLER

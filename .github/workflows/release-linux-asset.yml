@@ -65,8 +65,15 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Publish server linux-x64
-        run: dotnet publish src/Einsatzueberwachung.Server -c Release -r linux-x64 --self-contained false -o artifacts/release/linux-x64/server-${{ steps.version.outputs.version }}
+      # Zwei Pakete: linux-x64 (PC, Mietserver) und linux-arm64 (Raspberry Pi 4/5 mit 64-Bit-System).
+      # Der Update-Dienst im Server waehlt das Paket zum eigenen Prozessor (GitHubUpdateService.IsLinuxAssetFor).
+      - name: Publish server linux-x64 und linux-arm64
+        shell: bash
+        run: |
+          for rid in linux-x64 linux-arm64; do
+            dotnet publish src/Einsatzueberwachung.Server -c Release -r "$rid" --self-contained false \
+              -o "artifacts/release/$rid/server-${{ steps.version.outputs.version }}"
+          done
 
       # Native Linux-Bibliotheken (SkiaSharp fuer PDF/Karten/Logo, HarfBuzz fuer Text in SVG-Logos) sicher im Paket.
       # Mit `--self-contained false` kommen sie nicht zuverlaessig mit. Immer genau die Version aus dem Projekt holen –
@@ -75,21 +82,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          PUBLISH_DIR="artifacts/release/linux-x64/server-${{ steps.version.outputs.version }}"
           CSPROJ="src/Einsatzueberwachung.Server/Einsatzueberwachung.Server.csproj"
           version_von() { grep -oP "<PackageReference Include=\"$1\" Version=\"\K[^\"]+" "$CSPROJ"; }
 
-          hole() { # $1 NuGet-Paket, $2 Datei, $3 Version
-            if [ -f "$PUBLISH_DIR/$2" ]; then echo "$2 bereits vorhanden"; return; fi
-            curl -sfLo "/tmp/$1.nupkg" "https://www.nuget.org/api/v2/package/$1/$3"
-            rm -rf "/tmp/$1"; mkdir -p "/tmp/$1"
-            unzip -oq "/tmp/$1.nupkg" -d "/tmp/$1"
-            cp "/tmp/$1/runtimes/linux-x64/native/$2" "$PUBLISH_DIR/$2"
-            echo "$2 $3 kopiert ($(stat -c%s "$PUBLISH_DIR/$2") bytes)"
+          hole() { # $1 Laufzeit (linux-x64/linux-arm64), $2 NuGet-Paket, $3 Datei, $4 Version
+            local dir="artifacts/release/$1/server-${{ steps.version.outputs.version }}"
+            if [ -f "$dir/$3" ]; then echo "$1: $3 bereits vorhanden"; return; fi
+            if [ ! -d "/tmp/$2" ]; then
+              curl -sfLo "/tmp/$2.nupkg" "https://www.nuget.org/api/v2/package/$2/$4"
+              mkdir -p "/tmp/$2"
+              unzip -oq "/tmp/$2.nupkg" -d "/tmp/$2"
+            fi
+            cp "/tmp/$2/runtimes/$1/native/$3" "$dir/$3"
+            echo "$1: $3 $4 kopiert ($(stat -c%s "$dir/$3") bytes)"
           }
 
-          hole SkiaSharp.NativeAssets.Linux libSkiaSharp.so "$(version_von SkiaSharp)"
-          hole HarfBuzzSharp.NativeAssets.Linux libHarfBuzzSharp.so "$(version_von HarfBuzzSharp)"
+          for rid in linux-x64 linux-arm64; do
+            hole "$rid" SkiaSharp.NativeAssets.Linux libSkiaSharp.so "$(version_von SkiaSharp)"
+            hole "$rid" HarfBuzzSharp.NativeAssets.Linux libHarfBuzzSharp.so "$(version_von HarfBuzzSharp)"
+          done
 
       - name: Download livetracking artifact
         uses: actions/download-artifact@v4
@@ -97,15 +108,20 @@ jobs:
           name: livetracking-zip
           path: artifacts/release/linux-x64/server-${{ steps.version.outputs.version }}
 
-      - name: Create zip asset
+      - name: Create zip assets
         shell: bash
         run: |
-          cd artifacts/release/linux-x64/server-${{ steps.version.outputs.version }}
-          zip -r ../linux-x64-server-${{ steps.version.outputs.version }}.zip .
+          V="${{ steps.version.outputs.version }}"
+          cp "artifacts/release/linux-x64/server-$V/livetracking.zip" "artifacts/release/linux-arm64/server-$V/"
+          for rid in linux-x64 linux-arm64; do
+            (cd "artifacts/release/$rid/server-$V" && zip -r "../$rid-server-$V.zip" .)
+          done
 
       - name: Upload asset to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          files: artifacts/release/linux-x64/linux-x64-server-${{ steps.version.outputs.version }}.zip
+          files: |
+            artifacts/release/linux-x64/linux-x64-server-${{ steps.version.outputs.version }}.zip
+            artifacts/release/linux-arm64/linux-arm64-server-${{ steps.version.outputs.version }}.zip
           overwrite_files: true

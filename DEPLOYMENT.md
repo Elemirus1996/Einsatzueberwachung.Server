@@ -5,7 +5,7 @@ Updates bestehender Server und Hintergründe.
 
 ## 1. Voraussetzungen
 
-- Ubuntu Server 22.04 oder 24.04
+- Ubuntu Server 22.04/24.04 oder Debian 12/13 (auch Raspberry Pi OS 64 Bit), x86_64 oder ARM64 (siehe INSTALLATION.md)
 - VPN (z. B. WireGuard) aktiv
 - DNS/Hosts-Eintrag fuer `einsatz.vpn.local`
 - TLS-Zertifikat vorhanden (`/etc/ssl/certs/einsatz.crt`, `/etc/ssl/private/einsatz.key`)

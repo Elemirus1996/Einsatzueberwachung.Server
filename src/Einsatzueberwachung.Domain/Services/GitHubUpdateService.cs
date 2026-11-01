@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Einsatzueberwachung.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -87,7 +88,11 @@ namespace Einsatzueberwachung.Domain.Services
             return Version.TryParse(normalized, out var parsed) ? parsed : new Version(0, 0, 0);
         }
 
-        private static bool IsLinuxX64Asset(string fileName)
+        /// <summary>
+        /// Linux-Paket (.zip/.tar.gz) passend zum Prozessor: linux-x64 bzw. linux-arm64. Ein falsches Paket wuerde
+        /// eingespielt und der Dienst startete danach nicht mehr.
+        /// </summary>
+        public static bool IsLinuxAssetFor(string fileName, Architecture architecture)
         {
             if (string.IsNullOrWhiteSpace(fileName))
                 return false;
@@ -95,7 +100,14 @@ namespace Einsatzueberwachung.Domain.Services
             var lower = fileName.ToLowerInvariant();
             var archive = lower.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
                        || lower.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase);
-            return archive && lower.Contains("linux") && (lower.Contains("x64") || lower.Contains("amd64"));
+            if (!archive || !lower.Contains("linux"))
+                return false;
+            return architecture switch
+            {
+                Architecture.X64 => lower.Contains("x64") || lower.Contains("amd64"),
+                Architecture.Arm64 => lower.Contains("arm64") || lower.Contains("aarch64"),
+                _ => false,
+            };
         }
 
         private static string ResolveExtensionFromUrl(string url)

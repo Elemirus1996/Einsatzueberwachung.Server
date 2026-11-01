@@ -20,6 +20,7 @@ CRT="/etc/ssl/certs/einsatz.crt"
 # Netze, die fuer das VPN der Reihe nach probiert werden (das erste ist der bisherige Standard)
 VPN_KANDIDATEN="10.10.0.0/24 10.77.0.0/24 10.123.45.0/24 172.29.77.0/24 192.168.234.0/24"
 QUELLE=""
+RID=""
 
 # ---------- Ausgabe und Eingabe ----------
 
@@ -100,6 +101,8 @@ freies_vpn_netz() {
 	return 1
 }
 
+laufzeit_da() { dotnet --list-runtimes 2>/dev/null | grep -q '^Microsoft.AspNetCore.App 9\.'; }
+
 port_belegt() { ss -Hlun "sport = :$1" 2>/dev/null | grep -q .; }
 
 oeffentliche_ipv4() { curl -4 -fsS --max-time 10 https://api.ipify.org 2>/dev/null || true; }
@@ -118,15 +121,25 @@ client_konfig() {
 	printf '\n[Peer]\nPublicKey = %s\nEndpoint = %s\nAllowedIPs = %s\nPersistentKeepalive = 25\n' "$4" "$5" "$6"
 }
 
-# Aus der Antwort von api.github.com/.../releases/latest: Tag und Adresse des Linux-Pakets, je eine Zeile
+# Name des Server-Pakets fuer den Prozessor (uname -m)
+paket_fuer_prozessor() {
+	case "$1" in
+		x86_64|amd64) echo linux-x64 ;;
+		aarch64|arm64) echo linux-arm64 ;;
+		*) return 1 ;;
+	esac
+}
+
+# release_aus_json <linux-x64|linux-arm64>: aus der Antwort von api.github.com/.../releases/latest Tag und Adresse des
+# passenden Server-Pakets, je eine Zeile
 release_aus_json() {
 	python3 -c '
 import json, re, sys
 d = json.load(sys.stdin)
-urls = [a["browser_download_url"] for a in d.get("assets", []) if re.fullmatch(r"linux-x64-server-.*\.zip", a.get("name", ""))]
+urls = [a["browser_download_url"] for a in d.get("assets", []) if re.fullmatch(re.escape(sys.argv[1]) + r"-server-.*\.zip", a.get("name", ""))]
 if not d.get("tag_name") or not urls:
     sys.exit(1)
-print(d["tag_name"]); print(urls[0])'
+print(d["tag_name"]); print(urls[0])' "$1"
 }
 
 # ---------- Schritte ----------
@@ -138,14 +151,16 @@ schritt_vorab() {
 	[[ $EUID -eq 0 ]] || abbruch "Bitte als root starten: sudo bash $0"
 	local arch os ver ram frei
 	arch="$(uname -m)"
-	[[ "$arch" == x86_64 ]] || abbruch "Prozessor $arch wird nicht unterstuetzt, noetig ist x86_64 (64 Bit, kein Raspberry Pi)."
-	gut "Prozessor x86_64"
+	RID="$(paket_fuer_prozessor "$arch")" \
+		|| abbruch "Prozessor $arch wird nicht unterstuetzt. Noetig ist x86_64 (PC, Mietserver) oder aarch64 (Raspberry Pi 4/5 mit 64-Bit-System)."
+	gut "Prozessor $arch"
 	os="$(. /etc/os-release 2>/dev/null; echo "${ID:-?}")"
 	ver="$(. /etc/os-release 2>/dev/null; echo "${VERSION_ID:-?}")"
 	case "$os $ver" in
 		"ubuntu 22.04"|"ubuntu 24.04") gut "Ubuntu $ver" ;;
-		ubuntu*) warnung "Ubuntu $ver ist nicht erprobt (erprobt: 22.04, 24.04)."; ja_nein "Trotzdem fortfahren?" n || exit 1 ;;
-		*) abbruch "Betriebssystem $os $ver wird nicht unterstuetzt, noetig ist Ubuntu Server 22.04 oder 24.04." ;;
+		"debian 12"|"debian 13") gut "Debian $ver (auch Raspberry Pi OS)" ;;
+		ubuntu*|debian*) warnung "$os $ver ist nicht vorgesehen (vorgesehen: Ubuntu 22.04/24.04, Debian 12/13)."; ja_nein "Trotzdem fortfahren?" n || exit 1 ;;
+		*) abbruch "Betriebssystem $os $ver wird nicht unterstuetzt. Noetig ist Ubuntu Server 22.04/24.04, Debian 12/13 oder Raspberry Pi OS (64 Bit)." ;;
 	esac
 	ram="$(awk '/MemTotal/ { print int($2 / 1024) }' /proc/meminfo)"
 	(( ram >= 900 )) && gut "Arbeitsspeicher ${ram} MB" || warnung "Nur ${ram} MB Arbeitsspeicher, empfohlen sind mindestens 1 GB."
@@ -174,7 +189,8 @@ schritt_quelle() {
 	local json tag url ziel
 	json="$(curl -fsSL --max-time 30 "https://api.github.com/repos/$GH_REPO/releases/latest")" \
 		|| abbruch "Neuestes Release nicht abrufbar."
-	{ read -r tag; read -r url; } < <(release_aus_json <<<"$json") || abbruch "Release ohne Linux-Paket."
+	{ read -r tag; read -r url; } < <(release_aus_json "$RID" <<<"$json") \
+		|| abbruch "Das neueste Release hat kein Paket $RID-server (fuer ARM64 erst ab der Version nach 1.13.0)."
 	[[ "$tag" =~ ^v[0-9A-Za-z.-]+$ ]] || abbruch "Unerwarteter Release-Name: $tag"
 	install -d -o root -g root -m 700 "$DOWNLOADS"
 	ziel="$DOWNLOADS/$tag"
@@ -297,7 +313,7 @@ schritt_erreichbarkeit() {
 schritt_grundinstallation() {
 	titel "5. Grundinstallation (Pakete, Dienst, WireGuard, Firewall)"
 	if systemctl is-active --quiet einsatzueberwachung-server.service 2>/dev/null \
-		&& dpkg -s aspnetcore-runtime-9.0 >/dev/null 2>&1 && ip link show wg0 >/dev/null 2>&1 \
+		&& laufzeit_da && ip link show wg0 >/dev/null 2>&1 \
 		&& [[ -f /etc/systemd/system/einsatzueberwachung-server.service.d/staffel.conf ]]; then
 		gut "Schon erledigt"
 		return
@@ -426,7 +442,7 @@ pruefen() {
 	intern="$(staffel wert intern_adresse)"
 	punkt "Einstellungen der Staffel vollstaendig" "staffel pruefen"
 	punkt "Dienst laeuft" "systemctl is-active --quiet einsatzueberwachung-server.service"
-	punkt "ASP.NET-Core-Laufzeit 9" "dpkg -s aspnetcore-runtime-9.0"
+	punkt "ASP.NET-Core-Laufzeit 9" "laufzeit_da"
 	punkt "WireGuard wg0 aktiv" "ip link show wg0"
 	punkt "DNS im VPN (dnsmasq)" "systemctl is-active --quiet dnsmasq"
 	punkt "Zertifikat $domain" "[[ -f /etc/letsencrypt/live/$domain/fullchain.pem ]]"
