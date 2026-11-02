@@ -18,6 +18,27 @@ window.teamOrdering = (() => {
         return order;
     }
 
+    // Resolves the pointer's vertical position to an insertion point, even when it falls
+    // into the gap between two cards (elementFromPoint would hit the list background there).
+    function resolveDropTarget(items, sourceTeamId, pointerY) {
+        const candidates = items.filter(item => item.dataset.teamId !== sourceTeamId);
+        if (candidates.length === 0) {
+            return null;
+        }
+
+        for (const item of candidates) {
+            const bounds = item.getBoundingClientRect();
+            if (pointerY < bounds.top + bounds.height / 2) {
+                return { item, after: false };
+            }
+            if (pointerY <= bounds.bottom) {
+                return { item, after: true };
+            }
+        }
+
+        return { item: candidates[candidates.length - 1], after: true };
+    }
+
     const autoScrollEdgeSize = 56;
     const autoScrollMaxSpeed = 16;
 
@@ -149,23 +170,20 @@ window.teamOrdering = (() => {
 
             event.preventDefault();
             drag.pointerY = event.clientY;
-            const target = document.elementFromPoint(event.clientX, event.clientY);
-            const item = target instanceof Element ? target.closest(itemSelector) : null;
-            const source = getItems(list).find(entry => entry.dataset.teamId === drag.teamId);
-            for (const entry of getItems(list)) {
+            const items = getItems(list);
+            for (const entry of items) {
                 entry.classList.remove("team-order-item--drop-before", "team-order-item--drop-after");
             }
 
-            if (!item || !list.contains(item) || item === source) {
+            const target = resolveDropTarget(items, drag.teamId, event.clientY);
+            if (!target) {
                 drag.targetId = null;
                 return;
             }
 
-            const bounds = item.getBoundingClientRect();
-            const after = event.clientY >= bounds.top + bounds.height / 2;
-            item.classList.add(after ? "team-order-item--drop-after" : "team-order-item--drop-before");
-            drag.targetId = item.dataset.teamId;
-            drag.after = after;
+            target.item.classList.add(target.after ? "team-order-item--drop-after" : "team-order-item--drop-before");
+            drag.targetId = target.item.dataset.teamId;
+            drag.after = target.after;
         }
 
         function onKeyDown(event) {
