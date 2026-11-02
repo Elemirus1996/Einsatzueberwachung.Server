@@ -315,6 +315,7 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
         _einsatzService.TeamAdded += OnTeamDirty;
         _einsatzService.TeamRemoved += OnTeamDirty;
         _einsatzService.TeamUpdated += OnTeamDirty;
+        _einsatzService.TeamsReordered += OnDirty;
         _einsatzService.NoteAdded += OnNoteDirty;
         _einsatzService.TrackSnapshotAdded += OnTrackDirty;
         _einsatzService.CompletedSearchUpdated += OnCompletedSearchDirty;
@@ -331,6 +332,7 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
         _einsatzService.TeamAdded -= OnTeamDirty;
         _einsatzService.TeamRemoved -= OnTeamDirty;
         _einsatzService.TeamUpdated -= OnTeamDirty;
+        _einsatzService.TeamsReordered -= OnDirty;
         _einsatzService.NoteAdded -= OnNoteDirty;
         _einsatzService.TrackSnapshotAdded -= OnTrackDirty;
         _einsatzService.CompletedSearchUpdated -= OnCompletedSearchDirty;

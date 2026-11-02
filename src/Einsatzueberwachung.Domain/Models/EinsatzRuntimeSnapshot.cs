@@ -6,6 +6,8 @@ public class EinsatzRuntimeSnapshot
 {
     public EinsatzData CurrentEinsatz { get; set; } = new();
     public List<Team> Teams { get; set; } = new();
+    /// <summary>Monitor-Reihenfolge als Team-IDs; ältere Snapshots haben keine gespeicherte Reihenfolge.</summary>
+    public List<string> TeamOrderIds { get; set; } = new();
     public List<GlobalNotesEntry> GlobalNotes { get; set; } = new();
     public List<GlobalNotesHistory> NoteHistory { get; set; } = new();
 

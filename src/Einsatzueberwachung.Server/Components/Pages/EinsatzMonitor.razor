@@ -1,6 +1,6 @@
 @page "/einsatz-monitor"
 @rendermode InteractiveServer
-@implements IDisposable
+@implements IAsyncDisposable
 
 @using Einsatzueberwachung.Domain.Models
 @using Einsatzueberwachung.Domain.Models.Enums
@@ -219,7 +219,7 @@
                                     }
                                     else
                                     {
-                                        <div class="teams-monitor-list">
+                                        <div class="teams-monitor-list" @ref="_teamsMonitorList">
                                             @foreach (var team in OrderTeamsForMonitor(GetFilteredTeams()))
                                             {
                                                 var isDogConflict = !team.IsRunning && !team.IsPausing && !team.IsManuallyPaused
@@ -228,21 +228,23 @@
                                                 var conflictingTeamName = isDogConflict
                                                     ? EinsatzService.Teams.FirstOrDefault(t => t.TeamId != team.TeamId && t.IsRunning && t.DogId == team.DogId)?.TeamName
                                                     : null;
-                                                <TeamCard Team="team"
-                                                          IsDogConflict="isDogConflict"
-                                                          ConflictingTeamName="conflictingTeamName"
-                                                          DroneList="_droneList"
-                                                          IsExpanded="_expandedTeamIds.Contains(team.TeamId)"
-                                                          LastCollarLocation="GetLastCollarLocation(team)"
-                                                          LastPhoneLocation="EinsatzService.PhoneLocations.GetValueOrDefault(team.TeamId)"
-                                                          LatestNoteEntries="GetLatestTeamNoteEntries(team, 3)"
-                                                          CompletedSearches="GetCompletedSearches(team, 5)"
-                                                          OnStart="StartTeamAsync"
-                                                          OnPause="PauseTeamAsync"
-                                                          OnStop="StopTeamAsync"
-                                                          OnReset="RequestResetTeamAsync"
-                                                          OnEdit="id => EditTeam(id)"
-                                                          OnToggleExpand="ToggleTeamExpand" />
+                                                <div @key="team.TeamId" class="team-order-item" data-team-id="@team.TeamId">
+                                                    <TeamCard Team="team"
+                                                              IsDogConflict="isDogConflict"
+                                                              ConflictingTeamName="conflictingTeamName"
+                                                              DroneList="_droneList"
+                                                              IsExpanded="_expandedTeamIds.Contains(team.TeamId)"
+                                                              LastCollarLocation="GetLastCollarLocation(team)"
+                                                              LastPhoneLocation="EinsatzService.PhoneLocations.GetValueOrDefault(team.TeamId)"
+                                                              LatestNoteEntries="GetLatestTeamNoteEntries(team, 3)"
+                                                              CompletedSearches="GetCompletedSearches(team, 5)"
+                                                              OnStart="StartTeamAsync"
+                                                              OnPause="PauseTeamAsync"
+                                                              OnStop="StopTeamAsync"
+                                                              OnReset="RequestResetTeamAsync"
+                                                              OnEdit="id => EditTeam(id)"
+                                                              OnToggleExpand="ToggleTeamExpand" />
+                                                </div>
                                             }
                                         </div>
                                     }

@@ -19,7 +19,16 @@
     @* ── Zone 1: Identity + Timer ─────────────────────────────────── *@
     <div class="tc-head">
         <div class="tc-identity">
-            <div class="tc-name">@Team.TeamName</div>
+            <div class="tc-name-row">
+                <button type="button"
+                        class="team-order-handle"
+                        data-team-order-handle
+                        aria-label="@($"{Team.TeamName} verschieben")"
+                        title="Mit Maus, Touch oder Pfeiltasten verschieben">
+                    <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+                </button>
+                <div class="tc-name">@Team.TeamName</div>
+            </div>
             <div class="tc-crew">
                 @if (!string.IsNullOrWhiteSpace(Team.DogName))
                 {

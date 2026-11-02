@@ -85,6 +85,8 @@ namespace Einsatzueberwachung.Domain.Models
         public int FirstWarningMinutes { get; set; }
         public int SecondWarningMinutes { get; set; }
         public DateTime CreatedAt { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore]
+        public int? ManualOrderIndex { get; set; }
         public string Notes { get; set; }
 
         public bool IsDroneTeam { get; set; }

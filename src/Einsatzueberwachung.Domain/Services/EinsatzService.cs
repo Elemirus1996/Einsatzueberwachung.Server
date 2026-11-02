@@ -27,6 +27,7 @@ namespace Einsatzueberwachung.Domain.Services
         private readonly ISettingsService? _settingsService;
         private readonly ITimeService? _timeService;
         private readonly IMasterDataService? _masterDataService;
+        private readonly object _teamOrderSync = new();
         private EinsatzData _currentEinsatz;
         private readonly List<Team> _teams;
         private readonly List<GlobalNotesEntry> _globalNotes;
@@ -43,6 +44,7 @@ namespace Einsatzueberwachung.Domain.Services
         public event Action<Team>? TeamAdded;
         public event Action<Team>? TeamRemoved;
         public event Action<Team>? TeamUpdated;
+        public event Action? TeamsReordered;
         public event Action<GlobalNotesEntry>? NoteAdded;
         public event Action<Team, bool>? TeamWarningTriggered;
         public event Action? VermisstenInfoChanged;

@@ -11,7 +11,8 @@ namespace Einsatzueberwachung.Domain.Services
             EnsureAlarmTime(einsatzData);
 
             _currentEinsatz = einsatzData;
-            _teams.Clear();
+            lock (_teamOrderSync)
+                _teams.Clear();
             _globalNotes.Clear();
             _noteHistory.Clear();
             _dogPauses.Clear();
@@ -69,13 +70,16 @@ namespace Einsatzueberwachung.Domain.Services
 
         public void ResetEinsatz()
         {
-            foreach (var team in _teams)
+            lock (_teamOrderSync)
             {
-                team.StopTimer();
-                TeamEreignisseAbmelden(team);
-            }
+                foreach (var team in _teams)
+                {
+                    team.StopTimer();
+                    TeamEreignisseAbmelden(team);
+                }
 
-            _teams.Clear();
+                _teams.Clear();
+            }
             _globalNotes.Clear();
             _noteHistory.Clear();
             _dogPauses.Clear();
@@ -94,10 +98,24 @@ namespace Einsatzueberwachung.Domain.Services
 
         public EinsatzRuntimeSnapshot ExportRuntimeSnapshot()
         {
+            List<Team> teams;
+            List<string> teamOrderIds;
+            EinsatzData currentEinsatz;
+            lock (_teamOrderSync)
+            {
+                teams = _teams.ToList();
+                teamOrderIds = _teams
+                    .OrderBy(team => team.ManualOrderIndex)
+                    .Select(team => team.TeamId)
+                    .ToList();
+                currentEinsatz = _currentEinsatz.CopyWithTeams(teams);
+            }
+
             return new EinsatzRuntimeSnapshot
             {
-                CurrentEinsatz = _currentEinsatz,
-                Teams = _teams.ToList(),
+                CurrentEinsatz = currentEinsatz,
+                Teams = teams,
+                TeamOrderIds = teamOrderIds,
                 GlobalNotes = _globalNotes.ToList(),
                 NoteHistory = _noteHistory.ToList(),
                 DogPauses = _dogPauses.Values.ToList()
@@ -109,24 +127,43 @@ namespace Einsatzueberwachung.Domain.Services
             if (snapshot == null)
                 return Task.CompletedTask;
 
-            foreach (var team in _teams)
+            lock (_teamOrderSync)
             {
-                TeamEreignisseAbmelden(team);
+                foreach (var team in _teams)
+                {
+                    TeamEreignisseAbmelden(team);
+                }
+
+                _teams.Clear();
+                _currentEinsatz = snapshot.CurrentEinsatz ?? new EinsatzData();
+
+                foreach (var team in snapshot.Teams ?? new List<Team>())
+                {
+                    team.StartzeitWiederherstellen(_timeService?.Now ?? Ortszeit.Jetzt);
+                    _teams.Add(team);
+                    TeamEreignisseAbonnieren(team);
+                }
+
+                if (snapshot.TeamOrderIds is { Count: > 0 }
+                    && snapshot.TeamOrderIds.Count == _teams.Count
+                    && snapshot.TeamOrderIds.Distinct(StringComparer.Ordinal).Count() == _teams.Count
+                    && snapshot.TeamOrderIds.All(teamId => _teams.Any(team => team.TeamId == teamId)))
+                {
+                    for (var index = 0; index < snapshot.TeamOrderIds.Count; index++)
+                    {
+                        var team = _teams.First(entry => entry.TeamId == snapshot.TeamOrderIds[index]);
+                        team.ManualOrderIndex = index;
+                    }
+                }
+                else
+                {
+                    EnsureTeamOrderIndices();
+                }
             }
 
-            _teams.Clear();
             _globalNotes.Clear();
             _noteHistory.Clear();
             _dogPauses.Clear();
-
-            _currentEinsatz = snapshot.CurrentEinsatz ?? new EinsatzData();
-
-            foreach (var team in snapshot.Teams ?? new List<Team>())
-            {
-                team.StartzeitWiederherstellen(_timeService?.Now ?? Ortszeit.Jetzt);
-                _teams.Add(team);
-                TeamEreignisseAbonnieren(team);
-            }
 
             if (snapshot.DogPauses is { Count: > 0 })
             {
