@@ -313,7 +313,7 @@ namespace Einsatzueberwachung.LiveTracking
         public DateTime TimestampUtc { get; private set; }
         public float AltitudeMeters { get; private set; }
         public uint RawStatusA { get; private set; }
-        public int BatteryLevel { get; private set; }
+        public int? BatteryLevel { get; private set; }
         public int CommStrength { get; private set; }
         public int GpsStrength { get; private set; }
         public uint RawStatusB { get; private set; }
@@ -344,10 +344,12 @@ namespace Einsatzueberwachung.LiveTracking
                 data.AltitudeMeters = BitConverter.ToSingle(payload, offset); offset += 4; // 16
                 data.RawStatusA = BitConverter.ToUInt32(payload, offset); offset += 4; // 20
                 byte statusA_LSB = (byte)(data.RawStatusA & 0xFF);
-                data.BatteryLevel = statusA_LSB & 0x03; data.CommStrength = (statusA_LSB >> 2) & 0x03; data.GpsStrength = (statusA_LSB >> 4) & 0x03;
+                data.CommStrength = (statusA_LSB >> 2) & 0x03; data.GpsStrength = (statusA_LSB >> 4) & 0x03;
                 data.RawStatusB = BitConverter.ToUInt32(payload, offset); offset += 4; // 24
                 data.StatusByte20 = payload[offset - 4]; data.ColorCandidateByte21 = payload[offset - 3]; data.ChannelSecondary = payload[offset - 2]; data.ChannelPrimary = payload[offset - 1];
                 data.RawStatusC = BitConverter.ToUInt16(payload, offset); offset += 2; // 26
+                // Captures correlate byte 25 with battery levels 2–4; 0 and 1 still need device verification.
+                data.BatteryLevel = payload[25] <= 4 ? payload[25] : null;
                 data.ID = BitConverter.ToInt16(payload, 22);
 
                 int nameStartOffset = 31;

@@ -71,8 +71,8 @@
                     }
                     @if (lastLoc != null)
                     {
-                        var (icon, color) = GetBatteryDisplay(lastLoc.BatteryLevel);
-                        <small><i class="bi @icon @color me-1"></i>Akku</small>
+                        var (icon, color, label) = GetBatteryDisplay(lastLoc.BatteryLevel);
+                        <small title="@label"><i class="bi @icon @color me-1" aria-hidden="true"></i>@label</small>
                         <small class="text-muted">Update: @FormatAge(lastLoc.Timestamp)</small>
                     }
                     else
@@ -645,12 +645,14 @@
     private PeriodicTimer? _ageRefreshTimer;
     private CancellationTokenSource? _timerCts;
 
-    private static (string Icon, string Color) GetBatteryDisplay(int? level) => level switch
+    private static (string Icon, string Color, string Label) GetBatteryDisplay(int? level) => level switch
     {
-        3 => ("bi-battery-full", "text-success"),
-        2 => ("bi-battery-half", "text-warning"),
-        1 => ("bi-battery", "text-danger"),
-        _ => ("bi-battery", "text-muted")
+        4 => ("bi-battery-full", "text-success", "Akku: Stufe 4 von 4"),
+        3 => ("bi-battery-full", "text-success", "Akku: Stufe 3 von 4"),
+        2 => ("bi-battery-half", "text-warning", "Akku: Stufe 2 von 4"),
+        1 => ("bi-battery", "text-danger", "Akku niedrig: Stufe 1 von 4"),
+        0 => ("bi-question-circle", "text-muted", "Akku: Stufe 0, Bedeutung ungeklärt"),
+        _ => ("bi-question-circle", "text-muted", "Akkustatus unbekannt")
     };
 
     private static string FormatAge(DateTime timestamp)

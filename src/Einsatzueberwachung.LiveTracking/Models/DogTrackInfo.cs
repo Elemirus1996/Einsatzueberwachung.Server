@@ -28,7 +28,7 @@ namespace Einsatzueberwachung.LiveTracking.Models
         private DateTime _lastUpdate;
 
         [ObservableProperty]
-        private int _batteryLevel;
+        private int? _batteryLevel;
 
         [ObservableProperty]
         private int _gpsStrength;

@@ -20,6 +20,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Test the Windows client's packet decoder without a WPF dependency in the cross-platform test project. -->
+    <Compile Include="..\Einsatzueberwachung.LiveTracking\GpsUSB.cs" Link="LiveTracking\GpsUSB.cs" />
+    <Compile Include="..\Einsatzueberwachung.LiveTracking\Services\GpsSimulationService.cs" Link="LiveTracking\GpsSimulationService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 

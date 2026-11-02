@@ -120,8 +120,8 @@
                         <span>@FormatRelativeTime(LastCollarLocation.Timestamp)</span>
                         @if (LastCollarLocation.BatteryLevel.HasValue)
                         {
-                            var (batteryIcon, batteryColor) = GetBatteryDisplay(LastCollarLocation.BatteryLevel);
-                            <span class="tc-ctx-muted" title="Akkustatus"><i class="bi @batteryIcon @batteryColor"></i></span>
+                            var (batteryIcon, batteryColor, batteryLabel) = GetBatteryDisplay(LastCollarLocation.BatteryLevel);
+                            <span class="tc-ctx-muted" title="@batteryLabel" aria-label="@batteryLabel"><i class="bi @batteryIcon @batteryColor" aria-hidden="true"></i></span>
                         }
                     }
                     else
@@ -216,11 +216,11 @@
                     <span>@(string.IsNullOrWhiteSpace(Team.CollarName) ? Team.CollarId : Team.CollarName)</span>
                     @if (LastCollarLocation is not null)
                     {
-                        var (batteryIcon, batteryColor) = GetBatteryDisplay(LastCollarLocation.BatteryLevel);
+                        var (batteryIcon, batteryColor, batteryLabel) = GetBatteryDisplay(LastCollarLocation.BatteryLevel);
                         <span class="tc-expand-muted">
                             · @LastCollarLocation.Timestamp.ToString("HH:mm:ss")
                             (@FormatRelativeTime(LastCollarLocation.Timestamp))
-                            <text> · <i class="bi @batteryIcon @batteryColor" title="Akkustatus"></i></text>
+                            <text> · <span role="img" title="@batteryLabel" aria-label="@batteryLabel"><i class="bi @batteryIcon @batteryColor" aria-hidden="true"></i></span></text>
                         </span>
                     }
                     else
@@ -331,12 +331,14 @@
         return $"Noch {remaining:hh\\:mm} Pause";
     }
 
-    private static (string Icon, string Color) GetBatteryDisplay(int? level) => level switch
+    private static (string Icon, string Color, string Label) GetBatteryDisplay(int? level) => level switch
     {
-        3 => ("bi-battery-full", "text-success"),
-        2 => ("bi-battery-half", "text-warning"),
-        1 => ("bi-battery", "text-danger"),
-        _ => ("bi-battery", "text-muted")
+        4 => ("bi-battery-full", "text-success", "Akku: Stufe 4 von 4"),
+        3 => ("bi-battery-full", "text-success", "Akku: Stufe 3 von 4"),
+        2 => ("bi-battery-half", "text-warning", "Akku: Stufe 2 von 4"),
+        1 => ("bi-battery", "text-danger", "Akku niedrig: Stufe 1 von 4"),
+        0 => ("bi-question-circle", "text-muted", "Akku: Stufe 0, Bedeutung ungeklärt"),
+        _ => ("bi-question-circle", "text-muted", "Akkustatus unbekannt")
     };
 
     private static string FormatRelativeTime(DateTime timestamp)
