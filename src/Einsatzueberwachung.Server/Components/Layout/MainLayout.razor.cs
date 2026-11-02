@@ -51,7 +51,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         EinsatzService.TeamUpdated += OnTeamStateChanged;
         EinsatzService.TeamRemoved += OnTeamStateChanged;
         EinsatzService.TeamWarningTriggered += OnTeamWarningTriggered;
-        EinsatzService.DogPauseStarted += OnDogPauseStarted;
         WarningService.WarningAdded += OnWarningAdded;
         MissionTopbar.Changed += OnMissionTopbarChanged;
     }
@@ -206,20 +205,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         });
     }
 
-    private void OnDogPauseStarted(Team team)
-    {
-        WarningService.AddWarning(new WarningEntry
-        {
-            Title = "Hund braucht Pause",
-            Message = $"{team.DogName} (Team: {team.TeamName}) - {team.RequiredPauseMinutes} Min. Pause erforderlich.",
-            Level = WarningLevel.Warning,
-            TeamId = team.TeamId,
-            NavigationUrl = $"/einsatz-monitor#team-{team.TeamId}",
-            Source = WarningRuleDefinition.Sources.DogPause,
-            Timestamp = TimeService.Now
-        });
-    }
-
     private async Task SetSzenarioAsync(EinsatzSzenarioType szenario)
     {
         _szenarioMenuOpen = false;
@@ -361,7 +346,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         EinsatzService.TeamUpdated -= OnTeamStateChanged;
         EinsatzService.TeamRemoved -= OnTeamStateChanged;
         EinsatzService.TeamWarningTriggered -= OnTeamWarningTriggered;
-        EinsatzService.DogPauseStarted -= OnDogPauseStarted;
         WarningService.WarningAdded -= OnWarningAdded;
         MissionTopbar.Changed -= OnMissionTopbarChanged;
         _missionDurationTimer?.Dispose();

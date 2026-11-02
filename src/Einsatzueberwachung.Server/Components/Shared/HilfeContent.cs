@@ -122,7 +122,7 @@ public static class HilfeContent
 
         ["/warnzentrum"] = new(
             "Warnzentrum",
-            "Zentrale Übersicht aller aktiven und vergangenen Warnungen. Warnungen entstehen automatisch bei Überschreitung von Team-Timern, Hundepausen oder konfigurierten Schwellwerten. Warnregeln können hier konfiguriert werden.",
+            "Zentrale Übersicht aller aktiven und vergangenen Warnungen. Warnungen entstehen automatisch bei Überschreitung von Team-Timern oder konfigurierten Schwellwerten. Warnregeln können hier konfiguriert werden.",
             new[]
             {
                 "Navigation -> Warnzentrum",

@@ -39,13 +39,6 @@ namespace Einsatzueberwachung.Domain.Models
             },
             new WarningRuleDefinition
             {
-                Source = Sources.DogPause,
-                Label = "Hund braucht Pause",
-                Description = "Wird ausgelöst, wenn ein Hundeteam die konfigurierte Arbeitsdauer überschritten hat und eine Pflichtpause benötigt.",
-                DefaultLevel = WarningLevel.Warning
-            },
-            new WarningRuleDefinition
-            {
                 Source = Sources.CollarOutOfBounds,
                 Label = "Hund hat Suchgebiet verlassen",
                 Description = "Wird ausgelöst, wenn ein GPS-Halsband das zugewiesene Suchgebiet des Teams verlässt.",
