@@ -43,10 +43,8 @@ public partial class ElBeenden : IDisposable
     private bool _busy;
     private EinsatzAbschlussErgebnis? _ergebnis;
 
-    private IEnumerable<PersonalEntry> ActivePersonnel => _personal
-        .Where(p => p.IsActive)
-        .OrderBy(p => p.Nachname)
-        .ThenBy(p => p.Vorname);
+    private IEnumerable<PersonalEntry> ActivePersonnel =>
+        SelectionListOrdering.OrderPersonnelByFirstName(_personal.Where(p => p.IsActive));
 
     private IEnumerable<DogEntry> ActiveDogs => _hunde
         .Where(d => d.IsActive)

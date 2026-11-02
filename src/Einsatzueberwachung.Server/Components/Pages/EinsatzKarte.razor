@@ -574,7 +574,7 @@
                             <label class="form-label">Team zuweisen</label>
                             <select @bind="_selectedTeamId" class="form-select form-select-lg">
                                 <option value="">-- Kein Team --</option>
-                                @foreach (var team in _teams)
+                                @foreach (var team in _teams.OrderBy(team => team.TeamName, StringComparer.CurrentCultureIgnoreCase))
                                 {
                                     <option value="@team.TeamId">@team.TeamName</option>
                                 }

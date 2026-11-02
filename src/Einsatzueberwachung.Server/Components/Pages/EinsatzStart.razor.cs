@@ -59,10 +59,8 @@ public partial class EinsatzStart
         public int Second { get; set; }
     }
 
-    private IEnumerable<PersonalEntry> ActivePersonnel => _personal
-        .Where(person => person.IsActive)
-        .OrderBy(person => person.Nachname)
-        .ThenBy(person => person.Vorname);
+    private IEnumerable<PersonalEntry> ActivePersonnel =>
+        SelectionListOrdering.OrderPersonnelByFirstName(_personal.Where(person => person.IsActive));
 
     private IEnumerable<PersonalEntry> EinsatzleiterOptions => ActivePersonnel
         .Where(person => person.Skills.HasFlag(PersonalSkills.Einsatzleiter));

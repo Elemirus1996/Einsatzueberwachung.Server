@@ -16,7 +16,7 @@
 @if (SearchAreas.Any())
 {
     <div class="sidebar-list">
-        @foreach (var area in SearchAreas)
+        @foreach (var area in SearchAreas.OrderBy(area => area.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             <div class="search-area-item"
                  role="button"
