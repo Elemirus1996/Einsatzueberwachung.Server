@@ -229,13 +229,6 @@
                                                     ? EinsatzService.Teams.FirstOrDefault(t => t.TeamId != team.TeamId && t.IsRunning && t.DogId == team.DogId)?.TeamName
                                                     : null;
                                                 <div @key="team.TeamId" class="team-order-item" data-team-id="@team.TeamId">
-                                                    <button type="button"
-                                                            class="team-order-handle"
-                                                            data-team-order-handle
-                                                            aria-label="@($"{team.TeamName} verschieben")"
-                                                            title="Mit Maus, Touch oder Pfeiltasten verschieben">
-                                                        <i class="bi bi-grip-vertical" aria-hidden="true"></i>
-                                                    </button>
                                                     <TeamCard Team="team"
                                                               IsDogConflict="isDogConflict"
                                                               ConflictingTeamName="conflictingTeamName"
