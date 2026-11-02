@@ -19,6 +19,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         event Action<Team>? TeamAdded;
         event Action<Team>? TeamRemoved;
         event Action<Team>? TeamUpdated;
+        event Action? TeamsReordered;
         event Action<GlobalNotesEntry>? NoteAdded;
         event Action<Team, bool>? TeamWarningTriggered;
         event Action? VermisstenInfoChanged;
@@ -50,6 +51,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         Task<Team> AddTeamAsync(Team team);
         Task RemoveTeamAsync(string teamId);
         Task UpdateTeamAsync(Team team);
+        Task ReorderTeamsAsync(IReadOnlyList<string> teamIds);
         Task<Team?> GetTeamByIdAsync(string teamId);
 
         Task StartTeamTimerAsync(string teamId);

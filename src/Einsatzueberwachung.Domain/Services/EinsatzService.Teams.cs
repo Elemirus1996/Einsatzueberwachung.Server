@@ -25,8 +25,15 @@ namespace Einsatzueberwachung.Domain.Services
                 team.SyncPauseFromDog(dogPause.PauseStartTime, dogPause.RunTimeBeforePause, dogPause.RequiredPauseMinutes);
             }
 
-            _teams.Add(team);
-            TeamEreignisseAbonnieren(team);
+            lock (_teamOrderSync)
+            {
+                EnsureTeamOrderIndices();
+                team.ManualOrderIndex = _teams.Count == 0
+                    ? 0
+                    : _teams.Max(existing => existing.ManualOrderIndex ?? -1) + 1;
+                _teams.Add(team);
+                TeamEreignisseAbonnieren(team);
+            }
 
             TeamAdded?.Invoke(team);
             return team;
@@ -37,13 +44,21 @@ namespace Einsatzueberwachung.Domain.Services
             if (IsEinsatzAktiv())
                 throw new InvalidOperationException("Teams können während eines laufenden Einsatzes nicht gelöscht werden.");
 
-            var team = _teams.FirstOrDefault(t => t.TeamId == teamId);
+            Team? team;
+            lock (_teamOrderSync)
+            {
+                team = _teams.FirstOrDefault(t => t.TeamId == teamId);
+                if (team != null)
+                {
+                    team.StopTimer();
+                    TeamEreignisseAbmelden(team);
+                    team.Dispose();
+                    _teams.Remove(team);
+                }
+            }
+
             if (team != null)
             {
-                team.StopTimer();
-                TeamEreignisseAbmelden(team);
-                team.Dispose();
-                _teams.Remove(team);
                 TeamRemoved?.Invoke(team);
             }
 
@@ -59,6 +74,68 @@ namespace Einsatzueberwachung.Domain.Services
                 TeamUpdated?.Invoke(existing);
             }
             return Task.CompletedTask;
+        }
+
+        public Task ReorderTeamsAsync(IReadOnlyList<string> teamIds)
+        {
+            if (teamIds is null || teamIds.Count < 2)
+                return Task.CompletedTask;
+
+            var changed = false;
+            lock (_teamOrderSync)
+            {
+                var requestedIds = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var teamId in teamIds)
+                {
+                    if (string.IsNullOrWhiteSpace(teamId)
+                        || !requestedIds.Add(teamId)
+                        || !_teams.Any(team => team.TeamId == teamId))
+                    {
+                        return Task.CompletedTask;
+                    }
+                }
+
+                EnsureTeamOrderIndices();
+                var orderedTeams = _teams.OrderBy(team => team.ManualOrderIndex).ToList();
+                var positions = orderedTeams
+                    .Select((team, index) => (team, index))
+                    .Where(entry => requestedIds.Contains(entry.team.TeamId))
+                    .Select(entry => entry.index)
+                    .ToArray();
+                var reorderedTeams = teamIds
+                    .Select(teamId => orderedTeams.First(team => team.TeamId == teamId))
+                    .ToArray();
+
+                if (!positions.Select(index => orderedTeams[index]).SequenceEqual(reorderedTeams))
+                {
+                    for (var index = 0; index < positions.Length; index++)
+                        orderedTeams[positions[index]] = reorderedTeams[index];
+
+                    for (var index = 0; index < orderedTeams.Count; index++)
+                        orderedTeams[index].ManualOrderIndex = index;
+
+                    changed = true;
+                }
+            }
+
+            if (changed)
+                TeamsReordered?.Invoke();
+            return Task.CompletedTask;
+        }
+
+        private void EnsureTeamOrderIndices()
+        {
+            if (_teams.All(team => team.ManualOrderIndex.HasValue))
+                return;
+
+            var orderedTeams = _teams
+                .OrderBy(team => team.ManualOrderIndex ?? int.MaxValue)
+                .ThenBy(team => team.IsPausing ? 3 : team.IsRunning || team.IsManuallyPaused ? 0 : 1)
+                .ThenBy(team => team.TeamName)
+                .ToArray();
+
+            for (var index = 0; index < orderedTeams.Length; index++)
+                orderedTeams[index].ManualOrderIndex = index;
         }
 
         public Task<Team?> GetTeamByIdAsync(string teamId)

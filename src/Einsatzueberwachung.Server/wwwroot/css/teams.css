@@ -114,6 +114,75 @@
     gap: 0.5rem;
 }
 
+.team-order-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.team-order-item > .monitor-team-card {
+    flex: 1;
+    min-width: 0;
+}
+
+.team-order-handle {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ui-muted);
+    background: var(--ui-surface-2);
+    border: 1px solid var(--ui-border);
+    border-radius: 0.5rem;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.team-order-handle:hover,
+.team-order-handle:active {
+    color: var(--theme-primary);
+    border-color: var(--theme-primary);
+}
+
+.team-order-handle:active {
+    cursor: grabbing;
+}
+
+.team-order-handle:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+}
+
+.team-order-item--dragging > .monitor-team-card {
+    outline: 2px solid color-mix(in srgb, var(--theme-primary) 65%, transparent);
+    outline-offset: 1px;
+    opacity: 0.68;
+}
+
+.team-order-item--drop-before::before,
+.team-order-item--drop-after::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--theme-primary);
+    pointer-events: none;
+}
+
+.team-order-item--drop-before::before {
+    top: -0.3rem;
+}
+
+.team-order-item--drop-after::after {
+    bottom: -0.3rem;
+}
+
 /* ── Base card ──────────────────────────────────────────────────────────── */
 .monitor-team-card {
     border-radius: 8px;
@@ -892,4 +961,3 @@
     font-size: 1.1rem;
     font-weight: 600;
 }
-

@@ -122,6 +122,13 @@ namespace Einsatzueberwachung.Domain.Models
             TruemmerAreas = new List<TruemmerArea>();
         }
 
+        internal EinsatzData CopyWithTeams(List<Team> teams)
+        {
+            var copy = (EinsatzData)MemberwiseClone();
+            copy.Teams = teams;
+            return copy;
+        }
+
         public string EinsatzTyp => IstEinsatz ? "Einsatz" : "Übung";
 
         /// <summary>

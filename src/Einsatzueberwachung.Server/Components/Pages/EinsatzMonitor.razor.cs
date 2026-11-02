@@ -111,6 +111,9 @@ public partial class EinsatzMonitor
     private readonly HashSet<string> _expandedTeamIds = new();
     private TeamStatusFilter _teamStatusFilter = TeamStatusFilter.All;
     private bool _showTeamFilter;
+    private ElementReference _teamsMonitorList;
+    private DotNetObjectReference<EinsatzMonitor>? _teamOrderingReference;
+    private bool _teamOrderingInitialized;
 
     // Screensaver (kein aktiver Einsatz)
     private System.Threading.Timer? _screensaverClockTimer;
@@ -172,6 +175,7 @@ public partial class EinsatzMonitor
         EinsatzService.TeamAdded += OnTeamChanged;
         EinsatzService.TeamRemoved += OnTeamChanged;
         EinsatzService.TeamUpdated += OnTeamChanged;
+        EinsatzService.TeamsReordered += OnTeamsReordered;
         EinsatzService.EinsatzChanged += OnEinsatzChanged;
         EinsatzService.NoteAdded += OnNoteAdded;
         CollarTrackingService.CollarLocationReceived += OnCollarLocationChanged;
@@ -200,6 +204,31 @@ public partial class EinsatzMonitor
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        var teamListIsRendered = HasActiveEinsatz
+            && EinsatzService.Teams.Count > 0
+            && _currentLayout.Any(panel => panel.PanelId == KnownPanels.Teams && panel.IsVisible);
+
+        if (teamListIsRendered && !_teamOrderingInitialized)
+        {
+            _teamOrderingReference ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("teamOrdering.initialize", _teamsMonitorList, _teamOrderingReference);
+            _teamOrderingInitialized = true;
+        }
+        else if (!teamListIsRendered)
+        {
+            if (_teamOrderingInitialized)
+            {
+                try
+                {
+                    await JS.InvokeVoidAsync("teamOrdering.dispose", _teamsMonitorList);
+                }
+                catch (JSDisconnectedException)
+                {
+                }
+            }
+            _teamOrderingInitialized = false;
+        }
+
         if (firstRender)
         {
             await RefreshEinsatzdauerFromHeaderTimeAsync();
@@ -214,11 +243,12 @@ public partial class EinsatzMonitor
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         EinsatzService.TeamAdded -= OnTeamChanged;
         EinsatzService.TeamRemoved -= OnTeamChanged;
         EinsatzService.TeamUpdated -= OnTeamChanged;
+        EinsatzService.TeamsReordered -= OnTeamsReordered;
         EinsatzService.EinsatzChanged -= OnEinsatzChanged;
         EinsatzService.NoteAdded -= OnNoteAdded;
         CollarTrackingService.CollarLocationReceived -= OnCollarLocationChanged;
@@ -227,6 +257,19 @@ public partial class EinsatzMonitor
         _weatherRefreshTimer?.Dispose();
         _durationRefreshTimer?.Dispose();
         _screensaverClockTimer?.Dispose();
+
+        if (_teamOrderingInitialized)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("teamOrdering.dispose", _teamsMonitorList);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        _teamOrderingReference?.Dispose();
     }
 
     // ===== Dashboard-Layout-Methoden =====
@@ -474,6 +517,11 @@ public partial class EinsatzMonitor
         var activeIds = EinsatzService.Teams.Select(t => t.TeamId).ToHashSet();
         _expandedTeamIds.IntersectWith(activeIds);
 
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnTeamsReordered()
+    {
         InvokeAsync(StateHasChanged);
     }
 
@@ -743,7 +791,8 @@ public partial class EinsatzMonitor
     };
 
     internal static IOrderedEnumerable<Team> OrderTeamsForMonitor(IEnumerable<Team> teams) =>
-        teams.OrderBy(team => team.IsPausing ? 3 : team.IsRunning || team.IsManuallyPaused ? 0 : 1)
+        teams.OrderBy(team => team.ManualOrderIndex ?? int.MaxValue)
+            .ThenBy(team => team.IsPausing ? 3 : team.IsRunning || team.IsManuallyPaused ? 0 : 1)
             .ThenBy(team => team.TeamName);
 
     private IEnumerable<Team> GetFilteredTeams()
@@ -758,6 +807,10 @@ public partial class EinsatzMonitor
             _ => teams
         };
     }
+
+    [JSInvokable]
+    public Task ReorderTeamsFromMonitor(string[] teamIds) =>
+        EinsatzService.ReorderTeamsAsync(teamIds);
 
     private int GetTeamCountForFilter(TeamStatusFilter filter)
     {
