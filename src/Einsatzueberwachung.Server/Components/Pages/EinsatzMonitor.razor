@@ -937,7 +937,7 @@
                         <div class="input-group">
                             <select class="form-select" @onchange="e => _editEinsatzForm.Einsatzleiter = e.Value?.ToString() ?? _editEinsatzForm.Einsatzleiter">
                                 <option value="">- aus Stammdaten -</option>
-                                @foreach (var p in _personalList.Where(x => x.IsActive && x.Skills.HasFlag(PersonalSkills.Einsatzleiter)).OrderBy(x => x.Nachname))
+                                @foreach (var p in SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(x => x.IsActive && x.Skills.HasFlag(PersonalSkills.Einsatzleiter))))
                                 {
                                     <option value="@p.FullName">@p.FullName</option>
                                 }
@@ -950,7 +950,7 @@
                         <div class="input-group">
                             <select class="form-select" @onchange="e => _editEinsatzForm.Fuehrungsassistent = e.Value?.ToString() ?? _editEinsatzForm.Fuehrungsassistent">
                                 <option value="">- aus Stammdaten -</option>
-                                @foreach (var p in _personalList.Where(x => x.IsActive && x.Skills.HasFlag(PersonalSkills.Fuehrungsassistent)).OrderBy(x => x.Nachname))
+                                @foreach (var p in SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(x => x.IsActive && x.Skills.HasFlag(PersonalSkills.Fuehrungsassistent))))
                                 {
                                     <option value="@p.FullName">@p.FullName</option>
                                 }

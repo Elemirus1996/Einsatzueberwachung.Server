@@ -45,10 +45,8 @@ public partial class ElStart : IDisposable
     private bool _error;
     private bool _busy;
 
-    private IEnumerable<PersonalEntry> ActivePersonnel => _personal
-        .Where(p => p.IsActive)
-        .OrderBy(p => p.Nachname)
-        .ThenBy(p => p.Vorname);
+    private IEnumerable<PersonalEntry> ActivePersonnel =>
+        SelectionListOrdering.OrderPersonnelByFirstName(_personal.Where(p => p.IsActive));
 
     private IEnumerable<PersonalEntry> EinsatzleiterOptions => ActivePersonnel.Where(p => p.Skills.HasFlag(PersonalSkills.Einsatzleiter));
 

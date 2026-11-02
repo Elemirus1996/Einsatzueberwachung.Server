@@ -20,8 +20,12 @@ public partial class Stammdaten
     [SupplyParameterFromQuery(Name = "highlight")]
     public string? HighlightId { get; set; }
 
-    private static readonly PersonalSkills[] _personalSkillOptions = Enum.GetValues<PersonalSkills>().Where(value => value != PersonalSkills.None).ToArray();
-    private static readonly DogSpecialization[] _dogSpecializationOptions = Enum.GetValues<DogSpecialization>().Where(value => value != DogSpecialization.None).ToArray();
+    private static readonly PersonalSkills[] _personalSkillOptions = Enum.GetValues<PersonalSkills>()
+        .Where(value => value != PersonalSkills.None)
+        .OrderBy(value => value.GetDisplayName(), StringComparer.CurrentCultureIgnoreCase)
+        .ToArray();
+    private static readonly DogSpecialization[] _dogSpecializationOptions =
+        SelectionListOrdering.OrderDogSpecializations(Enum.GetValues<DogSpecialization>()).ToArray();
 
     private int _personalCount;
     private int _dogCount;
@@ -154,9 +158,11 @@ public partial class Stammdaten
         if (ids == null || ids.Count == 0)
             return "-";
 
-        var names = ids
-            .Select(id => _personal.FirstOrDefault(p => p.Id == id)?.FullName)
-            .Where(n => n != null);
+        var handlers = ids
+            .Select(id => _personal.FirstOrDefault(person => person.Id == id))
+            .Where(person => person is not null)
+            .Cast<PersonalEntry>();
+        var names = SelectionListOrdering.OrderPersonnelByFirstName(handlers).Select(person => person.FullName);
         var result = string.Join(", ", names);
         return string.IsNullOrWhiteSpace(result) ? "-" : result;
     }

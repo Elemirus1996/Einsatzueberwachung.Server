@@ -269,10 +269,8 @@ public partial class EinsatzMonitor
 
     // ===== Bestehende Methoden (unverändert) =====
 
-    private IEnumerable<PersonalEntry> ActivePersonnel => _personalList
-        .Where(person => person.IsActive)
-        .OrderBy(person => person.Nachname)
-        .ThenBy(person => person.Vorname);
+    private IEnumerable<PersonalEntry> ActivePersonnel =>
+        SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(person => person.IsActive));
 
     private IEnumerable<DogEntry> ActiveDogs => _dogList
         .Where(dog => dog.IsActive)
@@ -359,7 +357,9 @@ public partial class EinsatzMonitor
         }
 
         // ── Persons ──────────────────────────────────────────────────────────
-        var activePersons = _personalList.Where(p => p.IsActive).OrderBy(p => p.FullName).ToList();
+        var activePersons = SelectionListOrdering
+            .OrderPersonnelByFirstName(_personalList.Where(person => person.IsActive))
+            .ToList();
         var personNameGroups = activePersons.GroupBy(p => p.FullName).ToDictionary(g => g.Key, g => g.ToList());
 
         foreach (var person in activePersons)
