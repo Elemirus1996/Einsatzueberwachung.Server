@@ -18,12 +18,67 @@ window.teamOrdering = (() => {
         return order;
     }
 
+    const autoScrollEdgeSize = 56;
+    const autoScrollMaxSpeed = 16;
+
+    function findScrollContainer(element) {
+        let node = element.parentElement;
+        while (node && node !== document.body) {
+            const style = window.getComputedStyle(node);
+            if (style.overflowY === "auto" || style.overflowY === "scroll") {
+                return node;
+            }
+            node = node.parentElement;
+        }
+        return document.scrollingElement || document.documentElement;
+    }
+
     function initialize(list, dotNetReference) {
         if (!list || list.teamOrderingController) {
             return;
         }
 
         let drag = null;
+        let autoScrollRaf = null;
+
+        function autoScrollStep() {
+            if (!drag) {
+                autoScrollRaf = null;
+                return;
+            }
+
+            const container = findScrollContainer(list);
+            const rect = container.getBoundingClientRect();
+            const pointerY = drag.pointerY;
+            let delta = 0;
+
+            if (pointerY < rect.top + autoScrollEdgeSize) {
+                const intensity = Math.min(1, (rect.top + autoScrollEdgeSize - pointerY) / autoScrollEdgeSize);
+                delta = -Math.ceil(autoScrollMaxSpeed * intensity);
+            } else if (pointerY > rect.bottom - autoScrollEdgeSize) {
+                const intensity = Math.min(1, (pointerY - (rect.bottom - autoScrollEdgeSize)) / autoScrollEdgeSize);
+                delta = Math.ceil(autoScrollMaxSpeed * intensity);
+            }
+
+            if (delta !== 0) {
+                container.scrollTop += delta;
+            }
+
+            autoScrollRaf = requestAnimationFrame(autoScrollStep);
+        }
+
+        function startAutoScroll() {
+            if (autoScrollRaf === null) {
+                autoScrollRaf = requestAnimationFrame(autoScrollStep);
+            }
+        }
+
+        function stopAutoScroll() {
+            if (autoScrollRaf !== null) {
+                cancelAnimationFrame(autoScrollRaf);
+                autoScrollRaf = null;
+            }
+        }
 
         function clearIndicators() {
             list.classList.remove("team-order-list--dragging");
@@ -45,6 +100,7 @@ window.teamOrdering = (() => {
                 ? moveTeam(getItems(list).map(item => item.dataset.teamId), teamId, targetId, after)
                 : null;
             drag = null;
+            stopAutoScroll();
             if (handle.hasPointerCapture(pointerId)) {
                 handle.releasePointerCapture(pointerId);
             }
@@ -73,7 +129,8 @@ window.teamOrdering = (() => {
                 handle,
                 teamId: item.dataset.teamId,
                 targetId: null,
-                after: false
+                after: false,
+                pointerY: event.clientY
             };
             list.classList.add("team-order-list--dragging");
             item.classList.add("team-order-item--dragging");
@@ -82,6 +139,7 @@ window.teamOrdering = (() => {
             } catch {
                 finish(false);
             }
+            startAutoScroll();
         }
 
         function onPointerMove(event) {
@@ -90,6 +148,7 @@ window.teamOrdering = (() => {
             }
 
             event.preventDefault();
+            drag.pointerY = event.clientY;
             const target = document.elementFromPoint(event.clientX, event.clientY);
             const item = target instanceof Element ? target.closest(itemSelector) : null;
             const source = getItems(list).find(entry => entry.dataset.teamId === drag.teamId);
