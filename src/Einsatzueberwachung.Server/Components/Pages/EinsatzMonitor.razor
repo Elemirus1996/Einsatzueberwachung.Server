@@ -856,11 +856,18 @@
                                             @foreach (var note in EinsatzService.GlobalNotes.OrderByDescending(n => n.Timestamp).Take(10))
                                             {
                                                 <div class="note-card @GetNoteCssClass(note) @(note.Replies.Count > 0 ? "has-replies" : string.Empty)">
-                                                    <div class="d-flex justify-content-between">
-                                                        <strong>@(string.IsNullOrWhiteSpace(note.SourceTeamName) ? "System" : note.SourceTeamName)</strong>
-                                                        <span class="text-muted">@note.FormattedTimestamp</span>
+                                                    <div class="monitor-note-header d-flex justify-content-between align-items-baseline gap-2">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            @if (GetNoteCssClass(note) == "note-type-teamwarning")
+                                                            {
+                                                                <i class="bi bi-exclamation-triangle-fill monitor-note-status-icon"
+                                                                   role="img" aria-label="Teamwarnung"></i>
+                                                            }
+                                                            <strong class="monitor-note-author">@(string.IsNullOrWhiteSpace(note.SourceTeamName) ? "System" : note.SourceTeamName)</strong>
+                                                        </div>
+                                                        <span class="monitor-note-timestamp text-muted">@note.FormattedTimestamp</span>
                                                     </div>
-                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <div class="monitor-note-content d-flex justify-content-between align-items-start mb-2">
                                                         <div>@MentionTextarea.RenderWithMentions(note.Text)</div>
                                                         <button class="btn btn-sm btn-link p-0 ms-2 text-muted flex-shrink-0" @onclick="() => ToggleReplyForm(note.Id)" title="Antworten">
                                                             <i class="bi bi-reply-fill"></i>
@@ -895,7 +902,7 @@
 
                                                     @if (note.Replies.Count > 0)
                                                     {
-                                                        <div class="small">
+                                                        <div class="monitor-note-replies">
                                                             @foreach (var reply in note.Replies.OrderBy(r => r.Timestamp))
                                                             {
                                                                 <div class="monitor-reply-thread ps-2 py-1 mb-1">
@@ -1035,21 +1042,26 @@
                                                 <div class="suchgebiet-row @(area.IsCompleted ? "suchgebiet-done" : "")">
                                                     <span class="suchgebiet-color-dot" style="background:@area.Color"></span>
                                                     <div class="suchgebiet-info">
-                                                        <div class="fw-semibold small">@area.Name</div>
-                                                        <div class="small text-muted">@area.FormattedArea</div>
+                                                        <div class="suchgebiet-name">@area.Name</div>
+                                                        <div class="suchgebiet-area">@area.FormattedArea</div>
                                                     </div>
                                                     <div class="suchgebiet-team ms-auto">
                                                         @if (areaTeam is not null)
                                                         {
-                                                            <span class="badge" style="background:@GetTeamColor(areaTeam)">@areaTeam.TeamName</span>
+                                                            <span class="suchgebiet-team-name">
+                                                                <span class="suchgebiet-team-dot" style="background:@GetTeamColor(areaTeam)" aria-hidden="true"></span>
+                                                                @areaTeam.TeamName
+                                                            </span>
                                                         }
                                                         else
                                                         {
-                                                            <span class="badge bg-secondary">Unbesetzt</span>
+                                                            <span class="suchgebiet-unoccupied">Unbesetzt</span>
                                                         }
                                                         @if (area.IsCompleted)
                                                         {
-                                                            <span class="badge bg-success ms-1"><i class="bi bi-check-lg"></i></span>
+                                                            <span class="suchgebiet-completed" role="img" title="Abgeschlossen" aria-label="Abgeschlossen">
+                                                                <i class="bi bi-check-lg" aria-hidden="true"></i>
+                                                            </span>
                                                         }
                                                     </div>
                                                 </div>
