@@ -310,6 +310,110 @@ public partial class EinsatzMonitor
     private static string PanelLabel(string panelId) =>
         KnownPanels.Labels.TryGetValue(panelId, out var label) ? label : panelId;
 
+    private static bool IsSummaryPanel(string panelId) =>
+        panelId is KnownPanels.EinsatzInfo or KnownPanels.Vermissten or KnownPanels.Wetter;
+
+    private bool CanExpandSummaryDetails(string panelId) => panelId switch
+    {
+        KnownPanels.EinsatzInfo => true,
+        KnownPanels.Vermissten => (EinsatzService.CurrentEinsatz.Vermisste?.Count ?? 0) > 0,
+        KnownPanels.Wetter => _monitorWeather is not null,
+        _ => false
+    };
+
+    private sealed record PoliceContactSummary(
+        string PersonName,
+        string? ContactName,
+        string? ServiceNumber,
+        string? Phone);
+
+    private IReadOnlyList<PoliceContactSummary> GetPoliceContactSummaries()
+    {
+        var einsatz = EinsatzService.CurrentEinsatz;
+        if (HasPoliceContact(einsatz.PolizeiKontaktName, einsatz.PolizeiDienstnummer, einsatz.PolizeiTelefon))
+        {
+            return
+            [
+                new PoliceContactSummary(
+                    "Polizei-Kontakt",
+                    einsatz.PolizeiKontaktName,
+                    einsatz.PolizeiDienstnummer,
+                    einsatz.PolizeiTelefon)
+            ];
+        }
+
+        if (einsatz.EinsatzkontakteMigriert)
+        {
+            return [];
+        }
+
+        var vermisste = einsatz.Vermisste;
+        if (vermisste is null)
+        {
+            return [];
+        }
+        return vermisste
+            .Where(person => HasPoliceContact(person.PolizeiKontaktName, person.PolizeiDienstnummer, person.PolizeiTelefon))
+            .Select(person => new PoliceContactSummary(
+                string.IsNullOrWhiteSpace(person.VollerName) ? "Vermisste Person" : person.VollerName,
+                person.PolizeiKontaktName,
+                person.PolizeiDienstnummer,
+                person.PolizeiTelefon))
+            .ToArray();
+    }
+
+    private string GetBosContactSummary()
+    {
+        var einsatz = EinsatzService.CurrentEinsatz;
+        var globalContact = FormatContact(einsatz.BosEinheit, einsatz.BosZugfuehrer, einsatz.BosFunkrufname, einsatz.BosAufgabenteilung);
+        if (!string.IsNullOrWhiteSpace(globalContact) || einsatz.EinsatzkontakteMigriert)
+        {
+            return globalContact;
+        }
+
+        return einsatz.Vermisste?
+            .Select(person => FormatContact(person.BosEinheit, person.BosZugfuehrer, person.BosFunkrufname, person.BosAufgabenteilung))
+            .FirstOrDefault(contact => !string.IsNullOrWhiteSpace(contact))
+            ?? string.Empty;
+    }
+
+    private static string FormatContact(params string[] values) =>
+        string.Join(" · ", values.Where(value => !string.IsNullOrWhiteSpace(value)));
+
+    private static bool HasPoliceContact(string? contactName, string? serviceNumber, string? phone) =>
+        !string.IsNullOrWhiteSpace(contactName)
+        || !string.IsNullOrWhiteSpace(serviceNumber)
+        || !string.IsNullOrWhiteSpace(phone);
+
+    private static string FirstNonEmpty(string currentValue, IEnumerable<string> legacyValues) =>
+        !string.IsNullOrWhiteSpace(currentValue)
+            ? currentValue
+            : legacyValues.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
+
+    private bool IsSummaryDetailsExpanded(string panelId) => panelId switch
+    {
+        KnownPanels.EinsatzInfo => _einsatzInfoDetailsExpanded,
+        KnownPanels.Vermissten => _vermisstenDetailsExpanded,
+        KnownPanels.Wetter => _wetterDetailsExpanded,
+        _ => false
+    };
+
+    private void ToggleSummaryDetails(string panelId)
+    {
+        switch (panelId)
+        {
+            case KnownPanels.EinsatzInfo:
+                _einsatzInfoDetailsExpanded = !_einsatzInfoDetailsExpanded;
+                break;
+            case KnownPanels.Vermissten:
+                _vermisstenDetailsExpanded = !_vermisstenDetailsExpanded;
+                break;
+            case KnownPanels.Wetter:
+                _wetterDetailsExpanded = !_wetterDetailsExpanded;
+                break;
+        }
+    }
+
     // ===== Bestehende Methoden (unverändert) =====
 
     private IEnumerable<PersonalEntry> ActivePersonnel =>
@@ -688,73 +792,54 @@ public partial class EinsatzMonitor
             .Take(6);
     }
 
-    private static string GetWeatherRiskBadgeClass(WeatherData weather)
+    private WeatherMetricTrend GetWeatherTrend(
+        string metricName,
+        Func<WeatherData, double> getValue,
+        int precision,
+        bool heatSensitive = false)
     {
-        return EvaluateWeatherRisk(weather) switch
+        if (_monitorWeather is null)
         {
-            WeatherRiskLevel.Kritisch => "bg-danger",
-            WeatherRiskLevel.Erhoeht => "bg-warning text-dark",
-            WeatherRiskLevel.Beobachten => "bg-info",
-            _ => "bg-success"
-        };
-    }
-
-    private static string GetWeatherRiskLabel(WeatherData weather)
-    {
-        return EvaluateWeatherRisk(weather) switch
-        {
-            WeatherRiskLevel.Kritisch => "Kritisch",
-            WeatherRiskLevel.Erhoeht => "Erhöht",
-            WeatherRiskLevel.Beobachten => "Beobachten",
-            _ => "Stabil"
-        };
-    }
-
-    private static string GetForecastRiskClass(WeatherData forecast)
-    {
-        return EvaluateWeatherRisk(forecast) switch
-        {
-            WeatherRiskLevel.Kritisch => "forecast-critical",
-            WeatherRiskLevel.Erhoeht => "forecast-warning",
-            _ => string.Empty
-        };
-    }
-
-    private static WeatherRiskLevel EvaluateWeatherRisk(WeatherData weather)
-    {
-        if (weather.WarnungsStufe >= WarnungsStufe.Unwetter
-            || weather.Windboeen >= 65
-            || weather.Niederschlag >= 8
-            || weather.Sichtweite < 1.5)
-        {
-            return WeatherRiskLevel.Kritisch;
+            return WeatherMetricTrend.Unavailable;
         }
 
-        if (weather.WarnungsStufe >= WarnungsStufe.Markant
-            || weather.Windboeen >= 50
-            || weather.Niederschlag >= 4
-            || weather.Sichtweite < 3)
+        var forecast = GetMonitorForecastItems().Take(3).ToArray();
+        if (forecast.Length == 0)
         {
-            return WeatherRiskLevel.Erhoeht;
+            return WeatherMetricTrend.Unavailable;
         }
 
-        if (weather.WarnungsStufe == WarnungsStufe.Vorabwarnung
-            || weather.Windboeen >= 35
-            || weather.Niederschlag >= 1.5
-            || weather.Sichtweite < 5)
+        var currentValue = Math.Round(getValue(_monitorWeather), precision, MidpointRounding.AwayFromZero);
+        var forecastPeak = Math.Round(forecast.Max(getValue), precision, MidpointRounding.AwayFromZero);
+        var isHeatRelevant = !heatSensitive
+            || _monitorWeather.Temperatur > 30
+            || forecast.Any(item => item.Temperatur > 30);
+
+        if (forecastPeak == currentValue)
         {
-            return WeatherRiskLevel.Beobachten;
+            return new(true, "bi-arrow-right-short", $"{metricName}: bleibt in den nächsten Stunden etwa gleich.", "monitor-weather-trend--stable");
         }
 
-        return WeatherRiskLevel.Stabil;
+        var isIncreasing = forecastPeak > currentValue;
+        var isWorsening = isIncreasing && isHeatRelevant;
+        var iconClass = isIncreasing ? "bi-arrow-up-short" : "bi-arrow-down-short";
+        var stateClass = isWorsening
+            ? "monitor-weather-trend--worsening"
+            : isHeatRelevant
+                ? "monitor-weather-trend--improving"
+                : "monitor-weather-trend--stable";
+        var change = isIncreasing ? "nimmt zu" : "nimmt ab";
+
+        return new(true, iconClass, $"{metricName} {change}.", stateClass);
     }
 
-    private enum WeatherRiskLevel
+    private sealed record WeatherMetricTrend(
+        bool IsAvailable,
+        string IconClass,
+        string Description,
+        string CssClass)
     {
-        Stabil,
-        Beobachten,
-        Erhoeht,
-        Kritisch
+        public static WeatherMetricTrend Unavailable { get; } = new(false, string.Empty, string.Empty, string.Empty);
     }
 
     private enum TeamStatusFilter
@@ -1705,6 +1790,20 @@ public partial class EinsatzMonitor
     {
         public bool IstEinsatz { get; set; } = true;
         public string EinsatzNummer { get; set; } = string.Empty;
+        public string PolizeiKontaktName { get; set; } = string.Empty;
+        public string PolizeiDienstnummer { get; set; } = string.Empty;
+        public string PolizeiTelefon { get; set; } = string.Empty;
+        public bool PolizeiVermisstenmeldungAufgenommen { get; set; }
+        public bool PolizeiKoordinationBesprochen { get; set; }
+        public bool PolizeiSuchabschnittAbgestimmt { get; set; }
+        public bool PolizeiRueckmeldepflichtVereinbart { get; set; }
+        public bool PolizeiDatenschutzGeklaert { get; set; }
+        public string BosEinheit { get; set; } = string.Empty;
+        public string BosZugfuehrer { get; set; } = string.Empty;
+        public string BosFunkrufname { get; set; } = string.Empty;
+        public string BosAufgabenteilung { get; set; } = string.Empty;
+        public bool BosAbschnittAbgestimmt { get; set; }
+        public bool BosRessourcenBesprochen { get; set; }
         public string AlarmierungsZeit { get; set; } = string.Empty;
         public string Einsatzort { get; set; } = string.Empty;
         public string MapAddress { get; set; } = string.Empty;
@@ -1718,8 +1817,23 @@ public partial class EinsatzMonitor
     private void OpenEditEinsatzModal()
     {
         var e = EinsatzService.CurrentEinsatz;
+        var legacyContacts = e.EinsatzkontakteMigriert ? new List<VermisstenInfo>() : e.Vermisste ?? new();
         _editEinsatzForm.IstEinsatz = e.IstEinsatz;
         _editEinsatzForm.EinsatzNummer = e.EinsatzNummer;
+        _editEinsatzForm.PolizeiKontaktName = FirstNonEmpty(e.PolizeiKontaktName, legacyContacts.Select(person => person.PolizeiKontaktName));
+        _editEinsatzForm.PolizeiDienstnummer = FirstNonEmpty(e.PolizeiDienstnummer, legacyContacts.Select(person => person.PolizeiDienstnummer));
+        _editEinsatzForm.PolizeiTelefon = FirstNonEmpty(e.PolizeiTelefon, legacyContacts.Select(person => person.PolizeiTelefon));
+        _editEinsatzForm.PolizeiVermisstenmeldungAufgenommen = e.PolizeiVermisstenmeldungAufgenommen || legacyContacts.Any(person => person.PolizeiVermisstenmeldungAufgenommen);
+        _editEinsatzForm.PolizeiKoordinationBesprochen = e.PolizeiKoordinationBesprochen || legacyContacts.Any(person => person.PolizeiKoordinationBesprochen);
+        _editEinsatzForm.PolizeiSuchabschnittAbgestimmt = e.PolizeiSuchabschnittAbgestimmt || legacyContacts.Any(person => person.PolizeiSuchabschnittAbgestimmt);
+        _editEinsatzForm.PolizeiRueckmeldepflichtVereinbart = e.PolizeiRueckmeldepflichtVereinbart || legacyContacts.Any(person => person.PolizeiRueckmeldepflichtVereinbart);
+        _editEinsatzForm.PolizeiDatenschutzGeklaert = e.PolizeiDatenschutzGeklaert || legacyContacts.Any(person => person.PolizeiDatenschutzGeklaert);
+        _editEinsatzForm.BosEinheit = FirstNonEmpty(e.BosEinheit, legacyContacts.Select(person => person.BosEinheit));
+        _editEinsatzForm.BosZugfuehrer = FirstNonEmpty(e.BosZugfuehrer, legacyContacts.Select(person => person.BosZugfuehrer));
+        _editEinsatzForm.BosFunkrufname = FirstNonEmpty(e.BosFunkrufname, legacyContacts.Select(person => person.BosFunkrufname));
+        _editEinsatzForm.BosAufgabenteilung = FirstNonEmpty(e.BosAufgabenteilung, legacyContacts.Select(person => person.BosAufgabenteilung));
+        _editEinsatzForm.BosAbschnittAbgestimmt = e.BosAbschnittAbgestimmt || legacyContacts.Any(person => person.BosAbschnittAbgestimmt);
+        _editEinsatzForm.BosRessourcenBesprochen = e.BosRessourcenBesprochen || legacyContacts.Any(person => person.BosRessourcenBesprochen);
         _editEinsatzForm.AlarmierungsZeit = e.AlarmierungsZeit?.ToString("HH:mm") ?? string.Empty;
         _editEinsatzForm.Einsatzort = e.Einsatzort;
         _editEinsatzForm.MapAddress = e.MapAddress;
@@ -1763,6 +1877,21 @@ public partial class EinsatzMonitor
         {
             IstEinsatz = _editEinsatzForm.IstEinsatz,
             EinsatzNummer = _editEinsatzForm.EinsatzNummer,
+            EinsatzkontakteMigriert = true,
+            PolizeiKontaktName = _editEinsatzForm.PolizeiKontaktName,
+            PolizeiDienstnummer = _editEinsatzForm.PolizeiDienstnummer,
+            PolizeiTelefon = _editEinsatzForm.PolizeiTelefon,
+            PolizeiVermisstenmeldungAufgenommen = _editEinsatzForm.PolizeiVermisstenmeldungAufgenommen,
+            PolizeiKoordinationBesprochen = _editEinsatzForm.PolizeiKoordinationBesprochen,
+            PolizeiSuchabschnittAbgestimmt = _editEinsatzForm.PolizeiSuchabschnittAbgestimmt,
+            PolizeiRueckmeldepflichtVereinbart = _editEinsatzForm.PolizeiRueckmeldepflichtVereinbart,
+            PolizeiDatenschutzGeklaert = _editEinsatzForm.PolizeiDatenschutzGeklaert,
+            BosEinheit = _editEinsatzForm.BosEinheit,
+            BosZugfuehrer = _editEinsatzForm.BosZugfuehrer,
+            BosFunkrufname = _editEinsatzForm.BosFunkrufname,
+            BosAufgabenteilung = _editEinsatzForm.BosAufgabenteilung,
+            BosAbschnittAbgestimmt = _editEinsatzForm.BosAbschnittAbgestimmt,
+            BosRessourcenBesprochen = _editEinsatzForm.BosRessourcenBesprochen,
             Einsatzort = _editEinsatzForm.Einsatzort,
             MapAddress = _editEinsatzForm.MapAddress,
             Alarmiert = _editEinsatzForm.Alarmiert,
@@ -1875,20 +2004,20 @@ public partial class EinsatzMonitor
     private IEnumerable<(string Label, Func<bool> Getter, Action<bool> Setter)> GetPolizeiChecklist()
     {
         yield return ("Vermisstenmeldung aufgenommen",
-            () => _vForm.PolizeiVermisstenmeldungAufgenommen,
-            v => _vForm.PolizeiVermisstenmeldungAufgenommen = v);
+            () => _editEinsatzForm.PolizeiVermisstenmeldungAufgenommen,
+            v => _editEinsatzForm.PolizeiVermisstenmeldungAufgenommen = v);
         yield return ("Einsatzkoordination besprochen",
-            () => _vForm.PolizeiKoordinationBesprochen,
-            v => _vForm.PolizeiKoordinationBesprochen = v);
+            () => _editEinsatzForm.PolizeiKoordinationBesprochen,
+            v => _editEinsatzForm.PolizeiKoordinationBesprochen = v);
         yield return ("Suchabschnitte abgestimmt",
-            () => _vForm.PolizeiSuchabschnittAbgestimmt,
-            v => _vForm.PolizeiSuchabschnittAbgestimmt = v);
+            () => _editEinsatzForm.PolizeiSuchabschnittAbgestimmt,
+            v => _editEinsatzForm.PolizeiSuchabschnittAbgestimmt = v);
         yield return ("Rückmeldepflicht vereinbart",
-            () => _vForm.PolizeiRueckmeldepflichtVereinbart,
-            v => _vForm.PolizeiRueckmeldepflichtVereinbart = v);
+            () => _editEinsatzForm.PolizeiRueckmeldepflichtVereinbart,
+            v => _editEinsatzForm.PolizeiRueckmeldepflichtVereinbart = v);
         yield return ("Datenschutz (Personendaten) geklärt",
-            () => _vForm.PolizeiDatenschutzGeklaert,
-            v => _vForm.PolizeiDatenschutzGeklaert = v);
+            () => _editEinsatzForm.PolizeiDatenschutzGeklaert,
+            v => _editEinsatzForm.PolizeiDatenschutzGeklaert = v);
     }
 
     /// <summary>
