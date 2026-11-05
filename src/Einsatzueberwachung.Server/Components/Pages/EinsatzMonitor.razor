@@ -627,7 +627,7 @@
                                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                 </a>
                                 <button class="btn btn-sm theme-accent-btn" @onclick="OpenNewTeamModal">
-                                    <i class="bi bi-plus-circle me-1"></i>Team anlegen
+                                    <i class="bi bi-plus-circle"></i>
                                 </button>
                             </div>
                         }
@@ -752,7 +752,7 @@
                                     }
                                     else
                                     {
-                                        <div class="teams-monitor-list" @ref="_teamsMonitorList">
+                                        <div id="teams-monitor-list" class="teams-monitor-list">
                                             @foreach (var team in OrderTeamsForMonitor(GetFilteredTeams()))
                                             {
                                                 var isDogConflict = !team.IsRunning && !team.IsPausing && !team.IsManuallyPaused

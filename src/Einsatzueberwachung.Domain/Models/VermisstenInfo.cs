@@ -33,7 +33,7 @@ namespace Einsatzueberwachung.Domain.Models
         public RisikoStatus Suizidrisiko { get; set; } = RisikoStatus.Unbekannt;
         public RisikoStatus Bewaffnet { get; set; } = RisikoStatus.Unbekannt;
 
-        // Polizei-Kontakt
+        // Legacy-Importfelder: neue Kontakte und Abstimmungen werden am Einsatz gespeichert.
         public string PolizeiKontaktName { get; set; } = string.Empty;
         public string PolizeiDienstnummer { get; set; } = string.Empty;
         public string PolizeiTelefon { get; set; } = string.Empty;
@@ -43,7 +43,7 @@ namespace Einsatzueberwachung.Domain.Models
         public bool PolizeiRueckmeldepflichtVereinbart { get; set; }
         public bool PolizeiDatenschutzGeklaert { get; set; }
 
-        // Feuerwehr / weitere BOS-Kontakt
+        // Legacy-Importfelder: neue BOS-Kontakte und Abstimmungen werden am Einsatz gespeichert.
         public string BosEinheit { get; set; } = string.Empty;
         public string BosZugfuehrer { get; set; } = string.Empty;
         public string BosFunkrufname { get; set; } = string.Empty;

@@ -1,6 +1,7 @@
 window.teamOrdering = (() => {
     const itemSelector = ".team-order-item";
     const handleSelector = "[data-team-order-handle]";
+    const controllers = new Map();
 
     function getItems(list) {
         return Array.from(list.querySelectorAll(itemSelector));
@@ -54,9 +55,13 @@ window.teamOrdering = (() => {
         return document.scrollingElement || document.documentElement;
     }
 
-    function initialize(list, dotNetReference) {
-        if (!list || list.teamOrderingController) {
-            return;
+    function initialize(listId, dotNetReference) {
+        const list = document.getElementById(listId);
+        if (!list) {
+            return false;
+        }
+        if (list.teamOrderingController) {
+            return true;
         }
 
         let drag = null;
@@ -232,7 +237,7 @@ window.teamOrdering = (() => {
         list.addEventListener("lostpointercapture", onLostPointerCapture);
         list.addEventListener("keydown", onKeyDown);
 
-        list.teamOrderingController = {
+        const controller = {
             dispose() {
                 finish(false);
                 list.removeEventListener("pointerdown", onPointerDown);
@@ -244,10 +249,18 @@ window.teamOrdering = (() => {
                 delete list.teamOrderingController;
             }
         };
+        list.teamOrderingController = controller;
+        controllers.set(listId, controller);
+        return true;
     }
 
-    function dispose(list) {
-        list?.teamOrderingController?.dispose();
+    function dispose(listId) {
+        const controller = controllers.get(listId);
+        if (!controller) {
+            return;
+        }
+        controller.dispose();
+        controllers.delete(listId);
     }
 
     return { initialize, dispose };

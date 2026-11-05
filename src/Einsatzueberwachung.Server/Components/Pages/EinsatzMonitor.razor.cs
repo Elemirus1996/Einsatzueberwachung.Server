@@ -111,7 +111,6 @@ public partial class EinsatzMonitor
     private readonly HashSet<string> _expandedTeamIds = new();
     private TeamStatusFilter _teamStatusFilter = TeamStatusFilter.All;
     private bool _showTeamFilter;
-    private ElementReference _teamsMonitorList;
     private DotNetObjectReference<EinsatzMonitor>? _teamOrderingReference;
     private bool _teamOrderingInitialized;
 
@@ -211,8 +210,10 @@ public partial class EinsatzMonitor
         if (teamListIsRendered && !_teamOrderingInitialized)
         {
             _teamOrderingReference ??= DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("teamOrdering.initialize", _teamsMonitorList, _teamOrderingReference);
-            _teamOrderingInitialized = true;
+            _teamOrderingInitialized = await JS.InvokeAsync<bool>(
+                "teamOrdering.initialize",
+                "teams-monitor-list",
+                _teamOrderingReference);
         }
         else if (!teamListIsRendered)
         {
@@ -220,7 +221,7 @@ public partial class EinsatzMonitor
             {
                 try
                 {
-                    await JS.InvokeVoidAsync("teamOrdering.dispose", _teamsMonitorList);
+                    await JS.InvokeVoidAsync("teamOrdering.dispose", "teams-monitor-list");
                 }
                 catch (JSDisconnectedException)
                 {
@@ -262,7 +263,7 @@ public partial class EinsatzMonitor
         {
             try
             {
-                await JS.InvokeVoidAsync("teamOrdering.dispose", _teamsMonitorList);
+                await JS.InvokeVoidAsync("teamOrdering.dispose", "teams-monitor-list");
             }
             catch (JSDisconnectedException)
             {
