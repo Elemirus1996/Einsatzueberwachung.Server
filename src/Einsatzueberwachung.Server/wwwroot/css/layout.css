@@ -34,7 +34,6 @@ html, body {
     overflow: visible;
     z-index: 100;
     flex-shrink: 0;
-    transition: width 0.3s ease, min-width 0.3s ease;
 }
 
 main {
@@ -57,16 +56,15 @@ main {
 .sidebar-edge-toggle {
     position: absolute;
     top: 50vh;
-    right: calc(var(--sidebar-control-size)/-4) !important;
+    right: calc(var(--sidebar-control-size)/-2) !important;
     z-index: 2;
-    width: calc(var(--sidebar-control-size)/2) !important;
-    height: calc(var(--sidebar-control-size)/2) !important;
+    width: var(--sidebar-control-size) !important;
+    height: var(--sidebar-control-size) !important;
 }
 
 /* Nav wrapper in sidebar */
 .sidebar .nav-wrapper {
     width: 100%;
-    transition: width 0.3s ease;
 }
 
 .page.sidebar-collapsed .nav-wrapper {
@@ -134,6 +132,8 @@ main {
 .page.sidebar-collapsed .navbar-brand {
     justify-content: center;
     margin: 0;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 0;
 }
 
@@ -485,7 +485,7 @@ main,
     background: var(--ui-topbar-bg);
     border-bottom: 1px solid var(--ui-topbar-border);
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
     column-gap: 0.75rem;
     padding: 0 1rem;
@@ -561,42 +561,141 @@ main,
 }
 
 .mission-topbar-actions {
+    position: relative;
     justify-self: end;
     display: flex;
     align-items: center;
-    gap: 0.45rem;
     /* Separator: clock zone → action zone */
     border-left: 1px solid var(--ui-topbar-border);
     padding-left: 0.75rem;
     margin-left: 0.25rem;
 }
 
-/* Beenden (destructive) gets a nudge of space before the utility cluster */
-.mission-topbar-actions > .btn-primary {
-    margin-right: 0.15rem;
-}
-
-/* Utility button group: theme toggle, fullscreen, help */
-.topbar-utils {
+.mission-topbar-actions-trigger {
+    min-height: 44px;
     display: flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 8px;
+    padding: 8px 12px;
+    white-space: nowrap;
 }
 
-/* Separator between Beenden and utilities — only shown when Beenden is present */
-.mission-topbar-actions > .btn-primary + .topbar-utils {
-    padding-left: 0.5rem;
-    border-left: 1px solid var(--ui-topbar-border);
-    margin-left: 0.1rem;
+.mission-topbar-actions-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: var(--z-dropdown, 1050);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 280px;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    padding: 12px;
+    border: 1px solid var(--ui-border);
+    border-radius: 12px;
+    background: var(--ui-surface);
+    color: var(--ui-text);
+    box-shadow: var(--theme-card-shadow);
 }
 
-.mission-topbar-page-slot {
-    min-width: 0;
-    justify-self: stretch;
-}
-
-.mission-topbar-page-slot.is-empty {
+.mission-topbar-actions-menu[hidden] {
     display: none;
+}
+
+.mission-topbar-actions-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mission-topbar-actions-section + .mission-topbar-actions-section {
+    padding-top: 8px;
+    border-top: 1px solid var(--ui-border);
+}
+
+.mission-topbar-actions-label {
+    padding: 0 8px;
+    color: var(--ui-muted);
+    font-size: 0.75rem;
+    line-height: 16px;
+}
+
+.mission-topbar-actions-menu .btn {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.mission-topbar-actions-menu form {
+    margin: 0;
+}
+
+.mission-topbar-actions-menu .monitor-szenario-wrap {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.mission-topbar-actions-menu .monitor-szenario-btn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+    border: 1px solid var(--ui-border);
+    border-radius: 8px;
+    background: var(--ui-surface-2);
+    color: var(--ui-text);
+    padding: 8px 12px;
+}
+
+.mission-topbar-actions-menu .monitor-szenario-btn > i:first-child {
+    color: var(--monitor-szenario-color, var(--ui-muted));
+}
+
+.mission-topbar-actions-menu .monitor-szenario-btn:hover,
+.mission-topbar-actions-menu .monitor-szenario-btn:focus-visible {
+    filter: none;
+    border-color: var(--ui-border);
+    background: var(--ui-surface);
+    color: var(--ui-text);
+}
+
+.mission-topbar-actions-menu .monitor-szenario-menu {
+    right: 0;
+    left: auto;
+}
+
+.mission-topbar-actions-menu .monitor-szenario-item {
+    min-height: 44px;
+    padding: 8px 12px;
+}
+
+.mission-topbar-actions-menu .monitor-panels-menu {
+    display: block;
+    width: 100%;
+}
+
+.mission-topbar-actions-menu .monitor-panels-menu > button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: flex-start;
+}
+
+.mission-topbar-actions-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-backdrop, 1049);
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: transparent;
 }
 
 .mission-status-strip {
@@ -802,7 +901,7 @@ main,
     color: color-mix(in srgb, var(--ui-sidebar-text) 84%, transparent);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .mission-topbar {
         grid-template-columns: auto 1fr;
         gap: 0.45rem;
@@ -833,22 +932,14 @@ main,
         margin-left: 0;
     }
 
-    .topbar-utils {
-        border-left: none;
-        padding-left: 0;
-        margin-left: 0;
+    .mission-topbar-actions-trigger > span {
+        display: none;
     }
 
-    .mission-topbar-actions > .btn-primary + .topbar-utils {
-        border-left: none;
-        padding-left: 0;
-        margin-left: 0;
-    }
-
-    /* Seitenspezifischer Slot unterhalb der Statuszeile */
-    .mission-topbar-page-slot {
-        grid-column: 1 / -1;
-        grid-row: 3;
+    .mission-topbar-actions-trigger {
+        justify-content: center;
+        width: 44px;
+        padding: 8px;
     }
 
     .mission-status-location {

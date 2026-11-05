@@ -41,9 +41,25 @@
     <main id="monitor-dashboard-grid" class="monitor-dashboard-grid" aria-label="Einsatz-Dashboard">
         @if (_currentLayout.Any(p => p.IsVisible && IsSummaryPanel(p.PanelId)))
         {
-            <section class="monitor-summary-grid" aria-label="Einsatzinformationen">
-                @foreach (var summaryPanel in _currentLayout.Where(p => p.IsVisible && IsSummaryPanel(p.PanelId)))
-                {
+            <section class="monitor-summary-grid @(_summaryGridCollapsed ? "is-collapsed" : "")"
+                     aria-labelledby="monitor-summary-heading">
+                <div class="monitor-summary-grid-header">
+                    <h2 class="monitor-summary-grid-title" id="monitor-summary-heading">Einsatzinformationen</h2>
+                    <button class="monitor-summary-toggle"
+                            type="button"
+                            aria-controls="monitor-summary-tiles"
+                            aria-expanded="@(!_summaryGridCollapsed).ToString().ToLowerInvariant()"
+                            aria-label="@(_summaryGridCollapsed ? "Einsatzinformationen einblenden" : "Einsatzinformationen ausblenden")"
+                            @onclick="ToggleSummaryGrid">
+                        <span>@(_summaryGridCollapsed ? "Einblenden" : "Ausblenden")</span>
+                        <i class="bi bi-chevron-@(_summaryGridCollapsed ? "down" : "up")" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div id="monitor-summary-tiles"
+                     class="monitor-summary-grid-tiles"
+                     hidden="@_summaryGridCollapsed">
+                    @foreach (var summaryPanel in _currentLayout.Where(p => p.IsVisible && IsSummaryPanel(p.PanelId)))
+                    {
                     @if (summaryPanel.PanelId == KnownPanels.EinsatzInfo)
                     {
                         var einsatz = EinsatzService.CurrentEinsatz;
@@ -510,11 +526,43 @@
                             <div class="monitor-info-state" role="status"><i class="bi bi-cloud me-1" aria-hidden="true"></i>Wetterdaten werden geladen …</div>
                         }
                     }
-                }
+                    }
+                </div>
             </section>
         }
 
-        @foreach (var panel in _currentLayout.Where(p => p.IsVisible && !IsSummaryPanel(p.PanelId)))
+        @{
+            var workPanels = _currentLayout
+                .Where(panel => panel.IsVisible && !IsSummaryPanel(panel.PanelId))
+                .ToArray();
+            var tabletPanels = workPanels
+                .OrderBy(panel => TabletPanelOrder(panel.PanelId))
+                .ToArray();
+            var activeTabletPanelId = tabletPanels
+                .FirstOrDefault(panel => panel.PanelId == _tabletActivePanelId)?.PanelId
+                ?? tabletPanels.FirstOrDefault(panel => panel.PanelId == KnownPanels.Teams)?.PanelId
+                ?? tabletPanels.FirstOrDefault()?.PanelId;
+        }
+
+        @if (tabletPanels.Length > 1)
+        {
+            <div class="monitor-tablet-tabs" role="group" aria-label="Lagebereiche">
+                @foreach (var tabletPanel in tabletPanels)
+                {
+                    var isActive = tabletPanel.PanelId == activeTabletPanelId;
+                    <button id="monitor-tablet-tab-@tabletPanel.PanelId"
+                            class="monitor-tablet-tab @(isActive ? "is-active" : "")"
+                            type="button"
+                            aria-pressed="@isActive.ToString().ToLowerInvariant()"
+                            aria-controls="monitor-tablet-panel-@tabletPanel.PanelId"
+                            @onclick="() => SelectTabletPanel(tabletPanel.PanelId)">
+                        @PanelLabel(tabletPanel.PanelId)
+                    </button>
+                }
+            </div>
+        }
+
+        @foreach (var panel in workPanels)
         {
             var forecastItems = new List<WeatherData>();
             var temperatureTrend = WeatherMetricTrend.Unavailable;
@@ -522,7 +570,8 @@
             var rainTrend = WeatherMetricTrend.Unavailable;
             var dogHeatWarning = false;
             <div @key="panel.PanelId"
-                 class="dashboard-panel-wrapper @(IsSummaryPanel(panel.PanelId) ? "dashboard-panel-wrapper--summary" : "")"
+                 id="monitor-tablet-panel-@panel.PanelId"
+                 class="dashboard-panel-wrapper @(IsSummaryPanel(panel.PanelId) ? "dashboard-panel-wrapper--summary" : "") @(panel.PanelId == activeTabletPanelId ? "" : "monitor-tablet-panel-hidden")"
                  data-panel-id="@panel.PanelId">
                 <section class="dashboard-panel" aria-labelledby="panel-title-@panel.PanelId">
                     <div class="dashboard-panel-header @(panel.PanelId == KnownPanels.Teams && EinsatzService.Teams.Count > 0 ? "dashboard-panel-header--teams" : "") @(IsSummaryPanel(panel.PanelId) ? "dashboard-panel-header--summary" : "")">
@@ -561,7 +610,36 @@
                         }
                         else
                         {
-                            <h2 class="dashboard-panel-title" id="panel-title-@panel.PanelId">@PanelLabel(panel.PanelId)</h2>
+                            <h2 class="dashboard-panel-title" id="panel-title-@panel.PanelId">
+                                @if (panel.PanelId == KnownPanels.Teams)
+                                {
+                                    <a class="dashboard-panel-title-popout"
+                                       href="/popout-teams"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       aria-label="Teams in neuem Fenster öffnen"
+                                       title="Team-Übersicht in neuem Fenster öffnen">
+                                        <span>@PanelLabel(panel.PanelId)</span>
+                                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                    </a>
+                                }
+                                else if (panel.PanelId == KnownPanels.Notizen)
+                                {
+                                    <a class="dashboard-panel-title-popout"
+                                       href="/popout-notes"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       aria-label="Notizen in neuem Fenster öffnen"
+                                       title="Notizen in neuem Fenster öffnen">
+                                        <span>@PanelLabel(panel.PanelId)</span>
+                                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    @PanelLabel(panel.PanelId)
+                                }
+                            </h2>
                         }
                         @if (panel.PanelId == KnownPanels.Teams)
                         {
@@ -612,22 +690,17 @@
                                 </div>
                             }
                             <div class="ms-auto d-flex align-items-center gap-2 flex-shrink-0">
-                                <button class="btn btn-sm btn-outline-success" type="button"
+                                <button class="btn btn-sm btn-outline-secondary" type="button"
                                         @onclick="OpenTeamMobileModalAsync"
                                         title="QR-Code für Team-Smartphones"
                                         aria-label="QR-Code für Team-Smartphones">
                                     <i class="bi bi-qr-code" aria-hidden="true"></i>
                                 </button>
-                                <a class="btn btn-sm btn-outline-secondary"
-                                   href="/popout-teams"
-                                   target="_blank"
-                                   rel="noopener noreferrer"
-                                   title="In neuem Fenster öffnen (Multi-Monitor)"
-                                   aria-label="Team-Übersicht in neuem Fenster öffnen">
-                                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
-                                </a>
-                                <button class="btn btn-sm theme-accent-btn" @onclick="OpenNewTeamModal">
-                                    <i class="bi bi-plus-circle"></i>
+                                <button class="btn btn-sm btn-outline-secondary" type="button"
+                                        @onclick="OpenNewTeamModal"
+                                        title="Team hinzufügen"
+                                        aria-label="Team hinzufügen">
+                                    <i class="bi bi-plus-circle" aria-hidden="true"></i>
                                 </button>
                             </div>
                         }
@@ -637,14 +710,6 @@
                                 <button class="btn btn-sm btn-link text-muted p-1" type="button" @onclick="OpenTeamMessageModal" title="Nachricht an ein Team-Smartphone" aria-label="Nachricht an ein Team-Smartphone">
                                     <i class="bi bi-megaphone" aria-hidden="true"></i>
                                 </button>
-                                <a class="btn btn-sm btn-outline-secondary"
-                                   href="/popout-notes"
-                                   target="_blank"
-                                   rel="noopener noreferrer"
-                                   title="In neuem Fenster öffnen (Multi-Monitor)"
-                                   aria-label="Notizen in neuem Fenster öffnen">
-                                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
-                                </a>
                             </div>
                         }
                     </div>
@@ -802,7 +867,7 @@
                                             </button>
                                         </div>
                                         <div class="mb-2 d-flex gap-2 align-items-center">
-                                            <select class="form-select" @bind="_newNoteType">
+                                            <select class="form-select" aria-label="Art der Nachricht" @bind="_newNoteType">
                                                 <option value="Notiz">Notiz</option>
                                                 <option value="Funk">Funk</option>
                                             </select>
@@ -834,10 +899,14 @@
                                                 </div>
                                             }
                                         </div>
-                                        <MentionTextarea @bind-Value="_newNoteText"
+                                        <label class="form-label monitor-note-compose-label" for="monitor-new-note">
+                                            Inhalt der Notiz oder des Funkspruchs
+                                        </label>
+                                        <MentionTextarea Id="monitor-new-note"
+                                                         @bind-Value="_newNoteText"
                                                          Mentions="@GetNoteMentions()"
                                                          Rows="3"
-                                                         Placeholder="Neuer Funkspruch oder Notiz..."
+                                                         Placeholder="Text eingeben"
                                                          AdditionalClass="mb-2" />
                                         <button class="btn btn-primary w-100"
                                                 @onclick="AddGlobalNoteAsync"
@@ -869,8 +938,12 @@
                                                     </div>
                                                     <div class="monitor-note-content d-flex justify-content-between align-items-start mb-2">
                                                         <div>@MentionTextarea.RenderWithMentions(note.Text)</div>
-                                                        <button class="btn btn-sm btn-link p-0 ms-2 text-muted flex-shrink-0" @onclick="() => ToggleReplyForm(note.Id)" title="Antworten">
-                                                            <i class="bi bi-reply-fill"></i>
+                                                        <button class="btn btn-sm btn-link p-0 ms-2 text-muted flex-shrink-0"
+                                                                type="button"
+                                                                @onclick="() => ToggleReplyForm(note.Id)"
+                                                                title="Antworten"
+                                                                aria-label="Antworten">
+                                                            <i class="bi bi-reply-fill" aria-hidden="true"></i>
                                                         </button>
                                                     </div>
 

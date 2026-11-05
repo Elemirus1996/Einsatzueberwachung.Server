@@ -347,7 +347,7 @@
     }
 
     .monitor-weather-forecast-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
     }
 }
 
@@ -376,12 +376,14 @@ main:has(.monitor-dashboard-wrapper) {
     overflow: hidden;
 }
 main:has(.monitor-dashboard-wrapper) .app-content {
-    padding: 0;
+    padding: 0 !important;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    min-width: 0;
+    max-width: none;
 }
 
 .monitor-dashboard-wrapper {
@@ -395,7 +397,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 /* CSS-Grid 12-spaltig */
 .monitor-dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     grid-template-rows: max-content minmax(0, 1fr);
     grid-auto-flow: dense;
     gap: 1.25rem;
@@ -408,14 +410,78 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
 /* Compact, data-driven information tiles above the main work area */
 .monitor-summary-grid {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    border: 1px solid var(--ui-border);
+    border-radius: 10px;
+    background: var(--ui-surface);
+}
+
+.monitor-summary-grid-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 44px;
+    padding: 0 0.75rem;
+    border-bottom: 1px solid var(--ui-border);
+}
+
+.monitor-summary-grid-title {
+    margin: 0;
+    color: var(--ui-muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.monitor-summary-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 0.5rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--ui-muted);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.monitor-summary-toggle:hover {
+    background: var(--ui-surface-2);
+    color: var(--ui-text);
+}
+
+.monitor-summary-toggle:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 1px;
+}
+
+.monitor-summary-grid-tiles {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
     align-content: start;
     align-items: stretch;
-    gap: 0.65rem;
+    gap: 8px 16px;
     min-width: 0;
-    grid-column: 1 / -1;
-    grid-row: 1;
+    padding: 8px 12px;
+}
+
+.monitor-summary-grid-tiles[hidden] {
+    display: none !important;
+}
+
+.monitor-summary-grid.is-collapsed .monitor-summary-grid-header {
+    border-bottom: 0;
 }
 
 /* Keep the currently running pre-restart Razor page in its original layout. */
@@ -445,35 +511,45 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     display: flex;
     flex-direction: column;
     align-self: stretch;
-    gap: 0.35rem;
+    gap: 8px;
     min-width: 0;
-    min-height: 5rem;
-    padding: 0.65rem 0.75rem;
-    border: 1px solid var(--ui-tile-border);
-    border-radius: 0.625rem;
-    background: var(--ui-tile-bg);
+    min-height: 0;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
 }
 
 .monitor-info-tile-header {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
     gap: 0.35rem;
-    min-height: 1.75rem;
+    flex: 0 0 44px;
+    height: 44px;
+    min-height: 44px;
+    overflow: hidden;
 }
 
 .monitor-info-tile-label {
     display: inline-flex;
     align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
     gap: 0.35rem;
     color: var(--ui-tile-muted-text);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     line-height: 1.15;
+    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .monitor-info-tile-label i {
+    flex: 0 0 auto;
     font-size: 0.9rem;
 }
 
@@ -481,9 +557,17 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     min-width: 0;
     color: var(--ui-tile-strong-text);
     font-size: 1rem;
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.2;
     overflow-wrap: anywhere;
+}
+
+.monitor-info-tile--number .monitor-info-tile-value {
+    font-size: 1.25rem;
+}
+
+.monitor-info-tile--person .monitor-info-tile-value {
+    font-size: 1.125rem;
 }
 
 .monitor-info-tile-secondary {
@@ -533,6 +617,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 .monitor-info-actions {
     display: inline-flex;
     align-items: center;
+    flex: 0 0 auto;
     gap: 0.15rem;
 }
 
@@ -617,13 +702,13 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     font-size: 0.8rem;
 }
 
-/* Main work area: teams lead, search areas stay compact, notes remain accessible */
-[data-panel-id="notizen"] { grid-column: 10 / span 3; grid-row: 2; }
-[data-panel-id="teams"] { grid-column: span 7; grid-row: 2; }
+/* Teams are the primary work surface; notes and search areas remain available beside them. */
+[data-panel-id="notizen"] { grid-column: 9 / span 4; grid-row: 2; }
+[data-panel-id="teams"] { grid-column: span 6; grid-row: 2; }
 [data-panel-id="suchgebiete"] { grid-column: span 2; grid-row: 2; }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="suchgebiete"])) [data-panel-id="teams"] {
-    grid-column: span 9;
+    grid-column: span 8;
 }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="teams"])) [data-panel-id="suchgebiete"] {
@@ -631,11 +716,11 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):has([data-panel-id="suchgebiete"]) [data-panel-id="teams"] {
-    grid-column: span 10;
+    grid-column: span 9;
 }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
-    grid-column: span 2;
+    grid-column: span 3;
 }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="suchgebiete"])) [data-panel-id="teams"] {
@@ -644,6 +729,10 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
 .monitor-dashboard-grid:not(:has([data-panel-id="teams"])):not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
     grid-column: span 12;
+}
+
+.monitor-dashboard-grid:not(:has([data-panel-id="teams"])) [data-panel-id="notizen"] {
+    grid-column: 10 / span 3;
 }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="teams"])):not(:has([data-panel-id="suchgebiete"])) [data-panel-id="notizen"] {
@@ -672,31 +761,32 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     display: flex;
     flex-direction: column;
     border: 1px solid var(--ui-border);
-    border-top: 3px solid var(--primary-color);
+    border-top: 1px solid var(--ui-border);
     border-radius: 0.5rem;
     overflow: hidden;
     background: var(--ui-surface);
     height: 100%;
-    box-shadow: 0 1px 4px color-mix(in srgb, var(--theme-primary) 8%, rgba(0, 0, 0, 0.07));
+    box-shadow: var(--theme-card-shadow);
     transition: box-shadow 0.15s ease;
 }
 .dashboard-panel:hover {
-    box-shadow: 0 3px 14px color-mix(in srgb, var(--theme-primary) 16%, rgba(0, 0, 0, 0.13));
+    box-shadow: var(--theme-card-shadow);
 }
 
 [data-intensity="dezent"] .dashboard-panel {
     box-shadow: none;
-    border-top-width: 0;
-    border-top-color: transparent;
+    border-top-width: 1px;
+    border-top-color: var(--ui-border);
 }
 
 [data-intensity="dezent"] .dashboard-panel:hover {
-    box-shadow: 0 1px 6px color-mix(in srgb, var(--theme-primary) 8%, transparent);
+    box-shadow: none;
 }
 
 [data-intensity="lebhaft"] .dashboard-panel {
-    border-top-width: 4px;
-    box-shadow: 0 4px 18px color-mix(in srgb, var(--theme-primary) 22%, rgba(0, 0, 0, 0.13));
+    border-top-width: 1px;
+    border-top-color: var(--ui-border);
+    box-shadow: var(--theme-card-shadow);
 }
 
 .dashboard-panel-header {
@@ -721,6 +811,37 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     white-space: nowrap;
     flex: 1;
     margin: 0;
+}
+
+.dashboard-panel-title-popout {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    min-height: 44px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.dashboard-panel-title-popout > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dashboard-panel-title-popout > i {
+    flex: 0 0 auto;
+    color: var(--ui-muted);
+    font-size: 0.8rem;
+}
+
+.dashboard-panel-title-popout:hover {
+    color: var(--ui-heading-text);
+    text-decoration: underline;
+}
+
+.dashboard-panel-title-popout:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 1px;
 }
 
 .dashboard-panel-body {
@@ -805,8 +926,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     display: inline-grid;
     place-items: center;
     flex: 0 0 auto;
-    width: 2rem;
-    height: 2rem;
+    width: 2.75rem;
+    height: 2.75rem;
     padding: 0;
     border: 0;
     border-radius: 0.375rem;
@@ -823,6 +944,32 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 .monitor-summary-edit-button:focus-visible {
     outline: 2px solid var(--theme-primary);
     outline-offset: 1px;
+}
+
+.monitor-info-tile .monitor-summary-edit-button {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.monitor-info-tile:hover .monitor-summary-edit-button,
+.monitor-info-tile:focus-within .monitor-summary-edit-button,
+.monitor-info-tile .monitor-summary-edit-button:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .monitor-info-tile .monitor-summary-edit-button {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .monitor-info-tile .monitor-summary-edit-button {
+        transition: none;
+    }
 }
 
 .monitor-summary-kicker {
@@ -977,7 +1124,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     border-radius: 0.35rem;
     background: var(--danger-soft);
     color: var(--danger-color);
-    font-size: 0.76rem;
+    font-size: 0.8125rem;
     font-weight: 600;
 }
 
@@ -988,11 +1135,6 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 
 @media (pointer: coarse) {
-    .monitor-summary-edit-button {
-        width: 2.75rem;
-        height: 2.75rem;
-    }
-
     .monitor-info-tile-actions {
         opacity: 1;
         pointer-events: auto;
@@ -1195,11 +1337,73 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     flex-shrink: 0;
 }
 
-/* Responsive: Tablet 768–1199 px → 6-Spalten-Grid */
-@media (min-width: 768px) and (max-width: 1199px) {
+.monitor-tablet-tabs {
+    display: none;
+    position: sticky;
+    bottom: 0;
+    z-index: var(--z-sticky, 1020);
+}
+
+.monitor-tablet-tab {
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ui-muted);
+    font: inherit;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.monitor-tablet-tab:hover {
+    background: var(--ui-surface-2);
+    color: var(--ui-text);
+}
+
+.monitor-tablet-tab.is-active {
+    border-color: var(--theme-primary-border);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary-text);
+}
+
+.monitor-tablet-tab:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+}
+
+.monitor-dashboard-grid .dashboard-panel-header .btn-sm {
+    min-height: 44px;
+}
+
+.monitor-dashboard-grid .dashboard-panel-header .btn-sm:not(.teams-filter-trigger) {
+    min-width: 44px;
+}
+
+.note-compose-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--ui-text);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.monitor-dashboard-grid .dashboard-panel-body .btn-sm,
+.note-input-section .btn {
+    min-height: 44px;
+}
+
+[data-panel-id="notizen"] .monitor-note-content > .btn-sm {
+    min-width: 44px;
+}
+
+/* Tablet workspace: switch modules instead of stacking scrollable panels */
+@media (min-width: 768px) and (max-width: 1200px) {
     .monitor-dashboard-grid {
         grid-template-columns: repeat(6, minmax(0, 1fr));
-        grid-template-rows: max-content minmax(0, 1fr) minmax(14rem, 0.7fr);
+        grid-template-rows: max-content minmax(0, 1fr) max-content;
         gap: 0.75rem;
     }
 
@@ -1208,57 +1412,127 @@ main:has(.monitor-dashboard-wrapper) .app-content {
         grid-row: 1;
     }
 
-    [data-panel-id="teams"]       { grid-column: 1 / -1 !important; grid-row: 2; }
-    [data-panel-id="suchgebiete"] { grid-column: 1 / span 3 !important; grid-row: 3; }
-    [data-panel-id="notizen"]     { grid-column: 4 / span 3 !important; grid-row: 3; }
-
-    .monitor-dashboard-grid:not(:has([data-panel-id="suchgebiete"])) [data-panel-id="notizen"],
-    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
-        grid-column: 1 / -1 !important;
+    .monitor-tablet-tabs {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-row: 3;
+        grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+        gap: 4px;
+        padding: 4px;
+        padding-bottom: max(4px, env(safe-area-inset-bottom));
+        border: 1px solid var(--ui-border);
+        border-radius: 12px;
+        background: var(--ui-surface);
     }
 
-    .monitor-dashboard-grid:not(:has([data-panel-id="teams"])) [data-panel-id="suchgebiete"],
-    .monitor-dashboard-grid:not(:has([data-panel-id="teams"])) [data-panel-id="notizen"] {
-        grid-row: 2;
+    [data-panel-id="teams"],
+    [data-panel-id="suchgebiete"],
+    [data-panel-id="notizen"] {
+        grid-column: 1 / -1 !important;
+        grid-row: 2 !important;
+    }
+
+    .monitor-tablet-panel-hidden {
+        display: none !important;
     }
 
     .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) {
-        grid-template-rows: minmax(0, 1fr) minmax(14rem, 0.7fr);
-    }
-
-    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="teams"] {
-        grid-row: 1;
+        grid-template-rows: minmax(0, 1fr) max-content;
     }
 
 }
 
-/* Responsive: Smartphone < 768 px → 1-spaltig, scrollbar */
-@media (max-width: 767px) {
+/* Mobile and tablet share one active workspace; the navigation stays at the bottom. */
+@media (max-width: 767.98px) {
     .monitor-dashboard-grid {
-        grid-template-columns: 1fr;
-        grid-template-rows: none;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: max-content minmax(0, 1fr) max-content;
         grid-auto-rows: auto;
-        overflow-y: auto;
+        gap: 8px;
+        overflow: hidden;
     }
 
-    .monitor-summary-grid,
+    .monitor-summary-grid {
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+    }
+
+    .monitor-tablet-tabs {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-row: 3;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 2px;
+        padding: 4px;
+        padding-bottom: max(4px, env(safe-area-inset-bottom));
+        border: 1px solid var(--ui-border);
+        border-radius: 12px;
+        background: var(--ui-surface);
+    }
+
+    .monitor-tablet-tab {
+        min-height: 48px;
+        padding: 4px 2px;
+        font-size: 0.8rem;
+        line-height: 1.15;
+        white-space: normal;
+    }
+
     [data-panel-id="teams"],
     [data-panel-id="suchgebiete"],
     [data-panel-id="notizen"] {
-        grid-column: 1 / 2 !important;
-        grid-row: auto !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 2 !important;
     }
 
-    [data-panel-id="teams"] {
-        order: 1;
+    .monitor-tablet-panel-hidden {
+        display: none !important;
     }
 
-    [data-panel-id="notizen"] {
-        order: 2;
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) {
+        grid-template-rows: minmax(0, 1fr) max-content;
     }
 
-    [data-panel-id="suchgebiete"] {
-        order: 3;
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) .monitor-tablet-tabs {
+        grid-row: 2;
+    }
+
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="teams"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="suchgebiete"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"] {
+        grid-row: 1 !important;
+    }
+}
+
+@media (min-width: 360px) and (max-width: 575px) {
+    .monitor-summary-grid-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .monitor-info-tile {
+        padding: 6px 8px;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 960px) {
+    .monitor-summary-grid-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575px) {
+    [data-panel-id="teams"] .dashboard-panel-header {
+        flex-wrap: wrap;
+        row-gap: 4px;
+        overflow: visible;
+    }
+
+    [data-panel-id="teams"] .dashboard-panel-header .dashboard-panel-title {
+        flex: 0 0 100%;
+        overflow: visible;
+        white-space: normal;
     }
 }
 
@@ -1518,6 +1792,20 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     background: var(--ui-surface);
 }
 
+[data-panel-id="suchgebiete"] {
+    align-self: start;
+    max-height: 100%;
+}
+
+[data-panel-id="suchgebiete"] > .dashboard-panel {
+    height: auto;
+    max-height: 100%;
+}
+
+[data-panel-id="suchgebiete"] > .dashboard-panel .dashboard-panel-body {
+    min-height: 0;
+}
+
 [data-panel-id="teams"] .alert-info {
     padding: 0.25rem 0;
     border: 0;
@@ -1526,26 +1814,40 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 
 [data-panel-id="teams"] .teams-monitor-list {
-    gap: 0;
+    gap: 0.5rem;
 }
 
 [data-panel-id="teams"] .monitor-team-card {
-    padding: 0.75rem 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
+    padding: 0.75rem;
+    border: 1px solid var(--ui-border);
+    border-left-width: 4px;
+    border-left-color: var(--ui-border);
+    border-radius: 0.5rem;
+    background: var(--ui-surface-2);
     box-shadow: none;
     transform: none;
 }
 
-[data-panel-id="teams"] .team-order-item:not(:last-child) .monitor-team-card {
-    border-bottom: 1px solid var(--ui-border);
+[data-panel-id="teams"] .monitor-team-card.team-running {
+    border-left-color: var(--success-color);
+}
+
+[data-panel-id="teams"] .monitor-team-card.team-warning {
+    border-left-color: var(--warning-color);
+}
+
+[data-panel-id="teams"] .monitor-team-card.team-pausing {
+    border-left-color: var(--pause-color);
+}
+
+[data-panel-id="teams"] .monitor-team-card.team-critical {
+    border-left-color: var(--danger-color);
 }
 
 [data-panel-id="teams"] .monitor-team-card.team-critical,
 [data-intensity="lebhaft"] [data-panel-id="teams"] .monitor-team-card.team-critical,
 [data-intensity="lebhaft"] [data-panel-id="teams"] .monitor-team-card.team-running {
-    background: transparent;
+    background: var(--ui-surface-2);
 }
 
 [data-intensity="lebhaft"] [data-panel-id="teams"] .monitor-team-card.team-running {
@@ -1565,9 +1867,10 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
 [data-panel-id="teams"] .tc-time,
 [data-panel-id="teams"] .tc-time--pausing {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: var(--ui-text);
+    letter-spacing: 0;
 }
 
 [data-panel-id="teams"] .monitor-team-card.team-running .tc-time:not(.timer-warning):not(.timer-critical) {
@@ -1579,7 +1882,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 
 [data-panel-id="teams"] .tc-time.timer-critical {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     color: var(--danger-color);
 }
 
@@ -1613,6 +1916,11 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 [data-panel-id="teams"] .tc-badge--running {
     background: transparent;
     color: var(--success-color);
+}
+
+[data-panel-id="teams"] .tc-badge--ready {
+    background: transparent;
+    color: var(--ui-muted);
 }
 
 [data-panel-id="teams"] .tc-ctx-chip {
@@ -1833,4 +2141,54 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     border: 0;
     border-radius: 0;
     background: transparent;
+}
+
+[data-panel-id="teams"] .tc-controls .btn-success {
+    border-color: var(--success-border);
+    background: var(--success-soft);
+    color: var(--success-color);
+}
+
+[data-panel-id="teams"] .tc-controls .btn-success:hover,
+[data-panel-id="teams"] .tc-controls .btn-success:focus-visible {
+    border-color: var(--success-color);
+    background: var(--success-color);
+    color: var(--success-on-fill);
+}
+
+[data-panel-id="notizen"] .note-source-label {
+    color: var(--ui-muted);
+    font-weight: 500;
+}
+
+[data-panel-id="notizen"] .note-source-chip {
+    min-height: 44px;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+[data-panel-id="notizen"] .note-source-chip.active {
+    border-color: var(--theme-primary-border);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary-text);
+    box-shadow: inset 0 0 0 1px var(--theme-primary-border);
+}
+
+@media (max-width: 767.98px) {
+    .monitor-dashboard-grid .dashboard-panel-wrapper,
+    .monitor-dashboard-grid .dashboard-panel,
+    .monitor-dashboard-grid [data-panel-id="suchgebiete"] {
+        height: 100%;
+        max-height: none;
+        min-height: 0;
+    }
+
+    .monitor-dashboard-grid .dashboard-panel-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        overflow-y: auto;
+    }
 }

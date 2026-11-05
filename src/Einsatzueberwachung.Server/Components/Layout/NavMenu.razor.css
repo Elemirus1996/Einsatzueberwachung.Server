@@ -14,7 +14,6 @@
     flex-shrink: 0;
     width: 1.5rem;
     height: 1.5rem;
-    transition: flex 0.3s, width 0.3s;
 }
 
 .nav-text {
@@ -23,7 +22,7 @@
     max-width: 200px;
     opacity: 1;
     margin-left: 0.65rem;
-    transition: opacity 0.2s ease, max-width 0.3s cubic-bezier(0.4,0,0.2,1), margin-left 0.3s;
+    transition: opacity 0.2s ease;
 }
 
 /* === Collapsed: Icons zentrieren, Text ausblenden === */
@@ -67,14 +66,14 @@
     padding: 0 !important;
     margin: 0 !important;
     pointer-events: none;
-    transition: opacity 0.15s, max-height 0.3s, padding 0.3s, margin 0.3s;
+    transition: opacity 0.15s;
 }
 
 /* === Expanded: Text und Header einblenden === */
 .sidebar-expanded .nav-section-label {
     opacity: 1;
     max-height: 3rem;
-    transition: opacity 0.25s 0.1s, max-height 0.3s;
+    transition: opacity 0.25s 0.1s;
 }
 
 /* === Toggle Button === */
@@ -122,7 +121,7 @@
     max-width: 200px;
     overflow: hidden;
     white-space: nowrap;
-    transition: opacity 0.25s 0.1s, max-width 0.35s;
+    transition: opacity 0.25s 0.1s;
     opacity: 1;
 }
 
@@ -130,7 +129,7 @@
     opacity: 0;
     max-width: 0;
     overflow: hidden;
-    transition: opacity 0.15s, max-width 0.3s;
+    transition: opacity 0.15s;
 }
 .top-row {
     box-sizing: border-box;
@@ -290,5 +289,43 @@
         display: block;
         max-height: calc(100dvh - 4rem);
         overflow-y: auto;
+    }
+
+    .sidebar-nav.mobile-open.sidebar-collapsed {
+        width: 100%;
+    }
+
+    .sidebar-nav.mobile-open.sidebar-collapsed .nav-item.px-2 {
+        max-width: none;
+        overflow: visible;
+        padding-right: 0.5rem !important;
+        padding-left: 0.5rem !important;
+    }
+
+    .sidebar-nav.mobile-open.sidebar-collapsed .nav-item ::deep .nav-link {
+        justify-content: flex-start !important;
+        min-height: 44px;
+        max-width: none;
+        padding-right: 0.75rem !important;
+        padding-left: 0.75rem !important;
+    }
+
+    .sidebar-nav.mobile-open.sidebar-collapsed .nav-text {
+        display: inline;
+        width: auto;
+        max-width: 200px;
+        margin-left: 0.65rem;
+        opacity: 1;
+        overflow: visible;
+        pointer-events: auto;
+    }
+
+    .sidebar-nav.mobile-open.sidebar-collapsed .nav-section-label {
+        max-height: 3rem;
+        margin: 0 !important;
+        padding: 0.75rem 1rem !important;
+        opacity: 1;
+        overflow: visible;
+        pointer-events: auto;
     }
 }

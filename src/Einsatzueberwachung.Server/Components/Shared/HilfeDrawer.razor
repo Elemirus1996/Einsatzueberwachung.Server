@@ -8,14 +8,14 @@
 
 <div class="offcanvas offcanvas-end hilfe-drawer @(IsOpen ? "show" : "")" tabindex="-1" id="hilfeDrawer" aria-labelledby="hilfeDrawerLabel">
     <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="hilfeDrawerLabel">
+        <h2 class="offcanvas-title h5" id="hilfeDrawerLabel">
             <i class="bi bi-question-circle me-2"></i>Hilfe
-        </h5>
+        </h2>
         <button type="button" class="btn-close" @onclick="OnClose" aria-label="Schließen"></button>
     </div>
     <div class="offcanvas-body" id="hilfeDrawerBody">
         <div class="hilfe-section hilfe-shortcuts">
-            <h6 class="hilfe-section-title">Tastaturkürzel</h6>
+            <h3 class="hilfe-section-title h6">Tastaturkürzel</h3>
             <dl class="hilfe-shortcuts-list">
                 <dt><kbd>Strg</kbd>+<kbd>H</kbd></dt><dd>Startseite</dd>
                 <dt><kbd>Strg</kbd>+<kbd>N</kbd></dt><dd>Einsatz-Monitor</dd>
@@ -30,7 +30,7 @@
                 anchorId = "hilfe-home";
 
             <div class="hilfe-section" id="@anchorId">
-                <h6 class="hilfe-section-title">@entry.Titel</h6>
+                <h3 class="hilfe-section-title h6">@entry.Titel</h3>
                 <p class="hilfe-section-desc">@entry.Beschreibung</p>
                 @if (entry.Klickpfade.Length > 0)
                 {

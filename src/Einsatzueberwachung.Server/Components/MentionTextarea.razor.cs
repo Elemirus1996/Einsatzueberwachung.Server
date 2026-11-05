@@ -45,6 +45,12 @@ public partial class MentionTextarea : ComponentBase, IAsyncDisposable
     /// <summary>Number of rows for the textarea.</summary>
     [Parameter] public int Rows { get; set; } = 3;
 
+    /// <summary>Optional id for associating the textarea with a label.</summary>
+    [Parameter] public string? Id { get; set; }
+
+    /// <summary>Accessible name used when no visible label is available.</summary>
+    [Parameter] public string? AccessibleLabel { get; set; }
+
     /// <summary>Placeholder text for the textarea.</summary>
     [Parameter] public string Placeholder { get; set; } = string.Empty;
 

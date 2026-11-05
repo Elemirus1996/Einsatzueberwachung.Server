@@ -108,6 +108,8 @@ public partial class EinsatzMonitor
 
     // Dashboard-Layout
     private List<DashboardPanelConfig> _currentLayout = new();
+    private string? _tabletActivePanelId;
+    private bool _summaryGridCollapsed;
     private readonly HashSet<string> _expandedTeamIds = new();
     private TeamStatusFilter _teamStatusFilter = TeamStatusFilter.All;
     private bool _showTeamFilter;
@@ -310,6 +312,25 @@ public partial class EinsatzMonitor
 
     private static string PanelLabel(string panelId) =>
         KnownPanels.Labels.TryGetValue(panelId, out var label) ? label : panelId;
+
+    private static int TabletPanelOrder(string panelId) => panelId switch
+    {
+        KnownPanels.Teams => 0,
+        KnownPanels.Notizen => 1,
+        KnownPanels.Suchgebiete => 2,
+        _ => 3
+    };
+
+    private void SelectTabletPanel(string panelId)
+    {
+        if (_currentLayout.Any(panel =>
+                panel.IsVisible && !IsSummaryPanel(panel.PanelId) && panel.PanelId == panelId))
+        {
+            _tabletActivePanelId = panelId;
+        }
+    }
+
+    private void ToggleSummaryGrid() => _summaryGridCollapsed = !_summaryGridCollapsed;
 
     private static bool IsSummaryPanel(string panelId) =>
         panelId is KnownPanels.EinsatzInfo or KnownPanels.Vermissten or KnownPanels.Wetter;

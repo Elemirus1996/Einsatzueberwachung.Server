@@ -41,8 +41,10 @@
                         <i class="bi bi-airplane"></i>@Team.DroneType
                         @if (droneEntry is not null && !string.IsNullOrWhiteSpace(droneEntry.LivestreamUrl))
                         {
-                            <a href="@droneEntry.LivestreamUrl" target="_blank" rel="noopener noreferrer" title="Drohne112 Livestream öffnen">
-                                <i class="bi bi-camera-video-fill"></i>
+                            <a href="@droneEntry.LivestreamUrl" target="_blank" rel="noopener noreferrer"
+                               title="Drohne112 Livestream öffnen"
+                               aria-label="@($"Drohne112-Livestream von {Team.TeamName} öffnen")">
+                                <i class="bi bi-camera-video-fill" aria-hidden="true"></i>
                             </a>
                         }
                     </span>
@@ -91,6 +93,10 @@
                     else if (Team.IsRunning)
                     {
                         <div class="tc-badge tc-badge--running">Läuft</div>
+                    }
+                    else
+                    {
+                        <div class="tc-badge tc-badge--ready">Bereit</div>
                     }
                 }
             }
@@ -188,19 +194,25 @@
                             @onclick="() => OnStart.InvokeAsync(Team.TeamId)"
                             title="@(IsDogConflict ? "Hund läuft bereits in einem anderen Team" : "Timer starten")">Start</button>
                 }
-                <button class="btn btn-outline-secondary btn-sm btn-team-reset" disabled="@IsDogConflict"
-                        @onclick="() => OnReset.InvokeAsync(Team.TeamId)" title="Timer zurücksetzen">
-                    <i class="bi bi-arrow-counterclockwise"></i>
+                <button class="btn btn-outline-secondary btn-sm btn-team-reset tc-icon-button" disabled="@IsDogConflict"
+                        @onclick="() => OnReset.InvokeAsync(Team.TeamId)"
+                        title="Timer zurücksetzen"
+                        aria-label="@($"{Team.TeamName}: Timer zurücksetzen")">
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
                 </button>
             }
-            <button class="btn btn-outline-secondary btn-sm" @onclick="() => OnEdit.InvokeAsync(Team.TeamId)" title="Bearbeiten">
-                <i class="bi bi-pencil"></i>
+            <button class="btn btn-outline-secondary btn-sm tc-icon-button"
+                    @onclick="() => OnEdit.InvokeAsync(Team.TeamId)"
+                    title="Bearbeiten"
+                    aria-label="@($"{Team.TeamName} bearbeiten")">
+                <i class="bi bi-pencil" aria-hidden="true"></i>
             </button>
         </div>
-        <button class="btn btn-outline-secondary btn-sm tc-expand-toggle"
+        <button class="btn btn-outline-secondary btn-sm tc-expand-toggle tc-icon-button"
                 @onclick="() => OnToggleExpand.InvokeAsync(Team.TeamId)"
-                title="@(IsExpanded ? "Weniger anzeigen" : "Mehr anzeigen")">
-            <i class="bi @(IsExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                title="@(IsExpanded ? "Weniger anzeigen" : "Mehr anzeigen")"
+                aria-label="@(IsExpanded ? $"{Team.TeamName}: Weniger anzeigen" : $"{Team.TeamName}: Mehr anzeigen")">
+            <i class="bi @(IsExpanded ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></i>
         </button>
     </div>
 
