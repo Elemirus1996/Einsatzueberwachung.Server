@@ -1189,7 +1189,15 @@ public partial class EinsatzMonitor
 
     private async Task ResetTeamAsync(string teamId)
     {
-        await EinsatzService.ResetTeamTimerAsync(teamId);
+        try
+        {
+            await EinsatzService.ResetTeamTimerAsync(teamId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _teamStatusMessage = ex.Message;
+            _teamStatusIsError = true;
+        }
     }
 
     // --- Halsband-Auswahl Modal (wird gezeigt wenn beim Start kein Halsband zugewiesen ist) ---
@@ -1252,19 +1260,32 @@ public partial class EinsatzMonitor
         _collarSelectCollarId = string.Empty;
     }
 
-    private Task RequestResetTeamAsync(string teamId)
+    private async Task RequestResetTeamAsync(string teamId)
     {
         var team = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
-        if (team is not null && team.IsPausing && !team.IsPauseComplete)
+        if (team is null)
+        {
+            _teamStatusMessage = "Das Team ist nicht mehr vorhanden. Bitte aktualisieren Sie die Liste.";
+            _teamStatusIsError = true;
+            return;
+        }
+
+        if (team.IsRunning)
+        {
+            _teamStatusMessage = "Die Suche läuft – bitte zuerst beenden.";
+            _teamStatusIsError = true;
+            return;
+        }
+
+        if (team.IsPausing && !team.IsPauseComplete)
         {
             _pauseResetTeamId = teamId;
             _showPauseResetModal = true;
         }
         else
         {
-            _ = ResetTeamAsync(teamId);
+            await ResetTeamAsync(teamId);
         }
-        return Task.CompletedTask;
     }
 
     private async Task ConfirmResetTeamAsync()
@@ -1473,7 +1494,7 @@ public partial class EinsatzMonitor
 
     private void ApplyFormValues(Team team)
     {
-        var resolvedTeamName = ResolveTeamNameFromForm();
+        var resolvedTeamName = ResolveTeamNameFromForm(_teamForm);
         team.TeamName = resolvedTeamName;
         team.HundefuehrerId = _teamForm.HundefuehrerId;
         ApplyHelfersToTeam(team);
@@ -1559,7 +1580,10 @@ public partial class EinsatzMonitor
             }
         }
 
-        form.TeamName = dog?.Name?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(form.TeamName))
+        {
+            form.TeamName = dog?.Name?.Trim() ?? string.Empty;
+        }
     }
 
     private async Task OnDroneChangedAsync()
@@ -1581,10 +1605,13 @@ public partial class EinsatzMonitor
 
     private void SyncTeamNameFromSelection()
     {
-        _teamForm.TeamName = ResolveTeamNameFromForm();
+        if (string.IsNullOrWhiteSpace(_teamForm.TeamName))
+        {
+            _teamForm.TeamName = ResolveDefaultTeamNameFromSelection();
+        }
     }
 
-    private string ResolveTeamNameFromForm()
+    private string ResolveDefaultTeamNameFromSelection()
     {
         if (_teamForm.TeamType == "dog")
         {
@@ -1598,8 +1625,11 @@ public partial class EinsatzMonitor
             return droneName?.Trim() ?? string.Empty;
         }
 
-        return _teamForm.TeamName.Trim();
+        return string.Empty;
     }
+
+    internal static string ResolveTeamNameFromForm(TeamEditorModel form) =>
+        form.TeamName.Trim();
 
     private async Task AddGlobalNoteAsync()
     {

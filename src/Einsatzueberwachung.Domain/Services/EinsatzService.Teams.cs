@@ -198,6 +198,8 @@ namespace Einsatzueberwachung.Domain.Services
         {
             var team = await GetTeamByIdAsync(teamId);
             if (team == null) return;
+            if (team.IsRunning)
+                throw new InvalidOperationException("Die Suche läuft – bitte zuerst beenden.");
 
             var dogId = team.DogId;
             team.ResetTimer();

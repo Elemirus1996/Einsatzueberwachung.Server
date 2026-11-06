@@ -1028,12 +1028,16 @@
                             title="Stopp">
                         <i class="bi bi-stop-fill"></i>
                     </button>
-                    <button class="bahn-action"
-                            disabled="@(_busyTeamId == team.TeamId)"
-                            @onclick="() => ResetTeamAsync(team.TeamId)"
-                            title="Bereit">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
+                    @if (!team.IsRunning)
+                    {
+                        <button class="bahn-action"
+                                disabled="@(_busyTeamId == team.TeamId)"
+                                @onclick="() => ResetTeamAsync(team.TeamId)"
+                                title="Timer zurücksetzen"
+                                aria-label="@($"{team.TeamName}: Timer zurücksetzen")">
+                            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                        </button>
+                    }
                     <button class="bahn-action"
                             @onclick="() => OpenFunk(team.TeamName)"
                             title="Funk an dieses Team">

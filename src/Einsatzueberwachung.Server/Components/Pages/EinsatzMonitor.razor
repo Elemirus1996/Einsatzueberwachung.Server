@@ -42,19 +42,7 @@
         @if (_currentLayout.Any(p => p.IsVisible && IsSummaryPanel(p.PanelId)))
         {
             <section class="monitor-summary-grid @(_summaryGridCollapsed ? "is-collapsed" : "")"
-                     aria-labelledby="monitor-summary-heading">
-                <div class="monitor-summary-grid-header">
-                    <h2 class="monitor-summary-grid-title" id="monitor-summary-heading">Einsatzinformationen</h2>
-                    <button class="monitor-summary-toggle"
-                            type="button"
-                            aria-controls="monitor-summary-tiles"
-                            aria-expanded="@(!_summaryGridCollapsed).ToString().ToLowerInvariant()"
-                            aria-label="@(_summaryGridCollapsed ? "Einsatzinformationen einblenden" : "Einsatzinformationen ausblenden")"
-                            @onclick="ToggleSummaryGrid">
-                        <span>@(_summaryGridCollapsed ? "Einblenden" : "Ausblenden")</span>
-                        <i class="bi bi-chevron-@(_summaryGridCollapsed ? "down" : "up")" aria-hidden="true"></i>
-                    </button>
-                </div>
+                     aria-label="Einsatzinformationen">
                 <div id="monitor-summary-tiles"
                      class="monitor-summary-grid-tiles"
                      hidden="@_summaryGridCollapsed">
@@ -528,6 +516,19 @@
                     }
                     }
                 </div>
+                @if (_summaryGridCollapsed)
+                {
+                    <span class="monitor-summary-collapsed-label">Einsatzinformationen</span>
+                }
+                <button class="monitor-summary-toggle"
+                    type="button"
+                    aria-controls="monitor-summary-tiles"
+                    aria-expanded="@(_summaryGridCollapsed ? "false" : "true")"
+                    aria-label="@(_summaryGridCollapsed ? "Einsatzinformationen einblenden" : "Einsatzinformationen ausblenden")"
+                    title="@(_summaryGridCollapsed ? "Einsatzinformationen einblenden" : "Einsatzinformationen ausblenden")"
+                    @onclick="ToggleSummaryGrid">
+                    <i class="bi bi-chevron-@(_summaryGridCollapsed ? "down" : "up")" aria-hidden="true"></i>
+                </button>
             </section>
         }
 
@@ -1835,7 +1836,9 @@
 
                     <div class="col-12">
                         <label class="form-label">Teamname</label>
-                        <input class="form-control" @bind="_teamForm.TeamName" placeholder="z. B. Team Alpha" />
+                        <input class="form-control"
+                               @bind="_teamForm.TeamName"
+                               placeholder="z. B. Team Alpha" />
                     </div>
 
                     @if (_teamForm.TeamType == "dog")

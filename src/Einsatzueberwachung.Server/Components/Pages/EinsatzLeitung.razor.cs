@@ -378,7 +378,21 @@ public partial class EinsatzLeitung : IDisposable
     {
         if (_busyTeamId is not null) return;
         _busyTeamId = teamId;
-        try { await EinsatzService.ResetTeamTimerAsync(teamId); }
+        try
+        {
+            await EinsatzService.ResetTeamTimerAsync(teamId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            var item = new PushToastItem
+            {
+                Title = "Timer nicht zurückgesetzt",
+                Body = ex.Message,
+                Icon = "bi-exclamation-triangle-fill"
+            };
+            _pushToasts.Add(item);
+            _ = AutoDismissToastAsync(item.Id);
+        }
         finally { _busyTeamId = null; }
     }
 

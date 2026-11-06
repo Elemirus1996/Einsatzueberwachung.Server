@@ -1,5 +1,5 @@
 @inject ITimeService TimeService
-@* Team card — zones: identity+timer | context strip | actions | expand *@
+@* Team identity and live controls stay together; context and history remain secondary. *@
 @inject NavigationManager Navigation
 <div id="team-@Team.TeamId"
      class="monitor-team-card @CardClass @(IsDogConflict ? "team-dog-blocked" : "")">
@@ -16,7 +16,7 @@
         </div>
     }
 
-    @* ── Zone 1: Identity + Timer ─────────────────────────────────── *@
+    @* ── Identity, live state and its actions ─────────────────────── *@
     <div class="tc-head">
         <div class="tc-identity">
             <div class="tc-name-row">
@@ -27,18 +27,31 @@
                         title="Mit Maus, Touch oder Pfeiltasten verschieben">
                     <i class="bi bi-grip-vertical" aria-hidden="true"></i>
                 </button>
-                <div class="tc-name">@Team.TeamName</div>
+                <h3 class="tc-name"
+                    aria-label="@TeamNameAccessibleLabel"
+                    title="@Team.TeamName">@Team.TeamName</h3>
+                @if (ShowDogName)
+                {
+                    <span class="tc-dog-name" title="Hund: @Team.DogName">
+                        <span class="visually-hidden">Hund: </span>
+                        <span class="tc-dog-name-text">@Team.DogName</span>
+                    </span>
+                }
+                <button class="btn btn-outline-secondary btn-sm tc-icon-button tc-edit-button"
+                        @onclick="() => OnEdit.InvokeAsync(Team.TeamId)"
+                        title="Bearbeiten"
+                        aria-label="@($"{Team.TeamName} bearbeiten")">
+                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                </button>
             </div>
             <div class="tc-crew">
-                @if (!string.IsNullOrWhiteSpace(Team.DogName))
-                {
-                    <span><i class="bi bi-paw-fill"></i>@Team.DogName</span>
-                }
                 @if (Team.IsDroneTeam && !string.IsNullOrWhiteSpace(Team.DroneType))
                 {
                     var droneEntry = DroneList.FirstOrDefault(d => d.Id == Team.DroneId);
-                    <span>
-                        <i class="bi bi-airplane"></i>@Team.DroneType
+                    <span class="tc-crew-item">
+                        <i class="bi bi-airplane" aria-hidden="true"></i>
+                        <span class="visually-hidden">Drohne: </span>
+                        <span class="tc-crew-name">@Team.DroneType</span>
                         @if (droneEntry is not null && !string.IsNullOrWhiteSpace(droneEntry.LivestreamUrl))
                         {
                             <a href="@droneEntry.LivestreamUrl" target="_blank" rel="noopener noreferrer"
@@ -51,167 +64,182 @@
                 }
                 @if (!string.IsNullOrWhiteSpace(Team.HundefuehrerName))
                 {
-                    <span><i class="bi bi-person-fill"></i>@Team.HundefuehrerName</span>
+                    <span class="tc-crew-item" title="Hundeführer: @Team.HundefuehrerName">
+                        <i class="bi bi-person-fill" aria-hidden="true"></i>
+                        <span class="visually-hidden">Hundeführer: </span>
+                        <span class="tc-crew-name">@Team.HundefuehrerName</span>
+                    </span>
+                }
+                @if (Team.HelferNames.Count > 0)
+                {
+                    <span class="tc-crew-item tc-crew-item--helpers" title="Helfer: @Team.HelferNamesJoined">
+                        <i class="bi bi-people-fill" aria-hidden="true"></i>
+                        <span class="visually-hidden">Helfer: </span>
+                        <span class="tc-crew-name">@Team.HelferNamesJoined</span>
+                    </span>
                 }
             </div>
         </div>
-        <div class="tc-timer">
+        <div class="tc-status-actions">
             @if (!Team.IsDroneTeam && !Team.IsSupportTeam)
             {
-                @if (Team.IsPausing)
-                {
-                    <div class="tc-time tc-time--pausing">
-                        @if (Team.IsPauseComplete)
+                <div class="tc-timer">
+                    @if (Team.IsPausing)
+                    {
+                        <div class="tc-time tc-time--pausing">
+                            @if (Team.IsPauseComplete)
+                            {
+                                <i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>
+                            }
+                            @FormatPauseRemaining()
+                        </div>
+                        @if (!Team.IsPauseComplete)
                         {
-                            <i class="bi bi-check-circle-fill me-1"></i>
+                            <div class="tc-badge tc-badge--pause">IN PAUSE</div>
                         }
-                        @FormatPauseRemaining()
-                    </div>
-                    <div class="tc-badge @(Team.IsPauseComplete ? "tc-badge--ok" : "tc-badge--pause")">
-                        @(Team.IsPauseComplete ? "PAUSE OK" : "IN PAUSE")
-                    </div>
-                    <div class="tc-pause-info">
-                        Gelaufen: @((int)Team.RunTimeBeforePause.TotalMinutes) Min. &bull;
-                        Pflichtpause: @Team.RequiredPauseMinutes Min.
-                    </div>
-                }
-                else
-                {
-                    <div class="tc-time @TimerDisplayClass">@Team.ElapsedTime.ToString(@"hh\:mm\:ss")</div>
-                    @if (Team.IsManuallyPaused)
-                    {
-                        <div class="tc-badge tc-badge--pause">PAUSE</div>
-                    }
-                    else if (Team.IsSecondWarning)
-                    {
-                        <div class="tc-badge tc-badge--critical">KRITISCH</div>
-                    }
-                    else if (Team.IsFirstWarning)
-                    {
-                        <div class="tc-badge tc-badge--warning">Warnung</div>
-                    }
-                    else if (Team.IsRunning)
-                    {
-                        <div class="tc-badge tc-badge--running">Läuft</div>
+                        <div class="tc-pause-info">
+                            Gelaufen: @((int)Team.RunTimeBeforePause.TotalMinutes) Min. &bull;
+                            Pflichtpause: @Team.RequiredPauseMinutes Min.
+                        </div>
                     }
                     else
                     {
-                        <div class="tc-badge tc-badge--ready">Bereit</div>
+                        <div class="tc-time @TimerDisplayClass">@Team.ElapsedTime.ToString(@"hh\:mm\:ss")</div>
+                        @if (Team.IsManuallyPaused)
+                        {
+                            <div class="tc-badge tc-badge--pause">PAUSE</div>
+                        }
+                        else if (Team.IsSecondWarning)
+                        {
+                            <div class="tc-badge tc-badge--critical">KRITISCH</div>
+                        }
+                        else if (Team.IsFirstWarning)
+                        {
+                            <div class="tc-badge tc-badge--warning">Warnung</div>
+                        }
+                        else if (Team.IsRunning)
+                        {
+                            <div class="tc-badge tc-badge--running">Läuft</div>
+                        }
+                        else
+                        {
+                            <div class="tc-badge tc-badge--ready">Bereit</div>
+                        }
                     }
-                }
+                </div>
             }
+
+            <div class="tc-action-row">
+                @if (!Team.IsDroneTeam && !Team.IsSupportTeam)
+                {
+                    <div class="tc-controls" role="group" aria-label="@($"Suchaktionen für {Team.TeamName}")">
+                        @if (Team.IsRunning)
+                        {
+                            <button class="btn btn-outline-info btn-sm" @onclick="() => OnPause.InvokeAsync(Team.TeamId)">Pause</button>
+                            <button class="btn btn-warning btn-sm" @onclick="() => OnStop.InvokeAsync(Team.TeamId)">Stopp</button>
+                        }
+                        else if (Team.IsManuallyPaused)
+                        {
+                            <button class="btn btn-success btn-sm" @onclick="() => OnStart.InvokeAsync(Team.TeamId)">Weiter</button>
+                            <button class="btn btn-warning btn-sm" @onclick="() => OnStop.InvokeAsync(Team.TeamId)">Stopp</button>
+                        }
+                        else if (Team.IsPausing)
+                        {
+                            <button class="btn btn-success btn-sm" @onclick="() => OnStart.InvokeAsync(Team.TeamId)" title="Neuen Einsatz starten (Pause beendet)">Start</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-success btn-sm" disabled="@IsDogConflict"
+                                    @onclick="() => OnStart.InvokeAsync(Team.TeamId)"
+                                    title="@(IsDogConflict ? "Hund läuft bereits in einem anderen Team" : "Timer starten")">Start</button>
+                        }
+                    </div>
+                }
+
+                @if (!Team.IsDroneTeam && !Team.IsSupportTeam && !Team.IsRunning)
+                {
+                    <div class="tc-secondary-actions" role="group" aria-label="@($"Weitere Aktionen für {Team.TeamName}")">
+                        <button class="btn btn-outline-secondary btn-sm btn-team-reset tc-icon-button" disabled="@IsDogConflict"
+                                @onclick="() => OnReset.InvokeAsync(Team.TeamId)"
+                                title="@(IsDogConflict ? "Hund läuft bereits in einem anderen Team" : "Timer zurücksetzen")"
+                                aria-label="@($"{Team.TeamName}: Timer zurücksetzen")">
+                            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 
-    @* ── Zone 2: Context strip (situational info at a glance) ──────── *@
+    @* ── Context chips share the details-toggle row to keep the card compact. ── *@
     @{
         bool hasCtx = !string.IsNullOrWhiteSpace(Team.SearchAreaName)
                    || !string.IsNullOrWhiteSpace(Team.Notes)
-                   || !string.IsNullOrWhiteSpace(Team.CollarId);
-    }
-    @if (hasCtx)
-    {
-        <div class="tc-ctx">
-            @if (!string.IsNullOrWhiteSpace(Team.SearchAreaName))
-            {
-                <button type="button"
-                      class="tc-ctx-chip tc-ctx-chip--link tc-ctx-chip--action"
-                      title="Auf Karte anzeigen"
-                      @onclick="NavigateToSearchArea">
-                    <i class="bi bi-geo-alt"></i>@Team.SearchAreaName
-                </button>
-            }
-            @if (!string.IsNullOrWhiteSpace(Team.Notes))
-            {
-                <span class="tc-ctx-chip tc-ctx-chip--note" title="@Team.Notes">
-                    <i class="bi bi-sticky"></i><span class="tc-ctx-clip">@Team.Notes</span>
-                </span>
-            }
-            @if (!string.IsNullOrWhiteSpace(Team.CollarId))
-            {
-                <button type="button"
-                    class="tc-ctx-chip tc-ctx-chip--gps tc-ctx-chip--link tc-ctx-chip--action"
-                    title="GPS-Halsband auf Karte verfolgen"
-                    @onclick="NavigateToCollar">
-                    <i class="bi bi-broadcast-pin"></i>
-                    @if (LastCollarLocation is not null)
-                    {
-                        <span>@FormatRelativeTime(LastCollarLocation.Timestamp)</span>
-                        @if (LastCollarLocation.BatteryLevel.HasValue)
-                        {
-                            var (batteryIcon, batteryColor, batteryLabel) = GetBatteryDisplay(LastCollarLocation.BatteryLevel);
-                            <span class="tc-ctx-muted" title="@batteryLabel" aria-label="@batteryLabel"><i class="bi @batteryIcon @batteryColor" aria-hidden="true"></i></span>
-                        }
-                    }
-                    else
-                    {
-                        <span class="tc-ctx-muted">kein Signal</span>
-                    }
-                </button>
-            }
-        </div>
+                   || !string.IsNullOrWhiteSpace(Team.CollarId)
+                   || LastPhoneLocation is not null;
     }
 
-    @* ── Handy des Teams (Traccar/Team-Seite): Alter der letzten Position und Akku ── *@
-    @if (LastPhoneLocation is not null)
-    {
-        <div class="tc-ctx">
-            <span class="tc-ctx-chip @(PhoneVeraltet ? "tc-ctx-chip--warn" : "")" title="Letzte Position vom Handy des Teams">
-                <i class="bi bi-phone"></i>
-                <span>Handy @HandyAlterText</span>
-                @if (LastPhoneLocation.BatteryPercent is int akku)
+    <div class="tc-foot">
+        @if (hasCtx)
+        {
+            <div class="tc-ctx">
+                @if (!string.IsNullOrWhiteSpace(Team.SearchAreaName))
                 {
-                    <span class="@(akku < 20 ? "text-danger fw-semibold" : "tc-ctx-muted")" title="Akku des Handys">
-                        <i class="bi @(akku < 20 ? "bi-battery" : akku < 60 ? "bi-battery-half" : "bi-battery-full")"></i> @akku %
+                    <button type="button"
+                            class="tc-ctx-chip tc-ctx-chip--link tc-ctx-chip--action"
+                            title="Auf Karte anzeigen"
+                            @onclick="NavigateToSearchArea">
+                        <i class="bi bi-geo-alt"></i>@Team.SearchAreaName
+                    </button>
+                }
+                @if (!string.IsNullOrWhiteSpace(Team.Notes))
+                {
+                    <span class="tc-ctx-chip tc-ctx-chip--note" title="@Team.Notes">
+                        <i class="bi bi-sticky"></i><span class="tc-ctx-clip">@Team.Notes</span>
                     </span>
                 }
-            </span>
-        </div>
-    }
-
-    @* ── Zone 3: Actions ─────────────────────────────────────────── *@
-    <div class="tc-foot">
-        <div class="tc-controls">
-            @if (!Team.IsDroneTeam && !Team.IsSupportTeam)
-            {
-                @if (Team.IsRunning)
+                @if (!string.IsNullOrWhiteSpace(Team.CollarId))
                 {
-                    <button class="btn btn-outline-info btn-sm" @onclick="() => OnPause.InvokeAsync(Team.TeamId)">Pause</button>
-                    <button class="btn btn-warning btn-sm" @onclick="() => OnStop.InvokeAsync(Team.TeamId)">Stopp</button>
+                    <button type="button"
+                            class="tc-ctx-chip tc-ctx-chip--gps tc-ctx-chip--link tc-ctx-chip--action"
+                            title="GPS-Halsband auf Karte verfolgen"
+                            @onclick="NavigateToCollar">
+                        <i class="bi bi-broadcast-pin"></i>
+                        @if (LastCollarLocation is not null)
+                        {
+                            <span>@FormatRelativeTime(LastCollarLocation.Timestamp)</span>
+                            @if (LastCollarLocation.BatteryLevel.HasValue)
+                            {
+                                var (batteryIcon, batteryColor, batteryLabel) = GetBatteryDisplay(LastCollarLocation.BatteryLevel);
+                                <span class="tc-ctx-muted" title="@batteryLabel" aria-label="@batteryLabel"><i class="bi @batteryIcon @batteryColor" aria-hidden="true"></i></span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="tc-ctx-muted">kein Signal</span>
+                        }
+                    </button>
                 }
-                else if (Team.IsManuallyPaused)
+                @if (LastPhoneLocation is not null)
                 {
-                    <button class="btn btn-success btn-sm" @onclick="() => OnStart.InvokeAsync(Team.TeamId)">Weiter</button>
-                    <button class="btn btn-warning btn-sm" @onclick="() => OnStop.InvokeAsync(Team.TeamId)">Stopp</button>
+                    <span class="tc-ctx-chip @(PhoneVeraltet ? "tc-ctx-chip--warn" : "")" title="Letzte Position vom Handy des Teams">
+                        <i class="bi bi-phone"></i>
+                        <span>Handy @HandyAlterText</span>
+                        @if (LastPhoneLocation.BatteryPercent is int akku)
+                        {
+                            <span class="@(akku < 20 ? "text-danger fw-semibold" : "tc-ctx-muted")" title="Akku des Handys">
+                                <i class="bi @(akku < 20 ? "bi-battery" : akku < 60 ? "bi-battery-half" : "bi-battery-full")"></i> @akku %
+                            </span>
+                        }
+                    </span>
                 }
-                else if (Team.IsPausing)
-                {
-                    <button class="btn btn-success btn-sm" @onclick="() => OnStart.InvokeAsync(Team.TeamId)" title="Neuen Einsatz starten (Pause beendet)">Start</button>
-                }
-                else
-                {
-                    <button class="btn btn-success btn-sm" disabled="@IsDogConflict"
-                            @onclick="() => OnStart.InvokeAsync(Team.TeamId)"
-                            title="@(IsDogConflict ? "Hund läuft bereits in einem anderen Team" : "Timer starten")">Start</button>
-                }
-                <button class="btn btn-outline-secondary btn-sm btn-team-reset tc-icon-button" disabled="@IsDogConflict"
-                        @onclick="() => OnReset.InvokeAsync(Team.TeamId)"
-                        title="Timer zurücksetzen"
-                        aria-label="@($"{Team.TeamName}: Timer zurücksetzen")">
-                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-                </button>
-            }
-            <button class="btn btn-outline-secondary btn-sm tc-icon-button"
-                    @onclick="() => OnEdit.InvokeAsync(Team.TeamId)"
-                    title="Bearbeiten"
-                    aria-label="@($"{Team.TeamName} bearbeiten")">
-                <i class="bi bi-pencil" aria-hidden="true"></i>
-            </button>
-        </div>
+            </div>
+        }
         <button class="btn btn-outline-secondary btn-sm tc-expand-toggle tc-icon-button"
                 @onclick="() => OnToggleExpand.InvokeAsync(Team.TeamId)"
                 title="@(IsExpanded ? "Weniger anzeigen" : "Mehr anzeigen")"
-                aria-label="@(IsExpanded ? $"{Team.TeamName}: Weniger anzeigen" : $"{Team.TeamName}: Mehr anzeigen")">
+                aria-label="@(IsExpanded ? $"{Team.TeamName}: Weniger anzeigen" : $"{Team.TeamName}: Mehr anzeigen")"
+                aria-expanded="@(IsExpanded ? "true" : "false")">
             <i class="bi @(IsExpanded ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></i>
         </button>
     </div>
@@ -220,17 +248,6 @@
     @if (IsExpanded)
     {
         <div class="tc-expand">
-
-            @* Crew *@
-            @if (Team.HelferNames.Count > 0)
-            {
-                <div class="tc-section-label">Besatzung</div>
-                <div class="tc-expand-row">
-                    <i class="bi bi-people tc-expand-icon"></i>
-                    <span>@Team.HelferNamesJoined</span>
-                    <span class="tc-expand-muted">(@(Team.HelferNames.Count == 1 ? "Helfer" : $"{Team.HelferNames.Count} Helfer"))</span>
-                </div>
-            }
 
             @* Halsband + GPS *@
             @if (!string.IsNullOrWhiteSpace(Team.CollarId))
@@ -325,6 +342,19 @@
     [Parameter] public EventCallback<string> OnEdit { get; set; }
     [Parameter] public EventCallback<string> OnToggleExpand { get; set; }
 
+    private bool DogNameMatchesTeamName =>
+        !string.IsNullOrWhiteSpace(Team.TeamName)
+        && !string.IsNullOrWhiteSpace(Team.DogName)
+        && string.Equals(Team.TeamName.Trim(), Team.DogName.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    private bool ShowDogName =>
+        !string.IsNullOrWhiteSpace(Team.DogName) && !DogNameMatchesTeamName;
+
+    private string TeamNameAccessibleLabel =>
+        DogNameMatchesTeamName
+            ? $"Team {Team.TeamName}; Hund {Team.DogName}"
+            : $"Team {Team.TeamName}";
+
     private string CardClass
     {
         get
@@ -351,7 +381,7 @@
 
     private string FormatPauseRemaining()
     {
-        if (Team.IsPauseComplete) return "Pause abgeschlossen";
+        if (Team.IsPauseComplete) return "Pause beendet";
         var remaining = TimeSpan.FromMinutes(Team.RemainingPauseMinutes);
         return $"Noch {remaining:hh\\:mm} Pause";
     }

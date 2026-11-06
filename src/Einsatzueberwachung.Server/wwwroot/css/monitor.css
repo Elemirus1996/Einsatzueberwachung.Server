@@ -420,40 +420,23 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     background: var(--ui-surface);
 }
 
-.monitor-summary-grid-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    min-height: 44px;
-    padding: 0 0.75rem;
-    border-bottom: 1px solid var(--ui-border);
-}
-
-.monitor-summary-grid-title {
-    margin: 0;
-    color: var(--ui-muted);
-    font-size: 0.875rem;
-    font-weight: 600;
-    line-height: 1.2;
-}
-
 .monitor-summary-toggle {
-    display: inline-flex;
+    display: inline-grid;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 0.5rem;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    margin: 0 6px 6px auto;
+    padding: 0;
     border: 0;
-    border-radius: 0.375rem;
+    border-radius: 50%;
     background: transparent;
     color: var(--ui-muted);
-    font: inherit;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    white-space: nowrap;
+    font-size: 0.75rem;
 }
 
 .monitor-summary-toggle:hover {
@@ -473,15 +456,40 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     align-items: stretch;
     gap: 8px 16px;
     min-width: 0;
-    padding: 8px 12px;
+    padding: 8px 12px 0;
 }
 
 .monitor-summary-grid-tiles[hidden] {
     display: none !important;
 }
 
-.monitor-summary-grid.is-collapsed .monitor-summary-grid-header {
-    border-bottom: 0;
+.monitor-summary-grid.is-collapsed {
+    flex-direction: row;
+    align-items: center;
+    min-height: 36px;
+    padding-left: 12px;
+}
+
+.monitor-summary-collapsed-label {
+    min-width: 0;
+    color: var(--ui-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.monitor-summary-grid.is-collapsed .monitor-summary-toggle {
+    margin: 0 6px 0 auto;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .monitor-summary-toggle {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        margin-bottom: 0;
+    }
 }
 
 /* Keep the currently running pre-restart Razor page in its original layout. */
@@ -1452,6 +1460,10 @@ main:has(.monitor-dashboard-wrapper) .app-content {
         overflow: hidden;
     }
 
+    .monitor-summary-grid-tiles {
+        padding-bottom: 0;
+    }
+
     .monitor-summary-grid {
         grid-column: 1 / -1 !important;
         grid-row: 1 !important;
@@ -1820,28 +1832,10 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 [data-panel-id="teams"] .monitor-team-card {
     padding: 0.75rem;
     border: 1px solid var(--ui-border);
-    border-left-width: 4px;
-    border-left-color: var(--ui-border);
     border-radius: 0.5rem;
     background: var(--ui-surface-2);
     box-shadow: none;
     transform: none;
-}
-
-[data-panel-id="teams"] .monitor-team-card.team-running {
-    border-left-color: var(--success-color);
-}
-
-[data-panel-id="teams"] .monitor-team-card.team-warning {
-    border-left-color: var(--warning-color);
-}
-
-[data-panel-id="teams"] .monitor-team-card.team-pausing {
-    border-left-color: var(--pause-color);
-}
-
-[data-panel-id="teams"] .monitor-team-card.team-critical {
-    border-left-color: var(--danger-color);
 }
 
 [data-panel-id="teams"] .monitor-team-card.team-critical,
@@ -1867,8 +1861,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
 [data-panel-id="teams"] .tc-time,
 [data-panel-id="teams"] .tc-time--pausing {
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--ui-text);
     letter-spacing: 0;
 }
@@ -1882,7 +1875,6 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 
 [data-panel-id="teams"] .tc-time.timer-critical {
-    font-size: 1.5rem;
     color: var(--danger-color);
 }
 

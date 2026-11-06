@@ -105,7 +105,7 @@
 
 /* ========================================
    MONITOR — team cards
-   Zone model: [identity+timer] → [context strip] → [foot/actions] → [expand]
+   Zone model: [identity+live controls] → [context + details toggle] → [expand]
    ======================================== */
 
 .teams-monitor-list {
@@ -123,7 +123,6 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
     height: 44px;
     padding: 0;
     margin-top: 0.1rem;
@@ -186,20 +185,16 @@
     border-radius: 8px;
     background: var(--ui-surface);
     border: 1px solid var(--ui-border);
-    border-left: 4px solid color-mix(in srgb, var(--ui-muted) 78%, transparent);
     padding: 0.75rem 0.9rem;
     display: flex;
     flex-direction: column;
     gap: 0;
+    container-name: team-card;
+    container-type: inline-size;
 }
 
 /* ── Status states ──────────────────────────────────────────────────────── */
-.monitor-team-card.team-running { border-left-color: var(--success-color); }
-.monitor-team-card.team-warning { border-left-color: var(--warning-color); }
-.monitor-team-card.team-pausing { border-left-color: var(--pause-color); }
-
 .monitor-team-card.team-critical {
-    border-left-color: var(--danger-color);
     animation: pulse-critical 2s infinite;
 }
 
@@ -219,12 +214,12 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 /* Identity column */
 .tc-identity {
-    flex: 1;
+    flex: 1 1 0;
     min-width: 0;
 }
 
@@ -236,39 +231,111 @@
     margin-bottom: 0.2rem;
 }
 
-.tc-name {
-    flex: 1 1 auto;
+.tc-dog-name {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 1 auto;
+    gap: 0.25rem;
     min-width: 0;
+    max-width: 45%;
+    color: var(--ui-muted);
+    font-size: 0.8125rem;
+    line-height: 1.2;
+}
+
+.tc-dog-name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tc-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0;
     font-size: 1rem;
     font-weight: 700;
     color: var(--ui-text);
     line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
 }
 
-/* Crew line: dog · handler */
+.tc-edit-button {
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.monitor-team-card:hover .tc-edit-button,
+.monitor-team-card:focus-within .tc-edit-button {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .tc-edit-button {
+        flex-basis: 44px;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        min-height: 44px;
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+/* Keep the team roster together under its identity. */
 .tc-crew {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.15rem 0.6rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    min-width: 0;
     color: var(--ui-muted);
-    font-size: 0.78rem;
-    line-height: 1.5;
+    font-size: 0.8125rem;
+    line-height: 1.4;
 }
 
-.tc-crew span {
+.tc-crew-item {
     display: inline-flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.22rem;
+    gap: 0.2rem 0.3rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tc-crew-item > i {
+    flex: 0 0 auto;
+}
+
+.tc-crew-name {
+    min-width: 0;
+    color: var(--ui-text);
+    overflow-wrap: anywhere;
 }
 
 .tc-crew a { color: inherit; opacity: 0.85; }
 
+/* Keep the timer and the controls that change it in one visual unit. */
+.tc-status-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
 /* Timer column */
 .tc-timer {
-    flex-shrink: 0;
+    min-width: 0;
     text-align: right;
     display: flex;
     flex-direction: column;
@@ -277,7 +344,7 @@
 }
 
 .tc-time {
-    font-size: 2.2rem;
+    font-size: 2rem;
     font-weight: 700;
     font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'SF Mono', 'Consolas', monospace;
     font-variant-numeric: tabular-nums;
@@ -289,7 +356,7 @@
 
 .tc-time.timer-critical {
     color: var(--danger-color);
-    font-size: 2.55rem;
+    font-size: 2.1rem;
 }
 
 .tc-time--pausing {
@@ -300,6 +367,32 @@
     letter-spacing: -0.03em;
     line-height: 1;
     color: var(--pause-color);
+}
+
+.tc-action-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.tc-controls,
+.tc-secondary-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+}
+
+.tc-controls {
+    justify-content: flex-end;
+}
+
+.tc-secondary-actions {
+    padding-inline-start: 0.35rem;
+    border-inline-start: 1px solid var(--ui-border);
 }
 
 .tc-badge {
@@ -318,18 +411,19 @@
 .tc-badge--ok       { background: var(--success-fill); color: var(--success-on-fill); }
 
 .tc-pause-info {
-    font-size: 0.72rem;
+    font-size: 0.875rem;
     color: var(--ui-muted);
     margin-top: 0.1rem;
+    line-height: 1.35;
 }
 
-/* ── Zone 2: Context strip ──────────────────────────────────────────────── */
-/* Chips for search area, notes and GPS — between identity and actions */
+/* ── Zone 2: Context chips share the details-toggle row ─────────────────── */
 .tc-ctx {
     display: flex;
+    flex: 1 1 auto;
     flex-wrap: wrap;
     gap: 0.3rem;
-    margin-top: 0.45rem;
+    min-width: 0;
 }
 
 .tc-ctx-chip {
@@ -413,30 +507,29 @@
     opacity: 0.7;
 }
 
-/* ── Zone 3: Footer / actions ───────────────────────────────────────────── */
+/* ── Context and details toggle ─────────────────────────────────────────── */
 .tc-foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.4rem;
-    margin-top: 0.55rem;
-    padding-top: 0.45rem;
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
     border-top: 1px solid var(--ui-border);
 }
 
 
 .tc-controls {
-    display: flex;
-    gap: 0.3rem;
-    align-items: center;
-    flex-wrap: wrap;
+    flex: 0 1 auto;
 }
 
-.tc-controls .btn {
+.tc-controls .btn,
+.tc-secondary-actions .btn {
     min-height: 44px;
 }
 
-.tc-controls .tc-icon-button {
+.tc-controls .tc-icon-button,
+.tc-secondary-actions .tc-icon-button {
     min-width: 44px;
     min-height: 44px;
 }
@@ -578,6 +671,45 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+@container team-card (max-width: 560px) {
+    .tc-head {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .tc-identity,
+    .tc-status-actions {
+        width: 100%;
+    }
+
+    .tc-status-actions {
+        align-items: stretch;
+        gap: 0.35rem;
+    }
+
+    .tc-timer {
+        align-items: flex-start;
+        text-align: left;
+        width: 100%;
+    }
+
+    .tc-action-row {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .tc-controls {
+        justify-content: flex-start;
+    }
+
+    .tc-time--pausing {
+        font-size: 1.5rem;
+        letter-spacing: 0;
+        line-height: 1.2;
+        white-space: normal;
+    }
 }
 
 /* ── Teams panel header with filter chips ───────────────────────────────── */
