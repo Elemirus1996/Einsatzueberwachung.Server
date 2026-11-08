@@ -851,34 +851,52 @@
 
                                 case KnownPanels.Notizen:
                                     <div id="note-expander-form" class="note-input-section mb-3">
-                                        <div class="mb-2 d-flex flex-wrap align-items-center gap-1">
-                                            <span class="note-source-label">Quelle:</span>
-                                            @foreach (var team in EinsatzService.Teams.OrderBy(t => t.TeamName))
-                                            {
+                                        <div class="monitor-note-compose-controls mb-2">
+                                            <div class="monitor-note-source-field">
+                                                <label class="note-source-label" for="monitor-note-source">Quelle</label>
+                                                <select id="monitor-note-source" class="form-select monitor-note-source-select" aria-label="Quelle der Nachricht" @bind="_newNoteSourceId">
+                                                    <option value="einsatzleitung">Einsatzleitung (EL)</option>
+                                                    @foreach (var team in EinsatzService.Teams.OrderBy(t => t.TeamName))
+                                                    {
+                                                        <option value="@team.TeamId">@team.TeamName</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div class="monitor-note-type-switch" role="group" aria-label="Art der Nachricht">
                                                 <button type="button"
-                                                        class="btn btn-sm note-source-chip @(_newNoteSourceId == team.TeamId ? "active" : "")"
-                                                        @onclick="() => _newNoteSourceId = team.TeamId">
-                                                    @team.TeamName
+                                                        class="btn btn-outline-secondary monitor-note-type-button @(_newNoteType == "Notiz" ? "active" : "")"
+                                                        aria-pressed="@(_newNoteType == "Notiz")"
+                                                        @onclick='() => _newNoteType = "Notiz"'>
+                                                    <i class="bi bi-sticky" aria-hidden="true"></i> Notiz
                                                 </button>
-                                            }
-                                            <button type="button"
-                                                    class="btn btn-sm note-source-chip @(_newNoteSourceId == "einsatzleitung" ? "active" : "")"
-                                                    @onclick='() => _newNoteSourceId = "einsatzleitung"'>
-                                                <i class="bi bi-shield-fill me-1"></i>EL
-                                            </button>
+                                                <button type="button"
+                                                        class="btn btn-outline-secondary monitor-note-type-button @(_newNoteType == "Funk" ? "active" : "")"
+                                                        aria-pressed="@(_newNoteType == "Funk")"
+                                                        @onclick='() => _newNoteType = "Funk"'>
+                                                    <i class="bi bi-broadcast" aria-hidden="true"></i> Funk
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div class="mb-2 d-flex gap-2 align-items-center">
-                                            <select class="form-select" aria-label="Art der Nachricht" @bind="_newNoteType">
-                                                <option value="Notiz">Notiz</option>
-                                                <option value="Funk">Funk</option>
-                                            </select>
+                                        <MentionTextarea Id="monitor-new-note"
+                                                         @bind-Value="_newNoteText"
+                                                         Mentions="@GetNoteMentions()"
+                                                         Rows="3"
+                                                         AccessibleLabel="Inhalt der Notiz oder des Funkspruchs"
+                                                         Placeholder="Inhalt der Notiz oder des Funkspruchs"
+                                                         AdditionalClass="mb-2" />
+                                        <div class="monitor-note-submit-row">
+                                            <button class="btn btn-primary flex-grow-1"
+                                                    @onclick="AddGlobalNoteAsync"
+                                                    disabled="@(string.IsNullOrWhiteSpace(_newNoteText) || string.IsNullOrWhiteSpace(_newNoteSourceId))">
+                                                <i class="bi bi-send-fill"></i> Hinzufügen
+                                            </button>
                                             @if (_quickNoteTemplates.Count > 0)
                                             {
                                                 <div class="monitor-panel-picker-wrapper mon-anchor-quicknote flex-shrink-0">
                                                     <button class="btn btn-outline-success" type="button"
                                                             @onclick="() => _showQuickNoteDropdown = !_showQuickNoteDropdown"
                                                             title="Schnell-Notiz" aria-label="Schnell-Notiz einfügen">
-                                                        <i class="bi bi-lightning-fill"></i>
+                                                        <i class="bi bi-lightning-fill" aria-hidden="true"></i>
                                                     </button>
                                                     @if (_showQuickNoteDropdown)
                                                     {
@@ -900,20 +918,6 @@
                                                 </div>
                                             }
                                         </div>
-                                        <label class="form-label monitor-note-compose-label" for="monitor-new-note">
-                                            Inhalt der Notiz oder des Funkspruchs
-                                        </label>
-                                        <MentionTextarea Id="monitor-new-note"
-                                                         @bind-Value="_newNoteText"
-                                                         Mentions="@GetNoteMentions()"
-                                                         Rows="3"
-                                                         Placeholder="Text eingeben"
-                                                         AdditionalClass="mb-2" />
-                                        <button class="btn btn-primary w-100"
-                                                @onclick="AddGlobalNoteAsync"
-                                                disabled="@(string.IsNullOrWhiteSpace(_newNoteText) || string.IsNullOrWhiteSpace(_newNoteSourceId))">
-                                            <i class="bi bi-send-fill"></i> Hinzufügen
-                                        </button>
                                     </div>
 
                                     <div class="notes-list">

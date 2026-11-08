@@ -2150,22 +2150,66 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
 [data-panel-id="notizen"] .note-source-label {
     color: var(--ui-muted);
+    display: block;
+    font-size: 0.8rem;
     font-weight: 500;
+    margin-bottom: 0.25rem;
 }
 
-[data-panel-id="notizen"] .note-source-chip {
+[data-panel-id="notizen"] .monitor-note-compose-controls {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+[data-panel-id="notizen"] .monitor-note-source-field {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+[data-panel-id="notizen"] .monitor-note-source-select {
     min-height: 44px;
-    padding: 8px;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    white-space: nowrap;
+    width: 100%;
 }
 
-[data-panel-id="notizen"] .note-source-chip.active {
+[data-panel-id="notizen"] .monitor-note-submit-row {
+    align-items: stretch;
+    display: flex;
+    gap: 0.5rem;
+}
+
+[data-panel-id="notizen"] .monitor-note-submit-row > .btn {
+    min-height: 44px;
+}
+
+[data-panel-id="notizen"] .monitor-note-type-switch {
+    display: flex;
+    flex: 0 0 auto;
+}
+
+[data-panel-id="notizen"] .monitor-note-type-button {
+    min-height: 44px;
+    padding-inline: 0.75rem;
+}
+
+[data-panel-id="notizen"] .mon-anchor-quicknote > .btn {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+[data-panel-id="notizen"] .monitor-note-type-button.active {
     border-color: var(--theme-primary-border);
     background: var(--theme-primary-soft);
     color: var(--theme-primary-text);
+    font-weight: 600;
     box-shadow: inset 0 0 0 1px var(--theme-primary-border);
+}
+
+@media (max-width: 575.98px) {
+    [data-panel-id="notizen"] .monitor-note-source-field {
+        flex-basis: 100%;
+    }
 }
 
 @media (max-width: 767.98px) {
