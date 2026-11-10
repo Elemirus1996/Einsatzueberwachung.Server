@@ -393,6 +393,15 @@
                                          aria-label="@($"Letzte Sichtung für {vi.VollerName}")">
                                     <div class="monitor-info-tile-header">
                                         <span class="monitor-info-tile-label">Letzte Sichtung</span>
+                                        <div class="monitor-info-tile-actions">
+                                            <button class="monitor-summary-edit-button"
+                                                    type="button"
+                                                    @onclick='() => OpenVermisstenModalAt("vermissten-modal-last-seen")'
+                                                    title="Letzte Sichtung bearbeiten"
+                                                    aria-label="Letzte Sichtung bearbeiten">
+                                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="monitor-summary-key-details">
                                         @if (!string.IsNullOrWhiteSpace(vi.ZuletztGesehenOrt))
@@ -433,6 +442,15 @@
                                          aria-label="@($"Gesundheit und Sicherheit für {vi.VollerName}")">
                                     <div class="monitor-info-tile-header">
                                         <span class="monitor-info-tile-label">Gesundheit &amp; Sicherheit</span>
+                                        <div class="monitor-info-tile-actions">
+                                            <button class="monitor-summary-edit-button"
+                                                    type="button"
+                                                    @onclick='() => OpenVermisstenModalAt("vermissten-modal-health-safety")'
+                                                    title="Gesundheit und Sicherheit bearbeiten"
+                                                    aria-label="Gesundheit und Sicherheit bearbeiten">
+                                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     @if (vi.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja
                                         || vi.Bewaffnet == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja)
@@ -1898,7 +1916,7 @@
                     </div>
                 </div>
 
-                <h6 class="text-muted text-uppercase small fw-bold mb-2">Letzter bekannter Aufenthalt</h6>
+                <h6 id="vermissten-modal-last-seen" class="text-muted text-uppercase small fw-bold mb-2">Letzter bekannter Aufenthalt</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-6">
                         <label class="form-label form-label-sm">Ort</label>
@@ -1914,7 +1932,7 @@
                     </div>
                 </div>
 
-                <h6 class="text-muted text-uppercase small fw-bold mb-2">Medizin &amp; Verhalten</h6>
+                <h6 id="vermissten-modal-health-safety" class="text-muted text-uppercase small fw-bold mb-2">Medizin &amp; Verhalten</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-4">
                         <label class="form-label form-label-sm">Orientierung</label>

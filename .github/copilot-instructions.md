@@ -279,6 +279,8 @@ Bevor du Dateien löschst oder massive Refactorings durchführst, die das ganze 
 * [2026-11-10] - **Offene Abstimmungen im Statusboard**: Nur noch nicht bestätigte Schritte als anklickbare Checkboxen anzeigen und nach dem Speichern ausblenden. Die Kachel verschwindet, sobald keine offenen Punkte mehr vorhanden sind; BOS-Punkte nur bei angegebener BOS-Einheit darstellen.
 * [2026-11-10] - **Offene Abstimmungen bearbeiten**: Das Stift-Icon im Kachelkopf öffnet die vollständige Checkliste. Unter dem einzelnen offenen Punkt steht nur der nicht-interaktive Hinweis „+N weitere“.
 * [2026-11-10] - **Polizeikachel verdichten**: Die Einsatznummer direkt an die Überschrift hängen („Polizei #…“), die separate Nummernzeile und die Zwischenüberschrift „Kontakt“ weglassen.
+* [2026-11-10] - **Editierbare Summary-Kacheln**: Jeder adaptive Info-Cluster mit bearbeitbaren Feldern erhält einen Edit-Button, der das gemeinsame Modal öffnet und zum zugehörigen Feldabschnitt scrollt.
+* [2026-11-10] - **Suchgebietsfläche**: Die formatierte Fläche von Suchgebieten wird durchgängig in m² ausgegeben, auch bei großen Flächen; zwischen m², ha und km² wird nicht automatisch umgerechnet.
 
 ---
 

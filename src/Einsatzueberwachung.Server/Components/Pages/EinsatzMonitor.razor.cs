@@ -55,6 +55,7 @@ public partial class EinsatzMonitor
     private bool _showEditEinsatzModal;
     private bool _coordinationUpdateInProgress;
     private bool _showVermisstenModal;
+    private string? _pendingVermisstenModalSectionScrollTarget;
     private string _vermisstenMessage = string.Empty;
     private bool _vermisstenIsError;
     private Einsatzueberwachung.Domain.Models.VermisstenInfo _vForm = new();
@@ -245,6 +246,12 @@ public partial class EinsatzMonitor
             await JS.InvokeVoidAsync("layoutTools.scrollToElement", $"team-{_pendingTeamScrollId}");
             _lastScrolledTeamId = _pendingTeamScrollId;
             _pendingTeamScrollId = null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_pendingVermisstenModalSectionScrollTarget))
+        {
+            await JS.InvokeVoidAsync("layoutTools.scrollToElement", _pendingVermisstenModalSectionScrollTarget);
+            _pendingVermisstenModalSectionScrollTarget = null;
         }
     }
 
@@ -2157,7 +2164,9 @@ public partial class EinsatzMonitor
         _showVermisstenModal = true;
     }
 
-    private void OpenVermisstenModal()
+    private void OpenVermisstenModal() => OpenVermisstenModalAt(null);
+
+    private void OpenVermisstenModalAt(string? sectionId)
     {
         var list = EinsatzService.CurrentEinsatz.Vermisste ?? new();
         var existing = _vermisstenPanelSelectedId.HasValue
@@ -2201,10 +2210,15 @@ public partial class EinsatzMonitor
             : new Einsatzueberwachung.Domain.Models.VermisstenInfo { Id = Guid.NewGuid() };
 
         _vermisstenMessage = string.Empty;
+        _pendingVermisstenModalSectionScrollTarget = sectionId;
         _showVermisstenModal = true;
     }
 
-    private void CloseVermisstenModal() => _showVermisstenModal = false;
+    private void CloseVermisstenModal()
+    {
+        _pendingVermisstenModalSectionScrollTarget = null;
+        _showVermisstenModal = false;
+    }
 
     private void OnVFormGeburtsdatumChanged(ChangeEventArgs e)
     {

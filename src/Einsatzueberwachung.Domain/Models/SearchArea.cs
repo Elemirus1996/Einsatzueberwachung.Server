@@ -89,12 +89,8 @@ namespace Einsatzueberwachung.Domain.Models
                 
                 if (sqm < 1)
                     return "< 1 m²";
-                else if (sqm < 50000)
-                    return $"{sqm:N0} m²";
-                else if (sqm < 1000000)
-                    return $"{AreaInHectares:N2} ha";
-                else
-                    return $"{AreaInSquareKilometers:N2} km²";
+
+                return $"{sqm:N0} m²";
             }
         }
     }
