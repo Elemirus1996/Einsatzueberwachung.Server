@@ -61,7 +61,7 @@ public partial class Einstellungen
     }
 
     private IEnumerable<SpeicherEintrag> SpeicherEintraege(SpeicherBereich bereich) =>
-        _speicher?.Eintraege.Where(e => e.Bereich == bereich).OrderByDescending(e => e.GeaendertUtc) ?? [];
+        (_speicher?.Eintraege ?? []).Where(e => e.Bereich == bereich).OrderByDescending(e => e.GeaendertUtc);
 
     private bool SpeicherAusgewaehlt(SpeicherEintrag e) => _speicherAuswahl.Contains((e.Bereich, e.Name));
 
