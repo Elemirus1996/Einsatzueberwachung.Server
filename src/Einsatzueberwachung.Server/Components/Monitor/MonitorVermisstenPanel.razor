@@ -1,0 +1,119 @@
+@if (Vermisste.Count == 0)
+{
+    <div class="monitor-summary-empty">
+        <span><i class="bi bi-person-exclamation me-1" aria-hidden="true"></i>Keine Vermissteninfo erfasst</span>
+    </div>
+}
+else if (ActivePerson is { } person)
+{
+    @if (Vermisste.Count > 1 || AllowMultiple)
+    {
+        <div class="vermissten-panel-tabs monitor-summary-person-tabs" role="group" aria-label="Vermisste Person auswählen">
+            @for (var index = 0; index < Vermisste.Count; index++)
+            {
+                var candidate = Vermisste[index];
+                var personIndex = index + 1;
+                var isActive = candidate.Id == person.Id;
+                <button class="vermissten-panel-tab @(isActive ? "active" : "")"
+                        type="button"
+                        aria-pressed="@isActive"
+                        @onclick="() => SelectedIdChanged.InvokeAsync(candidate.Id)"
+                        title="@candidate.VollerName">
+                    <span>@personIndex</span>
+                </button>
+            }
+            @if (AllowMultiple)
+            {
+                <button class="vermissten-panel-tab vermissten-panel-tab-add" type="button"
+                        @onclick="OnAdd" title="Weitere Person erfassen">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                </button>
+            }
+        </div>
+    }
+
+    <div class="monitor-summary-person">
+        <div class="monitor-summary-person-main">
+            <strong class="monitor-summary-primary-value" title="@person.VollerName">@person.VollerName</strong>
+            <span class="monitor-summary-person-meta">
+                @(string.IsNullOrWhiteSpace(person.Alter) ? "Alter unbekannt" : $"{person.Alter} Jahre")
+                <span aria-hidden="true">·</span>
+                @person.Mobilitaet
+            </span>
+        </div>
+        @if (person.Suizidrisiko == RisikoStatus.Ja || person.Bewaffnet == RisikoStatus.Ja)
+        {
+            <div class="monitor-summary-alerts" aria-label="Gefahrenhinweise">
+                @if (person.Suizidrisiko == RisikoStatus.Ja)
+                {
+                    <span class="monitor-summary-alert">
+                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>Suizidrisiko
+                    </span>
+                }
+                @if (person.Bewaffnet == RisikoStatus.Ja)
+                {
+                    <span class="monitor-summary-alert">
+                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>Bewaffnet
+                    </span>
+                }
+            </div>
+        }
+    </div>
+    <div class="monitor-summary-key-details">
+        <div class="monitor-summary-key-detail">
+            <span class="monitor-summary-key-label">Vorerkrankungen</span>
+            <span class="monitor-summary-key-value">@(string.IsNullOrWhiteSpace(person.Vorerkrankungen) ? "Nicht angegeben" : person.Vorerkrankungen)</span>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(person.Medikamente))
+        {
+            <div class="monitor-summary-key-detail">
+                <span class="monitor-summary-key-label">Medikamente</span>
+                <span class="monitor-summary-key-value">@person.Medikamente</span>
+            </div>
+        }
+    </div>
+    <div id="panel-details-vermissten" class="monitor-summary-details" hidden="@(!DetailsExpanded)">
+        @if (DetailsExpanded)
+        {
+            <div class="row g-2 small mt-1">
+                @if (!string.IsNullOrWhiteSpace(person.Kleidung))
+                {
+                    <div class="col-12">
+                        <div class="vermissten-field-label">Kleidung</div>
+                        <div class="vermissten-field-value">@person.Kleidung</div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(person.ZuletztGesehenOrt))
+                {
+                    <div class="col-8">
+                        <div class="vermissten-field-label">Zuletzt gesehen (Ort)</div>
+                        <div class="vermissten-field-value">@person.ZuletztGesehenOrt</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="vermissten-field-label">Uhrzeit</div>
+                        <div class="vermissten-field-value">@person.ZuletztGesehenZeit</div>
+                    </div>
+                }
+                @if (person.ZuletztAktualisiert.HasValue)
+                {
+                    <div class="col-12">
+                        <div class="text-muted monitor-timestamp-small">Stand: @person.ZuletztAktualisiert.Value.ToString("dd.MM. HH:mm")</div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private VermisstenInfo? ActivePerson =>
+        (SelectedId.HasValue ? Vermisste.FirstOrDefault(person => person.Id == SelectedId.Value) : null)
+        ?? Vermisste.FirstOrDefault();
+
+    [Parameter] public IReadOnlyList<VermisstenInfo> Vermisste { get; set; } = Array.Empty<VermisstenInfo>();
+    [Parameter] public bool AllowMultiple { get; set; }
+    [Parameter] public Guid? SelectedId { get; set; }
+    [Parameter] public EventCallback<Guid?> SelectedIdChanged { get; set; }
+    [Parameter] public bool DetailsExpanded { get; set; }
+    [Parameter] public EventCallback OnAdd { get; set; }
+}

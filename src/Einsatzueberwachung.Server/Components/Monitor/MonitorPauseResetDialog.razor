@@ -1,0 +1,64 @@
+@if (IsOpen && Team is not null)
+{
+    <div class="modal-overlay">
+        <button type="button" class="modal-overlay-dismiss" @onclick="OnCancel" aria-label="Dialog schließen"></button>
+        <div class="modal-modern modal-modern--480" @onclick:stopPropagation="true">
+            <div class="modal-modern-header modal-modern-header--warning">
+                <h4 class="mb-0"><i class="bi bi-pause-circle-fill me-2"></i>Pflichtpause nicht abgeschlossen</h4>
+                <button class="btn btn-sm btn-outline-dark" @onclick="OnCancel">X</button>
+            </div>
+            <div class="modal-modern-body">
+                <div class="alert alert-warning py-2 mb-3">
+                    <strong>@Team.DogName</strong> hat noch nicht die volle Pflichtpause erreicht.
+                </div>
+                <table class="table table-sm mb-3">
+                    <tbody>
+                        <tr>
+                            <td>Gelaufene Zeit</td>
+                            <td><strong>@((int)Team.RunTimeBeforePause.TotalMinutes) Minuten</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Pflichtpause</td>
+                            <td>
+                                <strong>@Team.RequiredPauseMinutes Minuten</strong>
+                                @if (Team.RunTimeBeforePause.TotalMinutes <= 20)
+                                {
+                                    <span class="text-muted"> (≤ 20 Min. gelaufen → 60 Min. Pause)</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted"> (> 20 Min. gelaufen → 3 Std. Pause)</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Bisherige Pause</td>
+                            <td><strong>@((int)Team.PausedDuration.TotalMinutes) Minuten</strong></td>
+                        </tr>
+                        <tr class="table-danger">
+                            <td>Noch erforderlich</td>
+                            <td><strong>@Team.RemainingPauseMinutes Minuten</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="small text-muted mb-0">
+                    Wenn Sie den Timer trotzdem zurücksetzen, übernehmen Sie die Verantwortung
+                    für die Gesundheit des Hundes. Bitte nur im absoluten Ausnahmefall fortfahren.
+                </p>
+            </div>
+            <div class="modal-modern-footer">
+                <button class="btn btn-outline-secondary" @onclick="OnCancel">Abbrechen</button>
+                <button class="btn btn-primary" @onclick="OnConfirm">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Trotzdem zurücksetzen
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public Team? Team { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+}

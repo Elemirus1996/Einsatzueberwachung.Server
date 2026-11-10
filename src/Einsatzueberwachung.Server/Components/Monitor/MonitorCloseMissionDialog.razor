@@ -1,0 +1,190 @@
+@if (IsOpen)
+{
+    <div class="modal-overlay">
+        <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
+        <div class="modal-modern modal-close-mission" @onclick:stopPropagation="true">
+            <div class="modal-modern-header modal-close-mission-header">
+                <h3 class="mb-0"><i class="bi bi-exclamation-octagon me-1"></i>Einsatz beenden und archivieren</h3>
+                <button class="btn btn-sm btn-outline-light" @onclick="OnClose" disabled="@IsClosing">X</button>
+            </div>
+            <div class="modal-modern-body">
+                <div class="alert alert-warning py-2 mb-3">
+                    Nach dem Beenden wird der Einsatz archiviert, ein PDF erzeugt und das System für den nächsten Einsatz vorbereitet.
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Error))
+                {
+                    <div class="alert alert-danger py-2">@Error</div>
+                }
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-8">
+                        <label class="form-label">Ergebnis</label>
+                        <select class="form-select" @bind="Form.Result">
+                            <option value="">-- Bitte wählen --</option>
+                            @foreach (var option in ResultOptions)
+                            {
+                                <option value="@option">@ErgebnisText.Anzeige(option)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label">Ende-Zeit</label>
+                        <input type="time" class="form-control" @bind="Form.EndTime" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Bemerkungen</label>
+                        <textarea class="form-control" rows="2" @bind="Form.Remarks" placeholder="Zusatzinformationen zum Abschluss..."></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" @bind="Form.IncludeTracks" />
+                            <span class="form-check-label">
+                                <i class="bi bi-geo-alt me-1"></i>GPS-Livetracking dem PDF hinzufügen
+                                @if (TrackCount > 0)
+                                {
+                                    <span class="badge bg-info ms-1">@TrackCount Track(s)</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted ms-1">(keine Tracks vorhanden)</span>
+                                }
+                            </span>
+                        </label>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" @bind="Form.IncludePoints" disabled="@(PointCount == 0)" />
+                            <span class="form-check-label">
+                                <i class="bi bi-pin-map me-1"></i>Kartenpunkte dem PDF hinzufügen
+                                @if (PointCount > 0)
+                                {
+                                    <span class="badge bg-info ms-1">@PointCount Punkt(e)</span>
+                                    <span class="text-muted ms-1">(werden dafür archiviert)</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted ms-1">(keine Punkte vorhanden)</span>
+                                }
+                            </span>
+                        </label>
+                    </div>
+                    @if (Form.IncludeTracks || Form.IncludePoints)
+                    {
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Karte im Bericht</label>
+                            <select class="form-select" @bind="Form.MapTileType">
+                                @foreach (var (art, name) in PdfBerichtOptionen.Kartenarten)
+                                {
+                                    <option value="@art">@name</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                </div>
+
+                <div class="border rounded p-2 mb-3">
+                    <div class="small fw-semibold mb-2">Einsatz-Zusammenfassung</div>
+                    <div class="row g-2 small text-muted">
+                        <div class="col-6 col-md-3">Teams: @TeamCount</div>
+                        <div class="col-6 col-md-3">Personal: @SelectedPersonnelCount</div>
+                        <div class="col-6 col-md-3">Hunde: @SelectedDogCount</div>
+                        <div class="col-6 col-md-3">Notizen/Funk: @NotesCount</div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <div class="border rounded p-2 h-100">
+                            <div class="small fw-semibold mb-2">Welches Personal war vor Ort?</div>
+                            <div class="monitor-checklist-scroll">
+                                @if (!Personnel.Any())
+                                {
+                                    <div class="small text-muted">Kein aktives Personal vorhanden.</div>
+                                }
+                                else
+                                {
+                                    @foreach (var person in Personnel)
+                                    {
+                                        <label class="form-check d-block mb-1">
+                                            <input class="form-check-input" type="checkbox" checked="@SelectedPersonnelIds.Contains(person.Id)" @onchange="args => NotifyPersonnelSelectionChangedAsync(person.Id, args)" />
+                                            <span class="form-check-label">@person.FullName</span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <div class="border rounded p-2 h-100">
+                            <div class="small fw-semibold mb-2">Welche Hunde waren im Einsatz?</div>
+                            <div class="monitor-checklist-scroll">
+                                @if (!Dogs.Any())
+                                {
+                                    <div class="small text-muted">Keine aktiven Hunde vorhanden.</div>
+                                }
+                                else
+                                {
+                                    @foreach (var dog in Dogs)
+                                    {
+                                        <label class="form-check d-block mb-1">
+                                            <input class="form-check-input" type="checkbox" checked="@SelectedDogIds.Contains(dog.Id)" @onchange="args => NotifyDogSelectionChangedAsync(dog.Id, args)" />
+                                            <span class="form-check-label">@dog.Name</span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <label class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" @bind="Form.ChecklistConfirmed" />
+                    <span class="form-check-label">Ich habe die eingesetzten Ressourcen und Beteiligten geprüft.</span>
+                </label>
+            </div>
+            <div class="modal-modern-footer">
+                <button class="btn btn-outline-secondary" @onclick="OnClose" disabled="@IsClosing">Abbrechen</button>
+                <button class="btn btn-primary" @onclick="OnConfirm" disabled="@IsClosing">
+                    @(IsClosing ? "Wird abgeschlossen..." : "Einsatz beenden & archivieren")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool IsClosing { get; set; }
+    [Parameter, EditorRequired] public MonitorCloseMissionForm Form { get; set; } = default!;
+    [Parameter] public IEnumerable<PersonalEntry> Personnel { get; set; } = Array.Empty<PersonalEntry>();
+    [Parameter] public IEnumerable<DogEntry> Dogs { get; set; } = Array.Empty<DogEntry>();
+    [Parameter] public IEnumerable<string> ResultOptions { get; set; } = Array.Empty<string>();
+    [Parameter] public IReadOnlySet<string> SelectedPersonnelIds { get; set; } = new HashSet<string>();
+    [Parameter] public IReadOnlySet<string> SelectedDogIds { get; set; } = new HashSet<string>();
+    [Parameter] public int TrackCount { get; set; }
+    [Parameter] public int PointCount { get; set; }
+    [Parameter] public int TeamCount { get; set; }
+    [Parameter] public int SelectedPersonnelCount { get; set; }
+    [Parameter] public int SelectedDogCount { get; set; }
+    [Parameter] public int NotesCount { get; set; }
+    [Parameter] public string Error { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback<MonitorSelectionChange> OnPersonnelSelectionChanged { get; set; }
+    [Parameter] public EventCallback<MonitorSelectionChange> OnDogSelectionChanged { get; set; }
+
+    private Task NotifyPersonnelSelectionChangedAsync(string id, ChangeEventArgs args) =>
+        OnPersonnelSelectionChanged.InvokeAsync(new(id, IsChecked(args)));
+
+    private Task NotifyDogSelectionChangedAsync(string id, ChangeEventArgs args) =>
+        OnDogSelectionChanged.InvokeAsync(new(id, IsChecked(args)));
+
+    private static bool IsChecked(ChangeEventArgs args) => args.Value switch
+    {
+        bool value => value,
+        string value => string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) || value == "on",
+        _ => false
+    };
+}

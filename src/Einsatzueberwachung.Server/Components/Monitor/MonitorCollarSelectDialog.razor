@@ -1,0 +1,55 @@
+@if (IsOpen)
+{
+    <div class="modal-overlay">
+        <button type="button" class="modal-overlay-dismiss" @onclick="OnCancel" aria-label="Dialog schließen"></button>
+        <div class="modal-modern modal-modern--sm" @onclick:stopPropagation="true">
+            <div class="modal-modern-header">
+                <h4 class="mb-0"><i class="bi bi-broadcast me-2"></i>GPS-Halsband zuweisen</h4>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="OnCancel">×</button>
+            </div>
+            <div class="modal-modern-body">
+                <p class="text-muted small mb-3">
+                    Team <strong>@TeamName</strong> hat noch kein Halsband.
+                    Bitte jetzt zuweisen oder ohne Halsband starten.
+                </p>
+                <label class="form-label">GPS-Halsband</label>
+                <select class="form-select mb-0" value="@SelectedCollarId" @onchange="OnCollarChangedAsync">
+                    <option value="">-- Kein Halsband (ohne Tracking starten) --</option>
+                    @foreach (var collar in AvailableCollars.OrderBy(collar => collar.CollarName))
+                    {
+                        <option value="@collar.Id">@collar.CollarName [@collar.Id]</option>
+                    }
+                </select>
+            </div>
+            <div class="modal-modern-footer">
+                <button class="btn btn-outline-secondary" @onclick="OnCancel">Abbrechen</button>
+                @if (string.IsNullOrEmpty(SelectedCollarId))
+                {
+                    <button class="btn btn-warning" @onclick="OnStartWithout">
+                        <i class="bi bi-play-fill me-1"></i>Ohne Halsband starten
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-success" @onclick="OnAssignAndStart">
+                        <i class="bi bi-broadcast me-1"></i>Zuweisen &amp; starten
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public string TeamName { get; set; } = "?";
+    [Parameter] public string SelectedCollarId { get; set; } = string.Empty;
+    [Parameter] public IEnumerable<Collar> AvailableCollars { get; set; } = Array.Empty<Collar>();
+    [Parameter] public EventCallback<string> SelectedCollarIdChanged { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnStartWithout { get; set; }
+    [Parameter] public EventCallback OnAssignAndStart { get; set; }
+
+    private Task OnCollarChangedAsync(ChangeEventArgs args) =>
+        SelectedCollarIdChanged.InvokeAsync(args.Value?.ToString() ?? string.Empty);
+}

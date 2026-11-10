@@ -1,0 +1,122 @@
+@if (!string.IsNullOrWhiteSpace(Error))
+{
+    <div class="monitor-summary-error" role="status">@Error</div>
+}
+
+@if (Weather is not null)
+{
+    <div class="monitor-weather-summary">
+        <div class="monitor-weather-reading">
+            <span class="monitor-weather-label">Temperatur</span>
+            <div class="monitor-weather-value-row">
+                <strong class="monitor-summary-primary-value">@Weather.Temperatur.ToString("0.0")°C</strong>
+                @if (TemperatureTrend.IsAvailable)
+                {
+                    <span class="monitor-weather-trend @TemperatureTrend.CssClass" title="@TemperatureTrend.Description" aria-label="@TemperatureTrend.Description">
+                        <i class="bi @TemperatureTrend.IconClass" aria-hidden="true"></i>
+                    </span>
+                }
+            </div>
+        </div>
+        <div class="monitor-weather-reading">
+            <span class="monitor-weather-label">Wind</span>
+            <div class="monitor-weather-value-row">
+                <strong class="monitor-weather-value"><i class="bi bi-wind me-1" aria-hidden="true"></i>@Weather.Windgeschwindigkeit.ToString("0") km/h</strong>
+                @if (WindTrend.IsAvailable)
+                {
+                    <span class="monitor-weather-trend @WindTrend.CssClass" title="@WindTrend.Description" aria-label="@WindTrend.Description">
+                        <i class="bi @WindTrend.IconClass" aria-hidden="true"></i>
+                    </span>
+                }
+            </div>
+        </div>
+        <div class="monitor-weather-reading">
+            <span class="monitor-weather-label">Regen</span>
+            <div class="monitor-weather-value-row">
+                <strong class="monitor-weather-value"><i class="bi bi-droplet me-1" aria-hidden="true"></i>@Weather.Niederschlag.ToString("0.0") mm/h</strong>
+                @if (RainTrend.IsAvailable)
+                {
+                    <span class="monitor-weather-trend @RainTrend.CssClass" title="@RainTrend.Description" aria-label="@RainTrend.Description">
+                        <i class="bi @RainTrend.IconClass" aria-hidden="true"></i>
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+    @if (Weather.HatWarnung || DogHeatWarning)
+    {
+        <div class="monitor-summary-alerts" role="status">
+            @if (Weather.HatWarnung)
+            {
+                <span class="monitor-summary-alert">
+                    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                    DWD: @Weather.WarnungsStufe
+                </span>
+            }
+            @if (DogHeatWarning)
+            {
+                <span class="monitor-summary-alert monitor-summary-alert--heat">
+                    <i class="bi bi-thermometer-high" aria-hidden="true"></i>
+                    Über 30 °C: Hunde beachten
+                </span>
+            }
+        </div>
+    }
+    @if (IsLoading)
+    {
+        <div class="monitor-weather-refreshing" role="status">Wetter wird aktualisiert …</div>
+    }
+    <div id="panel-details-@KnownPanels.Wetter" class="monitor-summary-details" hidden="@(!DetailsExpanded)">
+        @if (Weather.Windboeen > 0)
+        {
+            <div class="small text-muted"><i class="bi bi-wind me-1" aria-hidden="true"></i>Böen: @Weather.Windboeen.ToString("0") km/h</div>
+        }
+        <div class="small text-muted mt-1">
+            DWD &bull; @LoadedAtLocal.ToString("HH:mm") Uhr
+            @if (UsingFallback)
+            {
+                <span class="text-warning ms-1">(Fallback)</span>
+            }
+        </div>
+        @if (ForecastItems.Count > 0)
+        {
+            <div class="forecast-strip mt-2" aria-label="Wettervorhersage für die nächsten Stunden">
+                @foreach (var item in ForecastItems)
+                {
+                    <div class="forecast-item @(item.Temperatur > 30 ? "forecast-heat-warning" : "")">
+                        <div class="small fw-bold">@Ortszeit.AusUtc(item.Zeitpunkt).ToString("HH:mm")</div>
+                        <div class="small">@item.Temperatur.ToString("0")°</div>
+                        <div class="small text-muted"><i class="bi bi-wind" aria-hidden="true"></i> @item.Windgeschwindigkeit.ToString("0")</div>
+                        <div class="small text-muted"><i class="bi bi-droplet" aria-hidden="true"></i> @item.Niederschlag.ToString("0.0")</div>
+                        @if (item.Temperatur > 30)
+                        {
+                            <div class="small fw-semibold">Hunde: Hitze</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+else if (IsLoading)
+{
+    <div class="monitor-summary-empty" role="status"><i class="bi bi-cloud me-1" aria-hidden="true"></i>Wetterdaten werden geladen …</div>
+}
+else
+{
+    <div class="monitor-summary-empty"><i class="bi bi-cloud me-1" aria-hidden="true"></i>ELW-Position für Wetter setzen</div>
+}
+
+@code {
+    [Parameter] public WeatherData? Weather { get; set; }
+    [Parameter] public IReadOnlyList<WeatherData> ForecastItems { get; set; } = Array.Empty<WeatherData>();
+    [Parameter] public MonitorWeatherMetricTrend TemperatureTrend { get; set; } = MonitorWeatherMetricTrend.Unavailable;
+    [Parameter] public MonitorWeatherMetricTrend WindTrend { get; set; } = MonitorWeatherMetricTrend.Unavailable;
+    [Parameter] public MonitorWeatherMetricTrend RainTrend { get; set; } = MonitorWeatherMetricTrend.Unavailable;
+    [Parameter] public bool DogHeatWarning { get; set; }
+    [Parameter] public bool DetailsExpanded { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool UsingFallback { get; set; }
+    [Parameter] public DateTime LoadedAtLocal { get; set; }
+    [Parameter] public string Error { get; set; } = string.Empty;
+}

@@ -1,0 +1,226 @@
+@if (IsOpen)
+{
+    <div class="modal-overlay">
+        <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
+        <div class="modal-modern" @onclick:stopPropagation="true">
+            <div class="modal-modern-header">
+                <h3>@(IsEditing ? "Team bearbeiten" : "Team anlegen")</h3>
+                <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="OnClose">Schließen</button>
+            </div>
+            <div class="modal-modern-body">
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <div class="alert @(IsError ? "alert-danger" : "alert-success") py-2">@Message</div>
+                }
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Teamtyp</label>
+                        <select class="form-select" @bind="Model.TeamType" @bind:after="NotifyTeamTypeChangedAsync">
+                            <option value="dog">Hundeteam</option>
+                            <option value="drone">Drohnenteam</option>
+                            <option value="support">Support-Team</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Teamname</label>
+                        <input class="form-control" @bind="Model.TeamName" placeholder="z. B. Team Alpha" />
+                    </div>
+
+                    @if (Model.TeamType == "dog")
+                    {
+                        <div class="col-12">
+                            <label class="form-label">Hund</label>
+                            <select class="form-select" value="@Model.DogId" @onchange="OnDogChanged">
+                                <option value="">Hund auswählen</option>
+                                @foreach (var dog in AvailableDogs)
+                                {
+                                    <option value="@dog.Id">@dog.Name (@dog.SpecializationsShortDisplay)</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Hundeführer</label>
+                            <select class="form-select" @bind="Model.HundefuehrerId" @bind:after="NotifyHandlerChangedAsync">
+                                <option value="">Hundeführer auswählen</option>
+                                @foreach (var person in HundefuehrerOptions)
+                                {
+                                    <option value="@person.Id">@person.FullName</option>
+                                }
+                            </select>
+                        </div>
+
+                        @for (var index = 0; index < 3; index++)
+                        {
+                            var slot = index;
+                            <div class="col-md-6">
+                                <label class="form-label">Helfer @(slot + 1) @if (slot > 0) { <span class="text-muted small">(optional)</span> }</label>
+                                <select class="form-select" value="@GetHelferId(slot)" @onchange="args => SetHelferId(slot, args.Value?.ToString())">
+                                    <option value="">@(slot switch { 0 => "Helfer auswählen", 1 => "— kein zweiter Helfer —", _ => "— kein dritter Helfer —" })</option>
+                                    @foreach (var person in HelferOptions)
+                                    {
+                                        <option value="@person.Id">@person.FullName</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                    }
+                    else if (Model.TeamType == "drone")
+                    {
+                        <div class="col-12">
+                            <label class="form-label">Drohne</label>
+                            <select class="form-select" @bind="Model.DroneId" @bind:after="NotifyDroneChangedAsync">
+                                <option value="">Drohne auswählen</option>
+                                @foreach (var drone in AvailableDrones)
+                                {
+                                    <option value="@drone.Id">@drone.DisplayName (@drone.FullDescription)</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Pilot</label>
+                            <select class="form-select" @bind="Model.HundefuehrerId">
+                                <option value="">Pilot auswählen</option>
+                                @foreach (var person in DrohnenpilotOptions)
+                                {
+                                    <option value="@person.Id">@person.FullName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Unterstützung</label>
+                            <select class="form-select" @bind="Model.HelferId">
+                                <option value="">Person auswählen</option>
+                                @foreach (var person in ActivePersonnel)
+                                {
+                                    <option value="@person.Id">@person.FullName</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label">Leitung / Führung</label>
+                            <select class="form-select" @bind="Model.HundefuehrerId">
+                                <option value="">Person auswählen</option>
+                                @foreach (var person in ActivePersonnel)
+                                {
+                                    <option value="@person.Id">@person.FullName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Zweite Person</label>
+                            <select class="form-select" @bind="Model.HelferId">
+                                <option value="">Person auswählen</option>
+                                @foreach (var person in ActivePersonnel)
+                                {
+                                    <option value="@person.Id">@person.FullName</option>
+                                }
+                            </select>
+                        </div>
+                    }
+
+                    <div class="col-12">
+                        <label class="form-label">Suchgebiet</label>
+                        <select class="form-select" @bind="Model.SearchAreaId">
+                            <option value="">Kein Gebiet</option>
+                            @foreach (var area in SearchAreas.OrderBy(area => area.Name))
+                            {
+                                <option value="@area.Id">@area.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    @if (Model.TeamType == "dog")
+                    {
+                        <div class="col-12">
+                            <label class="form-label"><i class="bi bi-broadcast me-1" aria-hidden="true"></i>GPS-Halsband</label>
+                            <select class="form-select" @bind="Model.CollarId">
+                                <option value="">-- Kein Halsband --</option>
+                                @foreach (var collar in Collars.Where(collar => !collar.IsAssigned || collar.Id == Model.CollarId).OrderBy(collar => collar.CollarName))
+                                {
+                                    <option value="@collar.Id">@collar.CollarName [@collar.Id]</option>
+                                }
+                            </select>
+                        </div>
+                    }
+
+                    <div class="col-md-6">
+                        <label class="form-label">Warnung 1 (Minuten)</label>
+                        <input class="form-control" type="number" min="1" @bind="Model.FirstWarningMinutes" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Warnung 2 (Minuten)</label>
+                        <input class="form-control" type="number" min="1" @bind="Model.SecondWarningMinutes" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Notizen</label>
+                        <textarea class="form-control" rows="3" @bind="Model.Notes"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-modern-footer">
+                <button class="btn btn-primary" type="button" @onclick="OnSave">@(IsEditing ? "Änderungen speichern" : "Team speichern")</button>
+                <button class="btn btn-outline-secondary" type="button" @onclick="OnReset">Formular leeren</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool IsEditing { get; set; }
+    [Parameter, EditorRequired] public MonitorTeamEditorModel Model { get; set; } = default!;
+    [Parameter] public IEnumerable<PersonalEntry> ActivePersonnel { get; set; } = Array.Empty<PersonalEntry>();
+    [Parameter] public IEnumerable<PersonalEntry> HundefuehrerOptions { get; set; } = Array.Empty<PersonalEntry>();
+    [Parameter] public IEnumerable<PersonalEntry> HelferOptions { get; set; } = Array.Empty<PersonalEntry>();
+    [Parameter] public IEnumerable<PersonalEntry> DrohnenpilotOptions { get; set; } = Array.Empty<PersonalEntry>();
+    [Parameter] public IEnumerable<DogEntry> AvailableDogs { get; set; } = Array.Empty<DogEntry>();
+    [Parameter] public IEnumerable<DroneEntry> AvailableDrones { get; set; } = Array.Empty<DroneEntry>();
+    [Parameter] public IEnumerable<SearchArea> SearchAreas { get; set; } = Array.Empty<SearchArea>();
+    [Parameter] public IReadOnlyList<Collar> Collars { get; set; } = Array.Empty<Collar>();
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public bool IsError { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnReset { get; set; }
+    [Parameter] public EventCallback OnTeamTypeChanged { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnDogChanged { get; set; }
+    [Parameter] public EventCallback OnDroneChanged { get; set; }
+    [Parameter] public EventCallback OnHandlerChanged { get; set; }
+
+    private Task NotifyTeamTypeChangedAsync() => OnTeamTypeChanged.InvokeAsync();
+    private Task NotifyDroneChangedAsync() => OnDroneChanged.InvokeAsync();
+    private Task NotifyHandlerChangedAsync() => OnHandlerChanged.InvokeAsync();
+
+    private string GetHelferId(int slot) => slot switch
+    {
+        0 => Model.HelferId,
+        1 => Model.HelferId2,
+        _ => Model.HelferId3
+    };
+
+    private void SetHelferId(int slot, string? id)
+    {
+        var value = id ?? string.Empty;
+        switch (slot)
+        {
+            case 0:
+                Model.HelferId = value;
+                break;
+            case 1:
+                Model.HelferId2 = value;
+                break;
+            default:
+                Model.HelferId3 = value;
+                break;
+        }
+    }
+}

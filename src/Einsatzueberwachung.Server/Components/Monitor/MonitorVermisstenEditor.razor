@@ -1,0 +1,143 @@
+@if (IsOpen)
+{
+    <div class="modal-overlay">
+        <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
+        <div class="modal-modern modal-modern--lg" @onclick:stopPropagation="true">
+            <div class="modal-modern-header">
+                <h3><i class="bi bi-person-exclamation me-2" aria-hidden="true"></i>Vermissteninfo</h3>
+                <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="OnClose">Schließen</button>
+            </div>
+            <div class="modal-modern-body">
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <div class="alert @(IsError ? "alert-danger" : "alert-success") py-2">@Message</div>
+                }
+
+                <h6 class="text-muted text-uppercase small fw-bold mb-2">Person</h6>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm">Vorname</label>
+                        <input class="form-control form-control-sm" @bind="Model.Vorname" placeholder="Vorname" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm">Nachname</label>
+                        <input class="form-control form-control-sm" @bind="Model.Nachname" placeholder="Nachname" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm">Geburtsdatum</label>
+                        <input class="form-control form-control-sm"
+                               value="@Model.Geburtsdatum"
+                               @onchange="OnBirthdateChanged"
+                               placeholder="TT.MM.JJJJ" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm">Alter <small class="text-muted">(auto.)</small></label>
+                        <input class="form-control form-control-sm" @bind="Model.Alter" placeholder="z.B. 73" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm">Kleidung</label>
+                        <input class="form-control form-control-sm" @bind="Model.Kleidung" placeholder="z.B. blaue Jacke, braune Hose" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm">Besonderheiten / Körpergröße</label>
+                        <input class="form-control form-control-sm" @bind="Model.Besonderheiten" placeholder="z.B. ca. 175 cm, Brille" />
+                    </div>
+                </div>
+
+                <h6 id="vermissten-modal-last-seen" class="text-muted text-uppercase small fw-bold mb-2">Letzter bekannter Aufenthalt</h6>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm">Ort</label>
+                        <input class="form-control form-control-sm" @bind="Model.ZuletztGesehenOrt" placeholder="z.B. Parkplatz Waldstraße 12" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm">Uhrzeit</label>
+                        <input class="form-control form-control-sm" @bind="Model.ZuletztGesehenZeit" placeholder="z.B. 14:30" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm">Gesehen von</label>
+                        <input class="form-control form-control-sm" @bind="Model.ZuletztGesehenVon" placeholder="z.B. Tochter" />
+                    </div>
+                </div>
+
+                <h6 id="vermissten-modal-health-safety" class="text-muted text-uppercase small fw-bold mb-2">Medizin &amp; Verhalten</h6>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm">Orientierung</label>
+                        <select class="form-select form-select-sm" @bind="Model.Orientierung">
+                            @foreach (var value in Enum.GetValues<OrientierungsStatus>())
+                            {
+                                <option value="@value">@value</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm">Mobilität</label>
+                        <select class="form-select form-select-sm" @bind="Model.Mobilitaet">
+                            @foreach (var value in Enum.GetValues<MobilitaetsStatus>())
+                            {
+                                <option value="@value">@value</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm">Suizidrisiko</label>
+                        <select class="form-select form-select-sm @(Model.Suizidrisiko == RisikoStatus.Ja ? "border-danger" : "")" @bind="Model.Suizidrisiko">
+                            @foreach (var value in Enum.GetValues<RisikoStatus>())
+                            {
+                                <option value="@value">@value</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm">Bewaffnet</label>
+                        <select class="form-select form-select-sm @(Model.Bewaffnet == RisikoStatus.Ja ? "border-danger" : "")" @bind="Model.Bewaffnet">
+                            @foreach (var value in Enum.GetValues<RisikoStatus>())
+                            {
+                                <option value="@value">@value</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm">Vorerkrankungen</label>
+                        <input class="form-control form-control-sm" @bind="Model.Vorerkrankungen" placeholder="z.B. Demenz, Diabetes" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm">Medikamente</label>
+                        <input class="form-control form-control-sm" @bind="Model.Medikamente" placeholder="z.B. Metformin, Blutverdünner" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-modern-footer">
+                <button class="btn btn-outline-secondary" type="button" @onclick="OnClose">Abbrechen</button>
+                <button class="btn btn-primary" type="button" @onclick="OnSave">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>Speichern
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter, EditorRequired] public VermisstenInfo Model { get; set; } = default!;
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public bool IsError { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private void OnBirthdateChanged(ChangeEventArgs args)
+    {
+        var value = args.Value?.ToString() ?? string.Empty;
+        Model.Geburtsdatum = value;
+        if (DateTime.TryParseExact(value, "dd.MM.yyyy",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var birth))
+        {
+            var today = DateTime.Today;
+            var age = today.Year - birth.Year;
+            if (birth.Date > today.AddYears(-age)) age--;
+            Model.Alter = age.ToString();
+        }
+    }
+}

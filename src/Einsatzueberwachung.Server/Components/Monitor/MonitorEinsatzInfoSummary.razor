@@ -1,0 +1,190 @@
+@{
+    var hasPoliceNumber = !string.IsNullOrWhiteSpace(Einsatz.EinsatzNummer);
+    var hasBosContact = BosContact is not null;
+    var hasPoliceInfo = hasPoliceNumber || PoliceContacts.Count > 0;
+    var showActionsOnBosContact = !hasPoliceInfo && hasBosContact;
+    var hasEinsatzTile = hasPoliceInfo || hasBosContact;
+    var openCoordinationItems = CoordinationItems.Where(item => !item.IsConfirmed).ToArray();
+}
+
+@if (hasPoliceInfo)
+{
+    <article class="monitor-info-tile monitor-info-tile--police">
+        <div class="monitor-info-tile-header">
+            <span class="monitor-info-tile-label">@(hasPoliceNumber ? $"Polizei #{Einsatz.EinsatzNummer}" : "Polizei")</span>
+            <div class="monitor-info-tile-actions">
+                <button class="monitor-summary-edit-button" type="button" @onclick="OnEditEinsatz" title="Einsatzdaten bearbeiten" aria-label="Einsatzdaten bearbeiten">
+                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+        @foreach (var contact in PoliceContacts)
+        {
+            var hasContactName = !string.IsNullOrWhiteSpace(contact.ContactName);
+            var hasServiceNumber = !string.IsNullOrWhiteSpace(contact.ServiceNumber);
+            var hasPhone = !string.IsNullOrWhiteSpace(contact.Phone);
+            <div class="monitor-info-contact">
+                @if (PoliceContacts.Count > 1)
+                {
+                    <span class="monitor-info-tile-secondary">@contact.PersonName</span>
+                }
+                @if (hasContactName || hasServiceNumber)
+                {
+                    <div class="monitor-info-contact-primary">
+                        @if (hasContactName)
+                        {
+                            <strong class="monitor-info-tile-value">@contact.ContactName</strong>
+                        }
+                        @if (hasServiceNumber)
+                        {
+                            <span class="monitor-summary-person-meta">#@contact.ServiceNumber</span>
+                        }
+                    </div>
+                }
+                @if (hasPhone)
+                {
+                    <span class="monitor-info-phone" aria-label="Telefonnummer @contact.Phone">
+                        <i class="bi bi-telephone" aria-hidden="true"></i>@contact.Phone
+                    </span>
+                }
+            </div>
+        }
+    </article>
+}
+
+@if (BosContact is { } bosContact)
+{
+    <article class="monitor-info-tile">
+        <div class="monitor-info-tile-header">
+            <span class="monitor-info-tile-label" title="@bosContact.HeaderLabel">@bosContact.HeaderLabel</span>
+            @if (showActionsOnBosContact)
+            {
+                <div class="monitor-info-tile-actions">
+                    <button class="monitor-summary-edit-button" type="button" @onclick="OnEditEinsatz" title="Einsatzdaten bearbeiten" aria-label="Einsatzdaten bearbeiten">
+                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </button>
+                </div>
+            }
+        </div>
+        <div class="monitor-info-contact">
+            @if (!string.IsNullOrWhiteSpace(bosContact.Zugfuehrer))
+            {
+                <strong class="monitor-info-tile-value">@bosContact.Zugfuehrer</strong>
+            }
+            @if (!string.IsNullOrWhiteSpace(bosContact.Funkrufname))
+            {
+                @if (!string.IsNullOrWhiteSpace(bosContact.Zugfuehrer))
+                {
+                    <span class="monitor-summary-person-meta">@bosContact.Funkrufname</span>
+                }
+                else
+                {
+                    <span class="monitor-info-tile-secondary">Funkrufname: @bosContact.Funkrufname</span>
+                }
+            }
+            @if (!string.IsNullOrWhiteSpace(bosContact.Aufgabenteilung))
+            {
+                <div class="monitor-summary-key-details">
+                    <div class="monitor-summary-key-detail">
+                        <span class="monitor-summary-key-label">Aufgabe</span>
+                        <span class="monitor-summary-key-value">@bosContact.Aufgabenteilung</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </article>
+}
+
+@if (openCoordinationItems.Length > 0)
+{
+    var firstOpenItem = openCoordinationItems[0];
+    <article class="monitor-info-tile monitor-info-tile--coordination">
+        <div class="monitor-info-tile-header">
+            <span class="monitor-info-tile-label">Offene Abstimmungen</span>
+            <div class="monitor-info-tile-actions">
+                <button class="monitor-summary-edit-button"
+                        type="button"
+                        title="Abstimmungen bearbeiten"
+                        aria-label="Offene Abstimmungen bearbeiten"
+                        disabled="@IsCoordinationUpdating"
+                        @onclick="OnOpenCoordination">
+                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+        <div class="monitor-coordination-checklist"
+             role="group"
+             aria-label="Offene Abstimmungen"
+             aria-busy="@IsCoordinationUpdating">
+            <label @key="firstOpenItem.Id" class="monitor-coordination-check">
+                <input class="form-check-input"
+                       type="checkbox"
+                       checked="@false"
+                       disabled="@IsCoordinationUpdating"
+                       aria-label="@($"{firstOpenItem.Label} abhaken")"
+                       @onchange="() => OnCompleteCoordination.InvokeAsync(new MonitorCoordinationToggle(firstOpenItem.Id, true))" />
+                <span>@firstOpenItem.Label</span>
+            </label>
+            @if (openCoordinationItems.Length > 1)
+            {
+                <span class="monitor-coordination-more">+@(openCoordinationItems.Length - 1) weitere</span>
+            }
+        </div>
+    </article>
+}
+
+@if (!hasEinsatzTile)
+{
+    <div class="monitor-info-actions" aria-label="Einsatz-Info bearbeiten">
+        <button class="monitor-summary-edit-button" type="button" @onclick="OnEditEinsatz" title="Einsatzdaten bearbeiten" aria-label="Einsatzdaten bearbeiten">
+            <i class="bi bi-pencil" aria-hidden="true"></i>
+        </button>
+    </div>
+}
+
+<div id="panel-details-einsatz-info" class="monitor-info-details" hidden="@(!DetailsExpanded)">
+    <dl class="monitor-summary-detail-grid mb-0 small">
+        <div>
+            <dt>Teams</dt>
+            <dd>@TeamCount / @Einsatz.AnzahlTeams geplant</dd>
+        </div>
+        <div>
+            <dt>Datum</dt>
+            <dd>@Einsatz.EinsatzDatum.ToString("dd.MM.yyyy HH:mm")</dd>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Einsatz.Einsatzleiter))
+        {
+            <div>
+                <dt>Einsatzleiter</dt>
+                <dd>@Einsatz.Einsatzleiter</dd>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Einsatz.Fuehrungsassistent))
+        {
+            <div>
+                <dt>FA</dt>
+                <dd>@Einsatz.Fuehrungsassistent</dd>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Einsatz.Alarmiert))
+        {
+            <div>
+                <dt>Alarmiert durch</dt>
+                <dd>@Einsatz.Alarmiert</dd>
+            </div>
+        }
+    </dl>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EinsatzData Einsatz { get; set; } = default!;
+    [Parameter] public int TeamCount { get; set; }
+    [Parameter] public IReadOnlyList<MonitorPoliceContactSummary> PoliceContacts { get; set; } = Array.Empty<MonitorPoliceContactSummary>();
+    [Parameter] public MonitorBosContactSummary? BosContact { get; set; }
+    [Parameter] public IReadOnlyList<MonitorCoordinationItem> CoordinationItems { get; set; } = Array.Empty<MonitorCoordinationItem>();
+    [Parameter] public bool IsCoordinationUpdating { get; set; }
+    [Parameter] public bool DetailsExpanded { get; set; }
+    [Parameter] public EventCallback OnEditEinsatz { get; set; }
+    [Parameter] public EventCallback OnOpenCoordination { get; set; }
+    [Parameter] public EventCallback<MonitorCoordinationToggle> OnCompleteCoordination { get; set; }
+}

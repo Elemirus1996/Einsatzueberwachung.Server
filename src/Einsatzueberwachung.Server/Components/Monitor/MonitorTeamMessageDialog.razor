@@ -1,0 +1,63 @@
+@if (IsOpen)
+{
+    <div class="modal-overlay">
+        <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
+        <div class="modal-modern modal-modern--md" @onclick:stopPropagation="true">
+            <div class="modal-modern-header bg-warning text-dark">
+                <h3 class="mb-0"><i class="bi bi-megaphone me-1"></i>Nachricht an Team</h3>
+                <button class="btn btn-sm btn-outline-dark" @onclick="OnClose">X</button>
+            </div>
+            <div class="modal-modern-body">
+                @if (!Teams.Any())
+                {
+                    <div class="alert alert-info">Keine Teams im Einsatz.</div>
+                }
+                else
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Empfänger</label>
+                        <select class="form-select" value="@TargetId" @onchange="OnTargetChangedAsync">
+                            @foreach (var team in Teams.OrderBy(team => team.TeamName))
+                            {
+                                <option value="@team.TeamId">@team.TeamName @(string.IsNullOrWhiteSpace(team.DogName) ? "" : " / " + team.DogName)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nachricht</label>
+                        <textarea class="form-control" rows="3" value="@Text" @onchange="OnTextChangedAsync" placeholder="kurze Nachricht..."></textarea>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Feedback))
+                    {
+                        <div class="alert @(Feedback.StartsWith("Nachricht") ? "alert-success" : "alert-danger") py-2 mb-0">@Feedback</div>
+                    }
+                    <p class="small text-muted mt-2 mb-0">
+                        <i class="bi bi-info-circle me-1"></i>Erscheint sofort am Smartphone des gewaehlten Teams (max. 5 letzte Nachrichten).
+                    </p>
+                }
+            </div>
+            <div class="modal-modern-footer">
+                <button class="btn btn-warning" @onclick="OnSend" disabled="@(!Teams.Any())">Senden</button>
+                <button class="btn btn-outline-secondary" @onclick="OnClose">Schließen</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public IEnumerable<Team> Teams { get; set; } = Array.Empty<Team>();
+    [Parameter] public string TargetId { get; set; } = string.Empty;
+    [Parameter] public string Text { get; set; } = string.Empty;
+    [Parameter] public string Feedback { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> TargetIdChanged { get; set; }
+    [Parameter] public EventCallback<string> TextChanged { get; set; }
+    [Parameter] public EventCallback OnSend { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private Task OnTargetChangedAsync(ChangeEventArgs args) =>
+        TargetIdChanged.InvokeAsync(args.Value?.ToString() ?? string.Empty);
+
+    private Task OnTextChangedAsync(ChangeEventArgs args) =>
+        TextChanged.InvokeAsync(args.Value?.ToString() ?? string.Empty);
+}

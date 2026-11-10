@@ -1,0 +1,273 @@
+@if (ActivePerson is { } person)
+{
+    var hasPersonName = !string.IsNullOrWhiteSpace(person.Vorname)
+        || !string.IsNullOrWhiteSpace(person.Nachname);
+    var hasSearchCharacteristics = !string.IsNullOrWhiteSpace(person.Kleidung)
+        || !string.IsNullOrWhiteSpace(person.Beschreibung)
+        || !string.IsNullOrWhiteSpace(person.Besonderheiten);
+    var hasPersonSummary = hasPersonName
+        || !string.IsNullOrWhiteSpace(person.Alter)
+        || person.Mobilitaet != MobilitaetsStatus.Unbekannt
+        || hasSearchCharacteristics;
+    var hasLastSeenDetails = !string.IsNullOrWhiteSpace(person.ZuletztGesehenOrt)
+        || !string.IsNullOrWhiteSpace(person.ZuletztGesehenZeit)
+        || !string.IsNullOrWhiteSpace(person.ZuletztGesehenVon);
+    var hasHealthSafetyDetails = person.Orientierung != OrientierungsStatus.Unbekannt
+        || person.Suizidrisiko != RisikoStatus.Unbekannt
+        || person.Bewaffnet == RisikoStatus.Ja
+        || !string.IsNullOrWhiteSpace(person.Vorerkrankungen)
+        || !string.IsNullOrWhiteSpace(person.Medikamente);
+    var hasHealthTags = person.Orientierung != OrientierungsStatus.Unbekannt
+        || person.Suizidrisiko == RisikoStatus.Nein
+        || !string.IsNullOrWhiteSpace(person.Vorerkrankungen)
+        || !string.IsNullOrWhiteSpace(person.Medikamente);
+
+    @if (hasPersonSummary)
+    {
+        <article class="monitor-info-tile monitor-info-tile--person">
+            <div class="monitor-info-tile-header">
+                <span class="monitor-info-tile-label">Vermisste Person</span>
+                @if (Vermisste.Count > 1 || AllowMultiple)
+                {
+                    <div class="vermissten-panel-tabs monitor-summary-person-tabs" role="group" aria-label="Vermisste Person auswählen">
+                        @for (var index = 0; index < Vermisste.Count; index++)
+                        {
+                            var candidate = Vermisste[index];
+                            var personNumber = index + 1;
+                            var isActive = candidate.Id == person.Id;
+                            <button class="vermissten-panel-tab @(isActive ? "active" : "")"
+                                    type="button"
+                                    aria-pressed="@isActive"
+                                    @onclick="() => SelectedIdChanged.InvokeAsync(candidate.Id)"
+                                    title="@candidate.VollerName"
+                                    aria-label="Person @personNumber @(string.IsNullOrWhiteSpace(candidate.VollerName) ? string.Empty : candidate.VollerName)">
+                                <span>@personNumber</span>
+                            </button>
+                        }
+                        @if (AllowMultiple)
+                        {
+                            <button class="vermissten-panel-tab vermissten-panel-tab-add" type="button"
+                                    @onclick="OnAdd" title="Weitere Person erfassen" aria-label="Weitere Person erfassen">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                            </button>
+                        }
+                    </div>
+                }
+                <div class="monitor-info-tile-actions">
+                    <button class="monitor-summary-edit-button" type="button" @onclick="OnEdit" title="Vermisstendaten bearbeiten" aria-label="Vermisstendaten bearbeiten">
+                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="monitor-info-person-main">
+                @if (hasPersonName)
+                {
+                    <strong class="monitor-info-tile-value">@person.VollerName</strong>
+                }
+                @if (!string.IsNullOrWhiteSpace(person.Alter))
+                {
+                    <span class="monitor-summary-person-meta">@person.Alter</span>
+                }
+            </div>
+            @if (person.Mobilitaet != MobilitaetsStatus.Unbekannt || hasSearchCharacteristics)
+            {
+                <div class="monitor-summary-key-details">
+                    @if (person.Mobilitaet != MobilitaetsStatus.Unbekannt)
+                    {
+                        <div class="monitor-summary-key-detail">
+                            <span class="monitor-summary-key-label">Mobilität</span>
+                            <span class="monitor-summary-key-value">@person.Mobilitaet</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(person.Kleidung))
+                    {
+                        <div class="monitor-summary-key-detail">
+                            <span class="monitor-summary-key-label">Kleidung</span>
+                            <span class="monitor-summary-key-value">@person.Kleidung</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(person.Beschreibung))
+                    {
+                        <div class="monitor-summary-key-detail">
+                            <span class="monitor-summary-key-label">Beschreibung</span>
+                            <span class="monitor-summary-key-value">@person.Beschreibung</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(person.Besonderheiten))
+                    {
+                        <div class="monitor-summary-key-detail">
+                            <span class="monitor-summary-key-label">Besonderheiten</span>
+                            <span class="monitor-summary-key-value">@person.Besonderheiten</span>
+                        </div>
+                    }
+                </div>
+            }
+        </article>
+    }
+    else
+    {
+        <div class="monitor-info-actions" aria-label="Vermissteninfo bearbeiten">
+            @if (Vermisste.Count > 1 || AllowMultiple)
+            {
+                <div class="vermissten-panel-tabs monitor-summary-person-tabs" role="group" aria-label="Vermisste Person auswählen">
+                    @for (var index = 0; index < Vermisste.Count; index++)
+                    {
+                        var candidate = Vermisste[index];
+                        var personNumber = index + 1;
+                        var isActive = candidate.Id == person.Id;
+                        <button class="vermissten-panel-tab @(isActive ? "active" : "")"
+                                type="button"
+                                aria-pressed="@isActive"
+                                @onclick="() => SelectedIdChanged.InvokeAsync(candidate.Id)"
+                                title="@candidate.VollerName"
+                                aria-label="Person @personNumber @(string.IsNullOrWhiteSpace(candidate.VollerName) ? string.Empty : candidate.VollerName)">
+                            <span>@personNumber</span>
+                        </button>
+                    }
+                    @if (AllowMultiple)
+                    {
+                        <button class="vermissten-panel-tab vermissten-panel-tab-add" type="button"
+                                @onclick="OnAdd" title="Weitere Person erfassen" aria-label="Weitere Person erfassen">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        </button>
+                    }
+                </div>
+            }
+            <button class="monitor-summary-edit-button" type="button" @onclick="OnEdit" title="Vermisstendaten bearbeiten" aria-label="Vermisstendaten bearbeiten">
+                <i class="bi bi-pencil" aria-hidden="true"></i>
+            </button>
+        </div>
+    }
+
+    @if (hasLastSeenDetails)
+    {
+        <article class="monitor-info-tile monitor-info-tile--person-cluster"
+                 aria-label="@($"Letzte Sichtung für {person.VollerName}")">
+            <div class="monitor-info-tile-header">
+                <span class="monitor-info-tile-label">Letzte Sichtung</span>
+                <div class="monitor-info-tile-actions">
+                    <button class="monitor-summary-edit-button"
+                            type="button"
+                            @onclick='() => OnEditSection.InvokeAsync("vermissten-modal-last-seen")'
+                            title="Letzte Sichtung bearbeiten"
+                            aria-label="Letzte Sichtung bearbeiten">
+                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="monitor-summary-key-details">
+                @if (!string.IsNullOrWhiteSpace(person.ZuletztGesehenOrt))
+                {
+                    <div class="monitor-summary-key-detail">
+                        <span class="monitor-summary-key-label">Ort</span>
+                        <span class="monitor-summary-key-value">@person.ZuletztGesehenOrt</span>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(person.ZuletztGesehenZeit))
+                {
+                    <div class="monitor-summary-key-detail">
+                        <span class="monitor-summary-key-label">Zeit</span>
+                        <span class="monitor-summary-key-value">@person.ZuletztGesehenZeit</span>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(person.ZuletztGesehenVon))
+                {
+                    <div class="monitor-summary-key-detail">
+                        <span class="monitor-summary-key-label">Gesehen von</span>
+                        <span class="monitor-summary-key-value">@person.ZuletztGesehenVon</span>
+                    </div>
+                }
+                @if (person.ZuletztAktualisiert.HasValue)
+                {
+                    <div class="monitor-summary-key-detail monitor-summary-key-detail--muted">
+                        <span class="monitor-summary-key-label">Stand</span>
+                        <span class="monitor-summary-key-value">@person.ZuletztAktualisiert.Value.ToString("dd.MM. HH:mm")</span>
+                    </div>
+                }
+            </div>
+        </article>
+    }
+
+    @if (hasHealthSafetyDetails)
+    {
+        <article class="monitor-info-tile monitor-info-tile--person-cluster"
+                 aria-label="@($"Gesundheit und Sicherheit für {person.VollerName}")">
+            <div class="monitor-info-tile-header">
+                <span class="monitor-info-tile-label">Gesundheit &amp; Sicherheit</span>
+                <div class="monitor-info-tile-actions">
+                    <button class="monitor-summary-edit-button"
+                            type="button"
+                            @onclick='() => OnEditSection.InvokeAsync("vermissten-modal-health-safety")'
+                            title="Gesundheit und Sicherheit bearbeiten"
+                            aria-label="Gesundheit und Sicherheit bearbeiten">
+                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            @if (person.Suizidrisiko == RisikoStatus.Ja || person.Bewaffnet == RisikoStatus.Ja)
+            {
+                <div class="monitor-summary-alerts" aria-label="Gefahrenhinweise">
+                    @if (person.Suizidrisiko == RisikoStatus.Ja)
+                    {
+                        <span class="monitor-summary-alert">
+                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>Suizidrisiko
+                        </span>
+                    }
+                    @if (person.Bewaffnet == RisikoStatus.Ja)
+                    {
+                        <span class="monitor-summary-alert">
+                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>Bewaffnet
+                        </span>
+                    }
+                </div>
+            }
+            @if (hasHealthTags)
+            {
+                <div class="monitor-info-tags">
+                    @if (person.Orientierung != OrientierungsStatus.Unbekannt)
+                    {
+                        <span class="monitor-info-tag">
+                            Orientierung: @(person.Orientierung == OrientierungsStatus.Eingeschraenkt ? "eingeschränkt" : "gut")
+                        </span>
+                    }
+                    @if (person.Suizidrisiko == RisikoStatus.Nein)
+                    {
+                        <span class="monitor-info-tag">Suizidrisiko: Nein</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(person.Vorerkrankungen))
+                    {
+                        <span class="monitor-info-tag">@person.Vorerkrankungen</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(person.Medikamente))
+                    {
+                        <span class="monitor-info-tag" aria-label="Medikamente: @person.Medikamente">
+                            <i class="bi bi-capsule" aria-hidden="true"></i>@person.Medikamente
+                        </span>
+                    }
+                </div>
+            }
+        </article>
+    }
+}
+else
+{
+    <div class="monitor-info-actions">
+        <button class="monitor-summary-edit-button" type="button" @onclick="OnEdit" title="Vermissteninfo erfassen" aria-label="Vermissteninfo erfassen">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        </button>
+    </div>
+}
+
+@code {
+    private VermisstenInfo? ActivePerson =>
+        (SelectedId.HasValue ? Vermisste.FirstOrDefault(person => person.Id == SelectedId.Value) : null)
+        ?? Vermisste.FirstOrDefault();
+
+    [Parameter] public IReadOnlyList<VermisstenInfo> Vermisste { get; set; } = Array.Empty<VermisstenInfo>();
+    [Parameter] public bool AllowMultiple { get; set; }
+    [Parameter] public Guid? SelectedId { get; set; }
+    [Parameter] public EventCallback<Guid?> SelectedIdChanged { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback OnAdd { get; set; }
+    [Parameter] public EventCallback<string> OnEditSection { get; set; }
+}

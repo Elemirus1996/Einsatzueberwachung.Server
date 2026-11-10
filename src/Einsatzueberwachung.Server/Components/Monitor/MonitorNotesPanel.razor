@@ -1,0 +1,239 @@
+@using Einsatzueberwachung.Server.Components
+@using Einsatzueberwachung.Domain.Models.Enums
+
+<div id="note-expander-form" class="note-input-section mb-3">
+    <div class="monitor-note-compose-controls mb-2">
+        <div class="monitor-note-source-field">
+            <select id="monitor-note-source" class="form-select monitor-note-source-select" aria-label="Quelle der Nachricht" @bind="_newNoteSourceId">
+                <option value="einsatzleitung">Einsatzleitung (EL)</option>
+                @foreach (var team in Teams.OrderBy(team => team.TeamName))
+                {
+                    <option value="@team.TeamId">@team.TeamName</option>
+                }
+            </select>
+        </div>
+        <div class="monitor-note-type-switch" role="group" aria-label="Art der Nachricht">
+            <button type="button"
+                    class="btn btn-outline-secondary monitor-note-type-button @(_newNoteType == "Notiz" ? "active" : "")"
+                    aria-pressed="@(_newNoteType == "Notiz")"
+                    @onclick='() => _newNoteType = "Notiz"'>
+                <i class="bi bi-sticky" aria-hidden="true"></i> Notiz
+            </button>
+            <button type="button"
+                    class="btn btn-outline-secondary monitor-note-type-button @(_newNoteType == "Funk" ? "active" : "")"
+                    aria-pressed="@(_newNoteType == "Funk")"
+                    @onclick='() => _newNoteType = "Funk"'>
+                <i class="bi bi-broadcast" aria-hidden="true"></i> Funk
+            </button>
+        </div>
+    </div>
+    <MentionTextarea Id="monitor-new-note"
+                     @bind-Value="_newNoteText"
+                     Mentions="Mentions"
+                     Rows="3"
+                     AccessibleLabel="Inhalt der Notiz oder des Funkspruchs"
+                     Placeholder="Inhalt der Notiz oder des Funkspruchs"
+                     AdditionalClass="mb-2" />
+    <div class="monitor-note-submit-row">
+        <button class="btn btn-primary flex-grow-1"
+                @onclick="SubmitNoteAsync"
+                disabled="@(string.IsNullOrWhiteSpace(_newNoteText) || string.IsNullOrWhiteSpace(_newNoteSourceId))">
+            <i class="bi bi-send-fill"></i> Hinzufügen
+        </button>
+        @if (QuickNoteTemplates.Count > 0)
+        {
+            <div class="monitor-panel-picker-wrapper mon-anchor-quicknote flex-shrink-0">
+                <button class="btn btn-outline-success" type="button"
+                        @onclick="() => _showQuickNoteDropdown = !_showQuickNoteDropdown"
+                        title="Schnell-Notiz" aria-label="Schnell-Notiz einfügen">
+                    <i class="bi bi-lightning-fill" aria-hidden="true"></i>
+                </button>
+                @if (_showQuickNoteDropdown)
+                {
+                    <div class="panel-picker-dropdown">
+                        @foreach (var quickTemplate in QuickNoteTemplates)
+                        {
+                            <button class="btn btn-sm w-100 text-start mb-1"
+                                    @onclick="() => AddQuickNoteAsync(quickTemplate)"
+                                    @onclick:stopPropagation="true">
+                                @quickTemplate
+                            </button>
+                        }
+                    </div>
+                    <button type="button"
+                            class="panel-picker-backdrop"
+                            @onclick="() => _showQuickNoteDropdown = false"
+                            aria-label="Schließen"></button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="notes-list">
+    @if (Notes.Count == 0)
+    {
+        <p class="text-muted mb-0">Noch keine Einträge.</p>
+    }
+    else
+    {
+        @foreach (var note in Notes.OrderByDescending(note => note.Timestamp).Take(10))
+        {
+            <div class="note-card @GetNoteCssClass(note) @(note.Replies.Count > 0 ? "has-replies" : string.Empty)">
+                <div class="monitor-note-header d-flex justify-content-between align-items-baseline gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        @if (GetNoteCssClass(note) == "note-type-teamwarning")
+                        {
+                            <i class="bi bi-exclamation-triangle-fill monitor-note-status-icon"
+                               role="img" aria-label="Teamwarnung"></i>
+                        }
+                        <strong class="monitor-note-author">@(string.IsNullOrWhiteSpace(note.SourceTeamName) ? "System" : note.SourceTeamName)</strong>
+                    </div>
+                    <span class="monitor-note-timestamp text-muted">@note.FormattedTimestamp</span>
+                </div>
+                <div class="monitor-note-content d-flex justify-content-between align-items-start mb-2">
+                    <div>@MentionTextarea.RenderWithMentions(note.Text)</div>
+                    <button class="btn btn-sm btn-link p-0 ms-2 text-muted flex-shrink-0"
+                            type="button"
+                            @onclick="() => ToggleReplyForm(note.Id)"
+                            title="Antworten"
+                            aria-label="Antworten">
+                        <i class="bi bi-reply-fill" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                @if (IsReplyFormVisible(note.Id))
+                {
+                    <div class="d-flex gap-2 mb-2">
+                        <select class="form-select form-select-sm monitor-source-select"
+                                value="@GetReplySourceId(note.Id)"
+                                @onchange="args => SetReplySourceId(note.Id, args.Value?.ToString())">
+                            <option value="einsatzleitung">Einsatzleitung</option>
+                            @foreach (var team in Teams.OrderBy(team => team.TeamName))
+                            {
+                                <option value="@team.TeamId">@team.TeamName</option>
+                            }
+                        </select>
+                        <input class="form-control form-control-sm"
+                               placeholder="Antwort"
+                               value="@GetReplyText(note.Id)"
+                               @oninput="args => SetReplyText(note.Id, args.Value?.ToString())"
+                               @onkeydown="args => HandleReplyKeyDown(note.Id, args)" />
+                        <button class="btn btn-sm btn-primary" @onclick="() => SubmitReplyAsync(note.Id)" title="Senden" aria-label="Antwort senden">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => CancelReplyForm(note.Id)" title="Abbrechen" aria-label="Antwort abbrechen">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                }
+
+                @if (note.Replies.Count > 0)
+                {
+                    <div class="monitor-note-replies">
+                        @foreach (var reply in note.Replies.OrderBy(reply => reply.Timestamp))
+                        {
+                            <div class="monitor-reply-thread ps-2 py-1 mb-1">
+                                <div class="text-muted">@reply.SourceTeamName · @reply.FormattedTimestamp</div>
+                                <div>@MentionTextarea.RenderWithMentions(reply.Text)</div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<Team> Teams { get; set; } = Array.Empty<Team>();
+    [Parameter] public IReadOnlyList<GlobalNotesEntry> Notes { get; set; } = Array.Empty<GlobalNotesEntry>();
+    [Parameter] public IReadOnlyList<MentionSuggestion> Mentions { get; set; } = Array.Empty<MentionSuggestion>();
+    [Parameter] public IReadOnlyList<string> QuickNoteTemplates { get; set; } = Array.Empty<string>();
+    [Parameter] public EventCallback<MonitorNoteSubmission> OnAddNote { get; set; }
+    [Parameter] public EventCallback<MonitorQuickNoteSubmission> OnAddQuickNote { get; set; }
+    [Parameter] public EventCallback<MonitorReplySubmission> OnAddReply { get; set; }
+
+    private readonly Dictionary<string, string> _replyTexts = new();
+    private readonly Dictionary<string, string> _replySourceIds = new();
+    private readonly HashSet<string> _visibleReplyForms = new();
+    private string _newNoteText = string.Empty;
+    private string _newNoteType = "Notiz";
+    private string _newNoteSourceId = "einsatzleitung";
+    private bool _showQuickNoteDropdown;
+
+    private async Task SubmitNoteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newNoteText) || string.IsNullOrWhiteSpace(_newNoteSourceId))
+            return;
+
+        await OnAddNote.InvokeAsync(new MonitorNoteSubmission(_newNoteText.Trim(), _newNoteSourceId, _newNoteType));
+        _newNoteText = string.Empty;
+    }
+
+    private async Task AddQuickNoteAsync(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        await OnAddQuickNote.InvokeAsync(new MonitorQuickNoteSubmission(text, _newNoteSourceId));
+        _showQuickNoteDropdown = false;
+    }
+
+    private async Task SubmitReplyAsync(string noteId)
+    {
+        var text = GetReplyText(noteId);
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        await OnAddReply.InvokeAsync(new MonitorReplySubmission(noteId, text.Trim(), GetReplySourceId(noteId)));
+        _replyTexts[noteId] = string.Empty;
+        _visibleReplyForms.Remove(noteId);
+    }
+
+    private string GetReplyText(string noteId) =>
+        _replyTexts.TryGetValue(noteId, out var text) ? text : string.Empty;
+
+    private string GetReplySourceId(string noteId) =>
+        _replySourceIds.TryGetValue(noteId, out var sourceId) && !string.IsNullOrWhiteSpace(sourceId)
+            ? sourceId
+            : "einsatzleitung";
+
+    private void SetReplyText(string noteId, string? text) =>
+        _replyTexts[noteId] = text ?? string.Empty;
+
+    private void SetReplySourceId(string noteId, string? sourceId) =>
+        _replySourceIds[noteId] = string.IsNullOrWhiteSpace(sourceId) ? "einsatzleitung" : sourceId;
+
+    private void ToggleReplyForm(string noteId)
+    {
+        if (!_visibleReplyForms.Add(noteId))
+            _visibleReplyForms.Remove(noteId);
+    }
+
+    private void CancelReplyForm(string noteId)
+    {
+        _visibleReplyForms.Remove(noteId);
+        _replyTexts[noteId] = string.Empty;
+    }
+
+    private void HandleReplyKeyDown(string noteId, KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+            CancelReplyForm(noteId);
+    }
+
+    private bool IsReplyFormVisible(string noteId) => _visibleReplyForms.Contains(noteId);
+
+    private static string GetNoteCssClass(GlobalNotesEntry note) =>
+        note.Type switch
+        {
+            GlobalNotesEntryType.TeamStart => "note-type-teamstart",
+            GlobalNotesEntryType.TeamStop => "note-type-teamstop",
+            GlobalNotesEntryType.TeamPause => "note-type-teampause",
+            GlobalNotesEntryType.TeamReset => "note-type-teamreset",
+            GlobalNotesEntryType.TeamWarning => "note-type-teamwarning",
+            GlobalNotesEntryType.EinsatzUpdate => "note-type-einsatzupdate",
+            _ => string.Empty
+        };
+}

@@ -1,0 +1,175 @@
+@if (IsOpen)
+{
+    <div class="modal-overlay">
+        <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
+        <div class="modal-modern modal-modern--640" @onclick:stopPropagation="true">
+            <div class="modal-modern-header">
+                <h3><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Einsatz bearbeiten</h3>
+                <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="OnClose">Schließen</button>
+            </div>
+            <div class="modal-modern-body">
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <div class="alert @(IsError ? "alert-danger" : "alert-success") py-2">@Message</div>
+                }
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Typ</label>
+                        <select class="form-select" @bind="Form.IstEinsatz">
+                            <option value="true">Einsatz</option>
+                            <option value="false">Übung</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Polizei-Einsatznummer</label>
+                        <input class="form-control" @bind="Form.EinsatzNummer" placeholder="z. B. EVD-2026-001" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Alarmierungszeit</label>
+                        <input class="form-control" type="time" step="60"
+                               value="@Form.AlarmierungsZeit"
+                               @onchange="args => Form.AlarmierungsZeit = args.Value?.ToString() ?? Form.AlarmierungsZeit" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Einsatzort <span class="text-danger">*</span></label>
+                        <input class="form-control" @bind="Form.Einsatzort" placeholder="Strasse, Ort" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Karten-Adresse</label>
+                        <input class="form-control" @bind="Form.MapAddress" placeholder="Adresse für Kartensuche" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Alarmiert durch (Melder)</label>
+                        <input class="form-control" @bind="Form.Alarmiert" placeholder="z. B. Leitstelle" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Anzahl Teams (geplant)</label>
+                        <input class="form-control" type="number" min="0" @bind="Form.AnzahlTeams" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Einsatzleiter</label>
+                        <div class="input-group">
+                            <select class="form-select" @onchange="args => Form.Einsatzleiter = args.Value?.ToString() ?? Form.Einsatzleiter">
+                                <option value="">- aus Stammdaten -</option>
+                                @foreach (var person in EinsatzleiterOptions)
+                                {
+                                    <option value="@person.FullName">@person.FullName</option>
+                                }
+                            </select>
+                            <input class="form-control" @bind="Form.Einsatzleiter" placeholder="oder Freitext" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Führungsassistent</label>
+                        <div class="input-group">
+                            <select class="form-select" @onchange="args => Form.Fuehrungsassistent = args.Value?.ToString() ?? Form.Fuehrungsassistent">
+                                <option value="">- aus Stammdaten -</option>
+                                @foreach (var person in FuehrungsassistentOptions)
+                                {
+                                    <option value="@person.FullName">@person.FullName</option>
+                                }
+                            </select>
+                            <input class="form-control" @bind="Form.Fuehrungsassistent" placeholder="oder Freitext" />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <hr class="my-1" />
+                        <h4 class="h6 mb-0"><i class="bi bi-shield me-1" aria-hidden="true"></i>Polizei-Kontakt</h4>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Name Kontaktbeamter</label>
+                        <input class="form-control" @bind="Form.PolizeiKontaktName" placeholder="PHK Müller" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Dienstnummer / Rufname</label>
+                        <input class="form-control" @bind="Form.PolizeiDienstnummer" placeholder="z. B. 1234 oder Florian 5" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Telefon</label>
+                        <input class="form-control" @bind="Form.PolizeiTelefon" placeholder="+49 ..." />
+                    </div>
+                    <div class="col-12">
+                        <div class="row g-1">
+                            @foreach (var (label, getter, setter) in GetPolizeiChecklist())
+                            {
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" checked="@getter()" @onchange="args => setter(ReadBoolean(args))" />
+                                        <label class="form-check-label small">@label</label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <h4 class="h6 mb-0"><i class="bi bi-truck me-1" aria-hidden="true"></i>Weitere BOS / Feuerwehr</h4>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Einheit</label>
+                        <input class="form-control" @bind="Form.BosEinheit" placeholder="z. B. FF Musterstadt" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Zugführer</label>
+                        <input class="form-control" @bind="Form.BosZugfuehrer" placeholder="Name" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Funkrufname</label>
+                        <input class="form-control" @bind="Form.BosFunkrufname" placeholder="z. B. Florian 1/20" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Aufgabenteilung</label>
+                        <input class="form-control" @bind="Form.BosAufgabenteilung" placeholder="z. B. Feuerwehr übernimmt Wassersuche" />
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" @bind="Form.BosAbschnittAbgestimmt" />
+                            <label class="form-check-label small">Einsatzabschnitt abgestimmt</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" @bind="Form.BosRessourcenBesprochen" />
+                            <label class="form-check-label small">Ressourcen besprochen (Wärmebild etc.)</label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Bemerkungen</label>
+                        <textarea class="form-control" rows="3" @bind="Form.Bemerkungen" placeholder="Weitere Informationen zum Einsatz"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-modern-footer">
+                <button class="btn btn-outline-secondary" type="button" @onclick="OnClose">Abbrechen</button>
+                <button class="btn btn-primary" type="button" @onclick="OnSave">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>Speichern
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter, EditorRequired] public MonitorEditEinsatzForm Form { get; set; } = default!;
+    [Parameter] public IReadOnlyList<PersonalEntry> EinsatzleiterOptions { get; set; } = Array.Empty<PersonalEntry>();
+    [Parameter] public IReadOnlyList<PersonalEntry> FuehrungsassistentOptions { get; set; } = Array.Empty<PersonalEntry>();
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public bool IsError { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private IEnumerable<(string Label, Func<bool> Getter, Action<bool> Setter)> GetPolizeiChecklist()
+    {
+        yield return ("Vermisstenmeldung aufgenommen", () => Form.PolizeiVermisstenmeldungAufgenommen, value => Form.PolizeiVermisstenmeldungAufgenommen = value);
+        yield return ("Einsatzkoordination besprochen", () => Form.PolizeiKoordinationBesprochen, value => Form.PolizeiKoordinationBesprochen = value);
+        yield return ("Suchabschnitte abgestimmt", () => Form.PolizeiSuchabschnittAbgestimmt, value => Form.PolizeiSuchabschnittAbgestimmt = value);
+        yield return ("Rückmeldepflicht vereinbart", () => Form.PolizeiRueckmeldepflichtVereinbart, value => Form.PolizeiRueckmeldepflichtVereinbart = value);
+        yield return ("Datenschutz (Personendaten) geklärt", () => Form.PolizeiDatenschutzGeklaert, value => Form.PolizeiDatenschutzGeklaert = value);
+    }
+
+    private static bool ReadBoolean(ChangeEventArgs args) =>
+        args.Value is bool value
+            ? value
+            : throw new InvalidOperationException("Der Abstimmungsstatus konnte nicht gelesen werden.");
+}

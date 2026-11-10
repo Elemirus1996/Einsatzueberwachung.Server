@@ -1,0 +1,56 @@
+@using Einsatzueberwachung.Server.Components
+
+@if (!string.IsNullOrWhiteSpace(StatusMessage))
+{
+    <div class="alert @(StatusIsError ? "alert-warning" : "alert-success") alert-dismissible py-2 mb-3" role="alert">
+        @StatusMessage
+        <button type="button" class="btn-close" aria-label="Meldung schließen" @onclick="OnClearStatus"></button>
+    </div>
+}
+
+@if (!HasTeams)
+{
+    <div class="alert alert-info mb-0">
+        Noch keine Teams vorhanden. Klicken Sie auf "Team anlegen".
+    </div>
+}
+else
+{
+    <div id="teams-monitor-list" class="teams-monitor-list">
+        @foreach (var item in Items)
+        {
+            <div @key="item.Team.TeamId" class="team-order-item" data-team-id="@item.Team.TeamId">
+                <TeamCard Team="item.Team"
+                          IsDogConflict="item.IsDogConflict"
+                          ConflictingTeamName="item.ConflictingTeamName"
+                          DroneList="DroneList"
+                          IsExpanded="item.IsExpanded"
+                          LastCollarLocation="item.LastCollarLocation"
+                          LastPhoneLocation="item.LastPhoneLocation"
+                          LatestNoteEntries="item.LatestNoteEntries"
+                          CompletedSearches="item.CompletedSearches"
+                          OnStart="OnStart"
+                          OnPause="OnPause"
+                          OnStop="OnStop"
+                          OnReset="OnReset"
+                          OnEdit="OnEdit"
+                          OnToggleExpand="OnToggleExpand" />
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public bool HasTeams { get; set; }
+    [Parameter] public IReadOnlyList<MonitorTeamCardItem> Items { get; set; } = Array.Empty<MonitorTeamCardItem>();
+    [Parameter] public IReadOnlyList<DroneEntry> DroneList { get; set; } = Array.Empty<DroneEntry>();
+    [Parameter] public string StatusMessage { get; set; } = string.Empty;
+    [Parameter] public bool StatusIsError { get; set; }
+    [Parameter] public EventCallback OnClearStatus { get; set; }
+    [Parameter] public EventCallback<string> OnStart { get; set; }
+    [Parameter] public EventCallback<string> OnPause { get; set; }
+    [Parameter] public EventCallback<string> OnStop { get; set; }
+    [Parameter] public EventCallback<string> OnReset { get; set; }
+    [Parameter] public EventCallback<string> OnEdit { get; set; }
+    [Parameter] public EventCallback<string> OnToggleExpand { get; set; }
+}
