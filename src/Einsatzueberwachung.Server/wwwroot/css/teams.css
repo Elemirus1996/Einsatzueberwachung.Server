@@ -673,7 +673,7 @@
     white-space: nowrap;
 }
 
-@container team-card (max-width: 560px) {
+@container team-card (max-width: 440px) {
     .tc-head {
         flex-direction: column;
         gap: 0.5rem;

@@ -52,87 +52,68 @@
                     {
                         var einsatz = EinsatzService.CurrentEinsatz;
                         var policeContacts = GetPoliceContactSummaries();
-                        var bosContactSummary = GetBosContactSummary();
+                        var bosContactDetails = GetBosContactDetails();
+                        var coordinationItems = GetCoordinationItems();
+                        var openCoordinationItems = coordinationItems.Where(item => !item.IsConfirmed).ToArray();
                         var hasPoliceNumber = !string.IsNullOrWhiteSpace(einsatz.EinsatzNummer);
-                        var hasBosContact = !string.IsNullOrWhiteSpace(bosContactSummary);
-                        var showActionsOnNumber = hasPoliceNumber;
-                        var showActionsOnPoliceContact = !hasPoliceNumber && policeContacts.Count > 0;
-                        var showActionsOnBosContact = !hasPoliceNumber && policeContacts.Count == 0 && hasBosContact;
-                        var hasEinsatzTile = hasPoliceNumber || policeContacts.Count > 0 || hasBosContact;
+                        var hasBosContact = bosContactDetails is not null;
+                        var hasPoliceInfo = hasPoliceNumber || policeContacts.Count > 0;
+                        var showActionsOnBosContact = !hasPoliceInfo && hasBosContact;
+                        var hasEinsatzTile = hasPoliceInfo || hasBosContact;
 
-                        @if (hasPoliceNumber)
+                        @if (hasPoliceInfo)
                         {
-                            <article class="monitor-info-tile monitor-info-tile--number">
+                            <article class="monitor-info-tile monitor-info-tile--police">
                                 <div class="monitor-info-tile-header">
-                                    <span class="monitor-info-tile-label">Einsatz</span>
-                                    @if (showActionsOnNumber)
+                                    <span class="monitor-info-tile-label">@(hasPoliceNumber ? $"Polizei #{einsatz.EinsatzNummer}" : "Polizei")</span>
+                                    <div class="monitor-info-tile-actions">
+                                        <button class="monitor-summary-edit-button" type="button" @onclick="OpenEditEinsatzModal" title="Einsatzdaten bearbeiten" aria-label="Einsatzdaten bearbeiten">
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                @if (policeContacts.Count > 0)
+                                {
+                                    @foreach (var contact in policeContacts)
                                     {
-                                        <div class="monitor-info-tile-actions">
-                                            <button class="monitor-summary-edit-button" type="button" @onclick="OpenEditEinsatzModal" title="Einsatzdaten bearbeiten" aria-label="Einsatzdaten bearbeiten">
-                                                <i class="bi bi-pencil" aria-hidden="true"></i>
-                                            </button>
+                                        var hasContactName = !string.IsNullOrWhiteSpace(contact.ContactName);
+                                        var hasServiceNumber = !string.IsNullOrWhiteSpace(contact.ServiceNumber);
+                                        var hasPhone = !string.IsNullOrWhiteSpace(contact.Phone);
+                                        <div class="monitor-info-contact">
+                                            @if (policeContacts.Count > 1)
+                                            {
+                                                <span class="monitor-info-tile-secondary">@contact.PersonName</span>
+                                            }
+                                            @if (hasContactName || hasServiceNumber)
+                                            {
+                                                <div class="monitor-info-contact-primary">
+                                                    @if (hasContactName)
+                                                    {
+                                                        <strong class="monitor-info-tile-value">@contact.ContactName</strong>
+                                                    }
+                                                    @if (hasServiceNumber)
+                                                    {
+                                                        <span class="monitor-summary-person-meta">#@contact.ServiceNumber</span>
+                                                    }
+                                                </div>
+                                            }
+                                            @if (hasPhone)
+                                            {
+                                                <span class="monitor-info-phone" aria-label="Telefonnummer @contact.Phone">
+                                                    <i class="bi bi-telephone" aria-hidden="true"></i>@contact.Phone
+                                                </span>
+                                            }
                                         </div>
                                     }
-                                </div>
-                                <strong class="monitor-info-tile-value">#@einsatz.EinsatzNummer</strong>
-                                @if (einsatz.AlarmierungsZeit.HasValue)
-                                {
-                                    <span class="monitor-info-tile-secondary">
-                                        <i class="bi bi-clock me-1" aria-hidden="true"></i>
-                                        Alarmierung @einsatz.AlarmierungsZeit.Value.ToString("HH:mm") Uhr
-                                    </span>
                                 }
                             </article>
                         }
 
-                        @for (var contactIndex = 0; contactIndex < policeContacts.Count; contactIndex++)
-                        {
-                            var contact = policeContacts[contactIndex];
-                            var attachActions = showActionsOnPoliceContact && contactIndex == 0;
-                            var hasContactName = !string.IsNullOrWhiteSpace(contact.ContactName);
-                            var hasServiceNumber = !string.IsNullOrWhiteSpace(contact.ServiceNumber);
-                            var hasPhone = !string.IsNullOrWhiteSpace(contact.Phone);
-                            <article class="monitor-info-tile">
-                                <div class="monitor-info-tile-header">
-                                    <span class="monitor-info-tile-label">@(policeContacts.Count > 1 ? $"Polizei · {contact.PersonName}" : "Polizeikontakt")</span>
-                                    @if (attachActions)
-                                    {
-                                        <div class="monitor-info-tile-actions">
-                                            <button class="monitor-summary-edit-button" type="button" @onclick="OpenEditEinsatzModal" title="Einsatzdaten bearbeiten" aria-label="Einsatzdaten bearbeiten">
-                                                <i class="bi bi-pencil" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                    }
-                                </div>
-                                <div class="monitor-info-contact">
-                                    @if (hasContactName || hasServiceNumber)
-                                    {
-                                        <div class="monitor-info-contact-primary">
-                                            @if (hasContactName)
-                                            {
-                                                <strong class="monitor-info-tile-value">@contact.ContactName</strong>
-                                            }
-                                            @if (hasServiceNumber)
-                                            {
-                                                <span class="monitor-summary-person-meta">#@contact.ServiceNumber</span>
-                                            }
-                                        </div>
-                                    }
-                                    @if (hasPhone)
-                                    {
-                                        <span class="monitor-info-phone" aria-label="Telefonnummer @contact.Phone">
-                                            <i class="bi bi-telephone" aria-hidden="true"></i>@contact.Phone
-                                        </span>
-                                    }
-                                </div>
-                            </article>
-                        }
-
-                        @if (hasBosContact)
+                        @if (bosContactDetails is { } bosContact)
                         {
                             <article class="monitor-info-tile">
                                 <div class="monitor-info-tile-header">
-                                    <span class="monitor-info-tile-label">BOS-Kontakt</span>
+                                    <span class="monitor-info-tile-label" title="@bosContact.HeaderLabel">@bosContact.HeaderLabel</span>
                                     @if (showActionsOnBosContact)
                                     {
                                         <div class="monitor-info-tile-actions">
@@ -142,7 +123,70 @@
                                         </div>
                                     }
                                 </div>
-                                <span class="monitor-info-tile-value">@bosContactSummary</span>
+                                <div class="monitor-info-contact">
+                                    @if (!string.IsNullOrWhiteSpace(bosContact.Zugfuehrer))
+                                    {
+                                        <strong class="monitor-info-tile-value">@bosContact.Zugfuehrer</strong>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(bosContact.Funkrufname))
+                                    {
+                                        @if (!string.IsNullOrWhiteSpace(bosContact.Zugfuehrer))
+                                        {
+                                            <span class="monitor-summary-person-meta">@bosContact.Funkrufname</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="monitor-info-tile-secondary">Funkrufname: @bosContact.Funkrufname</span>
+                                        }
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(bosContact.Aufgabenteilung))
+                                    {
+                                        <div class="monitor-summary-key-details">
+                                            <div class="monitor-summary-key-detail">
+                                                <span class="monitor-summary-key-label">Aufgabe</span>
+                                                <span class="monitor-summary-key-value">@bosContact.Aufgabenteilung</span>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </article>
+                        }
+
+                        @if (openCoordinationItems.Length > 0)
+                        {
+                            var firstOpenCoordinationItem = openCoordinationItems[0];
+                            <article class="monitor-info-tile monitor-info-tile--coordination">
+                                <div class="monitor-info-tile-header">
+                                    <span class="monitor-info-tile-label">Offene Abstimmungen</span>
+                                    <div class="monitor-info-tile-actions">
+                                        <button class="monitor-summary-edit-button"
+                                                type="button"
+                                                title="Abstimmungen bearbeiten"
+                                                aria-label="Offene Abstimmungen bearbeiten"
+                                                disabled="@_coordinationUpdateInProgress"
+                                                @onclick="OpenCoordinationModal">
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="monitor-coordination-checklist"
+                                     role="group"
+                                     aria-label="Offene Abstimmungen"
+                                     aria-busy="@_coordinationUpdateInProgress">
+                                    <label @key="firstOpenCoordinationItem.Id" class="monitor-coordination-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               checked="@false"
+                                               disabled="@_coordinationUpdateInProgress"
+                                               aria-label="@($"{firstOpenCoordinationItem.Label} abhaken")"
+                                               @onchange="() => SetCoordinationItemAsync(firstOpenCoordinationItem.Id, true, true)" />
+                                        <span>@firstOpenCoordinationItem.Label</span>
+                                    </label>
+                                    @if (openCoordinationItems.Length > 1)
+                                    {
+                                        <span class="monitor-coordination-more">+@(openCoordinationItems.Length - 1) weitere</span>
+                                    }
+                                </div>
                             </article>
                         }
 
@@ -204,16 +248,27 @@
                         @if (activeVi is not null)
                         {
                             var vi = activeVi;
-                            var hasPersonSummary = !string.IsNullOrWhiteSpace(vi.VollerName)
+                            var hasPersonName = !string.IsNullOrWhiteSpace(vi.Vorname)
+                                || !string.IsNullOrWhiteSpace(vi.Nachname);
+                            var hasSearchCharacteristics = !string.IsNullOrWhiteSpace(vi.Kleidung)
+                                || !string.IsNullOrWhiteSpace(vi.Beschreibung)
+                                || !string.IsNullOrWhiteSpace(vi.Besonderheiten);
+                            var hasPersonSummary = hasPersonName
                                 || !string.IsNullOrWhiteSpace(vi.Alter)
                                 || vi.Mobilitaet != MobilitaetsStatus.Unbekannt
-                                || vi.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja
+                                || hasSearchCharacteristics;
+                            var hasLastSeenDetails = !string.IsNullOrWhiteSpace(vi.ZuletztGesehenOrt)
+                                || !string.IsNullOrWhiteSpace(vi.ZuletztGesehenZeit)
+                                || !string.IsNullOrWhiteSpace(vi.ZuletztGesehenVon);
+                            var hasHealthSafetyDetails = vi.Orientierung != Einsatzueberwachung.Domain.Models.OrientierungsStatus.Unbekannt
+                                || vi.Suizidrisiko != Einsatzueberwachung.Domain.Models.RisikoStatus.Unbekannt
                                 || vi.Bewaffnet == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja
                                 || !string.IsNullOrWhiteSpace(vi.Vorerkrankungen)
-                                || !string.IsNullOrWhiteSpace(vi.Medikamente)
-                                || !string.IsNullOrWhiteSpace(vi.Kleidung)
-                                || !string.IsNullOrWhiteSpace(vi.ZuletztGesehenOrt)
-                                || !string.IsNullOrWhiteSpace(vi.ZuletztGesehenZeit);
+                                || !string.IsNullOrWhiteSpace(vi.Medikamente);
+                            var hasHealthTags = vi.Orientierung != Einsatzueberwachung.Domain.Models.OrientierungsStatus.Unbekannt
+                                || vi.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Nein
+                                || !string.IsNullOrWhiteSpace(vi.Vorerkrankungen)
+                                || !string.IsNullOrWhiteSpace(vi.Medikamente);
 
                             @if (hasPersonSummary)
                             {
@@ -253,106 +308,48 @@
                                         </div>
                                     </div>
                                     <div class="monitor-info-person-main">
-                                        @if (!string.IsNullOrWhiteSpace(vi.VollerName))
+                                        @if (hasPersonName)
                                         {
                                             <strong class="monitor-info-tile-value">@vi.VollerName</strong>
                                         }
-                                        @if (!string.IsNullOrWhiteSpace(vi.Alter) || vi.Mobilitaet != MobilitaetsStatus.Unbekannt)
+                                        @if (!string.IsNullOrWhiteSpace(vi.Alter))
                                         {
-                                            @if (!string.IsNullOrWhiteSpace(vi.VollerName))
-                                            {
-                                                <span aria-hidden="true">·</span>
-                                            }
-                                            <span class="monitor-summary-person-meta">
-                                                @if (!string.IsNullOrWhiteSpace(vi.Alter))
-                                                {
-                                                    <span>@vi.Alter Jahre</span>
-                                                }
-                                                @if (!string.IsNullOrWhiteSpace(vi.Alter) && vi.Mobilitaet != MobilitaetsStatus.Unbekannt)
-                                                {
-                                                    <span aria-hidden="true">·</span>
-                                                }
-                                                @if (vi.Mobilitaet != MobilitaetsStatus.Unbekannt)
-                                                {
-                                                    <span>@vi.Mobilitaet</span>
-                                                }
-                                            </span>
+                                            <span class="monitor-summary-person-meta">@vi.Alter</span>
                                         }
                                     </div>
-                                    @if (vi.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja
-                                        || vi.Bewaffnet == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja
-                                        || !string.IsNullOrWhiteSpace(vi.Vorerkrankungen)
-                                        || !string.IsNullOrWhiteSpace(vi.Medikamente))
+                                    @if (vi.Mobilitaet != MobilitaetsStatus.Unbekannt || hasSearchCharacteristics)
                                     {
-                                        <div class="monitor-info-person-indicators">
-                                            @if (vi.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja || vi.Bewaffnet == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja)
+                                        <div class="monitor-summary-key-details">
+                                            @if (vi.Mobilitaet != MobilitaetsStatus.Unbekannt)
                                             {
-                                                <div class="monitor-summary-alerts" aria-label="Gefahrenhinweise">
-                                                    @if (vi.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja)
-                                                    {
-                                                        <span class="monitor-summary-alert">
-                                                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>Suizidrisiko
-                                                        </span>
-                                                    }
-                                                    @if (vi.Bewaffnet == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja)
-                                                    {
-                                                        <span class="monitor-summary-alert">
-                                                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>Bewaffnet
-                                                        </span>
-                                                    }
+                                                <div class="monitor-summary-key-detail">
+                                                    <span class="monitor-summary-key-label">Mobilität</span>
+                                                    <span class="monitor-summary-key-value">@vi.Mobilitaet</span>
                                                 </div>
                                             }
-                                            @if (!string.IsNullOrWhiteSpace(vi.Vorerkrankungen) || !string.IsNullOrWhiteSpace(vi.Medikamente))
+                                            @if (!string.IsNullOrWhiteSpace(vi.Kleidung))
                                             {
-                                                <div class="monitor-info-tags">
-                                                    @if (!string.IsNullOrWhiteSpace(vi.Vorerkrankungen))
-                                                    {
-                                                        <span class="monitor-info-tag">@vi.Vorerkrankungen</span>
-                                                    }
-                                                    @if (!string.IsNullOrWhiteSpace(vi.Medikamente))
-                                                    {
-                                                        <span class="monitor-info-tag" aria-label="Medikamente: @vi.Medikamente">
-                                                            <i class="bi bi-capsule" aria-hidden="true"></i>@vi.Medikamente
-                                                        </span>
-                                                    }
+                                                <div class="monitor-summary-key-detail">
+                                                    <span class="monitor-summary-key-label">Kleidung</span>
+                                                    <span class="monitor-summary-key-value">@vi.Kleidung</span>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(vi.Beschreibung))
+                                            {
+                                                <div class="monitor-summary-key-detail">
+                                                    <span class="monitor-summary-key-label">Beschreibung</span>
+                                                    <span class="monitor-summary-key-value">@vi.Beschreibung</span>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(vi.Besonderheiten))
+                                            {
+                                                <div class="monitor-summary-key-detail">
+                                                    <span class="monitor-summary-key-label">Besonderheiten</span>
+                                                    <span class="monitor-summary-key-value">@vi.Besonderheiten</span>
                                                 </div>
                                             }
                                         </div>
                                     }
-                                    <div id="panel-details-@KnownPanels.Vermissten" class="monitor-info-details monitor-info-details--person" hidden="@(!_vermisstenDetailsExpanded)">
-                                        @if (_vermisstenDetailsExpanded)
-                                        {
-                                            <div class="row g-2 small">
-                                                @if (!string.IsNullOrWhiteSpace(vi.Kleidung))
-                                                {
-                                                    <div class="col-12">
-                                                        <div class="vermissten-field-label">Kleidung</div>
-                                                        <div class="vermissten-field-value">@vi.Kleidung</div>
-                                                    </div>
-                                                }
-                                                @if (!string.IsNullOrWhiteSpace(vi.ZuletztGesehenOrt) || !string.IsNullOrWhiteSpace(vi.ZuletztGesehenZeit))
-                                                {
-                                                    <div class="col-12">
-                                                        <div class="vermissten-field-label">Zuletzt gesehen</div>
-                                                        @if (!string.IsNullOrWhiteSpace(vi.ZuletztGesehenOrt))
-                                                        {
-                                                            <span class="vermissten-field-value">@vi.ZuletztGesehenOrt</span>
-                                                        }
-                                                        @if (!string.IsNullOrWhiteSpace(vi.ZuletztGesehenZeit))
-                                                        {
-                                                            <span class="vermissten-field-value"> · @vi.ZuletztGesehenZeit</span>
-                                                        }
-                                                    </div>
-                                                }
-                                                @if (vi.ZuletztAktualisiert.HasValue)
-                                                {
-                                                    <div class="col-12">
-                                                        <div class="text-muted monitor-timestamp-small">Stand: @vi.ZuletztAktualisiert.Value.ToString("dd.MM. HH:mm")</div>
-                                                    </div>
-                                                }
-                                            </div>
-                                        }
-                                    </div>
                                 </article>
                             }
                             else
@@ -389,6 +386,99 @@
                                     </button>
                                 </div>
                             }
+
+                            @if (hasLastSeenDetails)
+                            {
+                                <article class="monitor-info-tile monitor-info-tile--person-cluster"
+                                         aria-label="@($"Letzte Sichtung für {vi.VollerName}")">
+                                    <div class="monitor-info-tile-header">
+                                        <span class="monitor-info-tile-label">Letzte Sichtung</span>
+                                    </div>
+                                    <div class="monitor-summary-key-details">
+                                        @if (!string.IsNullOrWhiteSpace(vi.ZuletztGesehenOrt))
+                                        {
+                                            <div class="monitor-summary-key-detail">
+                                                <span class="monitor-summary-key-label">Ort</span>
+                                                <span class="monitor-summary-key-value">@vi.ZuletztGesehenOrt</span>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vi.ZuletztGesehenZeit))
+                                        {
+                                            <div class="monitor-summary-key-detail">
+                                                <span class="monitor-summary-key-label">Zeit</span>
+                                                <span class="monitor-summary-key-value">@vi.ZuletztGesehenZeit</span>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vi.ZuletztGesehenVon))
+                                        {
+                                            <div class="monitor-summary-key-detail">
+                                                <span class="monitor-summary-key-label">Gesehen von</span>
+                                                <span class="monitor-summary-key-value">@vi.ZuletztGesehenVon</span>
+                                            </div>
+                                        }
+                                        @if (vi.ZuletztAktualisiert.HasValue)
+                                        {
+                                            <div class="monitor-summary-key-detail monitor-summary-key-detail--muted">
+                                                <span class="monitor-summary-key-label">Stand</span>
+                                                <span class="monitor-summary-key-value">@vi.ZuletztAktualisiert.Value.ToString("dd.MM. HH:mm")</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </article>
+                            }
+
+                            @if (hasHealthSafetyDetails)
+                            {
+                                <article class="monitor-info-tile monitor-info-tile--person-cluster"
+                                         aria-label="@($"Gesundheit und Sicherheit für {vi.VollerName}")">
+                                    <div class="monitor-info-tile-header">
+                                        <span class="monitor-info-tile-label">Gesundheit &amp; Sicherheit</span>
+                                    </div>
+                                    @if (vi.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja
+                                        || vi.Bewaffnet == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja)
+                                    {
+                                        <div class="monitor-summary-alerts" aria-label="Gefahrenhinweise">
+                                            @if (vi.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja)
+                                            {
+                                                <span class="monitor-summary-alert">
+                                                    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>Suizidrisiko
+                                                </span>
+                                            }
+                                            @if (vi.Bewaffnet == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja)
+                                            {
+                                                <span class="monitor-summary-alert">
+                                                    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>Bewaffnet
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                    @if (hasHealthTags)
+                                    {
+                                        <div class="monitor-info-tags">
+                                            @if (vi.Orientierung != Einsatzueberwachung.Domain.Models.OrientierungsStatus.Unbekannt)
+                                            {
+                                                <span class="monitor-info-tag">
+                                                    Orientierung: @(vi.Orientierung == Einsatzueberwachung.Domain.Models.OrientierungsStatus.Eingeschraenkt ? "eingeschränkt" : "gut")
+                                                </span>
+                                            }
+                                            @if (vi.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Nein)
+                                            {
+                                                <span class="monitor-info-tag">Suizidrisiko: Nein</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(vi.Vorerkrankungen))
+                                            {
+                                                <span class="monitor-info-tag">@vi.Vorerkrankungen</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(vi.Medikamente))
+                                            {
+                                                <span class="monitor-info-tag" aria-label="Medikamente: @vi.Medikamente">
+                                                    <i class="bi bi-capsule" aria-hidden="true"></i>@vi.Medikamente
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </article>
+                            }
                         }
                         else
                         {
@@ -416,7 +506,13 @@
                         {
                             <article class="monitor-info-tile monitor-info-tile--weather">
                                 <div class="monitor-info-tile-header">
-                                    <span class="monitor-info-tile-label">Wetter</span>
+                                    <a class="monitor-info-tile-label monitor-weather-link"
+                                       href="/wetter"
+                                       title="Wetterseite öffnen"
+                                       aria-label="Wetterseite öffnen">
+                                        <span>Wetter</span>
+                                        <i class="bi bi-box-arrow-up-right monitor-weather-link-icon" aria-hidden="true"></i>
+                                    </a>
                                 </div>
                                 <div class="monitor-weather-summary">
                                     <div class="monitor-weather-reading monitor-weather-reading--temperature" aria-label="Temperatur" title="Temperatur">
@@ -721,7 +817,7 @@
                                 case KnownPanels.EinsatzInfo:
                                     {
                                     var policeContacts = GetPoliceContactSummaries();
-                                    var bosContactSummary = GetBosContactSummary();
+                                    var bosContactSummary = FormatBosContactSummary(GetBosContactDetails());
                                     <div class="monitor-summary-primary">
                                         <span class="monitor-summary-kicker">Polizei-Einsatznummer</span>
                                         @if (!string.IsNullOrWhiteSpace(EinsatzService.CurrentEinsatz.EinsatzNummer))
@@ -853,7 +949,6 @@
                                     <div id="note-expander-form" class="note-input-section mb-3">
                                         <div class="monitor-note-compose-controls mb-2">
                                             <div class="monitor-note-source-field">
-                                                <label class="note-source-label" for="monitor-note-source">Quelle</label>
                                                 <select id="monitor-note-source" class="form-select monitor-note-source-select" aria-label="Quelle der Nachricht" @bind="_newNoteSourceId">
                                                     <option value="einsatzleitung">Einsatzleitung (EL)</option>
                                                     @foreach (var team in EinsatzService.Teams.OrderBy(t => t.TeamName))
@@ -1538,6 +1633,71 @@
             </div>
         </div>
     }
+}
+
+@if (_showCoordinationModal)
+{
+    var modalCoordinationItems = GetCoordinationItems();
+    var policeCoordinationItems = modalCoordinationItems.Where(item => !item.IsBos).ToArray();
+    var bosCoordinationItems = modalCoordinationItems.Where(item => item.IsBos).ToArray();
+    <div class="modal-overlay">
+        <button type="button" class="modal-overlay-dismiss" @onclick="CloseCoordinationModal" aria-label="Dialog schließen"></button>
+        <div id="coordination-modal"
+             class="modal-modern modal-modern--640"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="coordination-modal-title"
+             @onclick:stopPropagation="true">
+            <div class="modal-modern-header">
+                <h3 id="coordination-modal-title"><i class="bi bi-list-check me-2" aria-hidden="true"></i>Offene Abstimmungen</h3>
+                <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="CloseCoordinationModal">Schließen</button>
+            </div>
+            <div class="modal-modern-body">
+                @if (_editEinsatzIsError && !string.IsNullOrWhiteSpace(_editEinsatzMessage))
+                {
+                    <div class="alert alert-danger py-2" role="alert">@_editEinsatzMessage</div>
+                }
+
+                <section class="monitor-coordination-modal-section" aria-labelledby="coordination-police-title">
+                    <h4 id="coordination-police-title" class="h6">Polizei</h4>
+                    @foreach (var item in policeCoordinationItems)
+                    {
+                        <label @key="item.Id" class="monitor-coordination-check">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   checked="@item.IsConfirmed"
+                                   disabled="@_coordinationUpdateInProgress"
+                                   aria-label="@($"{item.Label} {(item.IsConfirmed ? "wieder öffnen" : "als erledigt markieren")}")"
+                                   @onchange="args => SetCoordinationItemFromModalAsync(item.Id, args)" />
+                            <span>@item.Label</span>
+                        </label>
+                    }
+                </section>
+
+                @if (bosCoordinationItems.Length > 0)
+                {
+                    <section class="monitor-coordination-modal-section" aria-labelledby="coordination-bos-title">
+                        <h4 id="coordination-bos-title" class="h6">BOS / Feuerwehr</h4>
+                        @foreach (var item in bosCoordinationItems)
+                        {
+                            <label @key="item.Id" class="monitor-coordination-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       checked="@item.IsConfirmed"
+                                       disabled="@_coordinationUpdateInProgress"
+                                       aria-label="@($"{item.Label} {(item.IsConfirmed ? "wieder öffnen" : "als erledigt markieren")}")"
+                                       @onchange="args => SetCoordinationItemFromModalAsync(item.Id, args)" />
+                                <span>@item.Label</span>
+                            </label>
+                        }
+                    </section>
+                }
+            </div>
+            <div class="modal-modern-footer">
+                <button class="btn btn-primary" type="button" @onclick="CloseCoordinationModal">Fertig</button>
+            </div>
+        </div>
+    </div>
 }
 
 @if (_showEditEinsatzModal)

@@ -51,7 +51,9 @@ public partial class EinsatzMonitor
     private bool _showTeamModal;
     private bool _showCloseMissionModal;
     private bool _showPauseResetModal;
+    private bool _showCoordinationModal;
     private bool _showEditEinsatzModal;
+    private bool _coordinationUpdateInProgress;
     private bool _showVermisstenModal;
     private string _vermisstenMessage = string.Empty;
     private bool _vermisstenIsError;
@@ -349,6 +351,168 @@ public partial class EinsatzMonitor
         string? ServiceNumber,
         string? Phone);
 
+    private sealed record BosContactSummary(
+        string? Einheit,
+        string? Zugfuehrer,
+        string? Funkrufname,
+        string? Aufgabenteilung)
+    {
+        public bool HasData =>
+            !string.IsNullOrWhiteSpace(Einheit)
+            || !string.IsNullOrWhiteSpace(Zugfuehrer)
+            || !string.IsNullOrWhiteSpace(Funkrufname)
+            || !string.IsNullOrWhiteSpace(Aufgabenteilung);
+
+        public string HeaderLabel => string.IsNullOrWhiteSpace(Einheit) ? "BOS-Kontakt" : Einheit;
+    }
+
+    private enum CoordinationItemId
+    {
+        PoliceVermisstenmeldungAufgenommen,
+        PoliceKoordinationBesprochen,
+        PoliceSuchabschnittAbgestimmt,
+        PoliceRueckmeldepflichtVereinbart,
+        PoliceDatenschutzGeklaert,
+        BosAbschnittAbgestimmt,
+        BosRessourcenBesprochen
+    }
+
+    private sealed record CoordinationChecklistItem(
+        CoordinationItemId Id,
+        string Label,
+        bool IsBos,
+        bool IsConfirmed);
+
+    private IReadOnlyList<CoordinationChecklistItem> GetCoordinationItems()
+    {
+        var einsatz = EinsatzService.CurrentEinsatz;
+        var legacyContacts = einsatz.EinsatzkontakteMigriert
+            ? new List<VermisstenInfo>()
+            : einsatz.Vermisste ?? new();
+        var items = new List<CoordinationChecklistItem>();
+
+        bool IsConfirmed(bool currentValue, Func<VermisstenInfo, bool> legacyValue) =>
+            currentValue || legacyContacts.Any(legacyValue);
+
+        void Add(CoordinationItemId id, string label, bool isBos, bool isConfirmed) =>
+            items.Add(new CoordinationChecklistItem(id, label, isBos, isConfirmed));
+
+        Add(
+            CoordinationItemId.PoliceVermisstenmeldungAufgenommen,
+            "Vermisstenmeldung aufgenommen",
+            false,
+            IsConfirmed(einsatz.PolizeiVermisstenmeldungAufgenommen, person => person.PolizeiVermisstenmeldungAufgenommen));
+        Add(
+            CoordinationItemId.PoliceKoordinationBesprochen,
+            "Einsatzkoordination besprochen",
+            false,
+            IsConfirmed(einsatz.PolizeiKoordinationBesprochen, person => person.PolizeiKoordinationBesprochen));
+        Add(
+            CoordinationItemId.PoliceSuchabschnittAbgestimmt,
+            "Suchabschnitte abgestimmt",
+            false,
+            IsConfirmed(einsatz.PolizeiSuchabschnittAbgestimmt, person => person.PolizeiSuchabschnittAbgestimmt));
+        Add(
+            CoordinationItemId.PoliceRueckmeldepflichtVereinbart,
+            "Rückmeldepflicht vereinbart",
+            false,
+            IsConfirmed(einsatz.PolizeiRueckmeldepflichtVereinbart, person => person.PolizeiRueckmeldepflichtVereinbart));
+        Add(
+            CoordinationItemId.PoliceDatenschutzGeklaert,
+            "Datenschutz (Personendaten) geklärt",
+            false,
+            IsConfirmed(einsatz.PolizeiDatenschutzGeklaert, person => person.PolizeiDatenschutzGeklaert));
+
+        if (!string.IsNullOrWhiteSpace(GetBosContactDetails()?.Einheit))
+        {
+            Add(
+                CoordinationItemId.BosAbschnittAbgestimmt,
+                "Einsatzabschnitt abgestimmt",
+                true,
+                IsConfirmed(einsatz.BosAbschnittAbgestimmt, person => person.BosAbschnittAbgestimmt));
+            Add(
+                CoordinationItemId.BosRessourcenBesprochen,
+                "Ressourcen besprochen (Wärmebild etc.)",
+                true,
+                IsConfirmed(einsatz.BosRessourcenBesprochen, person => person.BosRessourcenBesprochen));
+        }
+
+        return items;
+    }
+
+    private void OpenCoordinationModal()
+    {
+        _editEinsatzMessage = string.Empty;
+        _editEinsatzIsError = false;
+        _showCoordinationModal = true;
+    }
+
+    private void CloseCoordinationModal() => _showCoordinationModal = false;
+
+    private Task SetCoordinationItemFromModalAsync(CoordinationItemId item, ChangeEventArgs args)
+    {
+        if (args.Value is not bool isConfirmed)
+            throw new InvalidOperationException("Der Abstimmungsstatus konnte nicht gelesen werden.");
+
+        return SetCoordinationItemAsync(item, isConfirmed, delayNextSummaryItem: false);
+    }
+
+    private async Task SetCoordinationItemAsync(
+        CoordinationItemId item,
+        bool isConfirmed,
+        bool delayNextSummaryItem)
+    {
+        if (_coordinationUpdateInProgress)
+            return;
+
+        _coordinationUpdateInProgress = true;
+        try
+        {
+            PopulateEditEinsatzForm();
+            switch (item)
+            {
+                case CoordinationItemId.PoliceVermisstenmeldungAufgenommen:
+                    _editEinsatzForm.PolizeiVermisstenmeldungAufgenommen = isConfirmed;
+                    break;
+                case CoordinationItemId.PoliceKoordinationBesprochen:
+                    _editEinsatzForm.PolizeiKoordinationBesprochen = isConfirmed;
+                    break;
+                case CoordinationItemId.PoliceSuchabschnittAbgestimmt:
+                    _editEinsatzForm.PolizeiSuchabschnittAbgestimmt = isConfirmed;
+                    break;
+                case CoordinationItemId.PoliceRueckmeldepflichtVereinbart:
+                    _editEinsatzForm.PolizeiRueckmeldepflichtVereinbart = isConfirmed;
+                    break;
+                case CoordinationItemId.PoliceDatenschutzGeklaert:
+                    _editEinsatzForm.PolizeiDatenschutzGeklaert = isConfirmed;
+                    break;
+                case CoordinationItemId.BosAbschnittAbgestimmt:
+                    _editEinsatzForm.BosAbschnittAbgestimmt = isConfirmed;
+                    break;
+                case CoordinationItemId.BosRessourcenBesprochen:
+                    _editEinsatzForm.BosRessourcenBesprochen = isConfirmed;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(item), item, "Unbekannter Abstimmungspunkt.");
+            }
+
+            await SaveEditEinsatzAsync();
+            if (_editEinsatzIsError)
+            {
+                if (!_showCoordinationModal)
+                    _showEditEinsatzModal = true;
+                return;
+            }
+
+            if (delayNextSummaryItem)
+                await Task.Delay(TimeSpan.FromMilliseconds(650));
+        }
+        finally
+        {
+            _coordinationUpdateInProgress = false;
+        }
+    }
+
     private IReadOnlyList<PoliceContactSummary> GetPoliceContactSummaries()
     {
         var einsatz = EinsatzService.CurrentEinsatz;
@@ -384,20 +548,36 @@ public partial class EinsatzMonitor
             .ToArray();
     }
 
-    private string GetBosContactSummary()
+    private BosContactSummary? GetBosContactDetails()
     {
         var einsatz = EinsatzService.CurrentEinsatz;
-        var globalContact = FormatContact(einsatz.BosEinheit, einsatz.BosZugfuehrer, einsatz.BosFunkrufname, einsatz.BosAufgabenteilung);
-        if (!string.IsNullOrWhiteSpace(globalContact) || einsatz.EinsatzkontakteMigriert)
+        var globalContact = new BosContactSummary(
+            einsatz.BosEinheit,
+            einsatz.BosZugfuehrer,
+            einsatz.BosFunkrufname,
+            einsatz.BosAufgabenteilung);
+        if (globalContact.HasData || einsatz.EinsatzkontakteMigriert)
         {
-            return globalContact;
+            return globalContact.HasData ? globalContact : null;
         }
 
         return einsatz.Vermisste?
-            .Select(person => FormatContact(person.BosEinheit, person.BosZugfuehrer, person.BosFunkrufname, person.BosAufgabenteilung))
-            .FirstOrDefault(contact => !string.IsNullOrWhiteSpace(contact))
-            ?? string.Empty;
+            .Select(person => new BosContactSummary(
+                person.BosEinheit,
+                person.BosZugfuehrer,
+                person.BosFunkrufname,
+                person.BosAufgabenteilung))
+            .FirstOrDefault(contact => contact.HasData);
     }
+
+    private static string FormatBosContactSummary(BosContactSummary? contact) =>
+        contact is null
+            ? string.Empty
+            : FormatContact(
+                contact.Einheit ?? string.Empty,
+                contact.Zugfuehrer ?? string.Empty,
+                contact.Funkrufname ?? string.Empty,
+                contact.Aufgabenteilung ?? string.Empty);
 
     private static string FormatContact(params string[] values) =>
         string.Join(" · ", values.Where(value => !string.IsNullOrWhiteSpace(value)));
@@ -1868,6 +2048,12 @@ public partial class EinsatzMonitor
 
     private void OpenEditEinsatzModal()
     {
+        PopulateEditEinsatzForm();
+        _showEditEinsatzModal = true;
+    }
+
+    private void PopulateEditEinsatzForm()
+    {
         var e = EinsatzService.CurrentEinsatz;
         var legacyContacts = e.EinsatzkontakteMigriert ? new List<VermisstenInfo>() : e.Vermisste ?? new();
         _editEinsatzForm.IstEinsatz = e.IstEinsatz;
@@ -1896,7 +2082,6 @@ public partial class EinsatzMonitor
         _editEinsatzForm.Bemerkungen = e.ExportPfad;
         _editEinsatzMessage = string.Empty;
         _editEinsatzIsError = false;
-        _showEditEinsatzModal = true;
     }
 
     private void CloseEditEinsatzModal()

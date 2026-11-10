@@ -1107,6 +1107,108 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     overflow-wrap: anywhere;
 }
 
+.monitor-coordination-checklist {
+    display: grid;
+    gap: 0.25rem;
+    margin-top: 0.4rem;
+}
+
+.monitor-coordination-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-height: 44px;
+    margin: 0;
+    color: var(--ui-tile-strong-text);
+    font-size: 0.875rem;
+    line-height: 1.3;
+    cursor: pointer;
+}
+
+.monitor-coordination-check .form-check-input {
+    flex: 0 0 auto;
+    margin: 0.15rem 0 0;
+}
+
+.monitor-coordination-check span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.monitor-coordination-more {
+    display: block;
+    padding: 0 0.25rem;
+    color: var(--ui-tile-muted-text);
+    font-size: 0.8rem;
+    line-height: 1.2;
+}
+
+.monitor-coordination-modal-section {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.monitor-coordination-modal-section + .monitor-coordination-modal-section {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--ui-border);
+}
+
+.monitor-coordination-modal-section h4 {
+    margin-bottom: 0.25rem;
+    color: var(--ui-heading);
+}
+
+.monitor-summary-key-detail--muted .monitor-summary-key-label,
+.monitor-summary-key-detail--muted .monitor-summary-key-value {
+    color: var(--ui-tile-muted-text);
+    font-size: 0.72rem;
+}
+
+.monitor-weather-link {
+    align-self: stretch;
+    min-height: 44px;
+    color: var(--ui-tile-muted-text);
+    text-decoration: none;
+}
+
+.monitor-weather-link:hover,
+.monitor-weather-link:focus-visible {
+    color: var(--ui-text);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.monitor-weather-link:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 1px;
+    border-radius: 0.25rem;
+}
+
+.monitor-weather-link-icon {
+    flex: 0 0 auto;
+    opacity: 0;
+    transition: opacity 120ms ease-out;
+}
+
+.monitor-info-tile:hover .monitor-weather-link-icon,
+.monitor-info-tile:focus-within .monitor-weather-link-icon {
+    opacity: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .monitor-weather-link {
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .monitor-weather-link-icon {
+        transition: none;
+    }
+}
+
 .monitor-summary-person-tabs {
     margin-bottom: 0.35rem;
 }
