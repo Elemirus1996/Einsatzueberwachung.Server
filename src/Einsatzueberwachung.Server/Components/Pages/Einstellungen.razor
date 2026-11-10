@@ -1483,6 +1483,123 @@
                 </div>
 
                 <div class="cfg-section">
+                    <div class="cfg-section-title-row">
+                        <h3 class="cfg-sub-header"><i class="bi bi-hdd me-1"></i>Speicher &amp; Server-Backups</h3>
+                        @if (_speicher?.BelegtProzent is double belegt)
+                        {
+                            <span class="cfg-inline-badge @SpeicherBelegungKlasse">@belegt.ToString("0") % belegt</span>
+                        }
+                    </div>
+
+                    @if (_speicher is { GesamtBytes: long gesamt, FreiBytes: long frei })
+                    {
+                        <div class="progress cfg-speicher-balken" role="progressbar" aria-label="Belegter Speicher"
+                             aria-valuenow="@((_speicher.BelegtProzent ?? 0).ToString("0"))" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar @SpeicherBalkenKlasse"
+                                 style="width: @((_speicher.BelegtProzent ?? 0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                        <p class="cfg-help">
+                            Frei: <strong>@SpeicherVerwaltungService.FormatGroesse(frei)</strong> von @SpeicherVerwaltungService.FormatGroesse(gesamt).
+                            Ist die Platte voll, startet der Server nicht mehr.
+                        </p>
+                    }
+
+                    @if (_speicherLaedt && _speicher is null)
+                    {
+                        <p class="cfg-help"><span class="spinner-border spinner-border-sm me-1"></span>Speicher wird gelesen…</p>
+                    }
+
+                    @if (_speicher is not null)
+                    {
+                        @foreach (var (bereich, titel, hilfe) in SpeicherBereiche)
+                        {
+                            var eintraege = SpeicherEintraege(bereich).ToList();
+                            var summe = eintraege.Sum(e => e.Bytes);
+                            <div class="cfg-speicher-bereich">
+                                <div class="cfg-section-title-row">
+                                    <strong>@titel</strong>
+                                    <span class="cfg-inline-badge muted">@eintraege.Count · @SpeicherVerwaltungService.FormatGroesse(summe)</span>
+                                </div>
+                                <span class="cfg-help">@hilfe</span>
+
+                                @if (_speicher.Fehler.TryGetValue(bereich, out var bereichFehler))
+                                {
+                                    <div class="cfg-inline-status is-error">@bereichFehler</div>
+                                }
+                                else if (eintraege.Count == 0)
+                                {
+                                    <p class="cfg-help">Nichts vorhanden.</p>
+                                }
+                                else
+                                {
+                                    <table class="table table-sm align-middle cfg-speicher-tabelle">
+                                        <thead>
+                                            <tr>
+                                                <th>
+                                                    @if (eintraege.Any(e => !e.Geschuetzt))
+                                                    {
+                                                        <button type="button" class="cfg-btn cfg-btn-ghost cfg-btn-sm" title="Alle löschbaren an-/abwählen"
+                                                                @onclick="() => SpeicherAlleUmschalten(bereich)">
+                                                            <i class="bi bi-check2-all"></i>
+                                                        </button>
+                                                    }
+                                                </th>
+                                                <th>Name</th><th>Stand</th><th class="text-end">Größe</th><th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var e in eintraege)
+                                            {
+                                                <tr class="@(SpeicherAusgewaehlt(e) ? "table-danger" : "")">
+                                                    <td>
+                                                        <input type="checkbox" class="form-check-input" disabled="@e.Geschuetzt"
+                                                               aria-label="@($"{e.Name} auswählen")"
+                                                               checked="@SpeicherAusgewaehlt(e)"
+                                                               @onchange="ev => SpeicherUmschalten(e, ev.Value is true)" />
+                                                    </td>
+                                                    <td><code>@e.Name</code></td>
+                                                    <td>@Ortszeit.AusUtc(e.GeaendertUtc).ToString("dd.MM.yyyy HH:mm")</td>
+                                                    <td class="text-end">@SpeicherVerwaltungService.FormatGroesse(e.Bytes)</td>
+                                                    <td>
+                                                        @if (e.Geschuetzt)
+                                                        {
+                                                            <span class="cfg-inline-badge ok"><i class="bi bi-shield-lock"></i> @e.Hinweis</span>
+                                                        }
+                                                        else if (e.Hinweis is not null)
+                                                        {
+                                                            <span class="cfg-help">@e.Hinweis</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
+                            </div>
+                        }
+                    }
+
+                    <div class="cfg-actions mt-2">
+                        <button type="button" class="cfg-btn cfg-btn-ghost" disabled="@(_speicherLaedt || _speicherLoeschtBusy)" @onclick="AktualisiereSpeicherAsync">
+                            <i class="bi bi-arrow-clockwise"></i> Aktualisieren
+                        </button>
+                        <button type="button" class="cfg-btn cfg-btn-ghost-danger"
+                                disabled="@(_speicherAuswahl.Count == 0 || _speicherLoeschtBusy || _updateStatus.IsInstalling)"
+                                @onclick="LoescheSpeicherAuswahlAsync">
+                            <i class="bi bi-trash"></i>
+                            @(_speicherAuswahl.Count == 0
+                                ? "Auswahl löschen"
+                                : $"{_speicherAuswahl.Count} löschen ({SpeicherVerwaltungService.FormatGroesse(SpeicherAuswahlBytes)})")
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(_speicherMeldung))
+                    {
+                        <div class="cfg-inline-status @(_speicherFehler ? "is-error" : "is-ok") mt-2" role="status">@_speicherMeldung</div>
+                    }
+                </div>
+
+                <div class="cfg-section">
                     <h3 class="cfg-sub-header"><i class="bi bi-upload me-1"></i>Daten-Imports</h3>
                     <div class="cfg-field">
                         <label class="cfg-label">SessionData (JSON)</label>

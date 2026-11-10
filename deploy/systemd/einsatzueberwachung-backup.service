@@ -5,6 +5,8 @@ After=network.target
 [Service]
 Type=oneshot
 ExecStart=/opt/einsatzueberwachung/scripts/backup.sh
-User=root
-Group=root
-Environment=RETENTION_DAYS=14
+# Als App-Benutzer, damit Backups in Einstellungen → Wartung geloescht werden koennen
+User=einsatz
+Group=einsatz
+Environment=RETENTION_COUNT=5
+Environment=MIN_FREE_GB=15

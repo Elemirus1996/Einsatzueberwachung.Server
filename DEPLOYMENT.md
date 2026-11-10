@@ -64,13 +64,42 @@ Erwartung:
 
 ## 5. Backup und Restore
 
-Manuelles Backup ausfuehren:
+Manuelles Backup ausfuehren (als App-Benutzer):
 
 ```bash
-sudo /opt/einsatzueberwachung/scripts/backup.sh
+sudo systemctl start einsatzueberwachung-backup.service
+journalctl -u einsatzueberwachung-backup -n 5 --no-pager
 ```
 
-Backups liegen unter `/opt/einsatzueberwachung/backups/`.
+Backups liegen unter `/opt/einsatzueberwachung/backups/`. Pro Nacht entsteht ein Archiv; vor jedem Lauf werden alte
+geloescht, sodass `RETENTION_COUNT` (Standard 5) Backups bleiben. Ist weniger als `MIN_FREE_GB` (Standard 15) frei,
+bricht das Backup ab, statt die Platte vollzuschreiben. SQLite-Datenbanken werden mit `sqlite3 .backup` konsistent
+gesichert (Paket `sqlite3`). Heruntergeladene Update-Pakete (`data/updates`) werden nicht mitgesichert.
+
+Werte aendern, ohne die Unit-Datei anzufassen:
+
+```bash
+sudo systemctl edit einsatzueberwachung-backup.service
+# [Service]
+# Environment=RETENTION_COUNT=7
+```
+
+**Speicher aufraeumen im Browser:** Einstellungen → Wartung → „Speicher & Server-Backups“ zeigt den belegten
+Speicher und listet Server-Backups, Update-Reste (`/opt/einsatzueberwachung/updates`) und heruntergeladene Updates.
+Ausgewaehlte Eintraege lassen sich dort loeschen; das neueste Backup und der letzte Rollback-Stand sind geschuetzt.
+Ab 90 % Belegung (oder unter 1 GB frei) erscheint eine Warnung. Andere Verzeichnisse lassen sich per
+`EINSATZUEBERWACHUNG_BACKUP_DIR` bzw. `EINSATZUEBERWACHUNG_UPDATE_DIR` in der Server-Unit setzen.
+
+Umstellung bestehender Server (Backups liefen frueher als `root`):
+
+```bash
+sudo apt-get install -y sqlite3
+sudo cp deploy/scripts/backup.sh deploy/scripts/apply-update.sh /opt/einsatzueberwachung/scripts/
+sudo cp deploy/systemd/einsatzueberwachung-backup.service /etc/systemd/system/
+sudo rm -f /etc/systemd/system/einsatzueberwachung-backup.service.d/override.conf   # alter RETENTION_DAYS-Override, falls vorhanden
+sudo chown -R einsatz:einsatz /opt/einsatzueberwachung/backups /opt/einsatzueberwachung/updates
+sudo systemctl daemon-reload
+```
 
 Wichtige Laufzeitordner:
 
@@ -86,7 +115,9 @@ sudo systemctl stop einsatzueberwachung-server.service einsatzueberwachung-mobil
 sudo mkdir -p /tmp/einsatz-restore
 sudo tar -xzf /opt/einsatzueberwachung/backups/einsatz-backup-YYYYMMDD-HHMMSS.tar.gz -C /tmp/einsatz-restore
 sudo rsync -a /tmp/einsatz-restore/server/ /opt/einsatzueberwachung/server/
+sudo rsync -a /tmp/einsatz-restore/data/ /opt/einsatzueberwachung/data/
 sudo rsync -a /tmp/einsatz-restore/databases/ /opt/einsatzueberwachung/
+sudo chown -R einsatz:einsatz /opt/einsatzueberwachung/server /opt/einsatzueberwachung/data
 sudo systemctl start einsatzueberwachung-server.service einsatzueberwachung-mobile.service
 ```
 
