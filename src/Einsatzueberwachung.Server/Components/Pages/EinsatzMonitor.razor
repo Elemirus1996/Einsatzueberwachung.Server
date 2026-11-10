@@ -88,7 +88,7 @@
                                                    DetailsExpanded="_wetterDetailsExpanded"
                                                    UsingFallback="_monitorWeatherUsingFallback"
                                                    LoadedAtLocal="_monitorWeatherLoadedAtLocal"
-                                                   Error="_monitorWeatherError" />
+                                                   Error="@_monitorWeatherError" />
                         }
                     }
                 </div>
@@ -212,6 +212,18 @@
                                         <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                     </a>
                                 }
+                                else if (panel.PanelId == KnownPanels.Suchgebiete)
+                                {
+                                    <a class="dashboard-panel-title-popout"
+                                       href="/einsatz-karte"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       aria-label="Suchgebiete auf der Karte in neuem Fenster öffnen"
+                                       title="Suchgebiete auf der Karte öffnen">
+                                        <span>@PanelLabel(panel.PanelId)</span>
+                                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                    </a>
+                                }
                                 else
                                 {
                                     @PanelLabel(panel.PanelId)
@@ -297,7 +309,7 @@
                                 case KnownPanels.EinsatzInfo:
                                     <MonitorEinsatzInfoPanel Einsatz="EinsatzService.CurrentEinsatz"
                                                              PoliceContacts="GetPoliceContactSummaries()"
-                                                             BosContactSummary="FormatBosContactSummary(GetBosContactDetails())"
+                                                             BosContactSummary="@FormatBosContactSummary(GetBosContactDetails())"
                                                              TeamCount="EinsatzService.Teams.Count"
                                                              DetailsExpanded="_einsatzInfoDetailsExpanded" />
                                     break;
@@ -306,7 +318,7 @@
                                     <MonitorTeamsPanel HasTeams="@(EinsatzService.Teams.Count > 0)"
                                                        Items="GetMonitorTeamCardItems()"
                                                        DroneList="_droneList"
-                                                       StatusMessage="_teamStatusMessage"
+                                                       StatusMessage="@_teamStatusMessage"
                                                        StatusIsError="_teamStatusIsError"
                                                        OnClearStatus="ClearTeamStatusMessage"
                                                        OnStart="StartTeamAsync"
@@ -338,7 +350,7 @@
                                                          IsLoading="_monitorWeatherLoading"
                                                          UsingFallback="_monitorWeatherUsingFallback"
                                                          LoadedAtLocal="_monitorWeatherLoadedAtLocal"
-                                                         Error="_monitorWeatherError" />
+                                                         Error="@_monitorWeatherError" />
                                     break;
 
                                 case KnownPanels.Suchgebiete:
@@ -385,7 +397,7 @@
                            SelectedPersonnelCount="SelectedPersonnelNames.Count"
                            SelectedDogCount="SelectedDogNames.Count"
                            NotesCount="EinsatzService.GlobalNotes.Count"
-                           Error="_closeMissionModalError"
+                           Error="@_closeMissionModalError"
                            OnClose="CloseCloseMissionModal"
                            OnConfirm="ConfirmCloseMissionAsync"
                            OnPersonnelSelectionChanged="TogglePersonnelSelection"
@@ -399,7 +411,7 @@
 <MonitorCoordinationModal IsOpen="_showCoordinationModal"
                           Items="GetCoordinationItems()"
                           IsUpdating="_coordinationUpdateInProgress"
-                          ErrorMessage="_editEinsatzMessage"
+                          ErrorMessage="@_editEinsatzMessage"
                           IsError="_editEinsatzIsError"
                           OnClose="CloseCoordinationModal"
                           OnToggle="CompleteCoordinationFromModalAsync" />
@@ -408,13 +420,13 @@
                           Form="_editEinsatzForm"
                           EinsatzleiterOptions="SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(person => person.IsActive && person.Skills.HasFlag(PersonalSkills.Einsatzleiter))).ToArray()"
                           FuehrungsassistentOptions="SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(person => person.IsActive && person.Skills.HasFlag(PersonalSkills.Fuehrungsassistent))).ToArray()"
-                          Message="_editEinsatzMessage"
+                          Message="@_editEinsatzMessage"
                           IsError="_editEinsatzIsError"
                           OnClose="CloseEditEinsatzModal"
                           OnSave="SaveEditEinsatzAsync" />
 <MonitorVermisstenEditor IsOpen="_showVermisstenModal"
                          Model="_vForm"
-                         Message="_vermisstenMessage"
+                         Message="@_vermisstenMessage"
                          IsError="_vermisstenIsError"
                          OnClose="CloseVermisstenModal"
                          OnSave="SaveVermisstenAsync" />
@@ -430,7 +442,7 @@
                          AvailableDrones="AvailableDrones"
                          SearchAreas="EinsatzService.CurrentEinsatz.SearchAreas"
                          Collars="CollarTrackingService.Collars"
-                         Message="_teamFormMessage"
+                         Message="@_teamFormMessage"
                          IsError="_teamFormIsError"
                          OnClose="CloseTeamModal"
                          OnSave="SaveTeamAsync"
@@ -444,12 +456,12 @@
                           Teams="EinsatzService.Teams"
                           @bind-TargetId="_teamMessageTargetId"
                           @bind-Text="_teamMessageText"
-                          Feedback="_teamMessageFeedback"
+                          Feedback="@_teamMessageFeedback"
                           OnSend="SendTeamMessage"
                           OnClose="CloseTeamMessageModal" />
 
 <MonitorTeamMobileDialog IsOpen="_showTeamMobileModal"
-                         FullUrl="_teamMobileFullUrl"
-                         QrDataUrl="_teamMobileQrDataUrl"
+                         FullUrl="@_teamMobileFullUrl"
+                         QrDataUrl="@_teamMobileQrDataUrl"
                          ReadableCode='@(string.IsNullOrEmpty(TeamMobileTokenService.CurrentMasterToken) ? string.Empty : TeamCodeLesbar(TeamMobileTokenService.CurrentMasterToken))'
                          OnClose="CloseTeamMobileModal" />

@@ -7,7 +7,11 @@ else
     <div class="suchgebiete-list">
         @foreach (var item in Items)
         {
-            <div @key="item.Area.Id" class="suchgebiet-row @(item.Area.IsCompleted ? "suchgebiet-done" : "")">
+            <a @key="item.Area.Id"
+               class="suchgebiet-row suchgebiet-row--link @(item.Area.IsCompleted ? "suchgebiet-done" : "")"
+               href="@MonitorMapRoutes.SearchAreaFocusUrl(item.Area.Id)"
+               title="Auf Karte anzeigen"
+               aria-label="@($"{item.Area.Name} auf der Karte anzeigen")">
                 <span class="suchgebiet-color-dot" style="background:@item.Area.Color"></span>
                 <div class="suchgebiet-info">
                     <div class="suchgebiet-name">@item.Area.Name</div>
@@ -32,7 +36,7 @@ else
                         </span>
                     }
                 </div>
-            </div>
+            </a>
         }
     </div>
 }

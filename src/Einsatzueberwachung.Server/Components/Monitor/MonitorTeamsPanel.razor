@@ -22,7 +22,7 @@ else
             <div @key="item.Team.TeamId" class="team-order-item" data-team-id="@item.Team.TeamId">
                 <TeamCard Team="item.Team"
                           IsDogConflict="item.IsDogConflict"
-                          ConflictingTeamName="item.ConflictingTeamName"
+                          ConflictingTeamName="@item.ConflictingTeamName"
                           DroneList="DroneList"
                           IsExpanded="item.IsExpanded"
                           LastCollarLocation="item.LastCollarLocation"

@@ -417,7 +417,7 @@
     private void NavigateToSearchArea()
     {
         if (!string.IsNullOrWhiteSpace(Team.SearchAreaId))
-            Navigation.NavigateTo($"/einsatz-karte?focusAreaId={Uri.EscapeDataString(Team.SearchAreaId)}");
+            Navigation.NavigateTo(MonitorMapRoutes.SearchAreaFocusUrl(Team.SearchAreaId));
     }
 
     private void NavigateToCollar()
