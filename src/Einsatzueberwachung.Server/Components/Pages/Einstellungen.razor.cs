@@ -180,6 +180,7 @@ public partial class Einstellungen
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        await LadeSpeicherBeiBedarfAsync();
         if (!firstRender) return;
         // Zertifikat abfragen und VPN-Status lesen kann einige Sekunden dauern – nicht beim ersten Rendern blockieren
         _ = LoadLiveTrackingCodeAsync();

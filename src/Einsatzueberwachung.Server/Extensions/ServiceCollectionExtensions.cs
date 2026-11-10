@@ -338,6 +338,8 @@ internal static class ServiceCollectionExtensions
         services.AddHostedService(sp => sp.GetRequiredService<TeamHandyUeberwachungService>());
         services.AddSingleton<SystemZustandService>();
         services.AddHostedService(sp => sp.GetRequiredService<SystemZustandService>());
+        services.AddSingleton(_ => SpeicherPfade.AusUmgebung());
+        services.AddSingleton<SpeicherVerwaltungService>();
         services.AddSingleton<ZertifikatErneuerung>();
         services.AddHostedService<TeamMobileHubRelayService>();
         services.AddHostedService<TeamTimerTickService>();

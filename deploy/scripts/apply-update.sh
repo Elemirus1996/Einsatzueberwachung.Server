@@ -94,4 +94,10 @@ if ! curl -fsS "http://127.0.0.1:5000/health" >/dev/null; then
   exit 5
 fi
 
+# Aufraeumen: entpacktes Paket wird nicht mehr gebraucht, nur die zwei neuesten Rollback-Staende behalten
+rm -rf "$WORK_DIR"
+find "$UPDATE_ROOT" -maxdepth 1 -type d -name "backup-*" -printf '%T@ %p\n' \
+  | sort -rn | tail -n +3 | cut -d' ' -f2- \
+  | while IFS= read -r alt; do rm -rf -- "$alt"; done
+
 echo "Update applied successfully: $TARGET_VERSION"
