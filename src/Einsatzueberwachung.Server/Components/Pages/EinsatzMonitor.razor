@@ -41,7 +41,7 @@
     <main id="monitor-dashboard-grid" class="monitor-dashboard-grid" aria-label="Einsatz-Dashboard">
         @if (_currentLayout.Any(p => p.IsVisible && IsSummaryPanel(p.PanelId)))
         {
-            <section class="monitor-summary-grid @(_summaryGridCollapsed ? "is-collapsed" : "")"
+            <section class="monitor-summary-grid monitor-surface @(_summaryGridCollapsed ? "is-collapsed" : "")"
                      aria-label="Einsatzinformationen">
                 <div id="monitor-summary-tiles"
                      class="monitor-summary-grid-tiles"
@@ -150,7 +150,7 @@
                  id="monitor-tablet-panel-@panel.PanelId"
                  class="dashboard-panel-wrapper @(IsSummaryPanel(panel.PanelId) ? "dashboard-panel-wrapper--summary" : "") @(panel.PanelId == activeTabletPanelId ? "" : "monitor-tablet-panel-hidden")"
                  data-panel-id="@panel.PanelId">
-                <section class="dashboard-panel" aria-labelledby="panel-title-@panel.PanelId">
+                <section class="dashboard-panel monitor-surface" aria-labelledby="panel-title-@panel.PanelId">
                     <div class="dashboard-panel-header @(panel.PanelId == KnownPanels.Teams && EinsatzService.Teams.Count > 0 ? "dashboard-panel-header--teams" : "") @(IsSummaryPanel(panel.PanelId) ? "dashboard-panel-header--summary" : "")">
                         @if (IsSummaryPanel(panel.PanelId))
                         {

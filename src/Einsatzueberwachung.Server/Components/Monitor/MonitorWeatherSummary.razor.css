@@ -1,0 +1,134 @@
+.monitor-info-details--weather {
+    grid-column: auto;
+    margin-top: 0.35rem;
+    padding: 0.55rem 0 0;
+    border: 0;
+    border-top: 1px solid var(--ui-border);
+    border-radius: 0;
+    background: transparent;
+}
+
+.monitor-info-state {
+    align-self: start;
+}
+
+.monitor-summary-alert--heat {
+    border-color: var(--warning-border);
+    background: var(--warning-soft);
+    color: var(--warning-color);
+}
+
+.monitor-weather-link {
+    align-self: stretch;
+    min-height: 44px;
+    color: var(--ui-tile-muted-text);
+    text-decoration: none;
+}
+
+.monitor-weather-link:hover,
+.monitor-weather-link:focus-visible {
+    color: var(--ui-text);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.monitor-weather-link:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 1px;
+    border-radius: 0.25rem;
+}
+
+.monitor-weather-link-icon {
+    flex: 0 0 auto;
+    opacity: 0;
+    transition: opacity 120ms ease-out;
+}
+
+.monitor-info-tile:hover .monitor-weather-link-icon,
+.monitor-info-tile:focus-within .monitor-weather-link-icon {
+    opacity: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .monitor-weather-link {
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .monitor-weather-link-icon {
+        transition: none;
+    }
+}
+
+.monitor-weather-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(1.5rem, auto));
+    align-items: center;
+    column-gap: 0.65rem;
+    row-gap: 0.25rem;
+}
+
+.monitor-weather-reading {
+    min-width: 0;
+}
+
+.monitor-weather-reading--temperature {
+    grid-row: 1 / span 2;
+    display: flex;
+    align-items: center;
+}
+
+.monitor-weather-reading--secondary {
+    grid-column: 2;
+}
+
+.monitor-weather-value-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.15rem;
+    min-height: 1.5rem;
+}
+
+.monitor-weather-value {
+    min-width: 0;
+    color: var(--ui-tile-strong-text);
+    font-size: 0.85rem;
+    font-weight: 400;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.monitor-weather-value--temperature {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.monitor-weather-trend {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
+.monitor-weather-trend--worsening {
+    color: var(--warning-color);
+}
+
+.monitor-weather-trend--improving {
+    color: var(--success-color);
+}
+
+.monitor-weather-trend--stable {
+    color: var(--ui-muted);
+}
+
+.monitor-weather-temperature {
+    flex: 0 0 auto;
+}

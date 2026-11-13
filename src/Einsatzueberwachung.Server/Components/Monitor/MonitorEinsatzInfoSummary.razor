@@ -26,7 +26,7 @@
             <div class="monitor-info-contact">
                 @if (PoliceContacts.Count > 1)
                 {
-                    <span class="monitor-info-tile-secondary">@contact.PersonName</span>
+                    <span class="monitor-text-secondary">@contact.PersonName</span>
                 }
                 @if (hasContactName || hasServiceNumber)
                 {
@@ -79,7 +79,7 @@
                 }
                 else
                 {
-                    <span class="monitor-info-tile-secondary">Funkrufname: @bosContact.Funkrufname</span>
+                    <span class="monitor-text-secondary">Funkrufname: @bosContact.Funkrufname</span>
                 }
             }
             @if (!string.IsNullOrWhiteSpace(bosContact.Aufgabenteilung))

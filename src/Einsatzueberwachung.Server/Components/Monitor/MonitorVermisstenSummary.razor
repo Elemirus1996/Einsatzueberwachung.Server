@@ -179,9 +179,9 @@
                 }
                 @if (person.ZuletztAktualisiert.HasValue)
                 {
-                    <div class="monitor-summary-key-detail monitor-summary-key-detail--muted">
-                        <span class="monitor-summary-key-label">Stand</span>
-                        <span class="monitor-summary-key-value">@person.ZuletztAktualisiert.Value.ToString("dd.MM. HH:mm")</span>
+                    <div class="monitor-summary-key-detail">
+                        <span class="monitor-summary-key-label monitor-text-caption">Stand</span>
+                        <span class="monitor-summary-key-value monitor-text-caption">@person.ZuletztAktualisiert.Value.ToString("dd.MM. HH:mm")</span>
                     </div>
                 }
             </div>

@@ -55,7 +55,7 @@ rounded:
   control: "8px"
   button: "0.55rem"
   tile: "10px"
-  card: "12px"
+  card: "var(--theme-border-radius)"
   modal: "20px"
   pill: "999px"
   theme-default: "8px"
@@ -185,12 +185,18 @@ clarity matter. One UI family, one data family, paired on a clear sans-vs-mono c
 - **Heading (h1)** (700, blue `--ui-heading-text`, letter-spacing 0.01em): page and section titles.
 - **Title / Card header** (600): panel and card headers; fixed rem scale, not fluid.
 - **Body** (400, 16px, line-height 1.6): default reading text; cap prose at 65–75ch.
+- **Secondary** (400, 0.8rem, line-height 1.2, `--ui-tile-muted-text`): supporting details and metric labels.
+- **Caption** (400, 0.72rem, line-height 1.2, `--ui-tile-muted-text`): compact metadata and transient status.
 - **Label** (600, 1rem): form labels and control captions.
 - **Data / Mono** (JetBrains Mono 400–700): timers, coordinates, IDs, radio log — tabular data.
 
 ### Named Rules
 **The Fixed-Scale Rule.** Type sizes are a fixed rem scale, never `clamp()`-fluid. Users work at a
 consistent DPI across desktop and mounted tablets; a heading that shrinks in a sidebar reads worse.
+
+**The Supporting-Text Tiers Rule.** Use the shared `.monitor-text-secondary` and
+`.monitor-text-caption` roles for secondary details and compact metadata; component styles should
+control layout, not redefine their typography.
 
 **The Mono-For-Data Rule.** JetBrains Mono is for machine-readable values only (times, coords, IDs,
 radio traffic). Never use it for prose, buttons, or UI labels that aren't data.
@@ -234,10 +240,13 @@ interactive element is sized for the field first (WCAG ≥44×44px) and themed t
   pull from the signal vocabulary and re-tune per intensity (faint in `dezent`, solid in `lebhaft`).
 
 ### Cards / Containers
-- **Corner Style:** `12px` (modals `20px`, tiles `10px`).
+- **Corner Style:** `--theme-border-radius` (3px / 8px / 14px by intensity; modals `20px`, tiles `10px`).
 - **Background:** `--ui-surface`; headers use the `--ui-card-header-bg` gradient + `--ui-card-header-text`.
 - **Shadow Strategy:** Card ambient (see Elevation); flat in `dezent`.
 - **Border:** 1px `--ui-border`. **Padding:** header `1.25rem`, body `1.5rem`.
+- **Monitor Surface:** `.monitor-surface` shares the token border and adaptive radius across the
+  summary frame, work panels, and team cards. Choose `--ui-surface` or `--ui-surface-2` by hierarchy;
+  use separators rather than nested cards for compact lists.
 
 ### Inputs / Fields
 - **Style:** `--ui-form-bg`, 1px `--ui-form-border`, `8px` radius, min-height 44px, padding `12px 16px`, 1.1rem.

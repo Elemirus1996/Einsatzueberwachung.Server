@@ -7,7 +7,7 @@
 {
     <div class="monitor-weather-summary">
         <div class="monitor-weather-reading">
-            <span class="monitor-weather-label">Temperatur</span>
+            <span class="monitor-weather-label monitor-text-secondary">Temperatur</span>
             <div class="monitor-weather-value-row">
                 <strong class="monitor-summary-primary-value">@Weather.Temperatur.ToString("0.0")°C</strong>
                 @if (TemperatureTrend.IsAvailable)
@@ -19,7 +19,7 @@
             </div>
         </div>
         <div class="monitor-weather-reading">
-            <span class="monitor-weather-label">Wind</span>
+            <span class="monitor-weather-label monitor-text-secondary">Wind</span>
             <div class="monitor-weather-value-row">
                 <strong class="monitor-weather-value"><i class="bi bi-wind me-1" aria-hidden="true"></i>@Weather.Windgeschwindigkeit.ToString("0") km/h</strong>
                 @if (WindTrend.IsAvailable)
@@ -31,7 +31,7 @@
             </div>
         </div>
         <div class="monitor-weather-reading">
-            <span class="monitor-weather-label">Regen</span>
+            <span class="monitor-weather-label monitor-text-secondary">Regen</span>
             <div class="monitor-weather-value-row">
                 <strong class="monitor-weather-value"><i class="bi bi-droplet me-1" aria-hidden="true"></i>@Weather.Niederschlag.ToString("0.0") mm/h</strong>
                 @if (RainTrend.IsAvailable)
@@ -64,7 +64,7 @@
     }
     @if (IsLoading)
     {
-        <div class="monitor-weather-refreshing" role="status">Wetter wird aktualisiert …</div>
+        <div class="monitor-weather-refreshing monitor-text-caption" role="status">Wetter wird aktualisiert …</div>
     }
     <div id="panel-details-@KnownPanels.Wetter" class="monitor-summary-details" hidden="@(!DetailsExpanded)">
         @if (Weather.Windboeen > 0)

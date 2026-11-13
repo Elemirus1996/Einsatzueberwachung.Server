@@ -281,6 +281,7 @@ Bevor du Dateien löschst oder massive Refactorings durchführst, die das ganze 
 * [2026-11-10] - **Polizeikachel verdichten**: Die Einsatznummer direkt an die Überschrift hängen („Polizei #…“), die separate Nummernzeile und die Zwischenüberschrift „Kontakt“ weglassen.
 * [2026-11-10] - **Editierbare Summary-Kacheln**: Jeder adaptive Info-Cluster mit bearbeitbaren Feldern erhält einen Edit-Button, der das gemeinsame Modal öffnet und zum zugehörigen Feldabschnitt scrollt.
 * [2026-11-10] - **Suchgebietsfläche**: Die formatierte Fläche von Suchgebieten wird durchgängig in m² ausgegeben, auch bei großen Flächen; zwischen m², ha und km² wird nicht automatisch umgerechnet.
+* [2026-11-13] - **Einsatzmonitor-Typografiehierarchie**: Sekundärtexte und kompakte Metadaten/Hinweise über gemeinsame `.monitor-text-secondary`- und `.monitor-text-caption`-Stufen gestalten. Komponenten-CSS steuert Layout statt gleiche Farb- und Schriftregeln zu duplizieren; semantisch abweichende Zustände wie Warnungen behalten ihre eigene Rolle.
 
 ---
 

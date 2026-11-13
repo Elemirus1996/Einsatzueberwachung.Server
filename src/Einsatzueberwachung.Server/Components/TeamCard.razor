@@ -2,7 +2,7 @@
 @* Team identity and live controls stay together; context and history remain secondary. *@
 @inject NavigationManager Navigation
 <div id="team-@Team.TeamId"
-     class="monitor-team-card @CardClass @(IsDogConflict ? "team-dog-blocked" : "")">
+     class="monitor-team-card monitor-surface @CardClass @(IsDogConflict ? "team-dog-blocked" : "")">
 
     @* ── Dog conflict banner ───────────────────────────────────────── *@
     @if (IsDogConflict)
@@ -194,14 +194,14 @@
                 }
                 @if (!string.IsNullOrWhiteSpace(Team.Notes))
                 {
-                    <span class="tc-ctx-chip tc-ctx-chip--note" title="@Team.Notes">
+                    <span class="tc-ctx-chip" title="@Team.Notes">
                         <i class="bi bi-sticky"></i><span class="tc-ctx-clip">@Team.Notes</span>
                     </span>
                 }
                 @if (!string.IsNullOrWhiteSpace(Team.CollarId))
                 {
                     <button type="button"
-                            class="tc-ctx-chip tc-ctx-chip--gps tc-ctx-chip--link tc-ctx-chip--action"
+                            class="tc-ctx-chip tc-ctx-chip--link tc-ctx-chip--action"
                             title="GPS-Halsband auf Karte verfolgen"
                             @onclick="NavigateToCollar">
                         <i class="bi bi-broadcast-pin"></i>

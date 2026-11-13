@@ -1,0 +1,35 @@
+.modal-close-mission {
+    width: min(920px, 95vw);
+}
+
+.modal-close-mission-header {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--danger-color) 80%, #000000) 0%, var(--danger-color) 100%);
+    color: var(--danger-on-fill);
+    border-bottom-color: rgba(255, 255, 255, 0.18);
+}
+
+.modal-close-mission .border.rounded {
+    background: var(--ui-tile-bg);
+    border-color: var(--ui-tile-border) !important;
+}
+
+.modal-close-mission .text-muted {
+    color: var(--ui-muted) !important;
+}
+
+.modal-close-mission .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: var(--danger-on-fill);
+}
+
+.modal-close-mission .btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.6);
+    color: var(--danger-on-fill);
+}
+
+.monitor-checklist-scroll {
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}

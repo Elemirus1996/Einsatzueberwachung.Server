@@ -70,7 +70,7 @@
         }
         @if (IsLoading)
         {
-            <div class="monitor-weather-refreshing" role="status">Wetter wird aktualisiert …</div>
+            <div class="monitor-weather-refreshing monitor-text-caption" role="status">Wetter wird aktualisiert …</div>
         }
         <div id="panel-details-wetter" class="monitor-info-details monitor-info-details--weather" hidden="@(!DetailsExpanded)">
             @if (Weather.Windboeen > 0)

@@ -342,12 +342,6 @@ main {
         background: linear-gradient(to right, rgba(229, 115, 115, 0.30) 0%, var(--ui-surface) 50%);
     }
 
-    /* Monitor header on dark surface — follows theme preset */
-    [data-bs-theme="dark"] .monitor-header {
-        background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 85%, #0d1522) 0%, color-mix(in srgb, var(--theme-primary) 60%, #05080f) 100%);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
-    }
-
     /* Note type chips */
     [data-bs-theme="dark"] .note-card.note-type-teamstart,
     [data-bs-theme="dark"] .note-card.note-type-teamstop,
@@ -479,6 +473,15 @@ main,
     padding: 1.2rem 1rem 2.5rem;
 }
 
+.page-headline-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--ui-page-headline-border);
+    padding-bottom: 0.8rem;
+}
 
 .mission-topbar {
     min-height: 52px;

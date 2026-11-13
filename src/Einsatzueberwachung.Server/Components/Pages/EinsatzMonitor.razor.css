@@ -1,132 +1,3 @@
-.panel-picker-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    z-index: var(--z-dropdown, 1050);
-    min-width: 200px;
-    background: var(--ui-surface);
-    border: 1px solid var(--ui-border);
-    border-radius: 0.375rem;
-    padding: 0.5rem;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, .15);
-    max-height: min(50vh, 20rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
-
-/* When the browser supports CSS anchor positioning, pin the dropdown to its
-   toggle button and lift it to fixed so it escapes the scrollable/clipped
-   panel body (e.g. the Schnell-Notiz picker inside the Notizen panel). */
-@supports (anchor-name: --a) {
-    .mon-anchor-quicknote > .btn { anchor-name: --picker-quicknote; }
-
-    .mon-anchor-quicknote .panel-picker-dropdown {
-        width: min(20rem, calc(100vw - 1rem));
-        position: fixed;
-        position-anchor: --picker-quicknote;
-        top: anchor(bottom);
-        left: auto;
-        right: anchor(right);
-        position-try-fallbacks: flip-block, flip-inline;
-    }
-
-    .mon-anchor-teamfilter > .btn { anchor-name: --picker-teamfilter; }
-
-    .mon-anchor-teamfilter .panel-picker-dropdown {
-        position: fixed;
-        position-anchor: --picker-teamfilter;
-        top: anchor(bottom);
-        left: anchor(left);
-        right: auto;
-        position-try-fallbacks: flip-block;
-    }
-
-    @media (max-height: 700px) {
-        .mon-anchor-quicknote .panel-picker-dropdown,
-        .mon-anchor-teamfilter .panel-picker-dropdown {
-            top: auto;
-            bottom: anchor(top);
-        }
-    }
-}
-
-@supports not (anchor-name: --a) {
-    @media (max-height: 680px) {
-        .mon-anchor-quicknote .panel-picker-dropdown,
-        .mon-anchor-teamfilter .panel-picker-dropdown {
-            top: auto;
-            bottom: calc(100% + 0.25rem);
-        }
-    }
-}
-
-.panel-picker-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: var(--z-backdrop, 1049);
-    border: 0;
-    margin: 0;
-    padding: 0;
-    background: transparent;
-}
-
-/* Wrapper div around the panel picker button */
-.monitor-panel-picker-wrapper {
-    position: relative;
-}
-
-/* Scrollable notes list container */
-.notes-list {
-    max-height: 500px;
-    overflow-y: auto;
-}
-
-/* Source/team select in note reply row */
-.monitor-source-select {
-    max-width: 12rem;
-}
-
-/* Small timestamp text (vermissten details) */
-.monitor-timestamp-small {
-    font-size: .7rem;
-}
-
-/* QR code image in Team-Mobile modal */
-.monitor-qr-image {
-    max-width: 320px;
-    width: 100%;
-    height: auto;
-}
-
-/* Modal size variants */
-.modal-modern--sm {
-    max-width: 460px;
-}
-
-.modal-modern--480 {
-    max-width: 480px;
-}
-
-.modal-modern--md {
-    max-width: 520px;
-}
-
-.modal-modern--640 {
-    max-width: 640px;
-}
-
-.modal-modern--lg {
-    max-width: 700px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-/* Warning variant for modal-modern-header */
-.modal-modern-header--warning {
-    background: var(--bs-warning);
-    color: #212529;
-}
-
 /* ── Screensaver ───────────────────────────────────────── */
 .monitor-screensaver {
     display: flex;
@@ -186,4 +57,106 @@
 @keyframes screensaver-scroll {
     from { transform: translateX(0); }
     to   { transform: translateX(-100%); }
+}
+
+.dashboard-panel-header--teams {
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.teams-filter-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.teams-filter-trigger.is-filtered {
+    border-color: var(--theme-primary);
+    color: var(--ui-text);
+}
+
+.teams-filter-trigger-label {
+    font-weight: 600;
+}
+
+.teams-filter-dropdown {
+    min-width: 190px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.teams-filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--ui-text);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.4rem 0.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease;
+}
+
+.teams-filter-option:hover {
+    background: var(--ui-surface-2);
+}
+
+.teams-filter-option.active {
+    background: color-mix(in srgb, var(--theme-primary) 14%, transparent);
+    font-weight: 600;
+}
+
+.teams-filter-option-icon {
+    width: 14px;
+    text-align: center;
+    color: var(--ui-muted);
+    flex-shrink: 0;
+}
+
+.teams-filter-option-label {
+    flex: 1;
+}
+
+.teams-filter-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.teams-filter-dot--running { background: var(--success-color); }
+.teams-filter-dot--pausing { background: var(--warning-color); }
+.teams-filter-dot--ready { background: var(--ui-muted); }
+.teams-filter-dot--critical { background: var(--danger-color); }
+
+.teams-filter-count {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.05em 0.4em;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ui-muted) 18%, transparent);
+    color: var(--ui-text);
+}
+
+.teams-filter-option.active .teams-filter-count {
+    background: color-mix(in srgb, var(--theme-primary) 18%, transparent);
+}
+
+@media (max-width: 768px) {
+    .monitor-team-filter {
+        gap: 0.4rem;
+    }
+
+    .monitor-team-filter .btn {
+        flex: 1 1 calc(50% - 0.25rem);
+        min-height: 2.3rem;
+    }
 }
