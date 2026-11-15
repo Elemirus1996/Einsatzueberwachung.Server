@@ -11,6 +11,7 @@ using Einsatzueberwachung.Server.Security;
 using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Einsatzueberwachung.Tests;
@@ -28,6 +29,12 @@ public sealed class ElAppEinsatzTests : IDisposable
     private readonly EinsatzAbschlussTests.Recorder<IArchivService> _archiv;
     private readonly EinsatzAbschlussService _abschluss;
     private DateTime? _archiviertesEnde;
+    private List<string>? _archiviertesPersonal;
+    private List<string>? _archivierteHunde;
+    private readonly PersonalEntry _anna = new() { Vorname = "Anna", Nachname = "Berg", IsActive = true, Skills = PersonalSkills.Einsatzleiter };
+    private readonly PersonalEntry _ben = new() { Vorname = "Ben", Nachname = "Kurz", IsActive = true, Skills = PersonalSkills.Fuehrungsassistent };
+    private readonly DogEntry _rex = new() { Name = "Rex", IsActive = true };
+    private readonly DogEntry _bello = new() { Name = "Bello", IsActive = true };
 
     private sealed class Uhr : ITimeService
     {
@@ -46,6 +53,8 @@ public sealed class ElAppEinsatzTests : IDisposable
         {
             if (m.Name != nameof(IArchivService.ArchiveEinsatzAsync)) return null;
             _archiviertesEnde = ((EinsatzData)args![0]!).EinsatzEnde;
+            _archiviertesPersonal = (List<string>)args[3]!;
+            _archivierteHunde = (List<string>)args[4]!;
             return Task.FromResult(ArchivedEinsatz.FromEinsatzData((EinsatzData)args[0]!, (string)args[1]!, (string)args[2]!, Ortszeit.Jetzt));
         });
         var pdf = EinsatzAbschlussTests.Recorder<IPdfExportService>.Create((_, args) =>
@@ -64,12 +73,8 @@ public sealed class ElAppEinsatzTests : IDisposable
             m.Name == nameof(ISettingsService.GetStaffelSettingsAsync) ? Task.FromResult(new StaffelSettings { StaffelName = "RHS Test" }) : null);
         var stammdaten = EinsatzAbschlussTests.Recorder<IMasterDataService>.Create((m, _) => m.Name switch
         {
-            nameof(IMasterDataService.GetPersonalListAsync) => Task.FromResult(new List<PersonalEntry>
-            {
-                new() { Vorname = "Anna", Nachname = "Berg", IsActive = true, Skills = PersonalSkills.Einsatzleiter },
-                new() { Vorname = "Ben", Nachname = "Kurz", IsActive = true, Skills = PersonalSkills.Fuehrungsassistent }
-            }),
-            nameof(IMasterDataService.GetDogListAsync) => Task.FromResult(new List<DogEntry>()),
+            nameof(IMasterDataService.GetPersonalListAsync) => Task.FromResult(new List<PersonalEntry> { _ben, _anna }),
+            nameof(IMasterDataService.GetDogListAsync) => Task.FromResult(new List<DogEntry> { _rex, _bello }),
             _ => null
         });
         var divera = EinsatzAbschlussTests.Recorder<IDiveraService>.Create((m, args) => m.Name switch
@@ -168,5 +173,45 @@ public sealed class ElAppEinsatzTests : IDisposable
 
         Assert.IsType<ConflictObjectResult>(await Controller().EinsatzBeenden(Ende()));
         Assert.Equal(1, _archiv.Calls.Count(c => c == nameof(IArchivService.ArchiveEinsatzAsync)));
+    }
+
+    [Fact]
+    public async Task VorOrt_ListenMitVorauswahl_BeendenUebernimmtAuswahlOderVorauswahl()
+    {
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzStarten(Start()));
+        await _einsatz.AddTeamAsync(new Team { TeamName = "Team Rex", HundefuehrerName = "Anna Berg", DogName = "Rex" });
+
+        var vorOrt = Json(await Controller().GetVorOrt());
+        var personal = vorOrt.GetProperty("personal").EnumerateArray().ToList();
+        Assert.Equal(["Anna Berg", "Ben Kurz"], personal.Select(p => p.GetProperty("name").GetString()));
+        Assert.Equal(_anna.Id, personal[0].GetProperty("id").GetString());
+        Assert.Equal([true, false], personal.Select(p => p.GetProperty("vorausgewaehlt").GetBoolean()));
+        var hunde = vorOrt.GetProperty("hunde").EnumerateArray().ToList();
+        Assert.Equal(["Bello", "Rex"], hunde.Select(d => d.GetProperty("name").GetString()));
+        Assert.Equal([false, true], hunde.Select(d => d.GetProperty("vorausgewaehlt").GetBoolean()));
+
+        var ohneToken = Controller();
+        ohneToken.HttpContext.Request.Headers.Authorization = "Bearer falsch";
+        Assert.Equal(410, ((IStatusCodeActionResult)await ohneToken.GetVorOrt()).StatusCode);
+        var oeffentlich = Controller();
+        oeffentlich.HttpContext.Connection.LocalPort = 5002;
+        Assert.IsType<NotFoundResult>(await oeffentlich.GetVorOrt());
+
+        // Auswahl der App geht vor, unbekannte IDs fallen weg, leere Liste = niemand
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzBeenden(new ElAppController.ElEinsatzEnde(
+            NeueId(), "Suche erfolglos abgeschlossen", true, PersonalIds: [_ben.Id, "unbekannt"], HundeIds: [])));
+        Assert.Equal(["Ben Kurz"], _archiviertesPersonal);
+        Assert.Empty(_archivierteHunde!);
+    }
+
+    [Fact]
+    public async Task Beenden_OhneAuswahl_UebernimmtVorauswahlAusDenTeams()
+    {
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzStarten(Start()));
+        await _einsatz.AddTeamAsync(new Team { TeamName = "Team Rex", HundefuehrerName = "Anna Berg", DogName = "Rex" });
+
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzBeenden(new ElAppController.ElEinsatzEnde(NeueId(), "Suche erfolglos abgeschlossen", true)));
+        Assert.Equal(["Anna Berg"], _archiviertesPersonal);
+        Assert.Equal(["Rex"], _archivierteHunde);
     }
 }
