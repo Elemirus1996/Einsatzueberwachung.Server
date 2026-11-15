@@ -224,12 +224,15 @@ namespace Einsatzueberwachung.Domain.Services
                         .Column(column =>
                         {
                             column.Item().PaddingVertical(10).Element(c => ComposeGrunddaten(c, einsatzData));
+                            var einsatzkontakte = EinsatzKontaktDaten.From(einsatzData);
+                            if (einsatzkontakte.HasContent)
+                                column.Item().PaddingVertical(10).Element(c => ComposeEinsatzkontakte(c, einsatzkontakte));
                             column.Item().PaddingVertical(10).Element(c => ComposeZusammenfassung(c, teams.Count,
                                 einsatzData.SearchAreas.Count, notes.Count,
                                 FormatTimeSpan(teams.Aggregate(TimeSpan.Zero, (a, t) => a + t.ElapsedTime)),
                                 null));
                             if (einsatzData.Vermisste?.Any() == true)
-                                column.Item().PaddingVertical(10).Element(c => ComposeVermisste(c, einsatzData.Vermisste));
+                                column.Item().PaddingVertical(10).Element(c => ComposeVermisste(c, einsatzData.Vermisste, !einsatzData.EinsatzkontakteMigriert));
                             column.Item().PaddingVertical(10).Element(c => ComposeTeams(c, teams, notes));
                             if (einsatzData.SearchAreas.Any())
                                 column.Item().PaddingVertical(10).Element(c => ComposeSuchgebiete(c, einsatzData.SearchAreas.ToList()));
@@ -306,6 +309,9 @@ namespace Einsatzueberwachung.Domain.Services
                         .Column(column =>
                         {
                             column.Item().PaddingVertical(10).Element(c => ComposeArchivedGrunddaten(c, einsatz));
+                            var einsatzkontakte = EinsatzKontaktDaten.From(einsatz);
+                            if (einsatzkontakte.HasContent)
+                                column.Item().PaddingVertical(10).Element(c => ComposeEinsatzkontakte(c, einsatzkontakte));
                             column.Item().PaddingVertical(10).Element(c => ComposeZusammenfassung(c,
                                 einsatz.AnzahlTeams, einsatz.SearchAreas?.Count ?? 0,
                                 einsatz.GlobalNotesEntries?.Count ?? 0,
@@ -315,7 +321,7 @@ namespace Einsatzueberwachung.Domain.Services
                             if ((einsatz.PersonalNamen?.Any() ?? false) || (einsatz.HundeNamen?.Any() ?? false))
                                 column.Item().PaddingVertical(10).Element(c => ComposeVorOrtChecklisten(c, einsatz));
                             if (einsatz.Vermisste?.Any() == true)
-                                column.Item().PaddingVertical(10).Element(c => ComposeVermisste(c, einsatz.Vermisste));
+                                column.Item().PaddingVertical(10).Element(c => ComposeVermisste(c, einsatz.Vermisste, !einsatz.EinsatzkontakteMigriert));
                             if (einsatz.Teams?.Any() == true)
                                 column.Item().PaddingVertical(10).Element(c => ComposeArchivedTeams(c, einsatz.Teams, einsatz.GlobalNotesEntries ?? new()));
                             if (einsatz.SearchAreas?.Any() == true)

@@ -121,7 +121,7 @@ namespace Einsatzueberwachung.Domain.Services
             wsInfo.Cell(1, 1).Style.Font.Bold = true;
             wsInfo.Cell(1, 1).Style.Font.FontSize = 14;
 
-            var infoRows = new[]
+            var infoRows = new List<(string Label, string? Value)>
             {
                 ("Einsatznummer", einsatz.EinsatzNummer),
                 ("Typ", einsatz.IstEinsatz ? "Einsatz" : "Übung"),
@@ -132,6 +132,25 @@ namespace Einsatzueberwachung.Domain.Services
                 ("Führungsassistent", einsatz.Fuehrungsassistent),
                 ("Exportiert am", Ortszeit.Jetzt.ToString("dd.MM.yyyy HH:mm"))
             };
+
+            var kontakte = EinsatzKontaktDaten.From(einsatz);
+            if (kontakte.HasContent)
+            {
+                infoRows.Add(("Polizei-Kontakt", kontakte.PolizeiKontaktName));
+                infoRows.Add(("Polizei-Dienstnummer", kontakte.PolizeiDienstnummer));
+                infoRows.Add(("Polizei-Telefon", kontakte.PolizeiTelefon));
+                infoRows.Add(("Vermisstenmeldung aufgenommen", YesNo(kontakte.PolizeiVermisstenmeldungAufgenommen)));
+                infoRows.Add(("Einsatzkoordination besprochen", YesNo(kontakte.PolizeiKoordinationBesprochen)));
+                infoRows.Add(("Suchabschnitte abgestimmt", YesNo(kontakte.PolizeiSuchabschnittAbgestimmt)));
+                infoRows.Add(("Rückmeldepflicht vereinbart", YesNo(kontakte.PolizeiRueckmeldepflichtVereinbart)));
+                infoRows.Add(("Datenschutz geklärt", YesNo(kontakte.PolizeiDatenschutzGeklaert)));
+                infoRows.Add(("BOS-Einheit", kontakte.BosEinheit));
+                infoRows.Add(("BOS-Zugführer", kontakte.BosZugfuehrer));
+                infoRows.Add(("BOS-Funkrufname", kontakte.BosFunkrufname));
+                infoRows.Add(("BOS-Aufgabenteilung", kontakte.BosAufgabenteilung));
+                infoRows.Add(("BOS-Einsatzabschnitt abgestimmt", YesNo(kontakte.BosAbschnittAbgestimmt)));
+                infoRows.Add(("BOS-Ressourcen besprochen", YesNo(kontakte.BosRessourcenBesprochen)));
+            }
 
             int r = 3;
             foreach (var (label, value) in infoRows)
@@ -155,7 +174,10 @@ namespace Einsatzueberwachung.Domain.Services
                     "Orientierung", "Mobilität", "Suizidrisiko", "Bewaffnet",
                     "Vorerkrankungen", "Medikamente",
                     "Polizei (Name)", "Dienstnr.", "Telefon",
-                    "BOS-Einheit", "Zugführer", "Funkrufname"
+                    "Polizei-Meldung aufgenommen", "Polizei-Koordination besprochen",
+                    "Polizei-Suchabschnitt abgestimmt", "Polizei-Rückmeldepflicht vereinbart",
+                    "Polizei-Datenschutz geklärt", "BOS-Einheit", "Zugführer", "Funkrufname",
+                    "BOS-Aufgabenteilung", "BOS-Abschnitt abgestimmt", "BOS-Ressourcen besprochen"
                 };
                 for (int i = 0; i < vHeaders.Length; i++)
                     wsVermisst.Cell(1, i + 1).Value = vHeaders[i];
@@ -183,12 +205,20 @@ namespace Einsatzueberwachung.Domain.Services
                     wsVermisst.Cell(vr, 14).Value = v.Bewaffnet.ToString();
                     wsVermisst.Cell(vr, 15).Value = v.Vorerkrankungen;
                     wsVermisst.Cell(vr, 16).Value = v.Medikamente;
-                    wsVermisst.Cell(vr, 17).Value = v.PolizeiKontaktName;
-                    wsVermisst.Cell(vr, 18).Value = v.PolizeiDienstnummer;
-                    wsVermisst.Cell(vr, 19).Value = v.PolizeiTelefon;
-                    wsVermisst.Cell(vr, 20).Value = v.BosEinheit;
-                    wsVermisst.Cell(vr, 21).Value = v.BosZugfuehrer;
-                    wsVermisst.Cell(vr, 22).Value = v.BosFunkrufname;
+                    wsVermisst.Cell(vr, 17).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : v.PolizeiKontaktName;
+                    wsVermisst.Cell(vr, 18).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : v.PolizeiDienstnummer;
+                    wsVermisst.Cell(vr, 19).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : v.PolizeiTelefon;
+                    wsVermisst.Cell(vr, 20).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : YesNo(v.PolizeiVermisstenmeldungAufgenommen);
+                    wsVermisst.Cell(vr, 21).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : YesNo(v.PolizeiKoordinationBesprochen);
+                    wsVermisst.Cell(vr, 22).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : YesNo(v.PolizeiSuchabschnittAbgestimmt);
+                    wsVermisst.Cell(vr, 23).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : YesNo(v.PolizeiRueckmeldepflichtVereinbart);
+                    wsVermisst.Cell(vr, 24).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : YesNo(v.PolizeiDatenschutzGeklaert);
+                    wsVermisst.Cell(vr, 25).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : v.BosEinheit;
+                    wsVermisst.Cell(vr, 26).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : v.BosZugfuehrer;
+                    wsVermisst.Cell(vr, 27).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : v.BosFunkrufname;
+                    wsVermisst.Cell(vr, 28).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : v.BosAufgabenteilung;
+                    wsVermisst.Cell(vr, 29).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : YesNo(v.BosAbschnittAbgestimmt);
+                    wsVermisst.Cell(vr, 30).Value = einsatz.EinsatzkontakteMigriert ? string.Empty : YesNo(v.BosRessourcenBesprochen);
                     vr++;
                 }
                 wsVermisst.Columns().AdjustToContents();
@@ -278,5 +308,7 @@ namespace Einsatzueberwachung.Domain.Services
             workbook.SaveAs(stream);
             return Task.FromResult(stream.ToArray());
         }
+
+        private static string YesNo(bool value) => value ? "Ja" : "Nein";
     }
 }

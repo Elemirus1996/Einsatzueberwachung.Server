@@ -86,7 +86,11 @@ public class VermisstenMultiTests
           "Einsatzort": "Musterstadt",
           "VermisstenInfo": {
             "Vorname": "Otto",
-            "Nachname": "Normal"
+                        "Nachname": "Normal",
+                        "PolizeiKontaktName": "Alt-Kontakt",
+                        "PolizeiTelefon": "01234",
+                        "BosEinheit": "Alt-BOS",
+                        "BosAufgabenteilung": "Absicherung"
           }
         }
         """;
@@ -97,6 +101,11 @@ public class VermisstenMultiTests
         Assert.Equal("Otto", data.Vermisste[0].Vorname);
         Assert.NotNull(data.VermisstenInfo);
         Assert.Equal("Otto", data.VermisstenInfo!.Vorname);
+        Assert.False(data.EinsatzkontakteMigriert);
+        Assert.Equal("Alt-Kontakt", data.VermisstenInfo.PolizeiKontaktName);
+        Assert.Equal("01234", data.VermisstenInfo.PolizeiTelefon);
+        Assert.Equal("Alt-BOS", data.VermisstenInfo.BosEinheit);
+        Assert.Equal("Absicherung", data.VermisstenInfo.BosAufgabenteilung);
     }
 
     [Fact]

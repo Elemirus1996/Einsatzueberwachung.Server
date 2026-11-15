@@ -100,6 +100,21 @@ public class EinsatzAbschlussTests
         einsatz.CurrentEinsatz.EinsatzDatum = Jetzt.AddHours(-3);
         einsatz.CurrentEinsatz.Szenario = EinsatzSzenarioType.Flaeche;
         einsatz.CurrentEinsatz.Vermisste.Add(new VermisstenInfo());
+        einsatz.CurrentEinsatz.EinsatzkontakteMigriert = true;
+        einsatz.CurrentEinsatz.PolizeiKontaktName = "K. Beispiel";
+        einsatz.CurrentEinsatz.PolizeiDienstnummer = "P-123";
+        einsatz.CurrentEinsatz.PolizeiTelefon = "012345";
+        einsatz.CurrentEinsatz.PolizeiVermisstenmeldungAufgenommen = true;
+        einsatz.CurrentEinsatz.PolizeiKoordinationBesprochen = true;
+        einsatz.CurrentEinsatz.PolizeiSuchabschnittAbgestimmt = true;
+        einsatz.CurrentEinsatz.PolizeiRueckmeldepflichtVereinbart = true;
+        einsatz.CurrentEinsatz.PolizeiDatenschutzGeklaert = true;
+        einsatz.CurrentEinsatz.BosEinheit = "BOS 1";
+        einsatz.CurrentEinsatz.BosZugfuehrer = "Zugführer";
+        einsatz.CurrentEinsatz.BosFunkrufname = "Florian 1";
+        einsatz.CurrentEinsatz.BosAufgabenteilung = "Absicherung";
+        einsatz.CurrentEinsatz.BosAbschnittAbgestimmt = true;
+        einsatz.CurrentEinsatz.BosRessourcenBesprochen = true;
         var team = await einsatz.AddTeamAsync(new Team { TeamName = "Rex" });
         await einsatz.CreateCompletedSearchAsync(team.TeamId, Jetzt.AddHours(-2), Jetzt.AddHours(-1));
 
@@ -114,6 +129,21 @@ public class EinsatzAbschlussTests
             Jetzt.AddHours(-3), "Suche erfolglos abgeschlossen", "  ohne Befund ", new TimeOnly(18, 0), false, ["Anna Berg"], ["Rex"]));
 
         Assert.Equal(EinsatzSzenarioType.Flaeche, ergebnis.Archiviert.Szenario);
+        Assert.True(ergebnis.Archiviert.EinsatzkontakteMigriert);
+        Assert.Equal("K. Beispiel", ergebnis.Archiviert.PolizeiKontaktName);
+        Assert.Equal("P-123", ergebnis.Archiviert.PolizeiDienstnummer);
+        Assert.Equal("012345", ergebnis.Archiviert.PolizeiTelefon);
+        Assert.True(ergebnis.Archiviert.PolizeiVermisstenmeldungAufgenommen);
+        Assert.True(ergebnis.Archiviert.PolizeiKoordinationBesprochen);
+        Assert.True(ergebnis.Archiviert.PolizeiSuchabschnittAbgestimmt);
+        Assert.True(ergebnis.Archiviert.PolizeiRueckmeldepflichtVereinbart);
+        Assert.True(ergebnis.Archiviert.PolizeiDatenschutzGeklaert);
+        Assert.Equal("BOS 1", ergebnis.Archiviert.BosEinheit);
+        Assert.Equal("Zugführer", ergebnis.Archiviert.BosZugfuehrer);
+        Assert.Equal("Florian 1", ergebnis.Archiviert.BosFunkrufname);
+        Assert.Equal("Absicherung", ergebnis.Archiviert.BosAufgabenteilung);
+        Assert.True(ergebnis.Archiviert.BosAbschnittAbgestimmt);
+        Assert.True(ergebnis.Archiviert.BosRessourcenBesprochen);
         Assert.Single(ergebnis.Archiviert.Vermisste);
         Assert.Single(ergebnis.Archiviert.CompletedSearches!);
         Assert.Equal("ohne Befund", ergebnis.Archiviert.Bemerkungen);

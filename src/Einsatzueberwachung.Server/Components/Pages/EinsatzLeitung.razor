@@ -312,29 +312,28 @@
                         <div class="dashboard-sektion-kopf">
                             <span class="dashboard-sektion-titel">Kontaktbeamter</span>
                         </div>
-                        @{ var vi = EinsatzService.CurrentEinsatz.VermisstenInfo; }
-                        @if (vi is not null && !string.IsNullOrWhiteSpace(vi.PolizeiKontaktName))
+                        @if (!string.IsNullOrWhiteSpace(_kontaktForm.PolizeiKontaktName))
                         {
                             <div class="dashboard-kontakt">
                                 <div class="dashboard-kontakt-name">
                                     <i class="bi bi-shield"></i>
-                                    <span>@vi.PolizeiKontaktName</span>
+                                    <span>@_kontaktForm.PolizeiKontaktName</span>
                                 </div>
                                 <div class="dashboard-kontakt-felder">
-                                    @if (!string.IsNullOrWhiteSpace(vi.PolizeiDienstnummer))
+                                    @if (!string.IsNullOrWhiteSpace(_kontaktForm.PolizeiDienstnummer))
                                     {
                                         <div class="dashboard-kontakt-feld">
                                             <span class="dashboard-kontakt-label">Dienstnr.</span>
-                                            <span class="dashboard-kontakt-wert">@vi.PolizeiDienstnummer</span>
+                                            <span class="dashboard-kontakt-wert">@_kontaktForm.PolizeiDienstnummer</span>
                                         </div>
                                     }
-                                    @if (!string.IsNullOrWhiteSpace(vi.PolizeiTelefon))
+                                    @if (!string.IsNullOrWhiteSpace(_kontaktForm.PolizeiTelefon))
                                     {
                                         <div class="dashboard-kontakt-feld">
                                             <span class="dashboard-kontakt-label">Telefon</span>
-                                            <a class="dashboard-kontakt-tel" href="tel:@vi.PolizeiTelefon">
+                                            <a class="dashboard-kontakt-tel" href="tel:@_kontaktForm.PolizeiTelefon">
                                                 <i class="bi bi-telephone-fill"></i>
-                                                <span>@vi.PolizeiTelefon</span>
+                                                <span>@_kontaktForm.PolizeiTelefon</span>
                                             </a>
                                         </div>
                                     }
@@ -549,36 +548,36 @@
                             <div class="el-field-grid">
                                 <div class="el-field el-field-full">
                                     <label>Name Kontaktbeamter</label>
-                                    <input class="el-input" @bind="_vi.PolizeiKontaktName" @bind:after="ScheduleAutoSave" />
+                                    <input class="el-input" @bind="_kontaktForm.PolizeiKontaktName" @bind:after="SaveEinsatzkontakteAsync" />
                                 </div>
                                 <div class="el-field">
                                     <label>Dienstnr.</label>
-                                    <input class="el-input" @bind="_vi.PolizeiDienstnummer" @bind:after="ScheduleAutoSave" />
+                                    <input class="el-input" @bind="_kontaktForm.PolizeiDienstnummer" @bind:after="SaveEinsatzkontakteAsync" />
                                 </div>
                                 <div class="el-field">
                                     <label>Telefon</label>
-                                    <input class="el-input" type="tel" @bind="_vi.PolizeiTelefon" @bind:after="ScheduleAutoSave" />
+                                    <input class="el-input" type="tel" @bind="_kontaktForm.PolizeiTelefon" @bind:after="SaveEinsatzkontakteAsync" />
                                 </div>
                             </div>
                             <div class="el-checklist">
                                 <label class="el-check-item">
-                                    <input type="checkbox" @bind="_vi.PolizeiVermisstenmeldungAufgenommen" @bind:after="ScheduleAutoSave" />
+                                    <input type="checkbox" @bind="_kontaktForm.PolizeiVermisstenmeldungAufgenommen" @bind:after="SaveEinsatzkontakteAsync" />
                                     <span>Vermisstenmeldung aufgenommen</span>
                                 </label>
                                 <label class="el-check-item">
-                                    <input type="checkbox" @bind="_vi.PolizeiKoordinationBesprochen" @bind:after="ScheduleAutoSave" />
+                                    <input type="checkbox" @bind="_kontaktForm.PolizeiKoordinationBesprochen" @bind:after="SaveEinsatzkontakteAsync" />
                                     <span>Einsatzkoordination besprochen</span>
                                 </label>
                                 <label class="el-check-item">
-                                    <input type="checkbox" @bind="_vi.PolizeiSuchabschnittAbgestimmt" @bind:after="ScheduleAutoSave" />
+                                    <input type="checkbox" @bind="_kontaktForm.PolizeiSuchabschnittAbgestimmt" @bind:after="SaveEinsatzkontakteAsync" />
                                     <span>Suchabschnitte abgestimmt</span>
                                 </label>
                                 <label class="el-check-item">
-                                    <input type="checkbox" @bind="_vi.PolizeiRueckmeldepflichtVereinbart" @bind:after="ScheduleAutoSave" />
+                                    <input type="checkbox" @bind="_kontaktForm.PolizeiRueckmeldepflichtVereinbart" @bind:after="SaveEinsatzkontakteAsync" />
                                     <span>Rückmeldepflicht vereinbart</span>
                                 </label>
                                 <label class="el-check-item">
-                                    <input type="checkbox" @bind="_vi.PolizeiDatenschutzGeklaert" @bind:after="ScheduleAutoSave" />
+                                    <input type="checkbox" @bind="_kontaktForm.PolizeiDatenschutzGeklaert" @bind:after="SaveEinsatzkontakteAsync" />
                                     <span>Datenschutz geklärt</span>
                                 </label>
                             </div>
@@ -595,28 +594,28 @@
                             <div class="el-field-grid">
                                 <div class="el-field el-field-full">
                                     <label>Einheit</label>
-                                    <input class="el-input" @bind="_vi.BosEinheit" @bind:after="ScheduleAutoSave" />
+                                    <input class="el-input" @bind="_kontaktForm.BosEinheit" @bind:after="SaveEinsatzkontakteAsync" />
                                 </div>
                                 <div class="el-field">
                                     <label>Zugführer</label>
-                                    <input class="el-input" @bind="_vi.BosZugfuehrer" @bind:after="ScheduleAutoSave" />
+                                    <input class="el-input" @bind="_kontaktForm.BosZugfuehrer" @bind:after="SaveEinsatzkontakteAsync" />
                                 </div>
                                 <div class="el-field">
                                     <label>Funkrufname</label>
-                                    <input class="el-input" @bind="_vi.BosFunkrufname" @bind:after="ScheduleAutoSave" />
+                                    <input class="el-input" @bind="_kontaktForm.BosFunkrufname" @bind:after="SaveEinsatzkontakteAsync" />
                                 </div>
                                 <div class="el-field el-field-full">
                                     <label>Aufgabenteilung</label>
-                                    <input class="el-input" @bind="_vi.BosAufgabenteilung" @bind:after="ScheduleAutoSave" />
+                                    <input class="el-input" @bind="_kontaktForm.BosAufgabenteilung" @bind:after="SaveEinsatzkontakteAsync" />
                                 </div>
                             </div>
                             <div class="el-checklist">
                                 <label class="el-check-item">
-                                    <input type="checkbox" @bind="_vi.BosAbschnittAbgestimmt" @bind:after="ScheduleAutoSave" />
+                                    <input type="checkbox" @bind="_kontaktForm.BosAbschnittAbgestimmt" @bind:after="SaveEinsatzkontakteAsync" />
                                     <span>Einsatzabschnitt abgestimmt</span>
                                 </label>
                                 <label class="el-check-item">
-                                    <input type="checkbox" @bind="_vi.BosRessourcenBesprochen" @bind:after="ScheduleAutoSave" />
+                                    <input type="checkbox" @bind="_kontaktForm.BosRessourcenBesprochen" @bind:after="SaveEinsatzkontakteAsync" />
                                     <span>Ressourcen besprochen</span>
                                 </label>
                             </div>
