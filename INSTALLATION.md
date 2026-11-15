@@ -25,14 +25,43 @@ Erst wenn alle Punkte erfüllt sind, mit Schritt 1 beginnen.
       IP“-Webseite anzeigt. Ohne öffentliche IPv4: Server auf einem Mietserver betreiben oder beim Anbieter eine öffentliche
       IPv4 bestellen.
 - [ ] **Portfreigaben im Router** auf den Server: `443/tcp` (Team-Zugang), `80/tcp` (Verlängerung des Zertifikats),
-      `51820/udp` (WireGuard). Bei einem Mietserver entfällt das, die Firewall richtet `setup.sh` ein.
+      `51820/udp` (WireGuard). Bei einem Mietserver entfällt das, dort aber dieselben Ports in der Firewall im
+      Kundenmenü des Anbieters freigeben (z. B. Strato, IONOS, Hetzner), besonders `51820/udp`.
 - [ ] **Domain bei Dynu:** Ein kostenloser Hostname bei [Dynu](https://www.dynu.com) (z. B. `….mywire.org`) mit
-      API-Key. Bei wechselnder IP die DDNS-Aktualisierung im Router oder mit dem Dynu-Client einrichten. Andere
-      DNS-Anbieter sind für die interne Adresse (Schritt 7) noch nicht vorgesehen, siehe „Bekannte Lücken“.
+      API-Key (empfohlen). Bei wechselnder IP die DDNS-Aktualisierung im Router oder mit dem Dynu-Client einrichten.
+      Andere DNS-Anbieter gehen auch, dann muss das interne Zertifikat alle 90 Tage von Hand erneuert werden.
+- [ ] **Kein fremder IPv6-Eintrag:** Viele Domain-Anbieter setzen selbst einen AAAA-Eintrag. Zeigt er nicht auf den
+      Server, erreichen Handys im Mobilfunk weder VPN noch Team-Zugang. Löschen oder auf die IPv6 des Servers setzen.
 - [ ] **VPN-Netz frei:** Das VPN nutzt `10.10.0.0/24`. Nutzt das Heimnetz am Server diesen Bereich schon, in Schritt 2
-      ein anderes Netz wählen (z. B. `10.77.0.0/24`).
+      ein anderes Netz wählen (z. B. `10.77.0.0/24`). Der Installationsmanager wählt selbst ein freies Netz.
 - [ ] **Passwort der Einsatzleitung** festlegen: gemeinsam für die Staffel, mindestens 10 Zeichen.
 - [ ] **Geräte:** WireGuard-App auf allen Geräten der Einsatzleitung (Laptop, Tablet, Handy).
+
+## Installation mit dem Installationsmanager (empfohlen)
+
+Der Installationsmanager führt durch alle Schritte unten. Was der Server selbst kann, erledigt er. Für alles andere
+(Portfreigaben im Router, Einträge beim DNS-Anbieter) sagt er, was zu tun ist, wartet und prüft danach. Er kann
+jederzeit abgebrochen (Strg+C) und erneut gestartet werden, erledigte Schritte erkennt er.
+
+Auf dem frischen Server (per SSH angemeldet):
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/Elemirus1996/Einsatzueberwachung.Server/main/deploy/einsatz-installation
+sudo bash einsatz-installation
+```
+
+Er holt das neueste Release von GitHub, prüft Prozessor, Ubuntu-Version, Speicher, öffentliche IPv4 und
+Domain, wählt ein VPN-Netz, das sich nicht mit dem Heimnetz überschneidet, und richtet Server, WireGuard,
+Zertifikate und das erste VPN-Gerät (QR-Code im Terminal) ein. Am Ende zeigt er Einrichtungscode und Adressen.
+
+Zustand später prüfen, ohne etwas zu ändern, und ein weiteres VPN-Gerät anlegen (QR-Code oder Text für einen PC):
+
+```bash
+sudo bash einsatz-installation pruefen
+sudo bash einsatz-installation geraet
+```
+
+Die folgenden Schritte beschreiben dasselbe von Hand, zum Nachvollziehen oder bei Problemen.
 
 ## 1. Server vorbereiten
 
@@ -161,7 +190,7 @@ Auf dem Server:
 wg genkey | tee laptop.key | wg pubkey > laptop.pub
 sudo wg set wg0 peer "$(cat laptop.pub)" allowed-ips 10.10.0.2/32
 sudo wg-quick save wg0
-cat /etc/wireguard/server.pub
+sudo wg show wg0 public-key           # öffentlicher Schlüssel des Servers
 ```
 
 In der WireGuard-App des Laptops einen neuen Tunnel anlegen:
@@ -173,7 +202,7 @@ Address = 10.10.0.2/32
 DNS = 10.10.0.1
 
 [Peer]
-PublicKey = <Inhalt von server.pub>
+PublicKey = <öffentlicher Schlüssel des Servers>
 Endpoint = <domain>:51820
 AllowedIPs = 10.10.0.0/24
 ```
@@ -205,8 +234,9 @@ prüfen (Abschnitt 5 dort).
 
 Diese Punkte sind noch nicht gelöst und werden in den Skripten nachgezogen:
 
-- Schritt 6 (öffentliches Zertifikat und nginx-Vorlage) geht noch von Hand.
-- Das interne Zertifikat (Schritt 7) geht nur mit Dynu. Bei anderem DNS-Anbieter bleibt nur die Ausstellung von Hand
-  (`certbot certonly --manual --preferred-challenges dns -d el.<domain>`), die alle 90 Tage wiederholt werden muss.
+- Der Installationsmanager braucht ein Release, das ihn enthält (ab der nächsten Version nach 1.13.0).
+- Das interne Zertifikat (Schritt 7) verlängert sich nur mit Dynu selbst. Bei anderem DNS-Anbieter
+  (`einsatz-staffel setzen dns_anbieter andere`) fragt `setup-intern-zertifikat.sh` nach einem TXT-Eintrag von Hand,
+  alle 90 Tage erneut.
 - Ein vorhandenes VPN (z. B. im Router) statt WireGuard auf dem Server ist nicht vorgesehen.
 - Diese Anleitung ist noch nicht auf einem frischen Server durchgespielt worden.

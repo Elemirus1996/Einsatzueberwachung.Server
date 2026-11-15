@@ -102,6 +102,14 @@ ${APP_USER} ALL=(root) NOPASSWD: /bin/systemctl restart einsatzueberwachung-serv
 EOF
 chmod 440 /etc/sudoers.d/einsatzueberwachung-update
 
+# Oeffentliche Adresse fuer QR-Codes der Teams; ohne diesen Eintrag gilt die Beispiel-Domain aus appsettings.json
+mkdir -p /etc/systemd/system/einsatzueberwachung-server.service.d
+cat >/etc/systemd/system/einsatzueberwachung-server.service.d/staffel.conf <<EOF
+# Von setup.sh aus staffel.conf geschrieben
+[Service]
+Environment=TeamMobile__PublicBaseUrl=https://$(bash "$STAFFEL" wert domain)
+EOF
+
 systemctl daemon-reload
 systemctl enable einsatzueberwachung-server.service
 systemctl enable einsatzueberwachung-backup.timer

@@ -1,0 +1,539 @@
+#!/usr/bin/env bash
+# Installationsmanager der Einsatzueberwachung: fuehrt Schritt fuer Schritt durch die Einrichtung eines neuen Servers.
+# Was der Server selbst kann, erledigt er; fuer alles andere (Router, DNS-Anbieter) sagt er, was zu tun ist, wartet und
+# prueft danach. Kann jederzeit abgebrochen und neu gestartet werden, erledigte Schritte werden erkannt.
+#
+#   sudo bash einsatz-installation            gefuehrte Installation (oder Fortsetzung)
+#   sudo bash einsatz-installation pruefen    nur pruefen, was fertig ist, nichts aendern
+#   sudo bash einsatz-installation geraet     weiteres VPN-Geraet anlegen (QR-Code oder Text fuer PC)
+#
+# Laeuft aus einem Checkout des Repos (deploy/einsatz-installation) oder einzeln heruntergeladen; dann holt er das
+# neueste Release von GitHub nach /var/lib/einsatz-installation/ (nur root, nicht unter /opt/einsatzueberwachung, das
+# setup.sh dem Dienstbenutzer uebergibt: dort koennte der Dienst Skripte veraendern, die root spaeter ausfuehrt).
+set -euo pipefail
+
+GH_REPO="Elemirus1996/Einsatzueberwachung.Server"
+APP_ROOT="/opt/einsatzueberwachung"
+DOWNLOADS="/var/lib/einsatz-installation"
+STAFFEL_CONF="${EINSATZ_STAFFEL_CONF:-/etc/einsatzueberwachung/staffel.conf}"
+SITE_PUBLIC="/etc/nginx/sites-available/einsatzueberwachung-public"
+CRT="/etc/ssl/certs/einsatz.crt"
+# Netze, die fuer das VPN der Reihe nach probiert werden (das erste ist der bisherige Standard)
+VPN_KANDIDATEN="10.10.0.0/24 10.77.0.0/24 10.123.45.0/24 172.29.77.0/24 192.168.234.0/24"
+QUELLE=""
+
+# ---------- Ausgabe und Eingabe ----------
+
+titel() { printf '\n== %s ==\n' "$*"; }
+info() { printf '  %s\n' "$*"; }
+gut() { printf '  [ok] %s\n' "$*"; }
+warnung() { printf '  [!] %s\n' "$*"; }
+abbruch() { printf '\n  [x] %s\n\n' "$*" >&2; exit 1; }
+
+# Eingaben von der Tastatur, auch wenn das Skript per Pipe gestartet wurde
+lies() { local v; read -r v </dev/tty || v=""; printf '%s' "$v"; }
+
+# frage <text> [standard]
+frage() {
+	local antwort
+	if [[ -n "${2:-}" ]]; then printf '  %s [%s]: ' "$1" "$2" >/dev/tty; else printf '  %s: ' "$1" >/dev/tty; fi
+	antwort="$(lies)"
+	printf '%s' "${antwort:-${2:-}}"
+}
+
+ja_nein() {
+	local a
+	while true; do
+		a="$(frage "$1 (j/n)" "${2:-j}")"
+		case "$a" in j|J|ja|Ja) return 0 ;; n|N|nein|Nein) return 1 ;; esac
+	done
+}
+
+# Wartet auf Enter; q bricht ab (der naechste Aufruf macht hier weiter)
+warten() {
+	local a
+	printf '  %s Enter = erneut pruefen, q = abbrechen: ' "${1:-Wenn erledigt:}" >/dev/tty
+	a="$(lies)"
+	[[ "$a" != q && "$a" != Q ]] || abbruch "Abgebrochen. Erneut starten mit: sudo bash $0"
+}
+
+# ---------- Netz-Hilfen (ohne Seiteneffekte, getestet) ----------
+
+ip_zahl() {
+	local IFS=. a b c d
+	read -r a b c d <<<"$1"
+	echo $(( (a << 24) + (b << 16) + (c << 8) + d ))
+}
+
+# ueberlappt <netz/praefix> <netz/praefix>
+ueberlappt() {
+	local a="${1%/*}" pa="${1#*/}" b="${2%/*}" pb="${2#*/}" p maske
+	[[ "$1" == */* ]] || pa=32
+	[[ "$2" == */* ]] || pb=32
+	p=$(( pa < pb ? pa : pb ))
+	maske=$(( p == 0 ? 0 : (0xFFFFFFFF << (32 - p)) & 0xFFFFFFFF ))
+	(( ($(ip_zahl "$a") & maske) == ($(ip_zahl "$b") & maske) ))
+}
+
+# Belegte IPv4-Netze dieses Rechners (Routen und eigene Adressen), eins je Zeile; wg0 selbst zaehlt nicht
+belegte_netze() {
+	ip -4 route show 2>/dev/null | awk '$1 != "default" && $0 !~ / dev wg0( |$)/ { print $1 }'
+	ip -4 -o addr show 2>/dev/null | awk '$2 != "wg0" && $2 != "lo" { print $4 }'
+}
+
+# netz_frei <netz> <belegte Netze, eins je Zeile>
+netz_frei() {
+	local n
+	while IFS= read -r n; do
+		[[ -n "$n" ]] || continue
+		ueberlappt "$1" "$n" && return 1
+	done <<<"$2"
+	return 0
+}
+
+# Erstes freies Netz aus VPN_KANDIDATEN
+freies_vpn_netz() {
+	local belegt k
+	belegt="$(belegte_netze)"
+	for k in $VPN_KANDIDATEN; do
+		netz_frei "$k" "$belegt" && { echo "$k"; return 0; }
+	done
+	return 1
+}
+
+port_belegt() { ss -Hlun "sport = :$1" 2>/dev/null | grep -q .; }
+
+oeffentliche_ipv4() { curl -4 -fsS --max-time 10 https://api.ipify.org 2>/dev/null || true; }
+
+ist_lokale_adresse() { ip -4 -o addr show 2>/dev/null | awk '{ sub(/\/.*/, "", $4); print $4 }' | grep -qxF "$1"; }
+
+aufloesen() { getent ahostsv4 "$1" 2>/dev/null | awk '{ print $1; exit }'; }
+
+# IPv6-Adressen (AAAA) eines Namens, eine je Zeile; ::ffff:… sind nur umgerechnete IPv4-Adressen
+aufloesen_v6() { getent ahostsv6 "$1" 2>/dev/null | awk '$1 !~ /^::ffff:/ { print $1 }' | sort -u; }
+
+lokale_ipv6() { ip -6 -o addr show scope global 2>/dev/null | awk '{ sub(/\/.*/, "", $4); print $4 }'; }
+
+# fremde_ipv6 <AAAA-Adressen> <eigene IPv6-Adressen> (je eine Zeile): AAAA-Adressen, die nicht zu diesem Server gehoeren.
+# Haeufig setzt der Domain-Anbieter selbst einen AAAA-Eintrag; Handys im Mobilfunk nehmen bevorzugt IPv6 und landen dann
+# woanders (VPN ohne Handshake, Team-Zugang nicht erreichbar).
+fremde_ipv6() {
+	local a
+	while IFS= read -r a; do
+		[[ -n "$a" ]] || continue
+		grep -qixF "$a" <<<"$2" || echo "$a"
+	done <<<"$1"
+}
+
+# Hatte das Geraet mit diesem oeffentlichen Schluessel schon Kontakt (Handshake)?
+kontakt() { wg show wg0 latest-handshakes 2>/dev/null | awk -v k="$1" '$1 == k && $2 > 0 { f = 1 } END { exit !f }'; }
+
+lan_adresse() { ip -4 route get 1.1.1.1 2>/dev/null | awk '{ for (i = 1; i < NF; i++) if ($i == "src") { print $(i + 1); exit } }'; }
+
+# Konfiguration fuer die WireGuard-App (wie VpnDevices.BuildClientConfig im Server)
+# client_konfig <private_key> <ip> <dns-ip oder leer> <server_public_key> <endpoint> <netz>
+client_konfig() {
+	printf '[Interface]\nPrivateKey = %s\nAddress = %s/32\n' "$1" "$2"
+	[[ -z "$3" ]] || printf 'DNS = %s\n' "$3"
+	printf '\n[Peer]\nPublicKey = %s\nEndpoint = %s\nAllowedIPs = %s\nPersistentKeepalive = 25\n' "$4" "$5" "$6"
+}
+
+# Aus der Antwort von api.github.com/.../releases/latest: Tag und Adresse des Linux-Pakets, je eine Zeile
+release_aus_json() {
+	python3 -c '
+import json, re, sys
+d = json.load(sys.stdin)
+urls = [a["browser_download_url"] for a in d.get("assets", []) if re.fullmatch(r"linux-x64-server-.*\.zip", a.get("name", ""))]
+if not d.get("tag_name") or not urls:
+    sys.exit(1)
+print(d["tag_name"]); print(urls[0])'
+}
+
+# ---------- Schritte ----------
+
+staffel() { bash "$QUELLE/deploy/scripts/einsatz-staffel" "$@"; }
+
+schritt_vorab() {
+	titel "1. Voraussetzungen des Rechners"
+	[[ $EUID -eq 0 ]] || abbruch "Bitte als root starten: sudo bash $0"
+	local arch os ver ram frei
+	arch="$(uname -m)"
+	[[ "$arch" == x86_64 ]] || abbruch "Prozessor $arch wird nicht unterstuetzt, noetig ist x86_64 (64 Bit, kein Raspberry Pi)."
+	gut "Prozessor x86_64"
+	os="$(. /etc/os-release 2>/dev/null; echo "${ID:-?}")"
+	ver="$(. /etc/os-release 2>/dev/null; echo "${VERSION_ID:-?}")"
+	case "$os $ver" in
+		"ubuntu 22.04"|"ubuntu 24.04") gut "Ubuntu $ver" ;;
+		ubuntu*) warnung "Ubuntu $ver ist nicht erprobt (erprobt: 22.04, 24.04)."; ja_nein "Trotzdem fortfahren?" n || exit 1 ;;
+		*) abbruch "Betriebssystem $os $ver wird nicht unterstuetzt, noetig ist Ubuntu Server 22.04 oder 24.04." ;;
+	esac
+	ram="$(awk '/MemTotal/ { print int($2 / 1024) }' /proc/meminfo)"
+	(( ram >= 900 )) && gut "Arbeitsspeicher ${ram} MB" || warnung "Nur ${ram} MB Arbeitsspeicher, empfohlen sind mindestens 1 GB."
+	frei="$(df -Pm / | awk 'NR == 2 { print $4 }')"
+	(( frei >= 5000 )) && gut "Freier Speicher $(( frei / 1024 )) GB" || warnung "Nur ${frei} MB frei, empfohlen sind mindestens 5 GB."
+	curl -fsS --max-time 10 -o /dev/null https://api.github.com || abbruch "Keine Verbindung zu GitHub. Internetzugang des Servers pruefen."
+	gut "Internetverbindung"
+}
+
+schritt_quelle() {
+	titel "2. Programmdateien"
+	local hier
+	hier="$(cd "$(dirname "$0")" && pwd)"
+	if [[ -f "$hier/setup.sh" && -f "$hier/scripts/einsatz-staffel" ]]; then
+		QUELLE="$(dirname "$hier")"
+		gut "Repo-Checkout: $QUELLE"
+		if [[ -f "$QUELLE/publish/server/Einsatzueberwachung.Server.dll" ]]; then
+			gut "Server-Paket liegt in publish/server"
+			return
+		fi
+	fi
+	command -v unzip >/dev/null && command -v python3 >/dev/null || {
+		info "Installiere unzip und python3 ..."
+		DEBIAN_FRONTEND=noninteractive apt-get install -y unzip python3 >/dev/null
+	}
+	local json tag url ziel
+	json="$(curl -fsSL --max-time 30 "https://api.github.com/repos/$GH_REPO/releases/latest")" \
+		|| abbruch "Neuestes Release nicht abrufbar."
+	{ read -r tag; read -r url; } < <(release_aus_json <<<"$json") || abbruch "Release ohne Linux-Paket."
+	[[ "$tag" =~ ^v[0-9A-Za-z.-]+$ ]] || abbruch "Unerwarteter Release-Name: $tag"
+	install -d -o root -g root -m 700 "$DOWNLOADS"
+	ziel="$DOWNLOADS/$tag"
+	if [[ -z "$QUELLE" ]]; then
+		QUELLE="$ziel"
+		if [[ ! -f "$QUELLE/deploy/setup.sh" ]]; then
+			info "Lade Quellen $tag ..."
+			mkdir -p "$QUELLE"
+			curl -fsSL --max-time 300 "https://github.com/$GH_REPO/archive/refs/tags/$tag.tar.gz" \
+				| tar xz --strip-components=1 -C "$QUELLE"
+		fi
+		[[ -f "$QUELLE/deploy/scripts/einsatz-staffel" ]] \
+			|| abbruch "Release $tag ist zu alt fuer den Installationsmanager. Das naechste Release abwarten."
+		gut "Quellen $tag in $QUELLE"
+	fi
+	if [[ ! -f "$QUELLE/publish/server/Einsatzueberwachung.Server.dll" ]]; then
+		info "Lade Server-Paket $tag ..."
+		mkdir -p "$QUELLE/publish/server"
+		curl -fsSL --max-time 600 -o "$QUELLE/publish/server.zip" "$url"
+		unzip -oq "$QUELLE/publish/server.zip" -d "$QUELLE/publish/server"
+		rm -f "$QUELLE/publish/server.zip"
+	fi
+	gut "Server-Paket $tag"
+}
+
+schritt_einstellungen() {
+	titel "3. Einstellungen der Staffel"
+	local domain anbieter netz port m
+	domain="$(staffel wert domain)"
+	if [[ -z "$domain" ]]; then
+		cat <<-TXT
+		  Die Staffel braucht einen oeffentlichen Namen (Domain), ueber den Teams und VPN den Server erreichen.
+		  Empfohlen: kostenloser Name bei Dynu (https://www.dynu.com), z. B. staffel-musterstadt.mywire.org.
+		  Bei Dynu: Konto anlegen, unter „DDNS Services“ einen Namen anlegen. Die IP-Adresse kommt im naechsten
+		  Schritt dran.
+		TXT
+		while true; do
+			domain="$(frage "Domain der Staffel")"
+			m="$(staffel setzen domain "$domain" 2>&1)" && break
+			warnung "${m#einsatz-staffel: }"
+		done
+	fi
+	gut "Domain: $(staffel wert domain)"
+
+	if ! grep -q '^dns_anbieter=' "$STAFFEL_CONF" 2>/dev/null; then
+		cat <<-TXT
+		  Fuer das Zertifikat der internen Adresse (EL-App) muss der Server einen DNS-Eintrag setzen koennen.
+		  Mit Dynu geht das automatisch, auch die Verlaengerung alle 90 Tage. Bei anderen Anbietern muss der
+		  Eintrag von Hand gesetzt werden, auch bei jeder Verlaengerung.
+		TXT
+		if ja_nein "Liegt die Domain bei Dynu?" j; then anbieter=dynu; else anbieter=andere; fi
+		staffel setzen dns_anbieter "$anbieter"
+	fi
+	[[ "$(staffel wert dns_anbieter)" == dynu ]] && gut "DNS-Anbieter: Dynu" \
+		|| warnung "DNS-Anbieter ohne Schnittstelle: internes Zertifikat alle 90 Tage von Hand erneuern."
+
+	if [[ -f /etc/wireguard/wg0.conf ]]; then
+		gut "VPN-Netz: $(staffel wert vpn_netz) (WireGuard schon eingerichtet)"
+	elif ! grep -q '^vpn_netz=' "$STAFFEL_CONF" 2>/dev/null; then
+		netz="$(freies_vpn_netz)" || abbruch "Kein freies VPN-Netz gefunden. Von Hand setzen: einsatz-staffel setzen vpn_netz <a.b.c.0/24>"
+		staffel setzen vpn_netz "$netz"
+		gut "VPN-Netz: $netz (kollidiert mit keinem Netz dieses Rechners)"
+	else
+		netz="$(staffel wert vpn_netz)"
+		netz_frei "$netz" "$(belegte_netze)" && gut "VPN-Netz: $netz" \
+			|| abbruch "VPN-Netz $netz ueberschneidet sich mit einem Netz dieses Rechners. Anderes setzen: einsatz-staffel setzen vpn_netz <a.b.c.0/24>"
+	fi
+
+	if ! grep -q '^vpn_port=' "$STAFFEL_CONF" 2>/dev/null; then
+		port=51820
+		while port_belegt "$port" && ! ip link show wg0 >/dev/null 2>&1; do port=$(( port + 1 )); done
+		staffel setzen vpn_port "$port"
+	fi
+	gut "VPN-Port: $(staffel wert vpn_port)/udp"
+}
+
+schritt_erreichbarkeit() {
+	titel "4. Erreichbarkeit aus dem Internet"
+	local pub lan domain aufgeloest port fremd
+	domain="$(staffel wert domain)"
+	port="$(staffel wert vpn_port)"
+	while true; do
+		pub="$(oeffentliche_ipv4)"
+		[[ -n "$pub" ]] && break
+		cat <<-TXT
+		  Der Server hat keine oeffentliche IPv4-Adresse. Haeufige Ursache: Anschluss mit DS-Lite oder CGNAT
+		  (Kabel, Glasfaser, Starlink). Damit geht es nicht. Auswege: beim Anbieter eine oeffentliche IPv4
+		  bestellen oder den Server bei einem Mietserver-Anbieter (VPS) betreiben.
+		TXT
+		warten
+	done
+	gut "Oeffentliche IPv4: $pub"
+	if ist_lokale_adresse "$pub"; then
+		gut "Adresse liegt direkt am Server (z. B. Mietserver), keine Portfreigabe im Router noetig"
+		cat <<-TXT
+		  Viele Anbieter (z. B. Strato, IONOS, Hetzner, Oracle) haben zusaetzlich eine Firewall im Kundenmenue.
+		  Dort eingehend freigeben: 80/tcp, 443/tcp und $port/udp. UDP wird dabei oft vergessen, dann geht das VPN nicht.
+		TXT
+		ja_nein "Freigaben beim Anbieter geprueft?" j || abbruch "Erst die Freigaben beim Anbieter einrichten, dann erneut starten."
+	else
+		lan="$(lan_adresse)"
+		cat <<-TXT
+		  Der Server steht hinter einem Router. Dort diese Portfreigaben auf ${lan:-die Adresse des Servers} einrichten:
+		    80/tcp, 443/tcp und $port/udp
+		  Pruefen: Zeigt der Router als WAN- bzw. Internet-Adresse NICHT $pub (oder eine Adresse 100.64.x.x bis
+		  100.127.x.x), liegt CGNAT vor. Dann helfen Portfreigaben nicht (siehe oben: oeffentliche IPv4 oder VPS).
+		  Ob die Freigaben wirken, zeigt sich beim Zertifikat in Schritt 6.
+		TXT
+		ja_nein "Portfreigaben eingerichtet?" j || abbruch "Erst die Portfreigaben einrichten, dann erneut starten."
+	fi
+	while true; do
+		aufgeloest="$(aufloesen "$domain")"
+		[[ "$aufgeloest" == "$pub" ]] && break
+		cat <<-TXT
+		  $domain zeigt auf ${aufgeloest:-nichts}, noetig ist $pub.
+		  Bei Dynu: DDNS Services -> $domain -> IPv4-Adresse $pub eintragen und speichern. Aendert sich die
+		  Adresse des Anschlusses, die Aktualisierung im Router (DynDNS) oder mit dem Dynu-Client einrichten.
+		  Die Aenderung kann einige Minuten brauchen.
+		TXT
+		warten
+	done
+	gut "$domain zeigt auf $pub"
+	while true; do
+		fremd="$(fremde_ipv6 "$(aufloesen_v6 "$domain")" "$(lokale_ipv6)")"
+		[[ -n "$fremd" ]] || break
+		cat <<-TXT
+		  $domain hat einen IPv6-Eintrag (AAAA) auf $(echo $fremd), der nicht zu diesem Server gehoert.
+		  Handys im Mobilfunk nehmen bevorzugt IPv6 und erreichen den Server dann nicht (VPN, Team-Zugang).
+		  Beim DNS-Anbieter den AAAA-Eintrag von $domain loeschen$(lokale_ipv6 | head -n1 | sed 's/^/ oder auf diese IPv6 des Servers setzen: /').
+		TXT
+		warten
+	done
+	[[ -n "$(aufloesen_v6 "$domain")" ]] && gut "IPv6-Eintrag gehoert zu diesem Server" || gut "Kein fremder IPv6-Eintrag"
+}
+
+schritt_grundinstallation() {
+	titel "5. Grundinstallation (Pakete, Dienst, WireGuard, Firewall)"
+	if systemctl is-active --quiet einsatzueberwachung-server.service 2>/dev/null \
+		&& dpkg -s aspnetcore-runtime-9.0 >/dev/null 2>&1 && ip link show wg0 >/dev/null 2>&1 \
+		&& [[ -f /etc/systemd/system/einsatzueberwachung-server.service.d/staffel.conf ]]; then
+		gut "Schon erledigt"
+		return
+	fi
+	info "Das dauert einige Minuten."
+	bash "$QUELLE/deploy/setup.sh" || abbruch "setup.sh ist fehlgeschlagen (Meldungen oben)."
+	systemctl is-active --quiet einsatzueberwachung-server.service || abbruch "Dienst laeuft nicht: journalctl -u einsatzueberwachung-server -n 50"
+	gut "Dienst laeuft, WireGuard aktiv"
+	bash "$QUELLE/deploy/scripts/setup-vpn.sh" || abbruch "setup-vpn.sh ist fehlgeschlagen (Meldungen oben)."
+}
+
+schritt_oeffentlich() {
+	titel "6. Zertifikat und Team-Zugang ($(staffel wert domain))"
+	local domain mail args
+	domain="$(staffel wert domain)"
+	if [[ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]]; then
+		mail="$(frage "E-Mail fuer Warnungen von Let's Encrypt (leer = keine)")"
+		if [[ -n "$mail" ]]; then args="-m $mail"; else args="--register-unsafely-without-email"; fi
+		info "Stelle Zertifikat aus, nginx wird dafuer kurz angehalten ..."
+		systemctl stop nginx
+		# shellcheck disable=SC2086
+		if ! certbot certonly --standalone -d "$domain" --cert-name "$domain" --non-interactive --agree-tos $args; then
+			systemctl start nginx
+			abbruch "Zertifikat nicht ausgestellt. Meist ist Port 80 von aussen nicht erreichbar: Portfreigabe im Router, CGNAT, Firewall des Mietserver-Anbieters."
+		fi
+		systemctl start nginx
+	fi
+	gut "Zertifikat fuer $domain"
+	if [[ ! -L /etc/nginx/sites-enabled/einsatzueberwachung-public ]]; then
+		staffel vorlage "$QUELLE/deploy/nginx/einsatzueberwachung-public.conf" >"$SITE_PUBLIC"
+		ln -sf "$SITE_PUBLIC" /etc/nginx/sites-enabled/einsatzueberwachung-public
+		nginx -t 2>/dev/null || abbruch "nginx-Konfiguration fehlerhaft: nginx -t"
+		systemctl reload nginx
+		bash "$QUELLE/deploy/scripts/setup-zertifikat.sh" || abbruch "setup-zertifikat.sh ist fehlgeschlagen (Meldungen oben)."
+	fi
+	if curl -fsS --max-time 10 -o /dev/null --resolve "$domain:443:127.0.0.1" "https://$domain/team"; then
+		gut "https://$domain/team antwortet"
+	else
+		warnung "https://$domain/team antwortet nicht. Pruefen: systemctl status einsatzueberwachung-server nginx"
+	fi
+}
+
+schritt_intern() {
+	local host ip anbieter
+	host="$(staffel wert intern_adresse)"
+	ip="$(staffel wert vpn_server_ip)"
+	anbieter="$(staffel wert dns_anbieter)"
+	titel "7. Zertifikat fuer die interne Adresse ($host)"
+	if [[ -L "$CRT" && "$(readlink "$CRT")" == "/etc/letsencrypt/live/$host/fullchain.pem" ]]; then
+		gut "Schon erledigt"
+		return
+	fi
+	info "Die Einsatzleitung und die EL-App erreichen den Server im VPN unter $host."
+	while [[ "$(aufloesen "$host")" != "$ip" ]]; do
+		if [[ "$anbieter" == dynu ]]; then
+			info "Bei Dynu: DDNS Services -> $(staffel wert domain) -> DNS Records -> Add Record:"
+			info "  Node Name: el   Type: A   IPv4 Address: $ip"
+		else
+			info "Beim DNS-Anbieter einen A-Eintrag anlegen: $host -> $ip"
+		fi
+		info "Aktuell: $host -> $(aufloesen "$host" || true)"
+		warten
+	done
+	gut "$host zeigt auf $ip"
+	[[ "$anbieter" != dynu ]] || info "Gleich wird der API-Key von Dynu abgefragt: Dynu -> Control Panel -> API Credentials."
+	bash "$QUELLE/deploy/scripts/setup-intern-zertifikat.sh" "$host" || abbruch "setup-intern-zertifikat.sh ist fehlgeschlagen (Meldungen oben)."
+}
+
+# Legt ein VPN-Geraet an, zeigt die Konfiguration als QR-Code (Handy, Tablet) oder als Text (PC) und wartet auf den
+# ersten Kontakt. Der private Schluessel wird nur angezeigt, nirgends gespeichert.
+neues_geraet() {
+	local ausgabe ip privat geraet info pub dns konfig port i
+	command -v qrencode >/dev/null || DEBIAN_FRONTEND=noninteractive apt-get install -y qrencode >/dev/null
+	port="$(staffel wert vpn_port)"
+	ausgabe="$(/usr/local/sbin/einsatz-wg-peer add)"
+	ip="$(sed -n 's/^ip=//p' <<<"$ausgabe")"
+	privat="$(sed -n 's/^private_key=//p' <<<"$ausgabe")"
+	geraet="$(sed -n 's/^public_key=//p' <<<"$ausgabe")"
+	info="$(/usr/local/sbin/einsatz-wg-peer info)"
+	pub="$(sed -n 's/^public_key=//p' <<<"$info")"
+	dns=""
+	grep -qx 'dns=yes' <<<"$info" && dns="$(staffel wert vpn_server_ip)"
+	konfig="$(client_konfig "$privat" "$ip" "$dns" "$pub" "$(staffel wert domain):$port" "$(staffel wert vpn_netz)")"
+	unset privat ausgabe
+	if ja_nein "Geraet mit Kamera (Handy, Tablet)? Sonst Text fuer einen PC" j; then
+		qrencode -t ansiutf8 <<<"$konfig"
+		info "WireGuard-App: Tunnel hinzufuegen -> QR-Code scannen."
+	else
+		printf '\n%s\n\n' "$konfig"
+		info "WireGuard am PC: Tunnel hinzufuegen -> Leeren Tunnel hinzufuegen, den Inhalt ganz durch den Text oben ersetzen."
+		info "Den Text nirgends aufheben, er enthaelt den privaten Schluessel des Geraets."
+	fi
+	unset konfig
+	gut "Geraet $ip angelegt (erscheint in der Oberflaeche unter Einstellungen -> System -> VPN-Geraete)"
+	info "Jetzt den Tunnel am Geraet einschalten. Handy zum Testen nicht im selben WLAN wie der Server (mobile Daten)."
+	while true; do
+		for i in $(seq 1 30); do
+			kontakt "$geraet" && { gut "Geraet $ip ist verbunden"; return 0; }
+			sleep 2
+		done
+		cat <<-TXT
+		  Noch kein Kontakt vom Geraet. Haeufige Ursachen:
+		    - UDP $port nicht freigegeben: Portfreigabe im Router bzw. Firewall im Kundenmenue des Anbieters
+		    - Geraet im selben WLAN wie der Server: mobile Daten nutzen
+		    - IPv6-Eintrag (AAAA) der Domain zeigt nicht auf diesen Server (Schritt 4)
+		  Ob Pakete ankommen, zeigt in einem zweiten Fenster: sudo tcpdump -ni any udp port $port
+		TXT
+		ja_nein "Weiter warten?" j || { warnung "Geraet ohne Kontakt. Spaeter pruefen: sudo bash $0 pruefen"; return 0; }
+	done
+}
+
+schritt_erstes_geraet() {
+	titel "8. Erstes Geraet der Einsatzleitung"
+	local code="$APP_ROOT/data/LEITUNG-EINRICHTUNGSCODE.txt"
+	if grep -q '^# einsatzueberwachung' /etc/wireguard/wg0.conf 2>/dev/null; then
+		gut "VPN-Geraet vorhanden (weitere: sudo bash $0 geraet, oder in der Oberflaeche)"
+	else
+		info "Das erste Geraet (z. B. Handy oder Laptop der Einsatzleitung) wird hier angelegt."
+		info "Weitere Geraete: sudo bash $0 geraet, oder spaeter in der Oberflaeche (Einstellungen -> System -> VPN-Geraete)."
+		ja_nein "Jetzt anlegen?" j || return 0
+		neues_geraet
+	fi
+	if [[ -f "$code" ]]; then
+		info "Im VPN https://$(staffel wert intern_adresse) oeffnen, „Erstes Einrichten“ waehlen und eingeben:"
+		info "  Einrichtungscode: $(cat "$code")"
+		info "  dazu das Passwort der Einsatzleitung (mindestens 10 Zeichen, fuer die ganze Staffel)."
+	else
+		gut "Einsatzleitung ist eingerichtet"
+	fi
+}
+
+zusammenfassung() {
+	local domain intern
+	domain="$(staffel wert domain)"
+	intern="$(staffel wert intern_adresse)"
+	titel "Fertig"
+	cat <<-TXT
+	  Einsatzleitung (Browser, WireGuard an):  https://$intern
+	  EL-App (WireGuard an), Adresse:           $intern
+	  Teams (ohne VPN):                         https://$domain/team
+	  VPN-Server fuer neue Geraete:             $domain:$(staffel wert vpn_port)
+	  Zustand spaeter pruefen:                  sudo bash $0 pruefen
+	TXT
+}
+
+# ---------- Nur pruefen ----------
+
+# Fuer pruefen und geraet: Quellen einer laufenden oder fertigen Installation
+quelle_finden() {
+	[[ $EUID -eq 0 ]] || abbruch "Bitte als root starten (sudo)."
+	QUELLE="${QUELLE:-$(cd "$(dirname "$0")/.." && pwd)}"
+	[[ -f "$QUELLE/deploy/scripts/einsatz-staffel" ]] || QUELLE="$(ls -dt "$DOWNLOADS"/v* 2>/dev/null | head -n1)"
+	[[ -n "$QUELLE" ]] || abbruch "Keine Quellen gefunden, Installation noch nicht begonnen."
+}
+
+pruefen() {
+	local domain intern fehlt=0
+	punkt() { if eval "$2" >/dev/null 2>&1; then printf '  [ok] %s\n' "$1"; else printf '  [  ] %s\n' "$1"; fehlt=1; fi; }
+	titel "Zustand der Installation"
+	quelle_finden
+	domain="$(staffel wert domain)"
+	intern="$(staffel wert intern_adresse)"
+	punkt "Einstellungen der Staffel vollstaendig" "staffel pruefen"
+	punkt "Dienst laeuft" "systemctl is-active --quiet einsatzueberwachung-server.service"
+	punkt "ASP.NET-Core-Laufzeit 9" "dpkg -s aspnetcore-runtime-9.0"
+	punkt "WireGuard wg0 aktiv" "ip link show wg0"
+	punkt "DNS im VPN (dnsmasq)" "systemctl is-active --quiet dnsmasq"
+	punkt "Zertifikat $domain" "[[ -f /etc/letsencrypt/live/$domain/fullchain.pem ]]"
+	punkt "Team-Zugang in nginx" "[[ -L /etc/nginx/sites-enabled/einsatzueberwachung-public ]]"
+	punkt "Zertifikat $intern" "[[ \"\$(readlink $CRT)\" == /etc/letsencrypt/live/$intern/fullchain.pem ]]"
+	punkt "VPN-Geraet angelegt" "grep -q '^# einsatzueberwachung' /etc/wireguard/wg0.conf"
+	punkt "VPN-Geraet hatte Kontakt" "wg show wg0 latest-handshakes | awk '\$2 > 0' | grep -q ."
+	punkt "Einsatzleitung eingerichtet" "[[ ! -f $APP_ROOT/data/LEITUNG-EINRICHTUNGSCODE.txt ]]"
+	return $fehlt
+}
+
+main() {
+	case "${1:-}" in
+		pruefen) pruefen ;;
+		geraet)
+			quelle_finden
+			[[ -x /usr/local/sbin/einsatz-wg-peer ]] || abbruch "VPN noch nicht eingerichtet, erst die Installation abschliessen."
+			titel "Weiteres VPN-Geraet"
+			neues_geraet
+			;;
+		"")
+			echo "Installationsmanager Einsatzueberwachung. Abbruch jederzeit mit Strg+C, erneuter Start macht weiter."
+			schritt_vorab
+			schritt_quelle
+			schritt_einstellungen
+			schritt_erreichbarkeit
+			schritt_grundinstallation
+			schritt_oeffentlich
+			schritt_intern
+			schritt_erstes_geraet
+			zusammenfassung
+			;;
+		*) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+	esac
+}
+
+# Tests laden nur die Funktionen
+[[ -n "${EINSATZ_INSTALLATION_TEST:-}" ]] || main "$@"
