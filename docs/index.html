@@ -415,6 +415,29 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.14.1</span>
+    <span class="changelog-date">15.11.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
+<h4>Anwesenheit beim Einsatzende in der EL-App</h4>
+<ul>
+<li>Beim Beenden über die EL-App lässt sich jetzt wie in <code>/el/beenden</code> ankreuzen, welches Personal und welche Hunde vor Ort waren. Vorausgewählt ist, wer in einem Team eingeteilt war.</li>
+<li>Bisher übernahm der Server beim Beenden aus der App nur die eingeteilten Teams; wer ohne Team vor Ort war, fehlte im Bericht.</li>
+<li>Dafür braucht es die neue Version der App (iOS und Android). Ältere Apps beenden weiter wie bisher.</li>
+</ul>
+<h4>Technik</h4>
+<ul>
+<li>Schnittstelle erweitert: <code>GET /einsatz/vorort</code>, <code>POST /einsatz/beenden</code> mit <code>personalIds</code> und <code>hundeIds</code>. Beschreibung in <code>docs/APP_API.md</code>.</li>
+<li>Keine neuen Pakete, keine nginx-Änderung, keine Datenmigration.</li>
+</ul>
+<h4>Einspielen</h4>
+<p><strong>Nur, wenn gerade kein Einsatz läuft.</strong></p>
+<p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.14.1“.</p>
+<p>2. <strong>Wer 1.14.0 übersprungen hat:</strong> die einmaligen Schritte für Backup-Skripte und Backup-Dienst aus den Release-Notes von 1.14.0 ausführen (<code>sqlite3</code>, Skripte per <code>curl</code>, <code>chown</code>). Sonst läuft das nächtliche Backup weiter nach der alten Regel und die Seite „Speicher &amp; Server-Backups“ kann nicht löschen.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.14.0</span>
     <span class="changelog-date">15.11.2026</span>
     <span class="changelog-name"></span>
@@ -661,29 +684,6 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <h4>Einspielen</h4>
 <p>Normales Update über den Browser.</p>
 <p>Für die App wird später ein zusätzlicher nginx-Block gebraucht. Er ist in <code>deploy/nginx/einsatzueberwachung-public.conf</code> enthalten (eigenes Limit für <code>/api/team-mobile/app/</code>, weil sich im Mobilfunk viele Handys eine IP teilen). Übernehmen genügt, sobald die App getestet wird. Für den normalen Betrieb ist das noch nicht nötig.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.7</span>
-    <span class="changelog-date">28.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Neu</h4>
-<ul>
-<li><strong>Suchgebiet aus Koordinatenliste:</strong> Unter Karte → Gebiete eine Liste aus einer anderen App einfügen. Erkannt werden Dezimal (Breite,Länge oder Länge,Breite) und UTM. Eine Vorschau zeigt Punkte, Format und Fläche, danach kommt der gewohnte Dialog für Name, Team und Farbe. Jedes Gebiet lässt sich auch als Liste ausgeben und kopieren.</li>
-<li><strong>Traccar spart Akku:</strong> Der Link „Mit diesem Einsatz verbinden“ richtet Traccar jetzt sparsam ein: Genauigkeit hoch statt höchste, alle 20 s statt 10 s, Stillstandserkennung an, Handy wachhalten aus. Die Werte lassen sich unter Einstellungen → Einsatzbetrieb → „Traccar auf den Team-Handys“ ändern und gelten ab dem nächsten Antippen des Links.</li>
-<li><strong>„Ortung jetzt beenden“ bei Einsatzende:</strong> Die Team-Seite zeigt bei Einsatzende einen großen Knopf, um Traccar zu stoppen. Bisher wurde der Hinweis genau dann ausgeblendet.</li>
-<li><strong>Trümmer-Lagekarte:</strong> Suchgebiete werden jetzt gezeichnet wie auf der Einsatzkarte, mit Eckpunkten, Flächenvorschau und Schließen per Klick auf den ersten Punkt. Die Zeichenhinweise beider Karten sind auf Deutsch.</li>
-</ul>
-<h4>Korrekturen</h4>
-<ul>
-<li><strong>Lange Tracks nach Neustart vollständig:</strong> Bisher blieben pro Halsband und Handy nur die letzten 2000 Punkte erhalten, also etwa 2,8 Stunden. Jetzt wird jeder Punkt gespeichert, ohne Obergrenze. Vorhandene Daten werden beim ersten Start übernommen.</li>
-<li><strong>Überall die eingestellte Zeitzone:</strong> Läuft der Server auf UTC, lagen bisher u. a. Funkzeiten, Audit-Log, Pausendauer, PDF-Stand und Alarmzeit 1–2 Stunden daneben. Jetzt gilt überall die Zeitzone aus den Einstellungen.</li>
-<li><strong>Umlaute:</strong> Rund 100 Oberflächentexte wie „auswählen“, „Löschen“ oder „Schließen“ sind korrigiert.</li>
-</ul>
-<h4>Einspielen</h4>
-<p>Normales Update über den Browser, keine Konfigurationsänderung nötig.</p>
-<p>Damit die Team-Handys die sparsamen Traccar-Werte bekommen, beim nächsten Einsatz wie gewohnt den QR-Code scannen und „Mit diesem Einsatz verbinden“ antippen.</p></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>
