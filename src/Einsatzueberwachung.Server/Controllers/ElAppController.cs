@@ -32,7 +32,9 @@ public sealed partial class ElAppController(
     EinsatzAbschlussService? abschluss = null, Einsatzueberwachung.Domain.Interfaces.IMasterDataService? stammdaten = null,
     Einsatzueberwachung.Domain.Interfaces.IDiveraService? divera = null, Einsatzueberwachung.Domain.Interfaces.ITimeService? zeit = null,
     // Navigationsziele (Variante C, ElAppController.Aktionen.cs)
-    Navigationspunkte? navigationspunkte = null) : ControllerBase
+    Navigationspunkte? navigationspunkte = null,
+    // Bericht teilen (Idee 6.2, ElAppController.Einsatz.cs)
+    Einsatzueberwachung.Domain.Interfaces.IArchivService? archiv = null, Einsatzueberwachung.Domain.Interfaces.IPdfExportService? pdfExport = null) : ControllerBase
 {
     /// <summary>Staffellogo als PNG (docs/APP_API.md, Einsatzleitung Abschnitt 3) – nur intern</summary>
     [HttpGet("logo")]

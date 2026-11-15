@@ -175,6 +175,34 @@ public sealed partial class ElAppController
         });
     });
 
+    /// <summary>Bericht eines beendeten Einsatzes als PDF wie der Download im Archiv – zum Öffnen und Teilen in der App (Idee 6.2)</summary>
+    [HttpGet("einsatz/bericht/{archivId}")]
+    public async Task<IActionResult> GetBericht(string archivId, string? karte = null, string? teams = null, string? tracks = null)
+    {
+        if (!Lesen()) return Zugang();
+        if (archiv is null || pdfExport is null) return NotFound();
+        var archiviert = await archiv.GetByIdAsync(archivId);
+        if (archiviert is null) return NotFound(new { error = "Bericht nicht gefunden." });
+
+        byte[] bytes;
+        try
+        {
+            bytes = await pdfExport.ExportArchivedEinsatzToPdfBytesAsync(archiviert,
+                Extensions.DownloadEndpoints.BerichtOptionenAusAdresse(archiviert, karte, teams, tracks));
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Einsatzbericht für die EL-App konnte nicht erstellt werden");
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Der Bericht konnte nicht erstellt werden." });
+        }
+
+        audit?.Log("Einsatzbericht abgerufen (EL-App)", $"{Geraet(null)}: {archiviert.EinsatzNummer}");
+        var name = string.IsNullOrWhiteSpace(archiviert.EinsatzNummer)
+            ? $"einsatzbericht-{archiviert.EinsatzDatum:yyyyMMdd-HHmm}"
+            : $"einsatzbericht-{archiviert.EinsatzNummer}";
+        return File(bytes, "application/pdf", name + ".pdf");
+    }
+
     private static bool MitZeitzone(string text) =>
         text.EndsWith('Z') || System.Text.RegularExpressions.Regex.IsMatch(text, @"[+-]\d{2}:\d{2}$");
 
