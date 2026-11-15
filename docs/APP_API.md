@@ -493,6 +493,7 @@ und wiederholen.
 | `/teams/{teamId}/start` | `halsbandId` (optional, `null` = ohne Halsband) | Suche starten; Halsband vergeben → `409` |
 | `/teams/{teamId}/pause`, `/weiter`, `/stopp`, `/zuruecksetzen` | – | Kurzpause, fortsetzen, Suche beenden (Track wird gespeichert), Suchzeit zurücksetzen |
 | `/teams/{teamId}/mitteilung` | `text` | Mitteilung an das Team (in der Team-App als `mitteilung`) |
+| `/teams/{teamId}/suchgebiet` | `suchgebietId` (`id` aus `/karte` → `suchgebiete`; fehlt oder `null` = Zuweisung aufheben) | Suchgebiet dem Team zuweisen wie im Team-Dialog bzw. auf der Karte (Idee 6.4) |
 | `/notizen` | `text`, `teamId` (optional) | Notiz der Einsatzleitung |
 | `/notizen/{notizId}/loeschen` | – | Notiz löschen |
 | `/funk` | `text`, `teamId` (optional), `antwortAuf` (optional) | Funkspruch oder Antwort |
@@ -511,6 +512,11 @@ Umgesetzt (Stufe 3), im Einzelnen:
   `zuruecksetzen` während die Suche läuft; Hund läuft schon in einem anderen Team). Unbekanntes Team → `404` + `{ "error" }`.
 - `start` mit `halsbandId`: nur ein freies oder das dem Team schon zugewiesene Halsband, sonst `409`. Ohne `halsbandId` startet
   die Suche mit dem bereits zugewiesenen Halsband (falls vorhanden). `stopp` gibt das Halsband frei.
+- `suchgebiet` (ab Server 1.15.0, ältere `404`) → `{ "doppelt": false, "suchgebiet": { "id", "name", "farbe" } }` bzw. `"suchgebiet": null`
+  nach dem Aufheben. Ein Team hat höchstens ein Gebiet: Das bisherige wird frei. Gehört das Gebiet einem anderen Team, wechselt es wie
+  im Monitor zu diesem Team (das andere Team hat dann keins) – die App fragt vorher nach. Unbekanntes Team oder Gebiet → `404` + `{ "error" }`.
+  Danach kommt `team` für die betroffenen Teams; `/karte` (`suchgebiete[].teamId`) lädt die App nach der Antwort selbst neu.
+  Die Team-App des Teams bekommt das neue Gebiet wie bisher über ihre `lage` (Team-Rolle Abschnitt 6).
 - `mitteilung` → `{ "mitteilungId" }`. `notizen` → `{ "notizId" }`; mit `teamId` steht der Teamname vor dem Text.
 - `notizen/{id}/loeschen`: nur Notizen mit `loeschbar = true` (die der Einsatzleitung), sonst `404`. Funk und Team-Meldungen bleiben.
 - `funk` → `{ "notizId" }` (Kennung in `/notizen`); mit `teamId` wie der Empfänger-Knopf in `/el` („@Team Rex …“).
