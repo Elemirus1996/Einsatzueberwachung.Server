@@ -471,6 +471,7 @@ ohne das Staffel-Passwort erneut einzugeben. Antwort `200` wie `/login`, zusätz
 | `GET /notizen?vor=<id>&anzahl=50` | `{ "notizen": […], "weitere": true }` – Notizen und Funk wie in `/el`, **neueste zuerst**: `id`, `art` (`notiz` · `funk` · `status` · `system`), `text`, `zeit`, `von`, `teamId`, `loeschbar`, `antworten` `[ { "id", "text", "zeit", "von" } ]`. Blättern mit `vor` = älteste geladene `id`; `anzahl` höchstens 200 |
 | `GET /halsbaender` | `{ "frei": [ { "id", "name", "zeit", "akku" } ], "zuletzt": [ { "teamId", "halsbandId" } ] }` – freie Halsbänder für die Rückfrage beim Teamstart, dazu je Team das zuletzt benutzte (nur Teams, die schon eins hatten) |
 | `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen" } ]` |
+| `GET /einsatz/vorort` | Anwesenheit für das Einsatzende wie in `/el/beenden`: `{ "personal": [ { "id", "name", "vorausgewaehlt" } ], "hunde": [ { "id", "name", "vorausgewaehlt" } ] }` – nur aktive Einträge der Stammdaten, Personal nach Vorname, Hunde nach Name; `vorausgewaehlt` = in einem Team eingeteilt. Ab Server 1.14.1, ältere Server antworten `404` |
 | `GET /einsatz/vorlage` | Auswahllisten wie in `/el/start`: `{ "aktiv", "szenarien": ["Mantrailer", …], "divera": [ { "id", "titel", "ort", "lat", "lng", "zeit" } ], "einsatzleiter": ["Anna Berg"], "fuehrungsassistenten": […], "ergebnisse": […], "kartenarten": [ { "wert": "Streets", "anzeige": "Straßenkarte" } ] }` – `divera` leer, wenn Divera nicht eingerichtet oder nicht erreichbar ist |
 
 ### 7. Aktionen
@@ -492,7 +493,7 @@ und wiederholen.
 | `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` (bei `typ = jaNein`) bzw. `wert` (bei `auswahl` und `text`) | Checklistenpunkt setzen, ohne `version` |
 | `/szenario` | `szenario` | Szenario des Einsatzes |
 | `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional) | wie `/el/start`; läuft schon ein Einsatz → `409` |
-| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null, "punkte": false }` – `kartenart`: `Streets` · `Topographic` · `Satellite`, sonst `400` | wie `/el/beenden` |
+| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null, "punkte": false }` – `kartenart`: `Streets` · `Topographic` · `Satellite`, sonst `400`; optional `personalIds`, `hundeIds` (IDs aus `/einsatz/vorort`) | wie `/el/beenden` |
 
 Antwort jeder Aktion: `200` + `{ "doppelt": false, … }`, beim Anlegen mit der neuen Kennung des Objekts (z. B. `notizId`).
 
@@ -518,8 +519,9 @@ Einsatz starten und beenden (Stufe 5 umgesetzt):
 - `/einsatz/beenden`: `ergebnis` muss ein `wert` aus `/einsatz/ergebnisse` sein, `ressourcenGeprueft` muss `true` sein, sonst `400`.
   Optional `bemerkungen` und `endzeit` als Zeitpunkt in **UTC** (z. B. `"2026-10-31T17:45:00Z"`, auch mit Versatz wie `+01:00`;
   ohne Angabe = jetzt). Ohne Zeitzone, in der Zukunft oder vor dem Einsatzbeginn → `400`. Für den Bericht rechnet der Server in
-  Ortszeit um. `pdf.tracks` Standard `true`, `pdf.punkte` (Kartenpunkte ins Archiv und in den Bericht, Team-Rolle Abschnitt 13) Standard `false`, `pdf.teamIds` `null` = alle Teams. Die Vor-Ort-Liste übernimmt
-  der Server aus den eingeteilten Teams (wie die Vorauswahl in `/el/beenden`). Antwort `{ "archivId", "einsatzNummer",
+  Ortszeit um. `pdf.tracks` Standard `true`, `pdf.punkte` (Kartenpunkte ins Archiv und in den Bericht, Team-Rolle Abschnitt 13) Standard `false`, `pdf.teamIds` `null` = alle Teams. Vor Ort waren die in
+  `personalIds` und `hundeIds` gewählten Einträge (IDs aus `/einsatz/vorort`; unbekannte oder inaktive IDs fallen weg, `[]` = niemand).
+  Fehlt ein Feld oder ist es `null`, übernimmt der Server dafür die Vorauswahl aus den eingeteilten Teams (wie in `/el/beenden`). Antwort `{ "archivId", "einsatzNummer",
   "pdf": { "erstellt": true, "fehler": null } }`; den Bericht gibt es danach im Archiv. Schon an einem anderen Leitungsplatz beendet
   oder kein laufender Einsatz → `409`. Danach kommt auf `/ereignisse` `einsatz` mit `{ "aktiv": false }`.
 

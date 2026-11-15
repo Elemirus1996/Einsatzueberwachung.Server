@@ -90,7 +90,29 @@ public sealed partial class ElAppController
     public sealed record ElPdfWahl(bool Tracks = true, string? Kartenart = null, IReadOnlyList<string>? TeamIds = null, bool Punkte = false);
 
     public sealed record ElEinsatzEnde(string? Id, string? Ergebnis, bool RessourcenGeprueft, string? Bemerkungen = null,
-        string? Endzeit = null, ElPdfWahl? Pdf = null);
+        string? Endzeit = null, ElPdfWahl? Pdf = null, IReadOnlyList<string>? PersonalIds = null, IReadOnlyList<string>? HundeIds = null);
+
+    /// <summary>Aktives Personal und aktive Hunde wie in /el/beenden, sortiert, mit der Vorauswahl aus den eingeteilten Teams</summary>
+    private async Task<(List<PersonalEntry> Personal, List<DogEntry> Hunde, HashSet<string> PersonalIds, HashSet<string> HundeIds)> VorOrtListen()
+    {
+        var personal = stammdaten is null ? [] : Components.Pages.SelectionListOrdering
+            .OrderPersonnelByFirstName((await stammdaten.GetPersonalListAsync()).Where(p => p.IsActive)).ToList();
+        var hunde = stammdaten is null ? [] : (await stammdaten.GetDogListAsync()).Where(d => d.IsActive).OrderBy(d => d.Name).ToList();
+        var (personalIds, hundeIds) = EinsatzAbschlussService.PreselectVorOrt(einsatz!.Teams, personal, hunde);
+        return (personal, hunde, personalIds, hundeIds);
+    }
+
+    [HttpGet("einsatz/vorort")]
+    public async Task<IActionResult> GetVorOrt()
+    {
+        if (!Lesen()) return Zugang();
+        var (personal, hunde, personalIds, hundeIds) = await VorOrtListen();
+        return Ok(new
+        {
+            personal = personal.Select(p => new { id = p.Id, name = p.FullName, vorausgewaehlt = personalIds.Contains(p.Id) }),
+            hunde = hunde.Select(d => new { id = d.Id, name = d.Name, vorausgewaehlt = hundeIds.Contains(d.Id) })
+        });
+    }
 
     [HttpPost("einsatz/beenden")]
     public Task<IActionResult> EinsatzBeenden([FromBody] ElEinsatzEnde? anfrage) => Aktion(anfrage?.Id, async () =>
@@ -116,16 +138,17 @@ public sealed partial class ElAppController
             if (ende < einsatz!.CurrentEinsatz.EinsatzDatum) return BadRequest(new { error = "endzeit liegt vor dem Einsatzbeginn." });
         }
 
-        // Vor-Ort-Liste wie die Vorauswahl in /el/beenden: Personal und Hunde aus den eingeteilten Teams
-        var personal = stammdaten is null ? [] : (await stammdaten.GetPersonalListAsync()).Where(p => p.IsActive).ToList();
-        var hunde = stammdaten is null ? [] : (await stammdaten.GetDogListAsync()).Where(d => d.IsActive).ToList();
-        var (personalIds, hundeIds) = EinsatzAbschlussService.PreselectVorOrt(einsatz!.Teams, personal, hunde);
+        // Vor-Ort-Liste: Auswahl der App, ohne Angabe die Vorauswahl aus den eingeteilten Teams wie in /el/beenden.
+        // Unbekannte oder inaktive IDs fallen weg.
+        var (personal, hunde, personalIds, hundeIds) = await VorOrtListen();
+        if (a.PersonalIds is not null) personalIds = new HashSet<string>(a.PersonalIds, StringComparer.OrdinalIgnoreCase);
+        if (a.HundeIds is not null) hundeIds = new HashSet<string>(a.HundeIds, StringComparer.OrdinalIgnoreCase);
 
         EinsatzAbschlussErgebnis ergebnis;
         try
         {
             ergebnis = await abschluss.AbschliessenAsync(new EinsatzAbschlussAnfrage(
-                einsatz.CurrentEinsatz.EinsatzDatum,
+                einsatz!.CurrentEinsatz.EinsatzDatum,
                 a.Ergebnis,
                 a.Bemerkungen ?? "",
                 null,
