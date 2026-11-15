@@ -415,6 +415,57 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.14.0</span>
+    <span class="changelog-date">15.11.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
+<h4>Speicher &amp; Server-Backups (Vorfall 10.11.: Platte voll, Server startete nicht mehr)</h4>
+<ul>
+<li><strong>Einstellungen → Wartung → „Speicher &amp; Server-Backups“</strong>: Belegung der Platte, Liste der Server-Backups, Update-Reste und heruntergeladenen Updates. Auswahl per Häkchen, „Alle löschbaren“ pro Bereich, Löschen mit Rückfrage.</li>
+<li>Geschützt und nicht löschbar: das neueste Backup, ein gerade laufendes Backup und der neueste Rollback-Stand. Während eines Updates ist Löschen gesperrt.</li>
+<li>Der Systemzustand warnt kritisch ab 90 % Belegung oder unter 1 GB frei, mit Link auf die Wartung.</li>
+<li>Das nächtliche Backup behält jetzt die <strong>letzten 5 Backups</strong> (statt 14 Tage), löscht alte <strong>vor</strong> dem neuen, räumt abgebrochene Läufe auf und bricht unter 15 GB freiem Platz ab. Datenbanken werden konsistent gesichert, heruntergeladene Updates nicht mehr mitgesichert.</li>
+<li>Nach einem erfolgreichen Update werden entpackte Pakete entfernt, nur die zwei neuesten Rollback-Stände bleiben.</li>
+</ul>
+<h4>Einsatzmonitor</h4>
+<ul>
+<li>Verfügbare Teams lassen sich per Ziehgriff <strong>von Hand sortieren</strong>. Die Reihenfolge bleibt auch nach einem Neustart erhalten.</li>
+<li>Listen in Auswahlfeldern (Personal, Hunde, Drohnen, Suchgebiete) sind alphabetisch sortiert.</li>
+<li>Die Warnung „Hund braucht Pause“ beim Stoppen entfällt. Die Pause selbst funktioniert wie bisher.</li>
+<li>Fehler bei der Hundeauswahl und beim Pausieren behoben.</li>
+</ul>
+<h4>Halsband</h4>
+<ul>
+<li>Der Akkustand von Garmin-Halsbändern wird korrekt ausgelesen. Er ist eine <strong>Stufe</strong> (4 voll, 3 hoch, 2 mittel, 1 niedrig mit Warnung), kein Prozentwert.</li>
+</ul>
+<h4>Technik</h4>
+<ul>
+<li>Schnittstelle: Bedeutung von <code>halsband.akku</code> geändert (Stufe statt Prozent, siehe <code>docs/APP_API.md</code>). Die Apps zeigen den Wert noch mit „%“ an, die Anpassung folgt mit der nächsten App-Version.</li>
+<li>Neue Pakete auf dem Server: <code>sqlite3</code>. Keine nginx-Änderung, keine Datenmigration.</li>
+<li>Die alte Einstellung <code>RETENTION_DAYS</code> wird nicht mehr ausgewertet.</li>
+</ul>
+<h4>Einspielen</h4>
+<p><strong>Nur, wenn gerade kein Einsatz läuft.</strong></p>
+<p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.14.0“.</p>
+<p>2. Backup-Skripte und Dienst einmalig von Hand übernehmen (das Browser-Update tauscht nur den Server, nicht die Skripte):</p>
+<pre><code>
+   sudo apt-get install -y sqlite3
+   R=https://raw.githubusercontent.com/Elemirus1996/Einsatzueberwachung.Server/v1.14.0/deploy
+   sudo curl -fsSo /opt/einsatzueberwachung/scripts/backup.sh $R/scripts/backup.sh
+   sudo curl -fsSo /opt/einsatzueberwachung/scripts/apply-update.sh $R/scripts/apply-update.sh
+   sudo chmod 755 /opt/einsatzueberwachung/scripts/backup.sh /opt/einsatzueberwachung/scripts/apply-update.sh
+   sudo curl -fsSo /etc/systemd/system/einsatzueberwachung-backup.service $R/systemd/einsatzueberwachung-backup.service
+   sudo rm -f /etc/systemd/system/einsatzueberwachung-backup.service.d/override.conf
+   sudo chown -R einsatz:einsatz /opt/einsatzueberwachung/backups /opt/einsatzueberwachung/updates
+   sudo systemctl daemon-reload
+   sudo systemctl start einsatzueberwachung-backup.service &amp;&amp; journalctl -u einsatzueberwachung-backup -n 5 --no-pager
+</code></pre>
+<p>Ohne <code>chown</code> zeigt die Seite die Backups an, das Löschen meldet aber „keine Berechtigung“.</p>
+<p>3. Einstellungen → Wartung öffnen und prüfen, ob Belegung und Backups angezeigt werden.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.13.0</span>
     <span class="changelog-date">31.10.2026</span>
     <span class="changelog-name"></span>
@@ -633,34 +684,6 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <h4>Einspielen</h4>
 <p>Normales Update über den Browser, keine Konfigurationsänderung nötig.</p>
 <p>Damit die Team-Handys die sparsamen Traccar-Werte bekommen, beim nächsten Einsatz wie gewohnt den QR-Code scannen und „Mit diesem Einsatz verbinden“ antippen.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.6</span>
-    <span class="changelog-date">27.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Neu</h4>
-<ul>
-<li><strong>PDF-Bericht wählbar:</strong> Beim Export lassen sich die Kartenart (Straßenkarte, Topografisch, Satellit) und die Teams auswählen, deren Tracks in den Bericht kommen. Das geht im Archiv über „PDF“ sowie beim Abschluss des Einsatzes auf dem Monitor und auf <code>/el</code>.</li>
-<li><strong>Karten im Bericht wieder mit Hintergrund:</strong> Tracks und Abdeckung liegen auf einer echten Karte (OpenStreetMap), so ist nachvollziehbar, wo der Hund war. Ältere Einsätze aus dem Archiv bekommen die Karten beim nächsten Download.</li>
-<li><strong>Abdeckung live auf der Einsatzkarte:</strong> Für jedes Suchgebiet zeigt die Karte „x % abgesucht“ und die abgesuchte Fläche, während die Hunde laufen. Die Anzeige wird alle 20 Sekunden aktualisiert und lässt sich mit dem Knopf „▦ Abdeckung“ ein- und ausblenden.</li>
-<li><strong>Zertifikat „Jetzt erneuern“:</strong> Neben dem Hinweis „Zertifikat abgelaufen/läuft ab“ steht ein Knopf zum Erneuern (Startseite, <code>/el</code>, Einstellungen → System). Dafür muss einmalig <code>setup-zertifikat.sh</code> eingerichtet werden (siehe unten).</li>
-</ul>
-<h4>Korrekturen</h4>
-<ul>
-<li><strong>Trümmer-Lagebild:</strong> Das Hochladen brach mit „The SSL connection could not be established“ ab. Jetzt klappt es unabhängig vom Zertifikat.</li>
-<li><strong>Suchzeit nach Neustart:</strong> Nach einem Neustart des Servers zeigten laufende Teams unsinnige Suchzeiten. Die Startzeit wird jetzt gespeichert.</li>
-</ul>
-<h4>Einspielen</h4>
-<p>Normales Update über den Browser.</p>
-<p>Danach einmalig auf dem Server, damit Knopf und automatische Verlängerung funktionieren (neue <code>einsatzueberwachung-public.conf</code> aus 1.11.4 vorausgesetzt):</p>
-<pre><code>
-cd &lt;Repository-Kopie auf dem Server&gt; &amp;&amp; git pull     # holt deploy/scripts/setup-zertifikat.sh
-sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.mywire.org
-sudo certbot renew --dry-run
-</code></pre>
-<p>Details stehen in <code>DEPLOYMENT.md</code> unter „Zertifikat der öffentlichen Domain“.</p></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>
