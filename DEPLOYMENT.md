@@ -279,7 +279,11 @@ Code und neues Passwort (mindestens 10 Zeichen) eingeben – danach ist der Code
 ## 8. Monitoring und Hinweise
 
 - Health Endpoint serverseitig: `/health`
-- Healthcheck-Skript: `deploy/scripts/health-check.sh`
+- Healthcheck-Skript: `deploy/scripts/health-check.sh`. Prüft auch den Plattenplatz (Warnung ab 85 %, kritisch ab 95 %);
+  bei voller Platte startet es keine Dienste neu, das brächte nur eine Neustart-Schleife (ab 1.14.2, #181).
+- Platte voll: Der Server läuft weiter, zeigt die Warnung „Einsatzstand wird nicht gespeichert“ und versucht alle 30 s
+  erneut zu speichern. Platz schaffen unter Einstellungen → Wartung → „Speicher & Server-Backups“.
+- Das Journal ist auf 500 MB begrenzt (`/etc/systemd/journald.conf.d/einsatzueberwachung.conf`, legt `setup.sh` an).
 - Journal-Logs:
 
 ```bash

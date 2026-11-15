@@ -52,6 +52,7 @@ namespace Einsatzueberwachung.Domain.Services
                 var releasesPath = Path.Combine(updatesRoot, "releases");
                 Directory.CreateDirectory(downloadsPath);
                 Directory.CreateDirectory(releasesPath);
+                AltePaketeEntfernen(updatesRoot);
 
                 SetStatus(status => status.LastMessage = "Lade Update-Paket herunter...");
                 var packageBytes = await DownloadInstallerAsync(check.InstallerUrl);
@@ -104,6 +105,33 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 SetStatus(status => status.IsInstalling = false);
                 _updateGate.Release();
+            }
+        }
+
+        /// <summary>
+        /// Entfernt heruntergeladene und entpackte Pakete frueherer Updates (wurden nie geloescht, 7,6 GB in data/updates, #181).
+        /// Fuer ein Rollback werden sie nicht gebraucht, dafuer gibt es updates/backup-*. Fehler beim Loeschen halten das Update nicht auf.
+        /// </summary>
+        public void AltePaketeEntfernen(string updatesRoot)
+        {
+            var downloads = new DirectoryInfo(Path.Combine(updatesRoot, "downloads"));
+            if (downloads.Exists)
+            {
+                foreach (var datei in downloads.EnumerateFiles())
+                {
+                    try { datei.Delete(); }
+                    catch (Exception ex) { _logger.LogWarning(ex, "Altes Update-Paket {Name} nicht geloescht", datei.Name); }
+                }
+            }
+
+            var releases = new DirectoryInfo(Path.Combine(updatesRoot, "releases"));
+            if (releases.Exists)
+            {
+                foreach (var ordner in releases.EnumerateDirectories())
+                {
+                    try { ordner.Delete(recursive: true); }
+                    catch (Exception ex) { _logger.LogWarning(ex, "Altes entpacktes Update {Name} nicht geloescht", ordner.Name); }
+                }
             }
         }
 

@@ -246,17 +246,24 @@ public sealed class VpnDeviceCleanupService(VpnDeviceService devices, ILogger<Vp
     {
         if (!devices.IsAvailable) return;
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
-        do
+        try
         {
-            try
+            do
             {
-                var removed = await devices.RemoveExpiredAsync(DateTime.UtcNow);
-                if (removed > 0) logger.LogInformation("{Count} abgelaufene VPN-Geräte entfernt", removed);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Abgelaufene VPN-Geräte konnten nicht entfernt werden");
-            }
-        } while (await timer.WaitForNextTickAsync(stoppingToken));
+                try
+                {
+                    var removed = await devices.RemoveExpiredAsync(DateTime.UtcNow);
+                    if (removed > 0) logger.LogInformation("{Count} abgelaufene VPN-Geräte entfernt", removed);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Abgelaufene VPN-Geräte konnten nicht entfernt werden");
+                }
+            } while (await timer.WaitForNextTickAsync(stoppingToken));
+        }
+        catch (OperationCanceledException)
+        {
+            // Herunterfahren, kein Fehler (#181: wurde als crit geloggt)
+        }
     }
 }
