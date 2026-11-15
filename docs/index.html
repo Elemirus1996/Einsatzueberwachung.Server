@@ -415,6 +415,55 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.15.0</span>
+    <span class="changelog-date">15.11.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
+<h4>Einsatzbericht in der EL-App öffnen und teilen</h4>
+<ul>
+<li>Nach „Einsatz beenden“ in der EL-App gibt es „Bericht öffnen“. Das iPhone/iPad zeigt den PDF-Bericht mit Teilen-Knopf, Android bietet „Öffnen“ und „Teilen“.</li>
+<li>Der Bericht hat dieselbe Auswahl wie beim Beenden (Kartenart, Teams, Tracks). Jeder Abruf steht im Audit-Log.</li>
+</ul>
+<h4>EL-App per QR-Code anmelden</h4>
+<ul>
+<li>Neu unter Einstellungen → System → „EL-App anmelden“: ein QR-Code mit der internen Adresse. Er enthält <strong>kein Passwort</strong>, das Staffel-Passwort gibt man danach in der App ein.</li>
+<li>Der Code erscheint nur, wenn die Einstellungen über HTTPS (interne Adresse im VPN) geöffnet sind.</li>
+</ul>
+<h4>Suchgebiet aus der EL-App zuweisen</h4>
+<ul>
+<li>In der EL-App ein Suchgebiet auf der Lagekarte antippen und ein Team wählen oder die Zuweisung aufheben, wie im Monitor. Die Team-App zeigt das neue Gebiet sofort.</li>
+</ul>
+<h4>Server bleibt bei voller Platte erreichbar</h4>
+<ul>
+<li>Läuft die Platte voll, stürzt der Server nicht mehr ab. Der Einsatz läuft im Speicher weiter, es erscheint die Warnung „Einsatzstand wird nicht gespeichert“, alle 30 s gibt es einen neuen Versuch.</li>
+<li><code>health-check.sh</code> prüft den Plattenplatz (Warnung ab 85 %, kritisch ab 95 %) und startet bei voller Platte nicht ständig neu.</li>
+<li>Alte Update-Pakete in <code>data/updates</code> werden vor jedem Update gelöscht.</li>
+</ul>
+<p>Für die drei EL-Funktionen braucht es die neue Version der App (iOS und Android). Ältere Apps laufen weiter wie bisher.</p>
+<h4>Technik</h4>
+<ul>
+<li>Schnittstelle erweitert: <code>GET /einsatz/bericht/{archivId}</code>, <code>POST /teams/{teamId}/suchgebiet</code>, Anmeldung per QR. Beschreibung in <code>docs/APP_API.md</code>.</li>
+<li>Keine neuen Pakete, keine nginx-Änderung, keine Datenmigration.</li>
+</ul>
+<h4>Einspielen</h4>
+<p><strong>Nur, wenn gerade kein Einsatz läuft.</strong></p>
+<p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.15.0“.</p>
+<p>2. Einmalig neues <code>health-check.sh</code> und Grenze für das Systemprotokoll:</p>
+<pre><code>
+R=https://raw.githubusercontent.com/Elemirus1996/Einsatzueberwachung.Server/v1.15.0/deploy
+sudo curl -fsSo /opt/einsatzueberwachung/scripts/health-check.sh $R/scripts/health-check.sh
+sudo chmod 755 /opt/einsatzueberwachung/scripts/health-check.sh
+sudo mkdir -p /etc/systemd/journald.conf.d
+printf '[Journal]
+SystemMaxUse=500M
+' | sudo tee /etc/systemd/journald.conf.d/einsatzueberwachung.conf
+sudo systemctl restart systemd-journald
+</code></pre>
+<p>3. <strong>Wer 1.14.0 übersprungen hat:</strong> zuerst die einmaligen Schritte aus den Release-Notes von 1.14.0 ausführen (<code>sqlite3</code>, Backup-Skripte per <code>curl</code>, <code>chown</code>).</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.14.1</span>
     <span class="changelog-date">15.11.2026</span>
     <span class="changelog-name"></span>
@@ -661,29 +710,6 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <p>Inhaltlich entspricht diese Version 1.11.8 (siehe dort).</p>
 <h4>Einspielen</h4>
 <p>Normales Update über den Browser. Danach zeigt Einstellungen → System „1.11.9“.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.8</span>
-    <span class="changelog-date">28.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Neu</h4>
-<ul>
-<li><strong>Handys auf der Karte einzeln ausblenden:</strong> Das Auge an einem Eintrag im Handy-Bereich der Karte blendet nur dieses Handy aus, mit Marker und Laufweg. Bisher verschwanden alle. Das Auge oben bleibt der Schalter für alle Handys.</li>
-<li><strong>Handy-Daten entfernen:</strong> Mit dem Papierkorb an einem Eintrag werden letzte Position und Verlauf eines Teams aus der Karte gelöscht, auch dauerhaft nach einem Neustart. Während das Team sucht, ist das gesperrt. Abgeschlossene Suchen und Berichte behalten ihre Laufwege. Reste gelöschter Teams erscheinen als „Gelöschtes Team“ statt mit interner Kennung.</li>
-<li><strong>Vorbereitung für die eigene App</strong> (iPhone und Android, in Entwicklung):</li>
-</ul>
-<p>- Schnittstelle für die Team-Ortung: Der Server sagt der App, wann sie orten, pausieren oder aufhören soll. Nach dem Einsatz ist das GPS aus.</p>
-<p>- Schnittstelle für den Standort der Einsatzleitung, nur im VPN.</p>
-<p>- Auf der Einsatzkarte erscheint die Einsatzleitung später als roter Marker „EL“ mit Gerätename.</p>
-<h4>Korrekturen</h4>
-<ul>
-<li><strong>Uhrzeiten von Handy-Tracks:</strong> Seit 1.11.7 zeigten die Detail-Tabellen von Handy-Laufwegen (Beginn, Ende, Punktzeiten) eine Stunde zu spät. Neue Punkte stimmen wieder, bereits gespeicherte Punkte bleiben um eine Stunde verschoben.</li>
-</ul>
-<h4>Einspielen</h4>
-<p>Normales Update über den Browser.</p>
-<p>Für die App wird später ein zusätzlicher nginx-Block gebraucht. Er ist in <code>deploy/nginx/einsatzueberwachung-public.conf</code> enthalten (eigenes Limit für <code>/api/team-mobile/app/</code>, weil sich im Mobilfunk viele Handys eine IP teilen). Übernehmen genügt, sobald die App getestet wird. Für den normalen Betrieb ist das noch nicht nötig.</p></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>
