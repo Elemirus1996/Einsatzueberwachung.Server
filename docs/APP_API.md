@@ -437,6 +437,13 @@ ohne das Staffel-Passwort erneut einzugeben. Antwort `200` wie `/login`, zusätz
 - Token-Format ab jetzt `e3.…` (mit Anmeldezeitpunkt); `e2`-Tokens gelten bis zu ihrem Ablauf weiter, beim Verlängern zählt bei ihnen
   der Ausstellungszeitpunkt (Ablauf − 24 h) als Anmeldung.
 
+**Anmeldung per QR-Code** (Idee 6.3): Der Server zeigt unter Einstellungen → System → „EL-App anmelden“ einen QR-Code mit
+der internen Adresse, unter der die Einstellungen geöffnet sind: `https://<interne Adresse>/el` – **ohne Passwort und ohne Token**
+(mit der Handy-Kamera geöffnet ist es einfach die EL-Seite). Nur bei HTTPS, sonst zeigt der Server statt des Codes einen Hinweis.
+Die App erkennt im selben Scanner wie beim Team-Code eine `https://`-Adresse mit dem Pfad `/el` (Groß-/Kleinschreibung und
+`/` am Ende egal, Abfrageteil wird ignoriert), übernimmt daraus nur den Server, zeigt den Servernamen zur Bestätigung und fragt das
+Staffel-Passwort ab (`POST /login`). Ein Team-Code (`/team/login/…`) bleibt eine Team-Anmeldung. Keine neue Schnittstelle.
+
 ### 5. `GET /lage`
 
 ```json
