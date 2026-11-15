@@ -11,6 +11,7 @@ using Einsatzueberwachung.Server.Services;
 using Einsatzueberwachung.Server.Services.Radio;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Einsatzueberwachung.Tests;
@@ -177,5 +178,41 @@ public sealed class ElAppAktionenTests : IDisposable
         var gespeichert = Assert.Single(_einsatz.TeamMitteilungen(team.TeamId));
         Assert.Equal("Bitte Funkkontakt", gespeichert.Text);
         Assert.Equal(gespeichert.Id, antwort.GetProperty("mitteilungId").GetString());
+    }
+
+    [Fact]
+    public async Task Suchgebiet_Zuweisen_Wechseln_Entfernen_Unbekannt404()
+    {
+        var rex = await EinsatzMitTeamAsync();
+        var bello = await EinsatzMitTeamAsync("Team Bello");
+        var a = await _einsatz.AddSearchAreaAsync(new SearchArea { Name = "Gebiet A", Color = "#2f6fd6" });
+        var b = await _einsatz.AddSearchAreaAsync(new SearchArea { Name = "Gebiet B" });
+        ElAppController.ElAktion Gebiet(string? id) => new(Guid.NewGuid().ToString(), SuchgebietId: id);
+
+        var ok = Json(Assert.IsType<OkObjectResult>(await Controller().TeamSuchgebiet(rex.TeamId, Gebiet(a.Id))));
+        Assert.Equal("Gebiet A", ok.GetProperty("suchgebiet").GetProperty("name").GetString());
+        Assert.Equal(rex.TeamId, a.AssignedTeamId);
+        Assert.Equal(a.Id, rex.SearchAreaId);
+
+        // Anderes Gebiet: das alte wird frei
+        await Controller().TeamSuchgebiet(rex.TeamId, Gebiet(b.Id));
+        Assert.Equal("", a.AssignedTeamId);
+        Assert.Equal(rex.TeamId, b.AssignedTeamId);
+        Assert.Equal(b.Id, rex.SearchAreaId);
+
+        // Gebiet eines anderen Teams wechselt wie im Monitor
+        await Controller().TeamSuchgebiet(bello.TeamId, Gebiet(b.Id));
+        Assert.Equal(bello.TeamId, b.AssignedTeamId);
+        Assert.Equal("", rex.SearchAreaId);
+
+        // Ohne suchgebietId: Zuweisung aufheben
+        var weg = Json(Assert.IsType<OkObjectResult>(await Controller().TeamSuchgebiet(bello.TeamId, Gebiet(null))));
+        Assert.Equal(JsonValueKind.Null, weg.GetProperty("suchgebiet").ValueKind);
+        Assert.Equal("", b.AssignedTeamId);
+        Assert.Equal("", bello.SearchAreaId);
+
+        Assert.IsType<NotFoundObjectResult>(await Controller().TeamSuchgebiet(rex.TeamId, Gebiet("gibtsnicht")));
+        Assert.IsType<NotFoundObjectResult>(await Controller().TeamSuchgebiet("gibtsnicht", Gebiet(a.Id)));
+        Assert.Equal(410, ((IStatusCodeActionResult)await Controller(token: "falsch").TeamSuchgebiet(rex.TeamId, Gebiet(a.Id))).StatusCode);
     }
 }

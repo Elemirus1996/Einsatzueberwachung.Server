@@ -12,7 +12,7 @@ public sealed partial class ElAppController
 {
     /// <summary>Koerper aller Aktionen; je Endpunkt werden nur die passenden Felder gelesen</summary>
     public sealed record ElAktion(string? Id, string? HalsbandId = null, string? Text = null, string? TeamId = null, string? AntwortAuf = null,
-        string? PunktId = null);
+        string? PunktId = null, string? SuchgebietId = null);
 
     public const int MaxTextLaenge = 1000;
 
@@ -84,6 +84,34 @@ public sealed partial class ElAppController
             return NotFound(new { error = "Kartenpunkt nicht gefunden." });
         var mitteilung = await navigationspunkte.ZielSendenAsync(team, punkt, Geraet(null));
         return Ok(new { doppelt = false, mitteilungId = mitteilung.Id });
+    });
+
+    /// <summary>Suchgebiet einem Team zuweisen oder die Zuweisung aufheben (Idee 6.4) – wie im Team-Dialog bzw. auf der Karte im Monitor</summary>
+    [HttpPost("teams/{teamId}/suchgebiet")]
+    public Task<IActionResult> TeamSuchgebiet(string teamId, [FromBody] ElAktion? aktion) => Aktion(aktion, async () =>
+    {
+        if (einsatz!.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return TeamFehlt();
+        var gebietId = string.IsNullOrWhiteSpace(aktion!.SuchgebietId) ? null : aktion.SuchgebietId.Trim();
+        var gebiet = gebietId is null ? null : einsatz.CurrentEinsatz.SearchAreas.FirstOrDefault(a => a.Id == gebietId);
+        if (gebietId is not null && gebiet is null) return NotFound(new { error = "Suchgebiet nicht gefunden." });
+
+        // Bisheriges Gebiet des Teams freigeben; ein Gebiet eines anderen Teams wechselt wie im Monitor zu diesem Team
+        foreach (var alt in einsatz.CurrentEinsatz.SearchAreas.Where(a => a.AssignedTeamId == team.TeamId && a.Id != gebietId).ToList())
+            await einsatz.AssignTeamToSearchAreaAsync(alt.Id, string.Empty);
+        if (gebiet is not null)
+        {
+            await einsatz.AssignTeamToSearchAreaAsync(gebiet.Id, team.TeamId);
+        }
+        else if (!string.IsNullOrEmpty(team.SearchAreaId))
+        {
+            team.SearchAreaId = string.Empty;
+            team.SearchAreaName = string.Empty;
+            await einsatz.UpdateTeamAsync(team);
+        }
+
+        audit?.Log(gebiet is null ? "Suchgebiet entfernt (EL-App)" : "Suchgebiet zugewiesen (EL-App)", Geraet(null),
+            gebiet is null ? team.TeamName : $"{team.TeamName}: {gebiet.Name}");
+        return Ok(new { doppelt = false, suchgebiet = gebiet is null ? null : new { id = gebiet.Id, name = gebiet.Name, farbe = gebiet.Color } });
     });
 
     [HttpPost("notizen")]
