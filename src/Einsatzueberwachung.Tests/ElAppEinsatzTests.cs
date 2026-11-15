@@ -67,7 +67,7 @@ public sealed class ElAppEinsatzTests : IDisposable
 
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
-    private ElAppController Controller()
+    private ElAppController Controller(IArchivService? archiv = null, IPdfExportService? pdfExport = null)
     {
         var settings = EinsatzAbschlussTests.Recorder<ISettingsService>.Create((m, _) =>
             m.Name == nameof(ISettingsService.GetStaffelSettingsAsync) ? Task.FromResult(new StaffelSettings { StaffelName = "RHS Test" }) : null);
@@ -87,7 +87,8 @@ public sealed class ElAppEinsatzTests : IDisposable
         var c = new ElAppController(_tokens, new ElPositionService(_einsatz), new LeitungsGeraetNamen(new VpnDeviceStore(_dir)),
             new PublicAccess(5002), NullLogger<ElAppController>.Instance, null,
             _leitung, new LoginLockout(), null, _einsatz, null, settings.Proxy, null, null, _aktionen,
-            abschluss: _abschluss, stammdaten: stammdaten.Proxy, divera: divera.Proxy, zeit: new Uhr());
+            abschluss: _abschluss, stammdaten: stammdaten.Proxy, divera: divera.Proxy, zeit: new Uhr(),
+            archiv: archiv, pdfExport: pdfExport);
         var http = new DefaultHttpContext();
         http.Connection.LocalPort = 5000;
         http.Connection.RemoteIpAddress = IPAddress.Parse("10.10.0.9");
@@ -213,5 +214,37 @@ public sealed class ElAppEinsatzTests : IDisposable
         Assert.IsType<OkObjectResult>(await Controller().EinsatzBeenden(new ElAppController.ElEinsatzEnde(NeueId(), "Suche erfolglos abgeschlossen", true)));
         Assert.Equal(["Anna Berg"], _archiviertesPersonal);
         Assert.Equal(["Rex"], _archivierteHunde);
+    }
+
+    [Fact]
+    public async Task Bericht_PdfZurArchivId_MitOptionen_Unbekannt404_OhneToken410_Oeffentlich404()
+    {
+        var einsatzDaten = new EinsatzData { EinsatzNummer = "2026-042", EinsatzDatum = Ortszeit.Jetzt.AddHours(-3) };
+        var archiviert = ArchivedEinsatz.FromEinsatzData(einsatzDaten, "Suche erfolglos abgeschlossen", "", Ortszeit.Jetzt);
+        var archiv = EinsatzAbschlussTests.Recorder<IArchivService>.Create((m, args) =>
+            m.Name == nameof(IArchivService.GetByIdAsync) ? Task.FromResult((string)args![0]! == archiviert.Id ? archiviert : null) : null);
+        var optionen = new List<PdfBerichtOptionen>();
+        var pdf = EinsatzAbschlussTests.Recorder<IPdfExportService>.Create((_, args) =>
+        {
+            if (args?.Length == 2 && args[1] is PdfBerichtOptionen o) optionen.Add(o);
+            return Task.FromResult(new byte[] { 0x25, 0x50, 0x44, 0x46 });
+        });
+
+        var datei = Assert.IsType<FileContentResult>(await Controller(archiv.Proxy, pdf.Proxy).GetBericht(archiviert.Id, "Satellite", "t1,t2", "0"));
+        Assert.Equal("application/pdf", datei.ContentType);
+        Assert.Equal("einsatzbericht-2026-042.pdf", datei.FileDownloadName);
+        var o = Assert.Single(optionen);
+        Assert.Equal(MapTileType.Satellite, o.Kartenart);
+        Assert.False(o.Tracks);
+        Assert.Equal(["t1", "t2"], o.TeamIds!.OrderBy(t => t));
+
+        Assert.IsType<NotFoundObjectResult>(await Controller(archiv.Proxy, pdf.Proxy).GetBericht("unbekannt"));
+
+        var ohneToken = Controller(archiv.Proxy, pdf.Proxy);
+        ohneToken.HttpContext.Request.Headers.Authorization = "Bearer falsch";
+        Assert.Equal(410, ((IStatusCodeActionResult)await ohneToken.GetBericht(archiviert.Id)).StatusCode);
+        var oeffentlich = Controller(archiv.Proxy, pdf.Proxy);
+        oeffentlich.HttpContext.Connection.LocalPort = 5002;
+        Assert.IsType<NotFoundResult>(await oeffentlich.GetBericht(archiviert.Id));
     }
 }

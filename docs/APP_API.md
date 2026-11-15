@@ -472,6 +472,7 @@ ohne das Staffel-Passwort erneut einzugeben. Antwort `200` wie `/login`, zusätz
 | `GET /halsbaender` | `{ "frei": [ { "id", "name", "zeit", "akku" } ], "zuletzt": [ { "teamId", "halsbandId" } ] }` – freie Halsbänder für die Rückfrage beim Teamstart, dazu je Team das zuletzt benutzte (nur Teams, die schon eins hatten) |
 | `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen" } ]` |
 | `GET /einsatz/vorort` | Anwesenheit für das Einsatzende wie in `/el/beenden`: `{ "personal": [ { "id", "name", "vorausgewaehlt" } ], "hunde": [ { "id", "name", "vorausgewaehlt" } ] }` – nur aktive Einträge der Stammdaten, Personal nach Vorname, Hunde nach Name; `vorausgewaehlt` = in einem Team eingeteilt. Ab Server 1.14.1, ältere Server antworten `404` |
+| `GET /einsatz/bericht/{archivId}` | Einsatzbericht eines beendeten Einsatzes als PDF (`application/pdf`, Dateiname `einsatzbericht-<Einsatznummer>.pdf`), Inhalt wie der Download im Archiv. Optional `?karte=Streets` (`Streets` · `Topographic` · `Satellite`, Unbekanntes = `Streets`), `teams=<teamId>,<teamId>` (ohne = alle), `tracks=0` (ohne Tracks). `archivId` aus der Antwort von `/einsatz/beenden`. Unbekannt → `404` + `{ "error" }`, Fehler beim Erstellen `500` + `{ "error" }`. Abruf steht im Audit-Log. Ab Server 1.15.0, ältere Server antworten `404` |
 | `GET /einsatz/vorlage` | Auswahllisten wie in `/el/start`: `{ "aktiv", "szenarien": ["Mantrailer", …], "divera": [ { "id", "titel", "ort", "lat", "lng", "zeit" } ], "einsatzleiter": ["Anna Berg"], "fuehrungsassistenten": […], "ergebnisse": […], "kartenarten": [ { "wert": "Streets", "anzeige": "Straßenkarte" } ] }` – `divera` leer, wenn Divera nicht eingerichtet oder nicht erreichbar ist |
 
 ### 7. Aktionen
@@ -522,7 +523,9 @@ Einsatz starten und beenden (Stufe 5 umgesetzt):
   Ortszeit um. `pdf.tracks` Standard `true`, `pdf.punkte` (Kartenpunkte ins Archiv und in den Bericht, Team-Rolle Abschnitt 13) Standard `false`, `pdf.teamIds` `null` = alle Teams. Vor Ort waren die in
   `personalIds` und `hundeIds` gewählten Einträge (IDs aus `/einsatz/vorort`; unbekannte oder inaktive IDs fallen weg, `[]` = niemand).
   Fehlt ein Feld oder ist es `null`, übernimmt der Server dafür die Vorauswahl aus den eingeteilten Teams (wie in `/el/beenden`). Antwort `{ "archivId", "einsatzNummer",
-  "pdf": { "erstellt": true, "fehler": null } }`; den Bericht gibt es danach im Archiv. Schon an einem anderen Leitungsplatz beendet
+  "pdf": { "erstellt": true, "fehler": null } }`; den Bericht gibt es danach im Archiv und als PDF über
+  `GET /einsatz/bericht/{archivId}` (Abschnitt 6) – die App bietet nach dem Beenden „Bericht öffnen“ und „Teilen“ an und schickt dabei
+  dieselbe `kartenart`, `teamIds` und `tracks` wie beim Beenden mit. Schon an einem anderen Leitungsplatz beendet
   oder kein laufender Einsatz → `409`. Danach kommt auf `/ereignisse` `einsatz` mit `{ "aktiv": false }`.
 
 **Beispiel `GET /vermisste`** (Stufe 4a, so liefert es der Server):
