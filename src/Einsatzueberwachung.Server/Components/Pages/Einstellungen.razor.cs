@@ -51,6 +51,9 @@ public partial class Einstellungen
     private string _dataDirectory = string.Empty;
     private string _reportDirectory = string.Empty;
     private string _mobileUrl = string.Empty;
+    // QR fuer die Anmeldung der EL-App (Idee 6.3): interne Adresse ohne Passwort; null ohne HTTPS
+    private string? _elAppAdresse;
+    private string? _elAppQr;
     private string _sessionImportJson = string.Empty;
     private string _maintenanceStatus = string.Empty;
     private bool _maintenanceError;
@@ -148,6 +151,8 @@ public partial class Einstellungen
         _dataDirectory = AppPathResolver.GetDataDirectory();
         _reportDirectory = AppPathResolver.GetReportDirectory();
         _mobileUrl = new Uri(new Uri(Navigation.BaseUri), "mobile/").ToString();
+        _elAppAdresse = ElAppQr.Inhalt(Navigation.BaseUri);
+        _elAppQr = _elAppAdresse is null ? null : QrBild.DataUrl(_elAppAdresse);
         _updateStatus = UpdateService.GetStatusSnapshot();
 
         ApplyTabFromQuery();

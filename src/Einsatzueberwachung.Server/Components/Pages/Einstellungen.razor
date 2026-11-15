@@ -1270,6 +1270,23 @@
                 </div>
 
                 <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-qr-code me-1"></i>EL-App anmelden</h3>
+                    <p class="cfg-help">
+                        In der App EinsatzSpur „Einsatzleitung“ wählen und diesen Code scannen. Er enthält nur die interne
+                        Adresse, kein Passwort – das Staffel-Passwort gibt man danach in der App ein. Funktioniert nur im VPN.
+                    </p>
+                    @if (_elAppQr is not null)
+                    {
+                        <img src="@_elAppQr" alt="QR-Code mit der internen Adresse für die EL-App" class="cfg-vpn-qr" />
+                        <span class="cfg-help">@_elAppAdresse</span>
+                    }
+                    else
+                    {
+                        <span class="cfg-help">Nur verfügbar, wenn diese Seite über HTTPS geöffnet ist (interne Adresse im VPN).</span>
+                    }
+                </div>
+
+                <div class="cfg-section">
                     <h3 class="cfg-sub-header"><i class="bi bi-shield-check me-1"></i>VPN-Geräte</h3>
                     @if (!VpnDevices.IsAvailable)
                     {
