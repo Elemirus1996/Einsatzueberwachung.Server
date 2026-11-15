@@ -102,6 +102,11 @@ ${APP_USER} ALL=(root) NOPASSWD: /bin/systemctl restart einsatzueberwachung-serv
 EOF
 chmod 440 /etc/sudoers.d/einsatzueberwachung-update
 
+# Journal begrenzen, damit Logs die Platte nicht fuellen (#181)
+mkdir -p /etc/systemd/journald.conf.d
+printf '[Journal]\nSystemMaxUse=500M\n' >/etc/systemd/journald.conf.d/einsatzueberwachung.conf
+systemctl restart systemd-journald
+
 systemctl daemon-reload
 systemctl enable einsatzueberwachung-server.service
 systemctl enable einsatzueberwachung-backup.timer

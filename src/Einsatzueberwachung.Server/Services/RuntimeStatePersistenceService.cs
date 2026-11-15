@@ -20,15 +20,23 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
     private readonly TrackPunktSpeicher<CollarLocation> _halsbandPunkte;
     private readonly TrackPunktSpeicher<TeamPhoneLocation> _handyPunkte;
 
+    // Wartezeit bis zum naechsten Versuch, wenn die Datenbank nicht erreichbar ist (z. B. Platte voll, #181)
+    internal static readonly TimeSpan Wiederholung = TimeSpan.FromSeconds(30);
+
+    private readonly IWarningService? _warnings;
     private volatile bool _isDirty;
+    private bool _datenbankBereit;
+    private string? _warnungId;
 
     public RuntimeStatePersistenceService(
         IDbContextFactory<RuntimeDbContext> dbContextFactory,
         IEinsatzService einsatzService,
         ICollarTrackingService collarTrackingService,
-        ILogger<RuntimeStatePersistenceService> logger)
+        ILogger<RuntimeStatePersistenceService> logger,
+        IWarningService? warnings = null)
     {
         _dbContextFactory = dbContextFactory;
+        _warnings = warnings;
         _einsatzService = einsatzService;
         _collarTrackingService = collarTrackingService;
         _logger = logger;
@@ -44,22 +52,44 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
         _handyPunkte = new("phone", p => p.Timestamp, p => (p.Latitude, p.Longitude), _jsonOptions);
     }
 
+    /// <summary>Ob die Datenbank erreichbar ist; sonst laeuft der Einsatz nur im Speicher weiter</summary>
+    public bool DatenbankBereit => _datenbankBereit;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await EnsureDatabaseAsync(stoppingToken);
-        await RestoreRuntimeStateAsync(stoppingToken);
+        // Ein Fehler hier hat am 10.11.2026 (Platte voll) den ganzen Server beendet, danach Neustart-Schleife.
+        // Jetzt: warnen, im Speicher weiterlaufen und spaeter erneut versuchen.
+        await DatenbankStartenAsync(wiederherstellen: true, stoppingToken);
 
         Subscribe();
 
         var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+        var naechsterVersuch = DateTime.UtcNow + Wiederholung;
         try
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
+                if (!_datenbankBereit)
+                {
+                    if (DateTime.UtcNow < naechsterVersuch) continue;
+                    naechsterVersuch = DateTime.UtcNow + Wiederholung;
+                    // Gespeicherten Stand nur laden, solange sich im Speicher noch nichts geaendert hat
+                    if (!await DatenbankStartenAsync(wiederherstellen: !_isDirty, stoppingToken)) continue;
+                }
+
                 if (_isDirty)
                 {
                     _isDirty = false;
-                    await PersistRuntimeStateAsync(stoppingToken);
+                    try
+                    {
+                        await PersistRuntimeStateAsync(stoppingToken);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        _isDirty = true;
+                        DatenbankFehler(ex);
+                        naechsterVersuch = DateTime.UtcNow + Wiederholung;
+                    }
                 }
             }
         }
@@ -83,6 +113,51 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
                 }
             }
         }
+    }
+
+    /// <summary>Datenbank anlegen und auf Wunsch den gespeicherten Stand laden; false, wenn das nicht ging</summary>
+    internal async Task<bool> DatenbankStartenAsync(bool wiederherstellen, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await EnsureDatabaseAsync(cancellationToken);
+            if (wiederherstellen) await RestoreRuntimeStateAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            DatenbankFehler(ex);
+            return false;
+        }
+
+        if (!_datenbankBereit && _warnungId is not null)
+        {
+            _logger.LogInformation("Datenbank wieder erreichbar, Einsatzstand wird wieder gespeichert");
+            _warnings?.DismissWarning(_warnungId);
+            _warnungId = null;
+        }
+        _datenbankBereit = true;
+        return true;
+    }
+
+    private void DatenbankFehler(Exception ex)
+    {
+        var ersterFehler = _datenbankBereit || _warnungId is null;
+        _datenbankBereit = false;
+        if (!ersterFehler) return; // nicht alle 30 s dieselbe Warnung
+
+        _logger.LogCritical(ex, "Datenbank nicht erreichbar (Platte voll?). Der Einsatz laeuft nur im Speicher weiter");
+        var warnung = new WarningEntry
+        {
+            Title = "Einsatzstand wird nicht gespeichert",
+            Message = "Die Datenbank des Servers ist nicht erreichbar, häufigste Ursache ist eine volle Platte. " +
+                      "Der Einsatz läuft weiter, geht aber bei einem Neustart verloren. Platz schaffen unter Einstellungen → Wartung.",
+            Level = WarningLevel.Critical,
+            NavigationUrl = "/einstellungen?tab=wartung",
+            Source = WarningRuleDefinition.Sources.ServerStorage,
+            Timestamp = Ortszeit.Jetzt
+        };
+        _warnungId = warnung.Id;
+        _warnings?.AddWarning(warnung);
     }
 
     private async Task EnsureDatabaseAsync(CancellationToken cancellationToken)
