@@ -107,6 +107,7 @@ namespace Einsatzueberwachung.Domain.Models
             public const string PhoneNoSignal     = "PhoneNoSignal";
             public const string PhoneLowBattery   = "PhoneLowBattery";
             public const string ServerCertificate = "ServerCertificate";
+            public const string ServerStorage     = "ServerStorage";
             public const string TeamAppSuche      = "TeamAppSuche";
             public const string TeamAppPunkt      = "TeamAppPunkt";
         }

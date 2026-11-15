@@ -882,3 +882,34 @@
     gap: 16px;
     align-items: flex-start;
 }
+
+/* Wartung: Speicher & Server-Backups */
+.cfg-speicher-balken {
+    height: 10px;
+    margin: 4px 0 6px;
+}
+
+.cfg-speicher-bereich {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--bs-border-color, rgba(0, 0, 0, .1));
+}
+
+.cfg-speicher-tabelle {
+    margin-top: 6px;
+    margin-bottom: 0;
+}
+
+.cfg-speicher-tabelle code {
+    word-break: break-all;
+}
+
+.cfg-speicher-tabelle th:first-child,
+.cfg-speicher-tabelle td:first-child {
+    width: 2.5rem;
+}
+
+::deep .cfg-btn-sm {
+    padding: 2px 6px;
+    font-size: .85rem;
+}

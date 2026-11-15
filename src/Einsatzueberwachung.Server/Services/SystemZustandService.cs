@@ -37,6 +37,7 @@ public sealed class SystemZustandService : BackgroundService
 {
     public const int ZertifikatWarnTage = 14;
     public const long SpeicherWarnBytes = 1024L * 1024 * 1024;
+    public const double SpeicherWarnProzent = 90;
     private static readonly TimeSpan Intervall = TimeSpan.FromHours(6);
 
     private readonly ISettingsService _settings;
@@ -95,11 +96,16 @@ public sealed class SystemZustandService : BackgroundService
             var host = OeffentlicherHost(settings.MobileBaseUrl, _teamMobileOptions.CurrentValue.PublicBaseUrl);
             var zertifikat = host is null ? null : await PruefeZertifikatAsync(host, cancellationToken);
 
-            long? frei = null;
+            long? frei = null, gesamt = null;
             try
             {
                 var root = Path.GetPathRoot(Path.GetFullPath(AppPathResolver.GetDataDirectory()));
-                if (!string.IsNullOrEmpty(root)) frei = new DriveInfo(root).AvailableFreeSpace;
+                if (!string.IsNullOrEmpty(root))
+                {
+                    var laufwerk = new DriveInfo(root);
+                    frei = laufwerk.AvailableFreeSpace;
+                    gesamt = laufwerk.TotalSize;
+                }
             }
             catch (Exception ex)
             {
@@ -134,6 +140,19 @@ public sealed class SystemZustandService : BackgroundService
                 });
             }
 
+            if (SpeicherKnapp(frei, gesamt) is string speicherText)
+            {
+                _warnings.AddWarning(new WarningEntry
+                {
+                    Title = "Speicherplatz auf dem Server",
+                    Message = speicherText,
+                    Level = WarningLevel.Critical,
+                    NavigationUrl = "/einstellungen?tab=wartung",
+                    Source = WarningRuleDefinition.Sources.ServerStorage,
+                    Timestamp = _time.Now
+                });
+            }
+
             Geaendert?.Invoke();
             return zustand;
         }
@@ -141,6 +160,18 @@ public sealed class SystemZustandService : BackgroundService
         {
             _pruefLock.Release();
         }
+    }
+
+    /// <summary>Text fuer die Warnung, wenn die Platte fast voll ist (Vorfall 10.11.2026: volle Platte, Server startete nicht mehr)</summary>
+    public static string? SpeicherKnapp(long? freiBytes, long? gesamtBytes)
+    {
+        if (freiBytes is not long frei) return null;
+        var prozent = gesamtBytes is > 0 ? 100d * (gesamtBytes.Value - frei) / gesamtBytes.Value : (double?)null;
+        if (frei >= SpeicherWarnBytes && prozent is not >= SpeicherWarnProzent) return null;
+
+        var belegt = prozent is double p ? $"{p:0} % belegt, " : string.Empty;
+        return $"Nur noch {frei / 1024d / 1024 / 1024:0.0} GB frei ({belegt}Server-Backups und Update-Reste). " +
+               "Unter Einstellungen → Wartung aufräumen – bei voller Platte startet der Server nicht mehr.";
     }
 
     public static string ZertifikatText(ZertifikatZustand z, DateTime nowUtc) =>

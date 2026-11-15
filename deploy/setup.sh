@@ -35,7 +35,7 @@ VPN_PORT="$(bash "$STAFFEL" wert vpn_port)"
 
 echo "[1/9] Pakete installieren"
 apt-get update
-apt-get install -y nginx ufw curl rsync unzip chrony certbot python3 openssl wireguard
+apt-get install -y nginx ufw curl rsync unzip chrony certbot python3 openssl wireguard sqlite3
 # Der Server braucht die ASP.NET-Core-Laufzeit (enthaelt die .NET-Laufzeit). Ubuntu 22.04 und 24.04 haben .NET 9
 # nicht in den eigenen Quellen, dort kommt es aus der Paketquelle „dotnet/backports“.
 if ! apt-cache show aspnetcore-runtime-9.0 >/dev/null 2>&1; then
