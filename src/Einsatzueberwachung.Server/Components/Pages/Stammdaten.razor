@@ -435,7 +435,7 @@
 
     @if (_showChecklistTemplateModal)
     {
-        <div class="modal-overlay" @onclick="CloseChecklistTemplateModal">
+        <div class="modal-overlay">
             <div class="modal-modern" style="max-width:900px;" @onclick:stopPropagation="true">
                 <div class="modal-modern-header">
                     <h3>@(_editingChecklistTemplateId is null ? "Checkliste anlegen" : "Checkliste bearbeiten")</h3>
@@ -546,7 +546,7 @@
     @if (_showCreatePersonalModal)
     {
         <div class="modal-overlay">
-            <button type="button" class="modal-overlay-dismiss" @onclick="CloseCreatePersonalModal" aria-label="Dialog schließen"></button>
+            <div class="modal-overlay-dismiss" aria-hidden="true"></div>
             <div class="modal-modern" @onclick:stopPropagation="true">
                 <div class="modal-modern-header">
                     <h3>Personal anlegen</h3>
@@ -600,7 +600,7 @@
     @if (_showCreateDogModal)
     {
         <div class="modal-overlay">
-            <button type="button" class="modal-overlay-dismiss" @onclick="CloseCreateDogModal" aria-label="Dialog schließen"></button>
+            <div class="modal-overlay-dismiss" aria-hidden="true"></div>
             <div class="modal-modern" @onclick:stopPropagation="true">
                 <div class="modal-modern-header">
                     <h3>Hund anlegen</h3>
@@ -663,7 +663,7 @@
     @if (_showCreateDroneModal)
     {
         <div class="modal-overlay">
-            <button type="button" class="modal-overlay-dismiss" @onclick="CloseCreateDroneModal" aria-label="Dialog schließen"></button>
+            <div class="modal-overlay-dismiss" aria-hidden="true"></div>
             <div class="modal-modern" @onclick:stopPropagation="true">
                 <div class="modal-modern-header">
                     <h3>Drohne anlegen</h3>

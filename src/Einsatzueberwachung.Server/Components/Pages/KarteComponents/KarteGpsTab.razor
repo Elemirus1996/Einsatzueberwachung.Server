@@ -195,7 +195,7 @@
 @* Detail-Popup für abgeschlossene Suche *@
 @if (_detailSnapshot != null)
 {
-    <button type="button" class="modal-backdrop modal-backdrop-action show" style="z-index: 9000;" @onclick="CloseDetailPopup" aria-label="Dialog schließen"></button>
+    <div class="modal-backdrop modal-backdrop-action show" style="z-index: 9000;" aria-hidden="true"></div>
     <div class="modal show d-block" style="z-index: 9001;" tabindex="-1">
         <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
@@ -257,7 +257,7 @@
 @* GPX-Import-Dialog *@
 @if (_showImportDialog)
 {
-    <button type="button" class="modal-backdrop modal-backdrop-action show" style="z-index: 9100;" @onclick="CloseImportDialog" aria-label="Dialog schließen"></button>
+    <div class="modal-backdrop modal-backdrop-action show" style="z-index: 9100;" aria-hidden="true"></div>
     <div class="modal show d-block" style="z-index: 9101;" tabindex="-1">
         <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg">
             <div class="modal-content">
