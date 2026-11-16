@@ -69,7 +69,8 @@ public sealed partial class ElAppController
         {
             kennung = kennung?.Kennung,
             staffel,
-            logoVersion = logo is null ? null : (await logo.HolenAsync())?.Version
+            logoVersion = logo is null ? null : (await logo.HolenAsync())?.Version,
+            packlisteVersion = await AppPacklisteAntwort.VersionAsync(einstellungen)
         };
         var datenschutz = await AppDatenschutzAntwort.GanzAsync(einstellungen); // #148: die EL-App fragt beim ersten Login
         if (!mitAnmeldung)
@@ -113,6 +114,15 @@ public sealed partial class ElAppController
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
         if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _)) return Gone();
         return await AppDatenschutzAntwort.GanzAsync(einstellungen) is { } datenschutz ? Ok(datenschutz) : NotFound();
+    }
+
+    /// <summary>Packliste der Staffel (Team-Rolle Abschnitt 14); 404, wenn keine hinterlegt ist</summary>
+    [HttpGet("packliste")]
+    public async Task<IActionResult> GetPackliste()
+    {
+        if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _)) return Gone();
+        return await AppPacklisteAntwort.GanzAsync(einstellungen) is { } packliste ? Ok(packliste) : NotFound();
     }
 
     /// <summary>Live-Ereignisse (Abschnitt 8). Bei Einsatzende kommt „einsatz“, „stop“ nur bei ungueltigem Token.</summary>

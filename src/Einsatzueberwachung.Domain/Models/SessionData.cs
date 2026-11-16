@@ -115,6 +115,12 @@ namespace Einsatzueberwachung.Domain.Models
         public string? AppDatenschutzVersion { get; set; }
         public DateTime? AppDatenschutzStandUtc { get; set; }
 
+        /// <summary>Packliste der Staffel fuer die App (APP_API Team Abschnitt 14): eine Zeile je Punkt, „Gruppe:“ beginnt eine Gruppe; leer = keine</summary>
+        public string? AppPacklisteText { get; set; }
+        /// <summary>Wird beim Speichern gesetzt (AppPackliste.Aktualisieren), nicht von Hand</summary>
+        public string? AppPacklisteVersion { get; set; }
+        public DateTime? AppPacklisteStandUtc { get; set; }
+
         // Loeschfristen im Archiv in Tagen ab Einsatzende (#151); null = nicht automatisch loeschen (ab Werk)
         public int? LoeschfristLaufwegeTage { get; set; }
         public int? LoeschfristNotizenTage { get; set; }

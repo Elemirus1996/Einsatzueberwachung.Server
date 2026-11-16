@@ -315,6 +315,19 @@
                                 Platzhalter in [eckigen Klammern] vor dem Einsatz ausfüllen.</p>
                         }
                     </div>
+                    <div class="cfg-field mt-3">
+                        <label class="cfg-label" for="cfg-packliste">Packliste für die App</label>
+                        <p class="text-muted small mb-2">Was jedes Mitglied für einen Einsatz dabeihaben sollte. Die App zeigt die Liste, erinnert
+                            regelmäßig daran und lässt sie abhaken. Abgehakt wird nur auf dem Handy, der Server erfährt davon nichts.
+                            Eine Zeile je Punkt; eine Zeile mit Doppelpunkt am Ende beginnt eine Gruppe. Leer = keine Packliste.</p>
+                        <textarea id="cfg-packliste" class="cfg-input" rows="10" maxlength="@AppPackliste.MaxEingabeLaenge"
+                                  placeholder="@PacklisteBeispiel" @bind="_appSettings.AppPacklisteText"></textarea>
+                        @{ var packlisteAnzahl = AppPackliste.Punkte(_appSettings.AppPacklisteText).Count; }
+                        @if (packlisteAnzahl > 0)
+                        {
+                            <p class="text-muted small mt-2 mb-0">@packlisteAnzahl @(packlisteAnzahl == 1 ? "Punkt" : "Punkte")@(_appSettings.AppPacklisteStandUtc is { } packStand ? $", gespeicherte Fassung vom {Ortszeit.AusUtc(packStand):dd.MM.yyyy HH:mm} Uhr" : "").</p>
+                        }
+                    </div>
                 </div>
 
                 <div class="cfg-section">
