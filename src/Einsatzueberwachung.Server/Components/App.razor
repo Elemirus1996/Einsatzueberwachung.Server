@@ -1,4 +1,4 @@
-@using System.Text.Json
+﻿@using System.Text.Json
 @using Einsatzueberwachung.Domain.Interfaces
 @using Einsatzueberwachung.Domain.Models
 @inject ISettingsService SettingsService
@@ -165,7 +165,9 @@
     <link rel="stylesheet" href="@Assets["leaflet-custom.css"]" />
     <link rel="stylesheet" href="@Assets["print-map.css"]" />
     <ImportMap />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
     <HeadOutlet />
 </head>
 

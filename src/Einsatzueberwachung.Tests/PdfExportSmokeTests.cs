@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
@@ -48,6 +48,15 @@ public class PdfExportSmokeTests
             Type = GlobalNotesEntryType.System
         }
     };
+
+    [Fact]
+    public void ProgrammLogo_IstEingebettet()
+    {
+        // Logo im Fuss der Berichte; fehlt die Ressource, fehlt das Logo ohne Fehlermeldung
+        using var stream = typeof(PdfExportService).Assembly.GetManifestResourceStream("Einsatzueberwachung.Logo.Hell.png");
+        Assert.NotNull(stream);
+        Assert.True(stream!.Length > 1000);
+    }
 
     [Fact]
     public async Task ExportEinsatzToPdfBytesAsync_LiefertGueltigesPdf()

@@ -913,3 +913,27 @@
     padding: 2px 6px;
     font-size: .85rem;
 }
+
+/* Programm-Logo im Bereich System, je nach Farbschema helle oder dunkle Fassung */
+.cfg-marke {
+    margin: 0.5rem 0 1.25rem;
+}
+
+.cfg-marke-logo {
+    display: block;
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+}
+
+.cfg-marke-dunkel {
+    display: none;
+}
+
+[data-bs-theme="dark"] .cfg-marke-hell {
+    display: none;
+}
+
+[data-bs-theme="dark"] .cfg-marke-dunkel {
+    display: block;
+}
