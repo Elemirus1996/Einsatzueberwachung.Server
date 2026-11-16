@@ -71,34 +71,23 @@ public partial class EinsatzLeitung : IDisposable
     private void PopulateEinsatzkontakteForm()
     {
         var current = EinsatzService.CurrentEinsatz;
-        var legacyContacts = current.EinsatzkontakteMigriert
-            ? new List<VermisstenInfo>()
-            : current.Vermisste ?? new List<VermisstenInfo>();
-
-        string FirstNonEmpty(string value, Func<VermisstenInfo, string> legacyValue) =>
-            !string.IsNullOrWhiteSpace(value)
-                ? value
-                : legacyContacts.Select(legacyValue).FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate))
-                  ?? string.Empty;
-        bool IsConfirmed(bool value, Func<VermisstenInfo, bool> legacyValue) =>
-            value || legacyContacts.Any(legacyValue);
 
         _kontaktForm = new EinsatzData
         {
-            PolizeiKontaktName = FirstNonEmpty(current.PolizeiKontaktName, person => person.PolizeiKontaktName),
-            PolizeiDienstnummer = FirstNonEmpty(current.PolizeiDienstnummer, person => person.PolizeiDienstnummer),
-            PolizeiTelefon = FirstNonEmpty(current.PolizeiTelefon, person => person.PolizeiTelefon),
-            PolizeiVermisstenmeldungAufgenommen = IsConfirmed(current.PolizeiVermisstenmeldungAufgenommen, person => person.PolizeiVermisstenmeldungAufgenommen),
-            PolizeiKoordinationBesprochen = IsConfirmed(current.PolizeiKoordinationBesprochen, person => person.PolizeiKoordinationBesprochen),
-            PolizeiSuchabschnittAbgestimmt = IsConfirmed(current.PolizeiSuchabschnittAbgestimmt, person => person.PolizeiSuchabschnittAbgestimmt),
-            PolizeiRueckmeldepflichtVereinbart = IsConfirmed(current.PolizeiRueckmeldepflichtVereinbart, person => person.PolizeiRueckmeldepflichtVereinbart),
-            PolizeiDatenschutzGeklaert = IsConfirmed(current.PolizeiDatenschutzGeklaert, person => person.PolizeiDatenschutzGeklaert),
-            BosEinheit = FirstNonEmpty(current.BosEinheit, person => person.BosEinheit),
-            BosZugfuehrer = FirstNonEmpty(current.BosZugfuehrer, person => person.BosZugfuehrer),
-            BosFunkrufname = FirstNonEmpty(current.BosFunkrufname, person => person.BosFunkrufname),
-            BosAufgabenteilung = FirstNonEmpty(current.BosAufgabenteilung, person => person.BosAufgabenteilung),
-            BosAbschnittAbgestimmt = IsConfirmed(current.BosAbschnittAbgestimmt, person => person.BosAbschnittAbgestimmt),
-            BosRessourcenBesprochen = IsConfirmed(current.BosRessourcenBesprochen, person => person.BosRessourcenBesprochen)
+            PolizeiKontaktName = current.PolizeiKontaktName,
+            PolizeiDienstnummer = current.PolizeiDienstnummer,
+            PolizeiTelefon = current.PolizeiTelefon,
+            PolizeiVermisstenmeldungAufgenommen = current.PolizeiVermisstenmeldungAufgenommen,
+            PolizeiKoordinationBesprochen = current.PolizeiKoordinationBesprochen,
+            PolizeiSuchabschnittAbgestimmt = current.PolizeiSuchabschnittAbgestimmt,
+            PolizeiRueckmeldepflichtVereinbart = current.PolizeiRueckmeldepflichtVereinbart,
+            PolizeiDatenschutzGeklaert = current.PolizeiDatenschutzGeklaert,
+            BosEinheit = current.BosEinheit,
+            BosZugfuehrer = current.BosZugfuehrer,
+            BosFunkrufname = current.BosFunkrufname,
+            BosAufgabenteilung = current.BosAufgabenteilung,
+            BosAbschnittAbgestimmt = current.BosAbschnittAbgestimmt,
+            BosRessourcenBesprochen = current.BosRessourcenBesprochen
         };
     }
 

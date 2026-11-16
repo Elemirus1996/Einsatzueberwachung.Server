@@ -2,10 +2,14 @@
 {
     <div class="modal-overlay">
         <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
-        <div class="modal-modern modal-modern--md" @onclick:stopPropagation="true">
+        <div class="modal-modern modal-modern--md"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="team-message-dialog-title"
+             @onclick:stopPropagation="true">
             <div class="modal-modern-header bg-warning text-dark">
-                <h3 class="mb-0"><i class="bi bi-megaphone me-1"></i>Nachricht an Team</h3>
-                <button class="btn btn-sm btn-outline-dark" @onclick="OnClose">X</button>
+                <h3 id="team-message-dialog-title" class="mb-0"><i class="bi bi-megaphone me-1" aria-hidden="true"></i>Nachricht an Team</h3>
+                <button class="btn btn-sm btn-outline-dark" type="button" aria-label="Dialog schließen" @onclick="OnClose">X</button>
             </div>
             <div class="modal-modern-body">
                 @if (!Teams.Any())
@@ -15,8 +19,8 @@
                 else
                 {
                     <div class="mb-3">
-                        <label class="form-label">Empfänger</label>
-                        <select class="form-select" value="@TargetId" @onchange="OnTargetChangedAsync">
+                        <label class="form-label" for="team-message-target">Empfänger</label>
+                        <select id="team-message-target" class="form-select" value="@TargetId" @onchange="OnTargetChangedAsync">
                             @foreach (var team in Teams.OrderBy(team => team.TeamName))
                             {
                                 <option value="@team.TeamId">@team.TeamName @(string.IsNullOrWhiteSpace(team.DogName) ? "" : " / " + team.DogName)</option>
@@ -24,15 +28,15 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Nachricht</label>
-                        <textarea class="form-control" rows="3" value="@Text" @onchange="OnTextChangedAsync" placeholder="kurze Nachricht..."></textarea>
+                        <label class="form-label" for="team-message-text">Nachricht</label>
+                        <textarea id="team-message-text" class="form-control" rows="3" value="@Text" @onchange="OnTextChangedAsync" placeholder="Kurze Nachricht ..."></textarea>
                     </div>
                     @if (!string.IsNullOrEmpty(Feedback))
                     {
-                        <div class="alert @(Feedback.StartsWith("Nachricht") ? "alert-success" : "alert-danger") py-2 mb-0">@Feedback</div>
+                        <div class="alert @(Feedback.StartsWith("Nachricht") ? "alert-success" : "alert-danger") py-2 mb-0" role="status">@Feedback</div>
                     }
-                    <p class="small text-muted mt-2 mb-0">
-                        <i class="bi bi-info-circle me-1"></i>Erscheint sofort am Smartphone des gewaehlten Teams (max. 5 letzte Nachrichten).
+                    <p class="monitor-text-caption mt-2 mb-0">
+                        <i class="bi bi-info-circle me-1" aria-hidden="true"></i>Erscheint sofort am Smartphone des ausgewählten Teams (max. 5 letzte Nachrichten).
                     </p>
                 }
             </div>

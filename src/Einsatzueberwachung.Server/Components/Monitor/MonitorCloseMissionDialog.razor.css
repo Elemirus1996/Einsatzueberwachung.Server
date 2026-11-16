@@ -3,9 +3,9 @@
 }
 
 .modal-close-mission-header {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--danger-color) 80%, #000000) 0%, var(--danger-color) 100%);
+    background: var(--danger-color);
     color: var(--danger-on-fill);
-    border-bottom-color: rgba(255, 255, 255, 0.18);
+    border-bottom-color: color-mix(in srgb, var(--danger-on-fill) 18%, transparent);
 }
 
 .modal-close-mission .border.rounded {
@@ -13,18 +13,14 @@
     border-color: var(--ui-tile-border) !important;
 }
 
-.modal-close-mission .text-muted {
-    color: var(--ui-muted) !important;
-}
-
 .modal-close-mission .btn-outline-light {
-    border-color: rgba(255, 255, 255, 0.4);
+    border-color: color-mix(in srgb, var(--danger-on-fill) 40%, transparent);
     color: var(--danger-on-fill);
 }
 
 .modal-close-mission .btn-outline-light:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.6);
+    background: color-mix(in srgb, var(--danger-on-fill) 20%, transparent);
+    border-color: color-mix(in srgb, var(--danger-on-fill) 60%, transparent);
     color: var(--danger-on-fill);
 }
 

@@ -2,10 +2,14 @@
 {
     <div class="modal-overlay">
         <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
-        <div class="modal-modern modal-close-mission" @onclick:stopPropagation="true">
+        <div class="modal-modern modal-close-mission"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="close-mission-dialog-title"
+             @onclick:stopPropagation="true">
             <div class="modal-modern-header modal-close-mission-header">
-                <h3 class="mb-0"><i class="bi bi-exclamation-octagon me-1"></i>Einsatz beenden und archivieren</h3>
-                <button class="btn btn-sm btn-outline-light" @onclick="OnClose" disabled="@IsClosing">X</button>
+                <h3 id="close-mission-dialog-title" class="mb-0"><i class="bi bi-exclamation-octagon me-1" aria-hidden="true"></i>Einsatz beenden und archivieren</h3>
+                <button class="btn btn-sm btn-outline-light" type="button" aria-label="Dialog schließen" @onclick="OnClose" disabled="@IsClosing">X</button>
             </div>
             <div class="modal-modern-body">
                 <div class="alert alert-warning py-2 mb-3">
@@ -14,13 +18,13 @@
 
                 @if (!string.IsNullOrWhiteSpace(Error))
                 {
-                    <div class="alert alert-danger py-2">@Error</div>
+                    <div class="alert alert-danger py-2" role="alert">@Error</div>
                 }
 
                 <div class="row g-3 mb-3">
                     <div class="col-12 col-md-8">
-                        <label class="form-label">Ergebnis</label>
-                        <select class="form-select" @bind="Form.Result">
+                        <label class="form-label" for="close-mission-result">Ergebnis</label>
+                        <select id="close-mission-result" class="form-select" @bind="Form.Result">
                             <option value="">-- Bitte wählen --</option>
                             @foreach (var option in ResultOptions)
                             {
@@ -29,12 +33,12 @@
                         </select>
                     </div>
                     <div class="col-12 col-md-4">
-                        <label class="form-label">Ende-Zeit</label>
-                        <input type="time" class="form-control" @bind="Form.EndTime" />
+                        <label class="form-label" for="close-mission-end-time">Ende-Zeit</label>
+                        <input id="close-mission-end-time" type="time" class="form-control" @bind="Form.EndTime" />
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Bemerkungen</label>
-                        <textarea class="form-control" rows="2" @bind="Form.Remarks" placeholder="Zusatzinformationen zum Abschluss..."></textarea>
+                        <label class="form-label" for="close-mission-remarks">Bemerkungen</label>
+                        <textarea id="close-mission-remarks" class="form-control" rows="2" @bind="Form.Remarks" placeholder="Zusatzinformationen zum Abschluss..."></textarea>
                     </div>
                     <div class="col-12">
                         <label class="form-check mb-0">
@@ -47,7 +51,7 @@
                                 }
                                 else
                                 {
-                                    <span class="text-muted ms-1">(keine Tracks vorhanden)</span>
+                                    <span class="monitor-text-caption ms-1">(keine Tracks vorhanden)</span>
                                 }
                             </span>
                         </label>
@@ -60,11 +64,11 @@
                                 @if (PointCount > 0)
                                 {
                                     <span class="badge bg-info ms-1">@PointCount Punkt(e)</span>
-                                    <span class="text-muted ms-1">(werden dafür archiviert)</span>
+                                    <span class="monitor-text-caption ms-1">(werden dafür archiviert)</span>
                                 }
                                 else
                                 {
-                                    <span class="text-muted ms-1">(keine Punkte vorhanden)</span>
+                                    <span class="monitor-text-caption ms-1">(keine Punkte vorhanden)</span>
                                 }
                             </span>
                         </label>
@@ -72,8 +76,8 @@
                     @if (Form.IncludeTracks || Form.IncludePoints)
                     {
                         <div class="col-12 col-md-6">
-                            <label class="form-label">Karte im Bericht</label>
-                            <select class="form-select" @bind="Form.MapTileType">
+                            <label class="form-label" for="close-mission-map-type">Karte im Bericht</label>
+                            <select id="close-mission-map-type" class="form-select" @bind="Form.MapTileType">
                                 @foreach (var (art, name) in PdfBerichtOptionen.Kartenarten)
                                 {
                                     <option value="@art">@name</option>
@@ -85,7 +89,7 @@
 
                 <div class="border rounded p-2 mb-3">
                     <div class="small fw-semibold mb-2">Einsatz-Zusammenfassung</div>
-                    <div class="row g-2 small text-muted">
+                    <div class="row g-2 monitor-text-caption">
                         <div class="col-6 col-md-3">Teams: @TeamCount</div>
                         <div class="col-6 col-md-3">Personal: @SelectedPersonnelCount</div>
                         <div class="col-6 col-md-3">Hunde: @SelectedDogCount</div>
@@ -100,7 +104,7 @@
                             <div class="monitor-checklist-scroll">
                                 @if (!Personnel.Any())
                                 {
-                                    <div class="small text-muted">Kein aktives Personal vorhanden.</div>
+                                    <div class="monitor-text-caption">Kein aktives Personal vorhanden.</div>
                                 }
                                 else
                                 {
@@ -122,7 +126,7 @@
                             <div class="monitor-checklist-scroll">
                                 @if (!Dogs.Any())
                                 {
-                                    <div class="small text-muted">Keine aktiven Hunde vorhanden.</div>
+                                    <div class="monitor-text-caption">Keine aktiven Hunde vorhanden.</div>
                                 }
                                 else
                                 {

@@ -2,18 +2,22 @@
 {
     <div class="modal-overlay">
         <button type="button" class="modal-overlay-dismiss" @onclick="OnCancel" aria-label="Dialog schließen"></button>
-        <div class="modal-modern modal-modern--sm" @onclick:stopPropagation="true">
+        <div class="modal-modern modal-modern--sm"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="collar-select-dialog-title"
+             @onclick:stopPropagation="true">
             <div class="modal-modern-header">
-                <h4 class="mb-0"><i class="bi bi-broadcast me-2"></i>GPS-Halsband zuweisen</h4>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="OnCancel">×</button>
+                <h4 id="collar-select-dialog-title" class="mb-0"><i class="bi bi-broadcast me-2" aria-hidden="true"></i>GPS-Halsband zuweisen</h4>
+                <button class="btn btn-sm btn-outline-secondary" type="button" aria-label="Dialog schließen" @onclick="OnCancel">×</button>
             </div>
             <div class="modal-modern-body">
-                <p class="text-muted small mb-3">
+                <p class="monitor-text-secondary mb-3">
                     Team <strong>@TeamName</strong> hat noch kein Halsband.
                     Bitte jetzt zuweisen oder ohne Halsband starten.
                 </p>
-                <label class="form-label">GPS-Halsband</label>
-                <select class="form-select mb-0" value="@SelectedCollarId" @onchange="OnCollarChangedAsync">
+                <label class="form-label" for="collar-select">GPS-Halsband</label>
+                <select id="collar-select" class="form-select mb-0" value="@SelectedCollarId" @onchange="OnCollarChangedAsync">
                     <option value="">-- Kein Halsband (ohne Tracking starten) --</option>
                     @foreach (var collar in AvailableCollars.OrderBy(collar => collar.CollarName))
                     {

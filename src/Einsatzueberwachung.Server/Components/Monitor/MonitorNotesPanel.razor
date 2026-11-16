@@ -73,7 +73,7 @@
 <div class="notes-list">
     @if (Notes.Count == 0)
     {
-        <p class="text-muted mb-0">Noch keine Einträge.</p>
+        <p class="monitor-text-secondary mb-0">Noch keine Einträge.</p>
     }
     else
     {
@@ -89,11 +89,11 @@
                         }
                         <strong class="monitor-note-author">@(string.IsNullOrWhiteSpace(note.SourceTeamName) ? "System" : note.SourceTeamName)</strong>
                     </div>
-                    <span class="monitor-note-timestamp text-muted">@note.FormattedTimestamp</span>
+                    <span class="monitor-note-timestamp monitor-text-caption">@note.FormattedTimestamp</span>
                 </div>
                 <div class="monitor-note-content d-flex justify-content-between align-items-start mb-2">
                     <div>@MentionTextarea.RenderWithMentions(note.Text)</div>
-                    <button class="btn btn-sm btn-link p-0 ms-2 text-muted flex-shrink-0"
+                    <button class="btn btn-sm btn-link p-0 ms-2 monitor-text-secondary flex-shrink-0"
                             type="button"
                             @onclick="() => ToggleReplyForm(note.Id)"
                             title="Antworten"
@@ -134,7 +134,7 @@
                         @foreach (var reply in note.Replies.OrderBy(reply => reply.Timestamp))
                         {
                             <div class="monitor-reply-thread ps-2 py-1 mb-1">
-                                <div class="text-muted">@reply.SourceTeamName · @reply.FormattedTimestamp</div>
+                                <div class="monitor-text-caption">@reply.SourceTeamName · @reply.FormattedTimestamp</div>
                                 <div>@MentionTextarea.RenderWithMentions(reply.Text)</div>
                             </div>
                         }

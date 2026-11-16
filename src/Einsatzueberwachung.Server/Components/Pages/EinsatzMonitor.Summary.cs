@@ -83,13 +83,7 @@ public partial class EinsatzMonitor
     private IReadOnlyList<MonitorCoordinationItem> GetCoordinationItems()
     {
         var einsatz = EinsatzService.CurrentEinsatz;
-        var legacyContacts = einsatz.EinsatzkontakteMigriert
-            ? new List<VermisstenInfo>()
-            : einsatz.Vermisste ?? new();
         var items = new List<MonitorCoordinationItem>();
-
-        bool IsConfirmed(bool currentValue, Func<VermisstenInfo, bool> legacyValue) =>
-            currentValue || legacyContacts.Any(legacyValue);
 
         void Add(MonitorCoordinationItemId id, string label, bool isBos, bool isConfirmed) =>
             items.Add(new MonitorCoordinationItem(id, label, isBos, isConfirmed));
@@ -98,27 +92,27 @@ public partial class EinsatzMonitor
             MonitorCoordinationItemId.PoliceVermisstenmeldungAufgenommen,
             "Vermisstenmeldung aufgenommen",
             false,
-            IsConfirmed(einsatz.PolizeiVermisstenmeldungAufgenommen, person => person.PolizeiVermisstenmeldungAufgenommen));
+            einsatz.PolizeiVermisstenmeldungAufgenommen);
         Add(
             MonitorCoordinationItemId.PoliceKoordinationBesprochen,
             "Einsatzkoordination besprochen",
             false,
-            IsConfirmed(einsatz.PolizeiKoordinationBesprochen, person => person.PolizeiKoordinationBesprochen));
+            einsatz.PolizeiKoordinationBesprochen);
         Add(
             MonitorCoordinationItemId.PoliceSuchabschnittAbgestimmt,
             "Suchabschnitte abgestimmt",
             false,
-            IsConfirmed(einsatz.PolizeiSuchabschnittAbgestimmt, person => person.PolizeiSuchabschnittAbgestimmt));
+            einsatz.PolizeiSuchabschnittAbgestimmt);
         Add(
             MonitorCoordinationItemId.PoliceRueckmeldepflichtVereinbart,
             "Rückmeldepflicht vereinbart",
             false,
-            IsConfirmed(einsatz.PolizeiRueckmeldepflichtVereinbart, person => person.PolizeiRueckmeldepflichtVereinbart));
+            einsatz.PolizeiRueckmeldepflichtVereinbart);
         Add(
             MonitorCoordinationItemId.PoliceDatenschutzGeklaert,
             "Datenschutz (Personendaten) geklärt",
             false,
-            IsConfirmed(einsatz.PolizeiDatenschutzGeklaert, person => person.PolizeiDatenschutzGeklaert));
+            einsatz.PolizeiDatenschutzGeklaert);
 
         if (!string.IsNullOrWhiteSpace(GetBosContactDetails()?.Einheit))
         {
@@ -126,12 +120,12 @@ public partial class EinsatzMonitor
                 MonitorCoordinationItemId.BosAbschnittAbgestimmt,
                 "Einsatzabschnitt abgestimmt",
                 true,
-                IsConfirmed(einsatz.BosAbschnittAbgestimmt, person => person.BosAbschnittAbgestimmt));
+                einsatz.BosAbschnittAbgestimmt);
             Add(
                 MonitorCoordinationItemId.BosRessourcenBesprochen,
                 "Ressourcen besprochen (Wärmebild etc.)",
                 true,
-                IsConfirmed(einsatz.BosRessourcenBesprochen, person => person.BosRessourcenBesprochen));
+                einsatz.BosRessourcenBesprochen);
         }
 
         return items;
@@ -223,24 +217,7 @@ public partial class EinsatzMonitor
             ];
         }
 
-        if (einsatz.EinsatzkontakteMigriert)
-        {
-            return [];
-        }
-
-        var vermisste = einsatz.Vermisste;
-        if (vermisste is null)
-        {
-            return [];
-        }
-        return vermisste
-            .Where(person => HasPoliceContact(person.PolizeiKontaktName, person.PolizeiDienstnummer, person.PolizeiTelefon))
-            .Select(person => new MonitorPoliceContactSummary(
-                string.IsNullOrWhiteSpace(person.VollerName) ? "Vermisste Person" : person.VollerName,
-                person.PolizeiKontaktName,
-                person.PolizeiDienstnummer,
-                person.PolizeiTelefon))
-            .ToArray();
+        return [];
     }
 
     private MonitorBosContactSummary? GetBosContactDetails()
@@ -251,18 +228,7 @@ public partial class EinsatzMonitor
             einsatz.BosZugfuehrer,
             einsatz.BosFunkrufname,
             einsatz.BosAufgabenteilung);
-        if (globalContact.HasData || einsatz.EinsatzkontakteMigriert)
-        {
-            return globalContact.HasData ? globalContact : null;
-        }
-
-        return einsatz.Vermisste?
-            .Select(person => new MonitorBosContactSummary(
-                person.BosEinheit,
-                person.BosZugfuehrer,
-                person.BosFunkrufname,
-                person.BosAufgabenteilung))
-            .FirstOrDefault(contact => contact.HasData);
+        return globalContact.HasData ? globalContact : null;
     }
 
     private static string FormatBosContactSummary(MonitorBosContactSummary? contact) =>

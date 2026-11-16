@@ -604,7 +604,3 @@ textarea:focus-visible {
 .tab-toggle-btn.is-active .toggle-icon {
     transform: rotate(45deg);
 }
-
-.btn[class*="btn-outline-"] {
-    border-color: transparent !important;
-}

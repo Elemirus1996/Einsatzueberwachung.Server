@@ -2,10 +2,14 @@
 {
     <div class="modal-overlay">
         <button type="button" class="modal-overlay-dismiss" @onclick="OnCancel" aria-label="Dialog schließen"></button>
-        <div class="modal-modern modal-modern--480" @onclick:stopPropagation="true">
+        <div class="modal-modern modal-modern--480"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="pause-reset-dialog-title"
+             @onclick:stopPropagation="true">
             <div class="modal-modern-header modal-modern-header--warning">
-                <h4 class="mb-0"><i class="bi bi-pause-circle-fill me-2"></i>Pflichtpause nicht abgeschlossen</h4>
-                <button class="btn btn-sm btn-outline-dark" @onclick="OnCancel">X</button>
+                <h4 id="pause-reset-dialog-title" class="mb-0"><i class="bi bi-pause-circle-fill me-2" aria-hidden="true"></i>Pflichtpause nicht abgeschlossen</h4>
+                <button class="btn btn-sm btn-outline-dark" type="button" aria-label="Dialog schließen" @onclick="OnCancel">X</button>
             </div>
             <div class="modal-modern-body">
                 <div class="alert alert-warning py-2 mb-3">
@@ -23,11 +27,11 @@
                                 <strong>@Team.RequiredPauseMinutes Minuten</strong>
                                 @if (Team.RunTimeBeforePause.TotalMinutes <= 20)
                                 {
-                                    <span class="text-muted"> (≤ 20 Min. gelaufen → 60 Min. Pause)</span>
+                                    <span class="monitor-text-caption"> (≤ 20 Min. gelaufen → 60 Min. Pause)</span>
                                 }
                                 else
                                 {
-                                    <span class="text-muted"> (> 20 Min. gelaufen → 3 Std. Pause)</span>
+                                    <span class="monitor-text-caption"> (> 20 Min. gelaufen → 3 Std. Pause)</span>
                                 }
                             </td>
                         </tr>
@@ -41,7 +45,7 @@
                         </tr>
                     </tbody>
                 </table>
-                <p class="small text-muted mb-0">
+                <p class="monitor-text-secondary mb-0">
                     Wenn Sie den Timer trotzdem zurücksetzen, übernehmen Sie die Verantwortung
                     für die Gesundheit des Hundes. Bitte nur im absoluten Ausnahmefall fortfahren.
                 </p>

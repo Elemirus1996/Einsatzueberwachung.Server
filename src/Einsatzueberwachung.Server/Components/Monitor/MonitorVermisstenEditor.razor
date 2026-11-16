@@ -2,9 +2,13 @@
 {
     <div class="modal-overlay">
         <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
-        <div class="modal-modern modal-modern--lg" @onclick:stopPropagation="true">
+        <div class="modal-modern modal-modern--lg"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="vermissten-editor-dialog-title"
+             @onclick:stopPropagation="true">
             <div class="modal-modern-header">
-                <h3><i class="bi bi-person-exclamation me-2" aria-hidden="true"></i>Vermissteninfo</h3>
+                <h3 id="vermissten-editor-dialog-title"><i class="bi bi-person-exclamation me-2" aria-hidden="true"></i>Vermissteninfo</h3>
                 <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="OnClose">Schließen</button>
             </div>
             <div class="modal-modern-body">
@@ -13,7 +17,7 @@
                     <div class="alert @(IsError ? "alert-danger" : "alert-success") py-2">@Message</div>
                 }
 
-                <h6 class="text-muted text-uppercase small fw-bold mb-2">Person</h6>
+                <h6 class="monitor-text-caption fw-bold mb-2">Person</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-4">
                         <label class="form-label form-label-sm">Vorname</label>
@@ -31,7 +35,7 @@
                                placeholder="TT.MM.JJJJ" />
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label form-label-sm">Alter <small class="text-muted">(auto.)</small></label>
+                        <label class="form-label form-label-sm">Alter <small class="monitor-text-caption">(auto.)</small></label>
                         <input class="form-control form-control-sm" @bind="Model.Alter" placeholder="z.B. 73" />
                     </div>
                     <div class="col-md-6">
@@ -44,7 +48,7 @@
                     </div>
                 </div>
 
-                <h6 id="vermissten-modal-last-seen" class="text-muted text-uppercase small fw-bold mb-2">Letzter bekannter Aufenthalt</h6>
+                <h6 id="vermissten-modal-last-seen" class="monitor-text-caption fw-bold mb-2">Letzter bekannter Aufenthalt</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-6">
                         <label class="form-label form-label-sm">Ort</label>
@@ -60,7 +64,7 @@
                     </div>
                 </div>
 
-                <h6 id="vermissten-modal-health-safety" class="text-muted text-uppercase small fw-bold mb-2">Medizin &amp; Verhalten</h6>
+                <h6 id="vermissten-modal-health-safety" class="monitor-text-caption fw-bold mb-2">Medizin &amp; Verhalten</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-4">
                         <label class="form-label form-label-sm">Orientierung</label>

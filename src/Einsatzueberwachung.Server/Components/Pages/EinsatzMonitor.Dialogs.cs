@@ -76,23 +76,22 @@ public partial class EinsatzMonitor
     private void PopulateEditEinsatzForm()
     {
         var e = EinsatzService.CurrentEinsatz;
-        var legacyContacts = e.EinsatzkontakteMigriert ? new List<VermisstenInfo>() : e.Vermisste ?? new();
         _editEinsatzForm.IstEinsatz = e.IstEinsatz;
         _editEinsatzForm.EinsatzNummer = e.EinsatzNummer;
-        _editEinsatzForm.PolizeiKontaktName = FirstNonEmpty(e.PolizeiKontaktName, legacyContacts.Select(person => person.PolizeiKontaktName));
-        _editEinsatzForm.PolizeiDienstnummer = FirstNonEmpty(e.PolizeiDienstnummer, legacyContacts.Select(person => person.PolizeiDienstnummer));
-        _editEinsatzForm.PolizeiTelefon = FirstNonEmpty(e.PolizeiTelefon, legacyContacts.Select(person => person.PolizeiTelefon));
-        _editEinsatzForm.PolizeiVermisstenmeldungAufgenommen = e.PolizeiVermisstenmeldungAufgenommen || legacyContacts.Any(person => person.PolizeiVermisstenmeldungAufgenommen);
-        _editEinsatzForm.PolizeiKoordinationBesprochen = e.PolizeiKoordinationBesprochen || legacyContacts.Any(person => person.PolizeiKoordinationBesprochen);
-        _editEinsatzForm.PolizeiSuchabschnittAbgestimmt = e.PolizeiSuchabschnittAbgestimmt || legacyContacts.Any(person => person.PolizeiSuchabschnittAbgestimmt);
-        _editEinsatzForm.PolizeiRueckmeldepflichtVereinbart = e.PolizeiRueckmeldepflichtVereinbart || legacyContacts.Any(person => person.PolizeiRueckmeldepflichtVereinbart);
-        _editEinsatzForm.PolizeiDatenschutzGeklaert = e.PolizeiDatenschutzGeklaert || legacyContacts.Any(person => person.PolizeiDatenschutzGeklaert);
-        _editEinsatzForm.BosEinheit = FirstNonEmpty(e.BosEinheit, legacyContacts.Select(person => person.BosEinheit));
-        _editEinsatzForm.BosZugfuehrer = FirstNonEmpty(e.BosZugfuehrer, legacyContacts.Select(person => person.BosZugfuehrer));
-        _editEinsatzForm.BosFunkrufname = FirstNonEmpty(e.BosFunkrufname, legacyContacts.Select(person => person.BosFunkrufname));
-        _editEinsatzForm.BosAufgabenteilung = FirstNonEmpty(e.BosAufgabenteilung, legacyContacts.Select(person => person.BosAufgabenteilung));
-        _editEinsatzForm.BosAbschnittAbgestimmt = e.BosAbschnittAbgestimmt || legacyContacts.Any(person => person.BosAbschnittAbgestimmt);
-        _editEinsatzForm.BosRessourcenBesprochen = e.BosRessourcenBesprochen || legacyContacts.Any(person => person.BosRessourcenBesprochen);
+        _editEinsatzForm.PolizeiKontaktName = e.PolizeiKontaktName;
+        _editEinsatzForm.PolizeiDienstnummer = e.PolizeiDienstnummer;
+        _editEinsatzForm.PolizeiTelefon = e.PolizeiTelefon;
+        _editEinsatzForm.PolizeiVermisstenmeldungAufgenommen = e.PolizeiVermisstenmeldungAufgenommen;
+        _editEinsatzForm.PolizeiKoordinationBesprochen = e.PolizeiKoordinationBesprochen;
+        _editEinsatzForm.PolizeiSuchabschnittAbgestimmt = e.PolizeiSuchabschnittAbgestimmt;
+        _editEinsatzForm.PolizeiRueckmeldepflichtVereinbart = e.PolizeiRueckmeldepflichtVereinbart;
+        _editEinsatzForm.PolizeiDatenschutzGeklaert = e.PolizeiDatenschutzGeklaert;
+        _editEinsatzForm.BosEinheit = e.BosEinheit;
+        _editEinsatzForm.BosZugfuehrer = e.BosZugfuehrer;
+        _editEinsatzForm.BosFunkrufname = e.BosFunkrufname;
+        _editEinsatzForm.BosAufgabenteilung = e.BosAufgabenteilung;
+        _editEinsatzForm.BosAbschnittAbgestimmt = e.BosAbschnittAbgestimmt;
+        _editEinsatzForm.BosRessourcenBesprochen = e.BosRessourcenBesprochen;
         _editEinsatzForm.AlarmierungsZeit = e.AlarmierungsZeit?.ToString("HH:mm") ?? string.Empty;
         _editEinsatzForm.Einsatzort = e.Einsatzort;
         _editEinsatzForm.MapAddress = e.MapAddress;

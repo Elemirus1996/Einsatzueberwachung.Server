@@ -46,7 +46,8 @@ namespace Einsatzueberwachung.Domain.Services
             {
                 Label = label.Trim(),
                 ExportedAt = DateTime.UtcNow,
-                EinsatzNummer = einsatz.EinsatzNummer
+                EinsatzNummer = einsatz.EinsatzNummer,
+                Einsatzkontakte = EinsatzKontaktDaten.From(einsatz)
             };
 
             packet.Teams.AddRange(selectedTeams);
@@ -92,7 +93,8 @@ namespace Einsatzueberwachung.Domain.Services
             var packet = new EinsatzExportPacket
             {
                 ExportedAt = DateTime.UtcNow,
-                EinsatzNummer = archived.EinsatzNummer
+                EinsatzNummer = archived.EinsatzNummer,
+                Einsatzkontakte = EinsatzKontaktDaten.From(archived)
             };
 
             foreach (var archivedTeam in selectedTeams)

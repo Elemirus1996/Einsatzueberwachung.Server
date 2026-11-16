@@ -2,9 +2,13 @@
 {
     <div class="modal-overlay">
         <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
-        <div class="modal-modern" @onclick:stopPropagation="true">
+        <div class="modal-modern"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="team-editor-dialog-title"
+             @onclick:stopPropagation="true">
             <div class="modal-modern-header">
-                <h3>@(IsEditing ? "Team bearbeiten" : "Team anlegen")</h3>
+                <h3 id="team-editor-dialog-title">@(IsEditing ? "Team bearbeiten" : "Team anlegen")</h3>
                 <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="OnClose">Schließen</button>
             </div>
             <div class="modal-modern-body">
@@ -56,7 +60,7 @@
                         {
                             var slot = index;
                             <div class="col-md-6">
-                                <label class="form-label">Helfer @(slot + 1) @if (slot > 0) { <span class="text-muted small">(optional)</span> }</label>
+                                <label class="form-label">Helfer @(slot + 1) @if (slot > 0) { <span class="monitor-text-caption">(optional)</span> }</label>
                                 <select class="form-select" value="@GetHelferId(slot)" @onchange="args => SetHelferId(slot, args.Value?.ToString())">
                                     <option value="">@(slot switch { 0 => "Helfer auswählen", 1 => "— kein zweiter Helfer —", _ => "— kein dritter Helfer —" })</option>
                                     @foreach (var person in HelferOptions)

@@ -75,9 +75,9 @@
         <div id="panel-details-wetter" class="monitor-info-details monitor-info-details--weather" hidden="@(!DetailsExpanded)">
             @if (Weather.Windboeen > 0)
             {
-                <div class="small text-muted"><i class="bi bi-wind me-1" aria-hidden="true"></i>Böen: @Weather.Windboeen.ToString("0") km/h</div>
+                <div class="monitor-text-caption"><i class="bi bi-wind me-1" aria-hidden="true"></i>Böen: @Weather.Windboeen.ToString("0") km/h</div>
             }
-            <div class="small text-muted mt-1">
+                <div class="monitor-text-caption mt-1">
                 DWD &bull; @LoadedAtLocal.ToString("HH:mm") Uhr
                 @if (UsingFallback)
                 {
@@ -92,8 +92,8 @@
                         <div class="forecast-item @(item.Temperatur > 30 ? "forecast-heat-warning" : "")">
                             <div class="small fw-bold">@Ortszeit.AusUtc(item.Zeitpunkt).ToString("HH:mm")</div>
                             <div class="small">@item.Temperatur.ToString("0")°</div>
-                            <div class="small text-muted"><i class="bi bi-wind" aria-hidden="true"></i> @item.Windgeschwindigkeit.ToString("0")</div>
-                            <div class="small text-muted"><i class="bi bi-droplet" aria-hidden="true"></i> @item.Niederschlag.ToString("0.0")</div>
+                            <div class="monitor-text-caption"><i class="bi bi-wind" aria-hidden="true"></i> @item.Windgeschwindigkeit.ToString("0")</div>
+                            <div class="monitor-text-caption"><i class="bi bi-droplet" aria-hidden="true"></i> @item.Niederschlag.ToString("0.0")</div>
                             @if (item.Temperatur > 30)
                             {
                                 <div class="small fw-semibold">Hunde: Hitze</div>

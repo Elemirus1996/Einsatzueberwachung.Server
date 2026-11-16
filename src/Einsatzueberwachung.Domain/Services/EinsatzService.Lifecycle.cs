@@ -9,6 +9,7 @@ namespace Einsatzueberwachung.Domain.Services
         {
             await ApplyStaffelFallbackAsync(einsatzData);
             EnsureAlarmTime(einsatzData);
+            EinsatzKontaktMigration.MigrateLegacyContacts(einsatzData);
 
             _currentEinsatz = einsatzData;
             lock (_teamOrderSync)
@@ -151,6 +152,7 @@ namespace Einsatzueberwachung.Domain.Services
 
                 _teams.Clear();
                 _currentEinsatz = snapshot.CurrentEinsatz ?? new EinsatzData();
+                EinsatzKontaktMigration.MigrateLegacyContacts(_currentEinsatz);
 
                 foreach (var team in snapshot.Teams ?? new List<Team>())
                 {
