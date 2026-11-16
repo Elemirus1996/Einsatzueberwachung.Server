@@ -188,7 +188,7 @@ public partial class EinsatzMonitor
     {
         _weatherRefreshTimer?.Dispose();
         _weatherRefreshTimer = new System.Threading.Timer(
-            _ => _ = InvokeAsync(() => RefreshMonitorWeatherAsync(forceGeocoding: false)),
+            _ => { if (!_verlassen) _ = InvokeAsync(() => RefreshMonitorWeatherAsync(forceGeocoding: false)); },
             null,
             TimeSpan.FromMinutes(10),
             TimeSpan.FromMinutes(10));
@@ -198,11 +198,11 @@ public partial class EinsatzMonitor
     {
         _durationRefreshTimer?.Dispose();
         _durationRefreshTimer = new System.Threading.Timer(
-            _ => _ = InvokeAsync(async () =>
+            _ => { if (!_verlassen) _ = InvokeAsync(async () =>
             {
                 await RefreshEinsatzdauerFromHeaderTimeAsync();
-                StateHasChanged();
-            }),
+                if (!_verlassen) StateHasChanged();
+            }); },
             null,
             TimeSpan.FromSeconds(1),
             TimeSpan.FromSeconds(1));

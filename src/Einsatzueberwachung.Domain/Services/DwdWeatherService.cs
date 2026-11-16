@@ -42,6 +42,12 @@ namespace Einsatzueberwachung.Domain.Services
             return await GetCurrentWeatherAsync(coordinates.Value.Latitude, coordinates.Value.Longitude);
         }
 
+        // Koordinaten je Adresse merken: Der Monitor fragt bei jedem Öffnen nach; ohne Zwischenspeicher antwortet
+        // Nominatim bei schnellem Seitenwechsel mit 429 (Nutzungsregel: höchstens 1 Anfrage/s). Fehlschläge kurz merken.
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ((double Latitude, double Longitude)? Ergebnis, DateTime Bis)> GeocodeCache = new();
+        private static readonly TimeSpan GeocodeTreffer = TimeSpan.FromHours(24);
+        private static readonly TimeSpan GeocodeFehlschlag = TimeSpan.FromMinutes(2);
+
         public async Task<(double Latitude, double Longitude)?> GeocodeAddressAsync(string address)
         {
             if (string.IsNullOrWhiteSpace(address))
@@ -50,6 +56,17 @@ namespace Einsatzueberwachung.Domain.Services
                 return null;
             }
 
+            var schluessel = address.Trim().ToLowerInvariant();
+            if (GeocodeCache.TryGetValue(schluessel, out var gemerkt) && gemerkt.Bis > DateTime.UtcNow)
+                return gemerkt.Ergebnis;
+
+            var ergebnis = await GeocodeAbfragenAsync(address);
+            GeocodeCache[schluessel] = (ergebnis, DateTime.UtcNow + (ergebnis is null ? GeocodeFehlschlag : GeocodeTreffer));
+            return ergebnis;
+        }
+
+        private async Task<(double Latitude, double Longitude)?> GeocodeAbfragenAsync(string address)
+        {
             try
             {
                 var encodedAddress = Uri.EscapeDataString(address.Trim());

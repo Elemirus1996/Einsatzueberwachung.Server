@@ -149,6 +149,9 @@ public partial class EinsatzMonitor
 
     // Screensaver (kein aktiver Einsatz)
     private System.Threading.Timer? _screensaverClockTimer;
+    // Seite verlassen: schnelles Hin- und Herwechseln (Präsentation 16.11.) darf keine Timer oder JS-Aufrufe
+    // mehr auf dem schon aufgeräumten Monitor auslösen, sonst erscheint „Ein Fehler ist aufgetreten“
+    private volatile bool _verlassen;
     private DateTime _screensaverNow;
     private string? _pendingTeamScrollId;
     private string? _lastScrolledTeamId;
@@ -222,11 +225,14 @@ public partial class EinsatzMonitor
         _currentLayout = await DashboardLayoutService.LoadLayoutAsync(EinsatzService.CurrentEinsatz.Fuehrungsassistent);
         UpdateMissionTopbar();
         await RefreshMonitorWeatherAsync(forceGeocoding: true);
+        // Während des Ladens schon wieder verlassen: keine Timer mehr starten, DisposeAsync ist schon gelaufen
+        if (_verlassen) return;
         StartWeatherRefreshTimer();
         StartDurationRefreshTimer();
         _screensaverNow = TimeService.Now;
         _screensaverClockTimer = new System.Threading.Timer(async _ =>
         {
+            if (_verlassen) return;
             _screensaverNow = TimeService.Now;
             await InvokeAsync(StateHasChanged);
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
@@ -235,6 +241,19 @@ public partial class EinsatzMonitor
     protected override bool ShouldRender() => true;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_verlassen) return;
+        try
+        {
+            await NachDemZeichnenAsync(firstRender);
+        }
+        catch (Exception ex) when (_verlassen || ex is JSDisconnectedException or JSException or ObjectDisposedException or TaskCanceledException)
+        {
+            // Seite wurde währenddessen verlassen bzw. das Element ist schon weg: nichts zu tun
+        }
+    }
+
+    private async Task NachDemZeichnenAsync(bool firstRender)
     {
         var teamListIsRendered = HasActiveEinsatz
             && EinsatzService.Teams.Count > 0
@@ -285,6 +304,7 @@ public partial class EinsatzMonitor
 
     public async ValueTask DisposeAsync()
     {
+        _verlassen = true;
         EinsatzService.TeamAdded -= OnTeamChanged;
         EinsatzService.TeamRemoved -= OnTeamChanged;
         EinsatzService.TeamUpdated -= OnTeamChanged;
@@ -304,7 +324,7 @@ public partial class EinsatzMonitor
             {
                 await JS.InvokeVoidAsync("teamOrdering.dispose", "teams-monitor-list");
             }
-            catch (JSDisconnectedException)
+            catch (Exception ex) when (ex is JSDisconnectedException or JSException or TaskCanceledException)
             {
             }
         }
