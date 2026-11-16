@@ -5,6 +5,21 @@ namespace Einsatzueberwachung.Server.Services;
 
 public sealed partial class OsmStaticMapRenderer
 {
+    /// <summary>
+    /// Liegt der ELW höchstens 2 km bzw. eine Gebietsdiagonale (das Größere) vom Rand der Suchgebiete entfernt?
+    /// Nur dann gehört er in den Kartenausschnitt der Flächenabdeckung.
+    /// </summary>
+    public static bool ElwImKartenausschnitt(double minLat, double maxLat, double minLon, double maxLon,
+        (double Latitude, double Longitude) elw)
+    {
+        const double kmJeGradBreite = 111.32;
+        var kmJeGradLaenge = kmJeGradBreite * Math.Cos((minLat + maxLat) / 2 * Math.PI / 180);
+        var diagonaleKm = Math.Sqrt(Math.Pow((maxLat - minLat) * kmJeGradBreite, 2) + Math.Pow((maxLon - minLon) * kmJeGradLaenge, 2));
+        var dLat = Math.Max(0, Math.Max(minLat - elw.Latitude, elw.Latitude - maxLat)) * kmJeGradBreite;
+        var dLon = Math.Max(0, Math.Max(minLon - elw.Longitude, elw.Longitude - maxLon)) * kmJeGradLaenge;
+        return Math.Sqrt(dLat * dLat + dLon * dLon) <= Math.Max(2.0, diagonaleKm);
+    }
+
     public async Task<byte[]?> RenderCoverageHeatmapAsync(
         List<SearchAreaCoverageResult> coverageResults,
         (double Latitude, double Longitude)? elwPosition,
@@ -31,7 +46,13 @@ public sealed partial class OsmStaticMapRenderer
             var allLats = validResults.SelectMany(r => r.Coordinates.Select(c => c.Latitude)).ToList();
             var allLons = validResults.SelectMany(r => r.Coordinates.Select(c => c.Longitude)).ToList();
 
-            if (elwPosition.HasValue) { allLats.Add(elwPosition.Value.Latitude); allLons.Add(elwPosition.Value.Longitude); }
+            // ELW nur in den Ausschnitt nehmen, wenn er nahe am Suchgebiet steht; sonst zeigt die Karte das halbe Land
+            // und das Suchgebiet schrumpft auf ein Etikett (Bericht D-38811406: ELW 25 km entfernt)
+            if (elwPosition.HasValue && ElwImKartenausschnitt(allLats.Min(), allLats.Max(), allLons.Min(), allLons.Max(), elwPosition.Value))
+            {
+                allLats.Add(elwPosition.Value.Latitude);
+                allLons.Add(elwPosition.Value.Longitude);
+            }
 
             var minLat = allLats.Min(); var maxLat = allLats.Max();
             var minLon = allLons.Min(); var maxLon = allLons.Max();

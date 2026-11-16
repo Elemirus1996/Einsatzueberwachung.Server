@@ -80,7 +80,29 @@ public class EinsatzServiceTests
         var after = DateTime.Now;
         Assert.True(svc.CurrentEinsatz.AlarmierungsZeit.HasValue);
         Assert.InRange(svc.CurrentEinsatz.AlarmierungsZeit!.Value, before.AddSeconds(-1), after.AddSeconds(1));
-        Assert.False(string.IsNullOrWhiteSpace(svc.CurrentEinsatz.Alarmiert));
+        // Kein Melder angegeben: Feld bleibt leer, die Zeit steht in AlarmierungsZeit
+        Assert.True(string.IsNullOrWhiteSpace(svc.CurrentEinsatz.Alarmiert));
+    }
+
+    [Fact]
+    public async Task StartEinsatz_MelderBleibtErhalten()
+    {
+        var svc = CreateService();
+        var zeit = new DateTime(2026, 11, 16, 19, 7, 0);
+        await svc.StartEinsatzAsync(new EinsatzData { Einsatzort = "Melder", Alarmiert = "Polizei Dortmund", AlarmierungsZeit = zeit });
+
+        Assert.Equal("Polizei Dortmund", svc.CurrentEinsatz.Alarmiert);
+        Assert.Equal(zeit, svc.CurrentEinsatz.AlarmierungsZeit);
+    }
+
+    [Fact]
+    public async Task StartEinsatz_ZeitImMelderfeld_WirdAlarmzeitUndFeldLeer()
+    {
+        var svc = CreateService();
+        await svc.StartEinsatzAsync(new EinsatzData { Einsatzort = "AltesFormat", Alarmiert = "01.04.2026 13:45" });
+
+        Assert.Equal(new DateTime(2026, 4, 1, 13, 45, 0), svc.CurrentEinsatz.AlarmierungsZeit);
+        Assert.Equal(string.Empty, svc.CurrentEinsatz.Alarmiert);
     }
 
     [Fact]
