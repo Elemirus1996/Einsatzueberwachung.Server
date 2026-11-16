@@ -1341,7 +1341,8 @@ private async Task SetDesignModeAsync(bool darkMode)
 
     private void ResetAllShortcuts()
     {
-        _shortcuts = new KeyboardShortcutPreferences();
+        // „Ausgeschaltet“ ist kein Kürzel: beim Zurücksetzen bleibt der Schalter, wie er ist
+        _shortcuts = new KeyboardShortcutPreferences { Ausgeschaltet = _shortcuts.Ausgeschaltet };
         _ = SaveShortcutsAsync();
     }
 
@@ -1351,6 +1352,7 @@ private async Task SetDesignModeAsync(bool darkMode)
         await BrowserPrefs.SaveAsync();
         await JS.InvokeVoidAsync("keyboardShortcuts.configure", new
         {
+            aus        = _shortcuts.Ausgeschaltet,
             navHome    = _shortcuts.NavHome,
             navKarte   = _shortcuts.NavKarte,
             navMonitor = _shortcuts.NavMonitor,

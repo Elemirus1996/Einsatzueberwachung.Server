@@ -293,6 +293,7 @@ public partial class EinsatzStart
     private void OnStepperKeyDown(KeyboardEventArgs e)
     {
         var sc = BrowserPrefs.Preferences.Shortcuts;
+        if (sc.Ausgeschaltet) return;
         if (MatchesShortcut(e, sc.StepperUp))
             _model.AnzahlTeams = Math.Min(50, _model.AnzahlTeams + 1);
         else if (MatchesShortcut(e, sc.StepperDown))

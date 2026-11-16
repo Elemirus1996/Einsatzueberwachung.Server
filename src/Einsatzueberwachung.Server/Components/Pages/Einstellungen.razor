@@ -831,6 +831,15 @@
                 <p class="cfg-pane-subtitle">Konfigurierbare Tastaturbefehle für Navigation und Steuerung.</p>
 
                 <div class="cfg-section">
+                    <label class="d-flex align-items-center gap-2 mb-1">
+                        <input type="checkbox" class="form-check-input mt-0" checked="@_shortcuts.Ausgeschaltet"
+                               @onchange="async e => { _shortcuts.Ausgeschaltet = e.Value is true; await SaveShortcutsAsync(); }" />
+                        <span>Tastenkürzel ausschalten</span>
+                    </label>
+                    <small class="cfg-hint">Gilt für alle Seiten in diesem Browser, z. B. wenn Strg+N oder Strg+T wie gewohnt ein neues Fenster bzw. einen neuen Tab öffnen sollen. Die Belegung unten bleibt erhalten.</small>
+                </div>
+
+                <div class="cfg-section @(_shortcuts.Ausgeschaltet ? "opacity-50" : "")">
                     <h3 class="cfg-sub-header">Navigation</h3>
 
                     <div class="cfg-row">

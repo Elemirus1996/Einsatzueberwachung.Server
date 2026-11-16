@@ -136,7 +136,8 @@ public static class HilfeContent
             {
                 "Navigation -> Einstellungen",
                 "Tab auswählen (z.B. Tastenkürzel) -> Eingabefeld anklicken -> Taste drücken -> wird sofort gespeichert",
-                "Tastenkürzel zurücksetzen: Reset-Pfeil-Schaltfläche neben dem Feld oder 'Alle zurücksetzen'"
+                "Tastenkürzel zurücksetzen: Reset-Pfeil-Schaltfläche neben dem Feld oder 'Alle zurücksetzen'",
+                "Alle Tastenkürzel in diesem Browser abschalten: Tab 'Tastenkürzel' -> 'Tastenkürzel ausschalten'"
             }),
 
         ["/einsatz-import-export"] = new(
