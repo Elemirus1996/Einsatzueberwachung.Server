@@ -39,8 +39,17 @@ public sealed class TeamMobileAppController : ControllerBase
     {
         kennung = _kennung?.Kennung,
         staffel,
-        logoVersion = _logo is null ? null : (await _logo.HolenAsync())?.Version
+        logoVersion = _logo is null ? null : (await _logo.HolenAsync())?.Version,
+        packlisteVersion = await AppPacklisteAntwort.VersionAsync(_settings)
     };
+
+    /// <summary>Packliste der Staffel (Abschnitt 14); 404, wenn keine hinterlegt ist. Abhaken bleibt in der App.</summary>
+    [HttpGet("packliste")]
+    public async Task<IActionResult> GetPackliste()
+    {
+        if (!TryTeam(out _, out _)) return Gone();
+        return await AppPacklisteAntwort.GanzAsync(_settings) is { } packliste ? Ok(packliste) : NotFound();
+    }
 
     /// <summary>Staffellogo als PNG (docs/APP_API.md Abschnitt 10)</summary>
     [HttpGet("logo")]

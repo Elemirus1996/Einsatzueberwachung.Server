@@ -349,6 +349,47 @@ Das Team setzt an seinem Standort einen **Punkt** (Fund, Hinweis), der bei der E
 - `/ereignisse` läuft über einen eigenen nginx-Block ohne Pufferung und mit langer Laufzeit.
 - Die App sendet nur an den `server` aus der Übergabe und nur über HTTPS.
 
+### 14. Packliste der Staffel (ab Server 1.16.0)
+
+Eine Checkliste „Was brauche ich für den Einsatz?“. Die Staffel gibt eine Packliste vor, jedes Mitglied hakt sie **nur auf
+seinem Gerät** ab und kann eigene Punkte dazunehmen. Die App erinnert in einstellbarem Abstand (Standard 14 Tage) mit einer
+lokalen Mitteilung daran, die Liste durchzugehen.
+
+**Nur die Staffel bearbeitet ihre Vorlage** (Einstellungen → Tracking-App, eine Zeile je Punkt, eine Zeile mit `:` am Ende
+beginnt eine Gruppe). In der App sind Punkte der Staffel nicht änderbar und nicht löschbar, nur abhakbar. Eigene Punkte legt
+das Mitglied in der App an, sie bleiben auf dem Gerät.
+
+**Keine Rückmeldung an die Staffel** (Entscheidung 16.11.2026): Es gibt keinen Endpunkt, der Abhak-Stand, eigene Punkte oder
+Erinnerungen entgegennimmt. Der Server erfährt nicht, wer die Liste geladen oder abgehakt hat.
+
+`server` (Abschnitt 10, in `GET /config` und `POST /login/teams`; bei der Einsatzleitung in `POST /login` und `POST /verlaengern`)
+enthält zusätzlich:
+
+```json
+"server": { "kennung": "…", "staffel": "RHS Musterstadt", "logoVersion": "…", "packlisteVersion": "9c1e2f7a0b3d4c55" }
+```
+
+- `packlisteVersion`: ändert sich genau dann, wenn die Staffel die Packliste ändert (Hash, 16 Zeichen); `null`, wenn keine
+  hinterlegt ist. Die App lädt die Liste nur neu, wenn sich die Version gegenüber ihrer gespeicherten Fassung ändert.
+
+`GET /packliste` (Team-Token) bzw. `GET /api/el/app/v1/packliste` (EL-Token), ungültiges Token → `410` + `stop`:
+
+```json
+{ "version": "9c1e2f7a0b3d4c55", "stand": "2026-11-16T20:00:00Z",
+  "punkte": [ { "id": "3fa1c2d4", "text": "Stirnlampe mit Ersatzakku", "gruppe": "Persönlich" },
+              { "id": "b07e9a11", "text": "Wasser und Napf", "gruppe": "Hund" } ] }
+```
+
+- `punkte` in der Reihenfolge der Staffel. `gruppe` ist `null` für Punkte vor der ersten Gruppe.
+- `id`: aus Gruppe und Text abgeleitet (8 Zeichen). Bleibt gleich, solange der Punkt gleich lautet; die App merkt sich den
+  Abhak-Stand je `id`. Ändert die Staffel den Text, gilt der Punkt als neu (nicht abgehakt).
+- Höchstens 200 Punkte, Text höchstens 200 Zeichen, Gruppe höchstens 60 Zeichen. Längeres kürzt der Server.
+- `404`, wenn keine Packliste hinterlegt ist.
+
+**Nur die Heimatstaffel:** Die App übernimmt die Vorlage nur von dem Server, dessen `kennung` sie als Heimatstaffel gespeichert
+hat (Abschnitt 10). Bei einem gemeinsamen Einsatz mit einer anderen Staffel bleibt die eigene Packliste. Die gespeicherte
+Vorlage bleibt nach dem Abmelden auf dem Gerät, damit Liste und Erinnerung auch ohne Einsatz funktionieren.
+
 ## Rolle Einsatzleitung
 
 Zweck: Der Führungsassistent sieht auf der Einsatzkarte, wo die Einsatzleitung ist (roter Marker „EL“ mit Gerätename).
@@ -385,6 +426,11 @@ Die Position der Einsatzleitung wird nicht gespeichert und erscheint nicht im Be
 
 Wie in der Team-Rolle (Abschnitt 10), mit EL-Token, nur intern. Kennung und `logoVersion` liefert die native EL-Anmeldung (Phase 1b)
 im selben Objekt `server`. Bei Einsatzende verschwindet der Marker.
+
+### 4. `GET /packliste` (ab Server 1.16.0)
+
+Wie in der Team-Rolle (Abschnitt 14), mit EL-Token unter `/api/el/app/v1/packliste`, nur intern. `packlisteVersion` steht im
+Objekt `server` von `POST /login` und `POST /verlaengern`. Auch hier keine Rückmeldung an die Staffel.
 
 ## Rolle Einsatzleitung – native App (#125)
 

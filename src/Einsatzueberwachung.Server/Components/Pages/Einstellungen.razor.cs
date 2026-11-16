@@ -251,6 +251,8 @@ public partial class Einstellungen
     }
 
     /// <summary>Vorlage der Datenschutzerklaerung fuer die App einfuegen (#148); nur wenn noch kein Text da ist</summary>
+    private const string PacklisteBeispiel = "Persönlich:\nStirnlampe mit Ersatzakku\nRegenjacke\nHund:\nWasser und Napf\nKenndecke";
+
     private void DatenschutzVorlageEinfuegen()
     {
         if (!string.IsNullOrWhiteSpace(_appSettings.AppDatenschutzText)) return;
