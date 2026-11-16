@@ -302,11 +302,17 @@ public partial class EinsatzMonitor
         .OrderBy(name => name)
         .ToList();
 
+    private IEnumerable<PersonalEntry> TeamPersonnelOptions => SelectionListOrdering
+        .OrderPersonnelByFirstName(_personalList.Where(person =>
+            person.IsActive
+            && (IsPersonSelectedForCurrentTeam(person.Id)
+                || EinsatzService.CanAssignResourceToSearch(ResourceEntityType.Person, person.Id))));
+
     private IEnumerable<PersonalEntry> HundefuehrerOptions
     {
         get
         {
-            var allHandlers = ActivePersonnel
+            var allHandlers = TeamPersonnelOptions
                 .Where(person => person.Skills.HasFlag(PersonalSkills.Hundefuehrer));
 
             if (!string.IsNullOrWhiteSpace(_teamForm.DogId))
@@ -322,15 +328,24 @@ public partial class EinsatzMonitor
         }
     }
 
-    private IEnumerable<PersonalEntry> HelferOptions => ActivePersonnel
+    private IEnumerable<PersonalEntry> HelferOptions => TeamPersonnelOptions
         .Where(person => person.Skills.HasFlag(PersonalSkills.Helfer) || person.Skills.HasFlag(PersonalSkills.Hundefuehrer));
 
-    private IEnumerable<PersonalEntry> DrohnenpilotOptions => ActivePersonnel
+    private IEnumerable<PersonalEntry> DrohnenpilotOptions => TeamPersonnelOptions
         .Where(person => person.Skills.HasFlag(PersonalSkills.Drohnenpilot));
 
     private IEnumerable<DogEntry> AvailableDogs => _dogList
-        .Where(dog => dog.IsActive && (string.IsNullOrWhiteSpace(_teamForm.HundefuehrerId) || dog.HundefuehrerIds.Contains(_teamForm.HundefuehrerId)))
+        .Where(dog => dog.IsActive
+            && (_teamForm.DogId == dog.Id
+                || EinsatzService.CanAssignResourceToSearch(ResourceEntityType.Dog, dog.Id))
+            && (string.IsNullOrWhiteSpace(_teamForm.HundefuehrerId) || dog.HundefuehrerIds.Contains(_teamForm.HundefuehrerId)))
         .OrderBy(dog => dog.Name);
+
+    private bool IsPersonSelectedForCurrentTeam(string personId) =>
+        _teamForm.HundefuehrerId == personId
+        || _teamForm.HelferId == personId
+        || _teamForm.HelferId2 == personId
+        || _teamForm.HelferId3 == personId;
 
     private IEnumerable<DroneEntry> AvailableDrones => _droneList
         .Where(drone => drone.IsActive)

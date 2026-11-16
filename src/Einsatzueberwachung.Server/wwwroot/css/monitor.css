@@ -901,7 +901,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
     [data-panel-id="teams"],
     [data-panel-id="suchgebiete"],
-    [data-panel-id="notizen"] {
+    [data-panel-id="notizen"],
+    [data-panel-id="ressourcen"] {
         grid-column: 1 / -1 !important;
         grid-row: 2 !important;
     }
@@ -958,7 +959,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
     [data-panel-id="teams"],
     [data-panel-id="suchgebiete"],
-    [data-panel-id="notizen"] {
+    [data-panel-id="notizen"],
+    [data-panel-id="ressourcen"] {
         grid-column: 1 / -1 !important;
         grid-row: 2 !important;
     }
@@ -1049,7 +1051,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 
 /* The operational modules share one quiet surface; state remains explicit in their content. */
-:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel {
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel {
     border: 1px solid var(--ui-tile-border);
     border-radius: var(--theme-border-radius, 10px);
     box-shadow: none;
@@ -1057,27 +1059,39 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     transition: none;
 }
 
-:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel:hover {
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel:hover {
     box-shadow: none;
 }
 
-:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel .dashboard-panel-header {
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel .dashboard-panel-header {
     min-height: 2.75rem;
     padding: 0.65rem 0.875rem 0.2rem;
     border-bottom: 0;
     background: transparent;
 }
 
-:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel .dashboard-panel-title {
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel .dashboard-panel-title {
     color: var(--ui-text);
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0;
 }
 
-:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel .dashboard-panel-body {
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel .dashboard-panel-body {
     padding: 0.35rem 0.875rem 0.875rem;
     background: var(--ui-surface);
+}
+
+@media (min-width: 1200.01px) {
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]) {
+        grid-template-rows: max-content minmax(0, 1fr) max-content;
+    }
+
+    .monitor-dashboard-grid > [data-panel-id="ressourcen"] {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        max-height: 12rem;
+    }
 }
 
 [data-panel-id="suchgebiete"] {
