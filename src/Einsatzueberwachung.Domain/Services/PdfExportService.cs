@@ -1,4 +1,4 @@
-using Einsatzueberwachung.Domain.Interfaces;
+﻿using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
 using QuestPDF.Fluent;
@@ -74,6 +74,24 @@ namespace Einsatzueberwachung.Domain.Services
             if (!string.IsNullOrWhiteSpace(info.Email))
                 parts.Add($"E-Mail: {info.Email}");
             return string.Join(" | ", parts);
+        }
+
+        /// <summary>Programm-Logo (Einsatzüberwachung) für den Fuß der Berichte, eingebettet in die Assembly</summary>
+        private static readonly Lazy<byte[]> ProgrammLogo = new(() =>
+        {
+            using var stream = typeof(PdfExportService).Assembly.GetManifestResourceStream("Einsatzueberwachung.Logo.Hell.png");
+            if (stream is null)
+                return Array.Empty<byte>();
+            using var ms = new MemoryStream();
+            stream.CopyTo(ms);
+            return ms.ToArray();
+        });
+
+        private static void ComposeFussLogo(IContainer container)
+        {
+            var logo = ProgrammLogo.Value;
+            if (logo.Length > 0)
+                container.AlignRight().AlignMiddle().Height(22).Image(logo).FitArea();
         }
 
         private bool TryLoadLogoBytes(string? logoPath, out byte[] logoBytes)

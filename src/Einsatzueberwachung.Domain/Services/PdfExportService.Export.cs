@@ -1,4 +1,4 @@
-using Einsatzueberwachung.Domain.Interfaces;
+﻿using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
 using QuestPDF.Fluent;
@@ -254,15 +254,19 @@ namespace Einsatzueberwachung.Domain.Services
                         });
 
                     page.Footer()
-                        .AlignCenter()
-                        .Text(text =>
+                        .Row(row =>
                         {
-                            text.Span("Erstellt am: ");
-                            text.Span($"{Now:dd.MM.yyyy HH:mm:ss}").Bold();
-                            text.Span(" | Seite ");
-                            text.CurrentPageNumber();
-                            text.Span(" von ");
-                            text.TotalPages();
+                            row.RelativeItem().AlignMiddle().PaddingRight(8).Text(text =>
+                            {
+                                text.DefaultTextStyle(x => x.FontSize(10));
+                                text.Span("Erstellt am: ");
+                                text.Span($"{Now:dd.MM.yyyy HH:mm:ss}").Bold();
+                                text.Span(" | Seite ");
+                                text.CurrentPageNumber();
+                                text.Span(" von ");
+                                text.TotalPages();
+                            });
+                            row.ConstantItem(100).Element(ComposeFussLogo);
                         });
                 });
             });
@@ -346,17 +350,21 @@ namespace Einsatzueberwachung.Domain.Services
                         });
 
                     page.Footer()
-                        .AlignCenter()
-                        .Text(text =>
+                        .Row(row =>
                         {
-                            text.Span("Archiviert am: ");
-                            text.Span($"{einsatz.ArchivedAt:dd.MM.yyyy HH:mm}").Bold();
-                            text.Span(" | Erstellt am: ");
-                            text.Span($"{Now:dd.MM.yyyy HH:mm}");
-                            text.Span(" | Seite ");
-                            text.CurrentPageNumber();
-                            text.Span(" von ");
-                            text.TotalPages();
+                            row.RelativeItem().AlignMiddle().PaddingRight(8).Text(text =>
+                            {
+                                text.DefaultTextStyle(x => x.FontSize(10));
+                                text.Span("Archiviert am: ");
+                                text.Span($"{einsatz.ArchivedAt:dd.MM.yyyy HH:mm}").Bold();
+                                text.Span(" | Erstellt am: ");
+                                text.Span($"{Now:dd.MM.yyyy HH:mm}");
+                                text.Span(" | Seite ");
+                                text.CurrentPageNumber();
+                                text.Span(" von ");
+                                text.TotalPages();
+                            });
+                            row.ConstantItem(100).Element(ComposeFussLogo);
                         });
                 });
             });

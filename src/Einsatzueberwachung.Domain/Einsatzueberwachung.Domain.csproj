@@ -16,4 +16,9 @@
     <PackageReference Include="QuestPDF" Version="2025.7.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Programm-Logo im Fuß der PDF-Berichte -->
+    <EmbeddedResource Include="Resources\einsatzueberwachung-logo-hell.png" LogicalName="Einsatzueberwachung.Logo.Hell.png" />
+  </ItemGroup>
+
 </Project>
