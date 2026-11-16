@@ -415,6 +415,55 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.16.0</span>
+    <span class="changelog-date">16.11.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
+<h4>Neues Logo</h4>
+<ul>
+<li>Einsatzüberwachung hat ein neues Logo: rote Pfote im gestrichelten Suchkreis. Es erscheint als Favicon, als Symbol auf dem Home-Bildschirm (PWA), in der Navigation und groß unter Einstellungen → System.</li>
+<li>Die PDF-Berichte tragen unten rechts das Logo „Einsatzüberwachung“, damit man sieht, womit sie erstellt wurden.</li>
+<li>Browser und installierte Web-Apps speichern Symbole zwischen. Das neue Symbol erscheint ggf. erst nach dem Neuladen bzw. nach erneutem Hinzufügen zum Home-Bildschirm.</li>
+</ul>
+<h4>Packliste für die App</h4>
+<ul>
+<li>Neu unter Einstellungen → Einsatzbetrieb: „Packliste für die App“. Die Staffel trägt ein, was jedes Mitglied für einen Einsatz dabeihaben sollte (eine Zeile je Punkt, eine Zeile mit Doppelpunkt am Ende beginnt eine Gruppe, z. B. „Hund:“).</li>
+<li>Die App EinsatzSpur zeigt die Liste, lässt sie abhaken und erinnert regelmäßig daran (wählbar: nie, alle 7, 14 oder 30 Tage). Mitglieder können eigene Punkte ergänzen, die Punkte der Staffel ändert nur die Staffel.</li>
+<li><strong>Der Server erfährt nicht, was abgehakt ist.</strong> Abhaken, eigene Punkte und Erinnerung bleiben auf dem Handy.</li>
+<li>Die Mitglieder bekommen die Liste bei der nächsten Anmeldung an einem Einsatz oder einer Übung eurer Staffel (als Team oder Einsatzleitung). Dafür braucht es die neue App-Version.</li>
+</ul>
+<h4>Tastenkürzel abschaltbar</h4>
+<ul>
+<li>Neu unter Einstellungen → Tastenkürzel: „Tastenkürzel ausschalten“. Gilt für alle Seiten in diesem Browser, z. B. wenn Strg+N/Strg+T wie gewohnt ein Fenster bzw. einen Tab öffnen sollen. Die Belegung bleibt erhalten.</li>
+</ul>
+<h4>Einsatzbericht korrigiert</h4>
+<ul>
+<li><strong>„Alarmiert durch“:</strong> Der eingetragene Melder (Polizei, Leitstelle …) wurde beim Start durch die Alarmzeit ersetzt. Jetzt bleibt der Melder erhalten. In älteren Berichten, in denen dort nur eine Uhrzeit steht, entfällt die Zeile.</li>
+<li><strong>Notizen:</strong> Kein Kästchen mehr vor „Koordinaten-Marker“, keine doppelte Uhrzeit mehr („[19:31]“ steht schon in der Spalte Zeit).</li>
+<li><strong>Dauer</strong> überall gleich geschrieben: „45 s“, „4 min 43 s“, „1 h 05 min“.</li>
+<li><strong>Karte der Flächenabdeckung:</strong> Steht der ELW weit vom Suchgebiet entfernt, zeigt die Karte trotzdem das Suchgebiet statt eines großen Ausschnitts mit kaum sichtbarem Gebiet.</li>
+<li>Spaltenköpfe und Status der Suchgebiete brechen nicht mehr mitten im Wort um; „Person gefunden – lebend“ einheitlich.</li>
+</ul>
+<h4>EL-App per QR-Code: nicht mehr mit IP-Adresse</h4>
+<ul>
+<li>Sind die Einstellungen über eine IP-Adresse geöffnet (z. B. <code>https://10.10.0.1</code>), zeigt der Server unter „EL-App anmelden“ keinen QR-Code mehr, sondern den Hinweis, die Seite über den Namen der internen Adresse zu öffnen. Mit der IP-Adresse konnte sich die App nicht anmelden (Zertifikat gilt nur für den Namen).</li>
+<li>Die neue App lehnt eine IP-Adresse im Adressfeld und im QR-Code mit einem klaren Hinweis ab.</li>
+</ul>
+<h4>Technik</h4>
+<ul>
+<li>Schnittstelle erweitert: <code>server.packlisteVersion</code>, <code>GET /packliste</code> (Team und Einsatzleitung). Beschreibung in <code>docs/APP_API.md</code>. Ältere Apps laufen weiter wie bisher.</li>
+<li>Keine neuen Pakete, keine nginx-Änderung, keine Datenmigration. Neue Einstellungen werden beim ersten Speichern angelegt.</li>
+</ul>
+<h4>Einspielen</h4>
+<p><strong>Nur, wenn gerade kein Einsatz läuft.</strong></p>
+<p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.16.0“.</p>
+<p>2. Keine weiteren Schritte.</p>
+<p>3. <strong>Wer 1.15.0 oder 1.14.0 übersprungen hat:</strong> zuerst die einmaligen Schritte aus deren Release-Notes ausführen.</p>
+<p>4. Optional: Packliste unter Einstellungen → Einsatzbetrieb eintragen.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.15.0</span>
     <span class="changelog-date">15.11.2026</span>
     <span class="changelog-name"></span>
@@ -696,20 +745,6 @@ sudo systemctl restart systemd-journald
 <p>Hast du die Datei auf dem Server angepasst (Domain, Zertifikatspfade), übernimm nur die neuen <code>location</code>-Blöcke für <code>/api/team-mobile/app/</code> und die Zeile <code>limit_req_zone … team_app_zone</code>.</p>
 <p>3. Prüfen: <code>curl -s -o /dev/null -w "%{http_code}
 " https://&lt;deine-domain&gt;/api/team-mobile/app/v1/status</code> muss <strong>410</strong> liefern. Das heißt erreichbar, ohne Anmeldung kein Zugang.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.9</span>
-    <span class="changelog-date">28.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Korrektur</h4>
-<ul>
-<li><strong>Versionsnummer:</strong> In 1.11.7 und 1.11.8 zeigten Startseite und Einstellungen noch „1.11.6“, und der Updater meldete deshalb dauerhaft „Update verfügbar“. Ab 1.11.9 stimmt die Anzeige wieder, und die Meldung verschwindet nach dem Update. Ein Test verhindert, dass die Nummern wieder auseinanderlaufen.</li>
-</ul>
-<p>Inhaltlich entspricht diese Version 1.11.8 (siehe dort).</p>
-<h4>Einspielen</h4>
-<p>Normales Update über den Browser. Danach zeigt Einstellungen → System „1.11.9“.</p></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>
