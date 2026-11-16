@@ -894,7 +894,7 @@
     @* ── Halsband-Rueckfrage beim Start einer neuen Suche ──────────── *@
     @if (CollarChoiceTeam is { } choiceTeam)
     {
-        <button type="button" class="el-modal-backdrop" @onclick="CloseCollarChoice" aria-label="Dialog schließen"></button>
+        <div class="el-modal-backdrop" aria-hidden="true"></div>
         <div class="el-modal" role="dialog" aria-modal="true" aria-labelledby="el-collar-title">
             <div class="el-modal-head">
                 <i class="bi bi-broadcast-pin"></i>
@@ -926,7 +926,7 @@
     @* ── Funk-Modal ─────────────────────────────────────────────── *@
     @if (_funkOpen)
     {
-        <button type="button" class="el-modal-backdrop" @onclick="CloseFunk" aria-label="Dialog schließen"></button>
+        <div class="el-modal-backdrop" aria-hidden="true"></div>
         <div class="el-modal" role="dialog" aria-modal="true">
             <div class="el-modal-head">
                 <i class="bi bi-broadcast"></i>

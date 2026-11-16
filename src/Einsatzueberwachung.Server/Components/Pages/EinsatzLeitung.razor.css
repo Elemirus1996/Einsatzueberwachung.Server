@@ -1668,12 +1668,8 @@
     animation: el-fade-in 0.16s ease-out;
     appearance: none;
     -webkit-appearance: none;
-    cursor: pointer;
-}
-
-.el-modal-backdrop:focus-visible {
-    outline: 2px solid #3b82f6;
-    outline-offset: -2px;
+    /* Nur Abdunkelung: Fenster schließen sich ausschließlich über ihre Knöpfe */
+    cursor: default;
 }
 
 .el-modal {
