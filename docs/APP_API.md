@@ -486,6 +486,10 @@ ohne das Staffel-Passwort erneut einzugeben. Antwort `200` wie `/login`, zusätz
 **Anmeldung per QR-Code** (Idee 6.3): Der Server zeigt unter Einstellungen → System → „EL-App anmelden“ einen QR-Code mit
 der internen Adresse, unter der die Einstellungen geöffnet sind: `https://<interne Adresse>/el` – **ohne Passwort und ohne Token**
 (mit der Handy-Kamera geöffnet ist es einfach die EL-Seite). Nur bei HTTPS, sonst zeigt der Server statt des Codes einen Hinweis.
+**Keine IP-Adresse** (ab Server 1.16.0): Sind die Einstellungen über eine IP-Adresse geöffnet (z. B. `https://10.10.0.1`), zeigt der
+Server keinen Code, sondern den Hinweis, die Seite über den Namen zu öffnen – das Zertifikat gilt nur für den Namen, die App bekäme
+sonst einen Zertifikatsfehler. Die App lehnt eine IP-Adresse im QR-Code und im Adressfeld der EL-Anmeldung mit einer klaren Meldung ab
+(„Bitte den Namen der internen Adresse eintragen, nicht die IP-Adresse“), auch bei Codes älterer Server.
 Die App erkennt im selben Scanner wie beim Team-Code eine `https://`-Adresse mit dem Pfad `/el` (Groß-/Kleinschreibung und
 `/` am Ende egal, Abfrageteil wird ignoriert), übernimmt daraus nur den Server, zeigt den Servernamen zur Bestätigung und fragt das
 Staffel-Passwort ab (`POST /login`). Ein Team-Code (`/team/login/…`) bleibt eine Team-Anmeldung. Keine neue Schnittstelle.

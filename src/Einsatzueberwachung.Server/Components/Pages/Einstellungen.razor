@@ -1307,6 +1307,12 @@
                         <img src="@_elAppQr" alt="QR-Code mit der internen Adresse für die EL-App" class="cfg-vpn-qr" />
                         <span class="cfg-help">@_elAppAdresse</span>
                     }
+                    else if (ElAppQr.IstIpAdresse(Navigation.BaseUri))
+                    {
+                        <span class="cfg-help">Diese Seite ist über eine IP-Adresse geöffnet (@(new Uri(Navigation.BaseUri).Host)). Das Zertifikat
+                            gilt nur für den Namen der internen Adresse, mit der IP-Adresse kann sich die App nicht anmelden. Bitte die
+                            Einstellungen über den Namen öffnen (die Adresse, die ihr im VPN für die Einsatzleitung nutzt), dann erscheint hier der Code.</span>
+                    }
                     else
                     {
                         <span class="cfg-help">Nur verfügbar, wenn diese Seite über HTTPS geöffnet ist (interne Adresse im VPN).</span>
