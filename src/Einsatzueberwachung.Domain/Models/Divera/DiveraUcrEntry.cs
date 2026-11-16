@@ -8,6 +8,14 @@
         public int Status { get; set; }
         /// <summary>Status-Name aus StatusDefinitions (z.B. "30 Minuten", "In 1 Std."). Leer wenn unbekannt.</summary>
         public string StatusName { get; set; } = string.Empty;
+        public string StatusColor { get; set; } = string.Empty;
+
+        public bool IsPositive => Status switch
+        {
+            1 or 3 or 56296 or 56297 => true,
+            0 or 2 or 56298 => false,
+            _ => IsPositiveStatusColor(StatusColor)
+        };
 
         public string StatusText => Status switch
         {
@@ -26,12 +34,25 @@
         public string StatusBadgeCss => Status switch
         {
             0 => "bg-secondary",
+            2 or 56298 => "bg-danger",
+            3 or 56297 => "bg-warning text-dark",
             56296 => "bg-success",
-            56297 => "bg-warning text-dark",
-            56298 => "bg-danger",
-            2 => "bg-danger",
-            3 => "bg-warning text-dark",
-            _ => "bg-success"  // 1 = Kommt, alle org-spezifischen = als geantwortet = gruen
+            _ when IsPositive => "bg-success",
+            _ => "bg-secondary"
         };
+
+        private static bool IsPositiveStatusColor(string color)
+        {
+            color = color.TrimStart('#');
+            if (color.Length < 6
+                || !byte.TryParse(color[..2], System.Globalization.NumberStyles.HexNumber, null, out var red)
+                || !byte.TryParse(color[2..4], System.Globalization.NumberStyles.HexNumber, null, out var green)
+                || !byte.TryParse(color[4..6], System.Globalization.NumberStyles.HexNumber, null, out var blue))
+                return false;
+
+            var isGreen = green > red && green > blue && green > 80;
+            var isYellow = red > 150 && green > 150 && blue < 100;
+            return isGreen || isYellow;
+        }
     }
 }

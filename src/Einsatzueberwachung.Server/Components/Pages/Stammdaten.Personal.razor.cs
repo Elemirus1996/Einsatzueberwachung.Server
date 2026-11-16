@@ -80,6 +80,7 @@ public partial class Stammdaten
             Id = source.Id,
             Vorname = source.Vorname,
             Nachname = source.Nachname,
+            Organisation = source.Organisation,
             Skills = source.Skills,
             Notizen = source.Notizen,
             IsActive = source.IsActive,

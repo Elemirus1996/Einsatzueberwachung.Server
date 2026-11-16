@@ -1,0 +1,361 @@
+.resource-page {
+    display: grid;
+    gap: 1.5rem;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    color: var(--ui-text);
+}
+
+.resource-page-header,
+.resource-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.resource-page-header h1,
+.resource-section-heading h2,
+.resource-section-heading h3,
+.resource-empty-state h2 {
+    margin: 0;
+    color: var(--ui-heading-text);
+}
+
+.resource-page-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.resource-intro,
+.resource-search-hint,
+.resource-assignment-note {
+    margin: 0.35rem 0 0;
+    color: var(--ui-muted);
+}
+
+.resource-eyebrow {
+    margin: 0 0 0.25rem;
+    color: var(--ui-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.resource-monitor-link,
+.resource-type-switch .btn,
+.resource-new-button,
+.resource-quick-create-actions .btn,
+.resource-quick-create > .resource-section-heading .btn,
+.resource-row-actions .btn {
+    min-height: 44px;
+}
+
+.resource-checkin-section,
+.resource-roster-section,
+.resource-quick-create,
+.resource-empty-state {
+    border: 1px solid var(--ui-border);
+    border-radius: 12px;
+    background: var(--ui-surface);
+    padding: 1.25rem;
+}
+
+.resource-checkin-section,
+.resource-roster-section {
+    display: grid;
+    gap: 1rem;
+}
+
+.resource-section-heading h2 {
+    font-size: 1.25rem;
+    font-weight: 650;
+}
+
+.resource-section-heading h3 {
+    font-size: 1.1rem;
+    font-weight: 650;
+}
+
+.resource-type-switch,
+.resource-checkin-controls,
+.resource-quick-create-actions,
+.resource-row-actions {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.resource-checkin-controls {
+    align-items: end;
+    gap: 0.75rem;
+}
+
+.resource-search-field {
+    flex: 1 1 320px;
+}
+
+.resource-initial-status {
+    flex: 0 1 220px;
+}
+
+.resource-search-field > span:first-child,
+.resource-initial-status > span,
+.resource-quick-create-grid label > span,
+.resource-assignment-note-input > span {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+}
+
+.resource-search-input-wrap {
+    position: relative;
+    display: block;
+}
+
+.resource-search-input-wrap > i {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 0.9rem;
+    transform: translateY(-50%);
+    color: var(--ui-muted);
+}
+
+.resource-search-input-wrap .form-control {
+    min-height: 44px;
+    padding-left: 2.5rem;
+    background: var(--ui-form-bg);
+    border-color: var(--ui-form-border);
+}
+
+.resource-initial-status .form-select,
+.resource-status-select {
+    min-height: 44px;
+    background-color: var(--ui-form-bg);
+}
+
+.resource-suggestions {
+    display: grid;
+    border-top: 1px solid var(--ui-border);
+}
+
+.resource-suggestion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 60px;
+    padding: 0.5rem 0.25rem;
+    border-bottom: 1px solid var(--ui-border);
+}
+
+.resource-suggestion-identity {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.resource-suggestion-identity > span:last-child {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.resource-suggestion-identity small {
+    color: var(--ui-muted);
+}
+
+.resource-kind-icon,
+.resource-roster-empty > i {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--ui-surface-2);
+    color: var(--ui-heading-text);
+}
+
+.resource-quick-create {
+    display: grid;
+    gap: 1rem;
+    background: var(--ui-surface-2);
+}
+
+.resource-quick-create-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 0.75rem;
+}
+
+.resource-quick-create-grid .form-control {
+    min-height: 44px;
+    background: var(--ui-form-bg);
+}
+
+.resource-counts {
+    display: grid;
+    justify-items: end;
+    line-height: 1.2;
+}
+
+.resource-counts strong {
+    color: var(--success-color);
+    font-size: 1.4rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.resource-counts span {
+    color: var(--ui-muted);
+    font-size: 0.85rem;
+}
+
+.resource-table-wrap {
+    overflow-x: auto;
+}
+
+.resource-table {
+    margin: 0;
+    color: var(--ui-text);
+    vertical-align: middle;
+}
+
+.resource-table th {
+    color: var(--ui-muted);
+    font-size: 0.8rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.resource-table td {
+    min-width: 115px;
+    border-color: var(--ui-border);
+}
+
+.resource-table td:first-child {
+    min-width: 230px;
+}
+
+.resource-assignment-note {
+    display: block;
+    max-width: 44rem;
+    overflow-wrap: anywhere;
+    font-size: 0.875rem;
+}
+
+.resource-assignment-note-input {
+    display: block;
+    max-width: 32rem;
+    margin-top: 0.75rem;
+}
+
+.resource-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 32px;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.resource-status--available {
+    color: var(--success-color);
+}
+
+.resource-status--pending {
+    color: var(--warning-color);
+}
+
+.resource-status--bound {
+    color: var(--info-color);
+}
+
+.resource-status--off {
+    color: var(--ui-muted);
+}
+
+.resource-status-select {
+    min-width: 190px;
+}
+
+.resource-roster-empty,
+.resource-empty-state {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.resource-roster-empty {
+    min-height: 64px;
+    color: var(--ui-muted);
+}
+
+.resource-empty-state {
+    align-items: flex-start;
+    padding: 1.5rem;
+}
+
+.resource-empty-state > i {
+    color: var(--warning-color);
+    font-size: 1.5rem;
+}
+
+.resource-empty-state p {
+    margin: 0.4rem 0 1rem;
+    color: var(--ui-muted);
+}
+
+@media (max-width: 720px) {
+    .resource-page {
+        gap: 1rem;
+        padding: 1rem 0.75rem;
+    }
+
+    .resource-page-header,
+    .resource-section-heading {
+        align-items: flex-start;
+    }
+
+    .resource-page-header {
+        flex-direction: column;
+    }
+
+    .resource-type-switch {
+        width: 100%;
+    }
+
+    .resource-type-switch .btn {
+        flex: 1;
+    }
+
+    .resource-initial-status,
+    .resource-new-button {
+        flex: 1 1 100%;
+    }
+
+    .resource-suggestion {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .resource-suggestion > .btn {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .resource-roster-section,
+    .resource-checkin-section {
+        padding: 1rem;
+    }
+
+    .resource-table {
+        min-width: 650px;
+    }
+}

@@ -93,6 +93,7 @@ public partial class Stammdaten
             Id = source.Id,
             Name = source.Name,
             Rasse = source.Rasse,
+            Organisation = source.Organisation,
             Alter = source.Alter,
             Specializations = source.Specializations,
             HundefuehrerIds = new List<string>(source.HundefuehrerIds),

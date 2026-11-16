@@ -399,6 +399,7 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
         _einsatzService.TeamPhoneTrackPointAdded += OnPhoneTrackPointDirty;
         _einsatzService.TeamPhoneLocationRemoved += OnPhoneRemovedDirty;
         _einsatzService.TeamMitteilungGespeichert += OnMitteilungDirty;
+        _einsatzService.ResourcesChanged += OnDirty;
     }
 
     private void Unsubscribe()
@@ -415,6 +416,7 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
         _einsatzService.TeamPhoneTrackPointAdded -= OnPhoneTrackPointDirty;
         _einsatzService.TeamPhoneLocationRemoved -= OnPhoneRemovedDirty;
         _einsatzService.TeamMitteilungGespeichert -= OnMitteilungDirty;
+        _einsatzService.ResourcesChanged -= OnDirty;
     }
 
     private void OnDirty() => _isDirty = true;

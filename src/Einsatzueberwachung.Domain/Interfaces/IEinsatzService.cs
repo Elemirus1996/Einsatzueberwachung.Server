@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Einsatzueberwachung.Domain.Models;
+using Einsatzueberwachung.Domain.Models.Enums;
 
 namespace Einsatzueberwachung.Domain.Interfaces
 {
@@ -43,6 +44,13 @@ namespace Einsatzueberwachung.Domain.Interfaces
         event Action<string, string, TeamPhoneLocation>? TeamPhoneTrackPointAdded;
 
         event Action<Team>? DogPauseStarted;
+        event Action? ResourcesChanged;
+
+        IReadOnlyList<EinsatzResource> GetEinsatzResources();
+        Task CheckInResourceAsync(EinsatzResource resource);
+        Task SetResourceStatusAsync(ResourceEntityType entityType, string entityId, ResourceStatus status, string? note = null);
+        bool CanAssignResourceToSearch(ResourceEntityType entityType, string entityId);
+        void RefreshExpiredDogResourcePauses();
 
         Task StartEinsatzAsync(EinsatzData einsatzData);
         Task UpdateEinsatzAsync(EinsatzData einsatzData);

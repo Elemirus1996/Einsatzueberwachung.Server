@@ -504,6 +504,7 @@ public partial class EinsatzImportExport
                 Id = Guid.NewGuid().ToString(),
                 Vorname = src.Vorname,
                 Nachname = src.Nachname,
+                Organisation = src.Organisation,
                 Skills = src.Skills,
                 Notizen = src.Notizen,
                 IsActive = src.IsActive,

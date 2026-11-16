@@ -293,6 +293,16 @@
                                 </button>
                             </div>
                         }
+                        else if (panel.PanelId == KnownPanels.Ressourcen)
+                        {
+                            <div class="ms-auto d-flex align-items-center gap-2">
+                                <span class="small text-muted">@GetAvailableResourceCount() verfügbar</span>
+                                <a class="btn btn-sm btn-outline-secondary" href="/verfuegungsraum">
+                                    <i class="bi bi-sliders" aria-hidden="true"></i>
+                                    Verwalten
+                                </a>
+                            </div>
+                        }
                         else if (panel.PanelId == KnownPanels.Notizen)
                         {
                             <div class="ms-auto d-flex align-items-center gap-1">
@@ -327,6 +337,52 @@
                                                        OnReset="RequestResetTeamAsync"
                                                        OnEdit="EditTeam"
                                                        OnToggleExpand="ToggleTeamExpand" />
+                                    break;
+
+                                case KnownPanels.Ressourcen:
+                                    var resourceRows = GetMonitorResources();
+                                    @if (resourceRows.Count == 0)
+                                    {
+                                        <div class="resource-monitor-empty">
+                                            <span>Noch keine Ressourcen eingecheckt.</span>
+                                            <a href="/verfuegungsraum">Zum Check-in</a>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="resource-monitor-table-wrap">
+                                            <table class="table table-sm resource-monitor-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">Ressource</th>
+                                                        <th scope="col">Art</th>
+                                                        <th scope="col">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var row in resourceRows)
+                                                    {
+                                                        <tr @key="row.Key">
+                                                            <td>
+                                                                <strong>@row.Name</strong>
+                                                                @if (!string.IsNullOrWhiteSpace(row.Note))
+                                                                {
+                                                                    <small class="resource-monitor-note">@row.Note</small>
+                                                                }
+                                                            </td>
+                                                            <td>@row.TypeLabel</td>
+                                                            <td>
+                                                                <span class="resource-status @ResourceStatusPresentation.CssClass(row.Status)">
+                                                                    <i class="bi @ResourceStatusPresentation.Icon(row.Status)" aria-hidden="true"></i>
+                                                                    @ResourceStatusPresentation.Label(row.Status)
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
                                     break;
 
                                 case KnownPanels.Notizen:

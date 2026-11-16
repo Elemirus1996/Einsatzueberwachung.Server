@@ -270,7 +270,13 @@ namespace Einsatzueberwachung.Domain.Services
                             {
                                 MemberId = ucrMemberId,
                                 MemberName = memberLookup.TryGetValue(ucrMemberId, out var name) ? name : $"#{ucrMemberId}",
-                                Status = ucrStatus
+                                Status = ucrStatus,
+                                StatusName = result.StatusDefinitions.TryGetValue(ucrStatus, out var statusDefinition)
+                                    ? statusDefinition.Name
+                                    : string.Empty,
+                                StatusColor = result.StatusDefinitions.TryGetValue(ucrStatus, out statusDefinition)
+                                    ? statusDefinition.Color
+                                    : string.Empty
                             });
                         }
 

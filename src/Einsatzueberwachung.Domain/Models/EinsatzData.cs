@@ -42,6 +42,7 @@ namespace Einsatzueberwachung.Domain.Models
         public string BosAufgabenteilung { get; set; } = string.Empty;
         public bool BosAbschnittAbgestimmt { get; set; }
         public bool BosRessourcenBesprochen { get; set; }
+        public int? DiveraAlarmId { get; set; }
         public string StaffelName { get; set; }
         public string StaffelAdresse { get; set; }
         public string StaffelTelefon { get; set; }
@@ -53,6 +54,7 @@ namespace Einsatzueberwachung.Domain.Models
         public List<SearchArea> SearchAreas { get; set; }
         public List<MapMarker> MapMarkers { get; set; }
         public List<Team> Teams { get; set; }
+        public List<EinsatzResource> Resources { get; set; }
 
         public (double Latitude, double Longitude)? ElwPosition { get; set; }
 
@@ -117,6 +119,7 @@ namespace Einsatzueberwachung.Domain.Models
             EinsatzDatum = Ortszeit.Jetzt;
             EinsatzEnde = null;
             EinsatzNummer = string.Empty;
+            DiveraAlarmId = null;
             StaffelName = string.Empty;
             StaffelAdresse = string.Empty;
             StaffelTelefon = string.Empty;
@@ -127,6 +130,7 @@ namespace Einsatzueberwachung.Domain.Models
             SearchAreas = new List<SearchArea>();
             MapMarkers = new List<MapMarker>();
             Teams = new List<Team>();
+            Resources = new List<EinsatzResource>();
             ElwPosition = null;
             TrackSnapshots = new List<TeamTrackSnapshot>();
             CompletedSearches = new List<CompletedSearch>();

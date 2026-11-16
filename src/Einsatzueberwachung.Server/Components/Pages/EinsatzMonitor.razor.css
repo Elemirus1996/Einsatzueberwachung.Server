@@ -160,3 +160,43 @@
         min-height: 2.3rem;
     }
 }
+
+.resource-monitor-table-wrap {
+    overflow-x: auto;
+}
+
+.resource-monitor-table {
+    margin: 0;
+    color: var(--ui-text);
+    vertical-align: middle;
+}
+
+.resource-monitor-table th {
+    color: var(--ui-muted);
+    font-size: 0.8rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.resource-monitor-table td {
+    border-color: var(--ui-border);
+}
+
+.resource-monitor-table td:first-child {
+    min-width: 180px;
+}
+
+.resource-monitor-note {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--ui-muted);
+    overflow-wrap: anywhere;
+}
+
+.resource-monitor-empty {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    color: var(--ui-muted);

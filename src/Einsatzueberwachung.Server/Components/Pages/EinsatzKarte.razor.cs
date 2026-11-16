@@ -155,6 +155,7 @@ public partial class EinsatzKarte
 
     protected override async Task OnInitializedAsync()
     {
+        EinsatzService.ResourcesChanged += OnResourcesChanged;
         _searchAreas = EinsatzService.CurrentEinsatz.SearchAreas.ToList();
         foreach (var area in _searchAreas)
         {
@@ -196,6 +197,33 @@ public partial class EinsatzKarte
         }
 
         ConfigureMissionTopbarContent();
+    }
+
+    private void OnResourcesChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private bool IsTeamSearchSelectable(Team team)
+    {
+        var alreadyAssignedHere = _editingArea?.AssignedTeamId == team.TeamId;
+
+        var personIds = new[] { team.HundefuehrerId }
+            .Concat(team.HelferIds ?? new List<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (personIds.Count == 0 && string.IsNullOrWhiteSpace(team.DogId))
+            return false;
+
+        var resourceStatuses = EinsatzService.GetEinsatzResources()
+            .ToDictionary(resource => $"{resource.EntityType}:{resource.EntityId}", resource => resource.Status, StringComparer.Ordinal);
+        bool IsSelectable(ResourceEntityType type, string id) =>
+            EinsatzService.CanAssignResourceToSearch(type, id)
+            || (alreadyAssignedHere
+                && resourceStatuses.TryGetValue($"{type}:{id}", out var status)
+                && status == ResourceStatus.InSuche);
+
+        return personIds.All(id => IsSelectable(ResourceEntityType.Person, id))
+            && (string.IsNullOrWhiteSpace(team.DogId)
+                || IsSelectable(ResourceEntityType.Dog, team.DogId));
     }
 
     protected override void OnParametersSet()
@@ -1712,6 +1740,7 @@ public partial class EinsatzKarte
         try
         {
             MissionTopbar.ClearContent(this);
+            EinsatzService.ResourcesChanged -= OnResourcesChanged;
             CollarTrackingService.CollarLocationReceived -= OnCollarLocationReceived;
             CollarTrackingService.OutOfBoundsDetected -= OnOutOfBoundsDetected;
             CollarTrackingService.CollarHistoryCleared -= OnCollarHistoryCleared;

@@ -576,7 +576,10 @@
                                 <option value="">-- Kein Team --</option>
                                 @foreach (var team in _teams.OrderBy(team => team.TeamName, StringComparer.CurrentCultureIgnoreCase))
                                 {
-                                    <option value="@team.TeamId">@team.TeamName</option>
+                                    var canAssign = IsTeamSearchSelectable(team);
+                                    <option value="@team.TeamId" disabled="@(!canAssign)">
+                                        @team.TeamName@(canAssign ? string.Empty : " — nicht verfügbar")
+                                    </option>
                                 }
                             </select>
                         </div>

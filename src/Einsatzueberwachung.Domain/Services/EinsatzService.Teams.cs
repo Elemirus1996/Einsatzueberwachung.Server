@@ -146,6 +146,9 @@ namespace Einsatzueberwachung.Domain.Services
             var team = await GetTeamByIdAsync(teamId);
             if (team == null) return;
 
+            RefreshExpiredDogResourcePauses();
+            EnsureTeamResourcesAvailable(team, allowAssignedInSearch: true);
+
             if (!string.IsNullOrWhiteSpace(team.DogId))
             {
                 var conflict = _teams.FirstOrDefault(t => t.TeamId != teamId && t.DogId == team.DogId && t.IsRunning);
@@ -186,6 +189,7 @@ namespace Einsatzueberwachung.Domain.Services
                     RequiredPauseMinutes = team.RequiredPauseMinutes
                 };
                 _dogPauses[team.DogId] = record;
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.Pause);
 
                 foreach (var sibling in _teams.Where(t => t.TeamId != teamId && t.DogId == team.DogId))
                     sibling.SyncPauseFromDog(record.PauseStartTime, record.RunTimeBeforePause, record.RequiredPauseMinutes);
@@ -207,6 +211,7 @@ namespace Einsatzueberwachung.Domain.Services
             if (!string.IsNullOrWhiteSpace(dogId))
             {
                 _dogPauses.Remove(dogId);
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, dogId, ResourceStatus.Verfuegbar);
                 foreach (var sibling in _teams.Where(t => t.TeamId != teamId && t.DogId == dogId && t.IsPausing).ToList())
                 {
                     sibling.SilentReset();
@@ -252,18 +257,30 @@ namespace Einsatzueberwachung.Domain.Services
         // und die Speicherung erfuhren sonst nichts davon.
         private void Team_TimerStarted(Team team)
         {
+            foreach (var personId in GetTeamPersonIds(team))
+                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, ResourceStatus.InSuche);
+            if (!string.IsNullOrWhiteSpace(team.DogId))
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.InSuche);
             _ = AddGlobalNoteAsync("Timer gestartet", GlobalNotesEntryType.TeamStart, team.TeamId);
             SucheGeaendert(team);
         }
 
         private void Team_TimerStopped(Team team)
         {
+            foreach (var personId in GetTeamPersonIds(team))
+                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, ResourceStatus.Verfuegbar);
+            if (!string.IsNullOrWhiteSpace(team.DogId) && !team.IsPausing)
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.Verfuegbar);
             _ = AddGlobalNoteAsync("Timer gestoppt", GlobalNotesEntryType.TeamStop, team.TeamId);
             SucheGeaendert(team);
         }
 
         private void Team_TimerReset(Team team)
         {
+            foreach (var personId in GetTeamPersonIds(team))
+                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, ResourceStatus.Verfuegbar);
+            if (!string.IsNullOrWhiteSpace(team.DogId))
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.Verfuegbar);
             _ = AddGlobalNoteAsync("Timer zurückgesetzt", GlobalNotesEntryType.TeamReset, team.TeamId);
             SucheGeaendert(team);
         }

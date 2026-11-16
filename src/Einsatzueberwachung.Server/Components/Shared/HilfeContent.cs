@@ -26,14 +26,15 @@ public static class HilfeContent
 
         ["/einsatz-monitor"] = new(
             "Einsatz-Monitor",
-            "Die zentrale Übersicht aller Teams im laufenden Einsatz. Teams können hier gestartet, pausiert und zurückgemeldet werden. Jede Team-Karte zeigt Laufzeit, Hundename, Spezialisierung und aktuelle Warnungen. Neue Teams lassen sich direkt hinzufügen und bestehende bearbeiten oder entfernen.",
+            "Die zentrale Übersicht aller Teams und eingecheckten Personen und Hunde im laufenden Einsatz. Das Ressourcenpanel sortiert sofort verfügbare Kräfte nach oben. Teams können gestartet, pausiert und zurückgemeldet werden. Neue Teams lassen sich direkt hinzufügen und bestehende bearbeiten oder entfernen.",
             new[]
             {
                 "Navigation -> Monitor",
                 "Team starten: Team-Karte -> 'Start'-Button",
                 "Team pausieren: Team-Karte -> 'Pause'-Button",
                 "Team zurückmelden: Team-Karte -> 'Zurück'-Button",
-                "Neues Team: '+ Team hinzufügen'-Button oben rechts"
+                "Neues Team: '+ Team hinzufügen'-Button oben rechts",
+                "Ressourcen verwalten: Panel-Link 'Verfügungsraum'"
             }),
 
         ["/einsatz-karte"] = new(
@@ -93,11 +94,25 @@ public static class HilfeContent
 
         ["/divera"] = new(
             "Divera 24/7",
-            "Integration mit dem Alarmierungssystem Divera 24/7. Zeigt aktuelle Alarmierungen, Mitgliederstatus und UCR-Einträge aus der eigenen Divera-Organisation. Erfordert einen konfigurierten Divera-API-Key in den Einstellungen.",
+            "Integration mit dem Alarmierungssystem Divera 24/7. Zeigt aktuelle Alarmierungen, Mitgliederstatus und UCR-Rückmeldungen. Positive Rückmeldungen zum aktiven DIVERA-Alarm checken die eindeutig zugeordnete Person automatisch mit Status „Auf Anfahrt“ ein; Hunde werden nicht automatisch eingecheckt. Dafür muss die Divera Benutzer-ID bei der Person in den Stammdaten hinterlegt sein.",
             new[]
             {
                 "Navigation -> Divera 24/7",
-                "API-Key konfigurieren: Einstellungen -> Divera"
+                "API-Key konfigurieren: Einstellungen -> Divera",
+                "Divera Benutzer-ID pflegen: Stammdaten -> Personal",
+                "Ressourcenstatus verwalten: Navigation -> Verfügungsraum"
+            }),
+
+        ["/verfuegungsraum"] = new(
+            "Verfügungsraum",
+            "Hier werden Personen und Hunde für den laufenden Einsatz eingecheckt und disponiert. Stammdaten erscheinen ab drei Suchzeichen; neue Einträge können direkt angelegt und gespeichert werden. Statuswechsel gelten je Ressource. Für einen Sonderauftrag ist ein Zweck erforderlich. Ressourcen in Anfahrt, Abwesenheit, Pause, Suche, Drohneneinsatz, Sonderauftrag oder Abmeldung sind nicht für neue Suchsektoren verfügbar.",
+            new[]
+            {
+                "Navigation -> Verfügungsraum",
+                "Person oder Hund wählen -> mindestens drei Zeichen eingeben -> Ressource übernehmen",
+                "Neue Ressource: 'Neu anlegen' -> Angaben speichern und einchecken",
+                "Sonderauftrag: Status wählen -> Zweck eintragen -> bestätigen",
+                "DIVERA-Zuordnung für Personen: Stammdaten -> Personal -> Divera Benutzer-ID"
             }),
 
         ["/stammdaten"] = new(

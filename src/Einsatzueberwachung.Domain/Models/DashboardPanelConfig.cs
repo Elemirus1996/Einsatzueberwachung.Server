@@ -14,6 +14,7 @@ namespace Einsatzueberwachung.Domain.Models
         public const string Wetter       = "wetter";
         public const string Suchgebiete  = "suchgebiete";
         public const string Vermissten   = "vermissten";
+        public const string Ressourcen   = "ressourcen";
 
         public static readonly Dictionary<string, string> Labels = new()
         {
@@ -23,12 +24,13 @@ namespace Einsatzueberwachung.Domain.Models
             [Wetter]       = "Wetter",
             [Suchgebiete]  = "Suchgebiete",
             [Vermissten]   = "Vermissteninfo",
+            [Ressourcen]   = "Ressourcen",
         };
 
         /// <summary>Feste Reihenfolge der Panels im Layout (beeinflusst Panel-Picker-Reihenfolge).</summary>
         public static readonly string[] FixedOrder =
         [
-            EinsatzInfo, Vermissten, Wetter, Teams, Suchgebiete, Notizen
+            EinsatzInfo, Vermissten, Wetter, Teams, Ressourcen, Suchgebiete, Notizen
         ];
     }
 }

@@ -103,22 +103,7 @@ namespace Einsatzueberwachung.Domain.Services
                 var lastAlarm = await GetLastAlarmAsync();
                 if (lastAlarm != null)
                 {
-                    if (pull?.StatusDefinitions?.Count > 0)
-                    {
-                        foreach (var ucrEntry in lastAlarm.UcrDetails)
-                        {
-                            if (pull.StatusDefinitions.TryGetValue(ucrEntry.Status, out var statusDef))
-                                ucrEntry.StatusName = statusDef.Name;
-                        }
-                    }
-                    if (pull?.Members?.Count > 0)
-                    {
-                        var memberLookup = pull.Members.ToDictionary(m => m.Id, m => m.FullName);
-                        foreach (var ucrEntry in lastAlarm.UcrDetails)
-                            if (memberLookup.TryGetValue(ucrEntry.MemberId, out var name) && !string.IsNullOrWhiteSpace(name))
-                                ucrEntry.MemberName = name;
-                    }
-
+                    EnrichAlarmResponses(lastAlarm, pull);
                     alarms.Add(lastAlarm);
                 }
             }
@@ -129,7 +114,42 @@ namespace Einsatzueberwachung.Domain.Services
         public async Task<DiveraAlarm?> GetAlarmByIdAsync(int alarmId)
         {
             var pull = await PullAllAsync();
-            return pull?.Alarms.FirstOrDefault(a => a.Id == alarmId);
+            var alarm = pull?.Alarms.FirstOrDefault(candidate => candidate.Id == alarmId);
+            if (alarm is not null)
+                return alarm;
+
+            var lastAlarm = await GetLastAlarmAsync();
+            if (lastAlarm?.Id != alarmId)
+                return null;
+
+            EnrichAlarmResponses(lastAlarm, pull);
+            return lastAlarm;
+        }
+
+        private static void EnrichAlarmResponses(DiveraAlarm alarm, DiveraPullResponse? pull)
+        {
+            if (pull?.StatusDefinitions?.Count > 0)
+            {
+                foreach (var ucrEntry in alarm.UcrDetails)
+                {
+                    if (pull.StatusDefinitions.TryGetValue(ucrEntry.Status, out var statusDefinition))
+                    {
+                        ucrEntry.StatusName = statusDefinition.Name;
+                        ucrEntry.StatusColor = statusDefinition.Color;
+                    }
+                }
+            }
+
+            if (pull?.Members?.Count > 0)
+            {
+                var memberLookup = pull.Members.ToDictionary(member => member.Id, member => member.FullName);
+                foreach (var ucrEntry in alarm.UcrDetails)
+                {
+                    if (memberLookup.TryGetValue(ucrEntry.MemberId, out var name)
+                        && !string.IsNullOrWhiteSpace(name))
+                        ucrEntry.MemberName = name;
+                }
+            }
         }
 
         public async Task<List<DiveraMember>> GetMembersWithStatusAsync()

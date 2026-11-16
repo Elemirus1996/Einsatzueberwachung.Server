@@ -64,6 +64,11 @@
                             </div>
 
                             <div class="mb-3">
+                                <label class="form-label">Organisation</label>
+                                <InputText class="form-control" @bind-Value="_personalDraft.Organisation" />
+                            </div>
+
+                            <div class="mb-3">
                                 <label class="form-label">Notizen</label>
                                 <InputTextArea class="form-control" @bind-Value="_personalDraft.Notizen" />
                             </div>
@@ -120,6 +125,10 @@
                                             <tr id="entry-@person.Id" class="@(HighlightId == person.Id ? "mention-highlight-row" : "")">
                                                 <td>
                                                     <strong>@person.FullName</strong>
+                                                    @if (!string.IsNullOrWhiteSpace(person.Organisation))
+                                                    {
+                                                        <div class="small text-muted">@person.Organisation</div>
+                                                    }
                                                     @if (!string.IsNullOrWhiteSpace(person.Notizen))
                                                     {
                                                         <div class="small text-muted">@person.Notizen</div>
@@ -162,6 +171,11 @@
                             <div class="mb-3">
                                 <label class="form-label">Rasse</label>
                                 <InputText class="form-control" @bind-Value="_dogDraft.Rasse" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Organisation</label>
+                                <InputText class="form-control" @bind-Value="_dogDraft.Organisation" />
                             </div>
 
                             <div class="row g-3 mb-3">
@@ -241,6 +255,10 @@
                                                 <td>
                                                     <strong>@dog.Name</strong>
                                                     <div class="small text-muted">@dog.Rasse, @dog.Alter Jahre</div>
+                                                    @if (!string.IsNullOrWhiteSpace(dog.Organisation))
+                                                    {
+                                                        <div class="small text-muted">@dog.Organisation</div>
+                                                    }
                                                 </td>
                                                 <td>@GetHundefuehrerNames(dog.HundefuehrerIds)</td>
                                                 <td>@dog.SpecializationsDisplay</td>
@@ -562,6 +580,10 @@
                         <InputText class="form-control" @bind-Value="_personalDraft.Nachname" />
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Organisation</label>
+                        <InputText class="form-control" @bind-Value="_personalDraft.Organisation" />
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Notizen</label>
                         <InputTextArea class="form-control" @bind-Value="_personalDraft.Notizen" />
                     </div>
@@ -614,6 +636,10 @@
                     <div class="mb-3">
                         <label class="form-label">Rasse</label>
                         <InputText class="form-control" @bind-Value="_dogDraft.Rasse" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Organisation</label>
+                        <InputText class="form-control" @bind-Value="_dogDraft.Organisation" />
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-12 col-md-6">

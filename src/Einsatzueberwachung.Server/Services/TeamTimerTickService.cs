@@ -19,6 +19,7 @@ public sealed class TeamTimerTickService : BackgroundService
     {
         while (await _timer.WaitForNextTickAsync(stoppingToken))
         {
+            _einsatzService.RefreshExpiredDogResourcePauses();
             var now = _timeService.Now;
             var runningTeams = _einsatzService.Teams
                 .Where(t => t.IsRunning)

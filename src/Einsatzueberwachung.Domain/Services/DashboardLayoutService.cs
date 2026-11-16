@@ -59,6 +59,7 @@ namespace Einsatzueberwachung.Domain.Services
             new() { PanelId = KnownPanels.Vermissten,   IsVisible = true },
             new() { PanelId = KnownPanels.Wetter,       IsVisible = true },
             new() { PanelId = KnownPanels.Teams,        IsVisible = true },
+            new() { PanelId = KnownPanels.Ressourcen,    IsVisible = true },
             new() { PanelId = KnownPanels.Suchgebiete,  IsVisible = true },
             new() { PanelId = KnownPanels.Notizen,      IsVisible = true },
         ];

@@ -33,6 +33,7 @@ public sealed class EinsatzHubRelayService : IHostedService
         _einsatzService.TruemmerAreaUpserted += OnTruemmerAreaUpserted;
         _einsatzService.TruemmerAreaRemoved += OnTruemmerAreaRemoved;
         _einsatzService.TeamPhoneTrackPointAdded += OnTeamPhoneTrackPointAdded;
+        _einsatzService.ResourcesChanged += OnResourcesChanged;
 
         return Task.CompletedTask;
     }
@@ -53,6 +54,7 @@ public sealed class EinsatzHubRelayService : IHostedService
         _einsatzService.TruemmerAreaUpserted -= OnTruemmerAreaUpserted;
         _einsatzService.TruemmerAreaRemoved -= OnTruemmerAreaRemoved;
         _einsatzService.TeamPhoneTrackPointAdded -= OnTeamPhoneTrackPointAdded;
+        _einsatzService.ResourcesChanged -= OnResourcesChanged;
 
         return Task.CompletedTask;
     }
@@ -113,6 +115,9 @@ public sealed class EinsatzHubRelayService : IHostedService
             timestamp = location.Timestamp
         });
     }
+
+    private void OnResourcesChanged()
+        => _ = PublishAsync("resources.changed", _einsatzService.GetEinsatzResources());
 
     private Task PublishAsync(string eventName, object payload)
     {
