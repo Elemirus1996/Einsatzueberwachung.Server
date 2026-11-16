@@ -1,0 +1,13 @@
+.monitor-qr-image {
+    max-width: 320px;
+    width: 100%;
+    height: auto;
+}
+
+.monitor-team-code {
+    margin-top: 12px;
+    font: 700 1.6rem/1.2 'JetBrains Mono', ui-monospace, 'Cascadia Mono', monospace;
+    letter-spacing: 0.08em;
+    text-align: center;
+    user-select: all;
+}

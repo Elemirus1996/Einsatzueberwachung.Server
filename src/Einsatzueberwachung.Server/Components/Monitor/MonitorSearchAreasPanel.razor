@@ -1,0 +1,46 @@
+@if (Items.Count == 0)
+{
+    <div class="monitor-text-secondary"><i class="bi bi-map me-1" aria-hidden="true"></i>Noch keine Suchgebiete auf der Karte angelegt.</div>
+}
+else
+{
+    <div class="suchgebiete-list">
+        @foreach (var item in Items)
+        {
+            <a @key="item.Area.Id"
+               class="suchgebiet-row suchgebiet-row--link @(item.Area.IsCompleted ? "suchgebiet-done" : "")"
+               href="@MonitorMapRoutes.SearchAreaFocusUrl(item.Area.Id)"
+               title="Auf Karte anzeigen"
+               aria-label="@($"{item.Area.Name} auf der Karte anzeigen")">
+                <span class="suchgebiet-color-dot" style="background:@item.Area.Color"></span>
+                <div class="suchgebiet-info">
+                    <div class="suchgebiet-name">@item.Area.Name</div>
+                    <div class="suchgebiet-area">@item.Area.FormattedArea</div>
+                </div>
+                <div class="suchgebiet-team ms-auto">
+                    @if (item.AssignedTeam is not null)
+                    {
+                        <span class="suchgebiet-team-name">
+                            <span class="suchgebiet-team-dot" style="background:@item.TeamColor" aria-hidden="true"></span>
+                            @item.AssignedTeam.TeamName
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="suchgebiet-unoccupied">Unbesetzt</span>
+                    }
+                    @if (item.Area.IsCompleted)
+                    {
+                        <span class="suchgebiet-completed" role="img" title="Abgeschlossen" aria-label="Abgeschlossen">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        </span>
+                    }
+                </div>
+            </a>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<MonitorSearchAreaItem> Items { get; set; } = Array.Empty<MonitorSearchAreaItem>();
+}

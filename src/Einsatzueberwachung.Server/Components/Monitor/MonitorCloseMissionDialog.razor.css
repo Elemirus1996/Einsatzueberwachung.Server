@@ -1,0 +1,31 @@
+.modal-close-mission {
+    width: min(920px, 95vw);
+}
+
+.modal-close-mission-header {
+    background: var(--danger-color);
+    color: var(--danger-on-fill);
+    border-bottom-color: color-mix(in srgb, var(--danger-on-fill) 18%, transparent);
+}
+
+.modal-close-mission .border.rounded {
+    background: var(--ui-tile-bg);
+    border-color: var(--ui-tile-border) !important;
+}
+
+.modal-close-mission .btn-outline-light {
+    border-color: color-mix(in srgb, var(--danger-on-fill) 40%, transparent);
+    color: var(--danger-on-fill);
+}
+
+.modal-close-mission .btn-outline-light:hover {
+    background: color-mix(in srgb, var(--danger-on-fill) 20%, transparent);
+    border-color: color-mix(in srgb, var(--danger-on-fill) 60%, transparent);
+    color: var(--danger-on-fill);
+}
+
+.monitor-checklist-scroll {
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}

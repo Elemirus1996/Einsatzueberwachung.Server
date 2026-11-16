@@ -60,19 +60,80 @@ public partial class EinsatzLeitung : IDisposable
         .OrderBy(t => t.TeamName)
         .ToList();
 
-    // Kontaktbeamter (Polizei) aus VermisstenInfo
-    private bool HasKontaktbeamter
-    {
-        get
-        {
-            var v = EinsatzService.CurrentEinsatz.VermisstenInfo;
-            return v is not null && !string.IsNullOrWhiteSpace(v.PolizeiKontaktName);
-        }
-    }
+    private bool HasKontaktbeamter => !string.IsNullOrWhiteSpace(_kontaktForm.PolizeiKontaktName);
 
     private VermisstenInfo _vi = new();
+    private EinsatzData _kontaktForm = new();
+    private bool _savingEinsatzkontakte;
     private bool MehrereVermisstErlaubt =>
         EinsatzService.CurrentEinsatz.Szenario.AllowsMultipleVermisste();
+
+    private void PopulateEinsatzkontakteForm()
+    {
+        var current = EinsatzService.CurrentEinsatz;
+
+        _kontaktForm = new EinsatzData
+        {
+            PolizeiKontaktName = current.PolizeiKontaktName,
+            PolizeiDienstnummer = current.PolizeiDienstnummer,
+            PolizeiTelefon = current.PolizeiTelefon,
+            PolizeiVermisstenmeldungAufgenommen = current.PolizeiVermisstenmeldungAufgenommen,
+            PolizeiKoordinationBesprochen = current.PolizeiKoordinationBesprochen,
+            PolizeiSuchabschnittAbgestimmt = current.PolizeiSuchabschnittAbgestimmt,
+            PolizeiRueckmeldepflichtVereinbart = current.PolizeiRueckmeldepflichtVereinbart,
+            PolizeiDatenschutzGeklaert = current.PolizeiDatenschutzGeklaert,
+            BosEinheit = current.BosEinheit,
+            BosZugfuehrer = current.BosZugfuehrer,
+            BosFunkrufname = current.BosFunkrufname,
+            BosAufgabenteilung = current.BosAufgabenteilung,
+            BosAbschnittAbgestimmt = current.BosAbschnittAbgestimmt,
+            BosRessourcenBesprochen = current.BosRessourcenBesprochen
+        };
+    }
+
+    private async Task SaveEinsatzkontakteAsync()
+    {
+        if (_savingEinsatzkontakte) return;
+
+        _savingEinsatzkontakte = true;
+        try
+        {
+            var current = EinsatzService.CurrentEinsatz;
+            await EinsatzService.UpdateEinsatzAsync(new EinsatzData
+            {
+                IstEinsatz = current.IstEinsatz,
+                Szenario = current.Szenario,
+                EinsatzNummer = current.EinsatzNummer,
+                EinsatzkontakteMigriert = true,
+                PolizeiKontaktName = _kontaktForm.PolizeiKontaktName,
+                PolizeiDienstnummer = _kontaktForm.PolizeiDienstnummer,
+                PolizeiTelefon = _kontaktForm.PolizeiTelefon,
+                PolizeiVermisstenmeldungAufgenommen = _kontaktForm.PolizeiVermisstenmeldungAufgenommen,
+                PolizeiKoordinationBesprochen = _kontaktForm.PolizeiKoordinationBesprochen,
+                PolizeiSuchabschnittAbgestimmt = _kontaktForm.PolizeiSuchabschnittAbgestimmt,
+                PolizeiRueckmeldepflichtVereinbart = _kontaktForm.PolizeiRueckmeldepflichtVereinbart,
+                PolizeiDatenschutzGeklaert = _kontaktForm.PolizeiDatenschutzGeklaert,
+                BosEinheit = _kontaktForm.BosEinheit,
+                BosZugfuehrer = _kontaktForm.BosZugfuehrer,
+                BosFunkrufname = _kontaktForm.BosFunkrufname,
+                BosAufgabenteilung = _kontaktForm.BosAufgabenteilung,
+                BosAbschnittAbgestimmt = _kontaktForm.BosAbschnittAbgestimmt,
+                BosRessourcenBesprochen = _kontaktForm.BosRessourcenBesprochen,
+                Einsatzort = current.Einsatzort,
+                MapAddress = current.MapAddress,
+                Alarmiert = current.Alarmiert,
+                AlarmierungsZeit = current.AlarmierungsZeit,
+                AnzahlTeams = current.AnzahlTeams,
+                ExportPfad = current.ExportPfad,
+                Einsatzleiter = current.Einsatzleiter,
+                Fuehrungsassistent = current.Fuehrungsassistent
+            });
+        }
+        finally
+        {
+            _savingEinsatzkontakte = false;
+        }
+    }
 
     private async Task SelectVermisstenAsync(Guid id)
     {
@@ -152,6 +213,7 @@ public partial class EinsatzLeitung : IDisposable
 
     protected override void OnInitialized()
     {
+        PopulateEinsatzkontakteForm();
         var list = EinsatzService.CurrentEinsatz.Vermisste;
         if (list is { Count: > 0 })
             CloneViFrom(list[0]);
@@ -378,7 +440,21 @@ public partial class EinsatzLeitung : IDisposable
     {
         if (_busyTeamId is not null) return;
         _busyTeamId = teamId;
-        try { await EinsatzService.ResetTeamTimerAsync(teamId); }
+        try
+        {
+            await EinsatzService.ResetTeamTimerAsync(teamId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            var item = new PushToastItem
+            {
+                Title = "Timer nicht zurückgesetzt",
+                Body = ex.Message,
+                Icon = "bi-exclamation-triangle-fill"
+            };
+            _pushToasts.Add(item);
+            _ = AutoDismissToastAsync(item.Id);
+        }
         finally { _busyTeamId = null; }
     }
 
@@ -650,14 +726,14 @@ public partial class EinsatzLeitung : IDisposable
         get
         {
             var f = 0;
-            if (!string.IsNullOrWhiteSpace(_vi.PolizeiKontaktName)) f++;
-            if (!string.IsNullOrWhiteSpace(_vi.PolizeiDienstnummer)) f++;
-            if (!string.IsNullOrWhiteSpace(_vi.PolizeiTelefon)) f++;
-            if (_vi.PolizeiVermisstenmeldungAufgenommen) f++;
-            if (_vi.PolizeiKoordinationBesprochen) f++;
-            if (_vi.PolizeiSuchabschnittAbgestimmt) f++;
-            if (_vi.PolizeiRueckmeldepflichtVereinbart) f++;
-            if (_vi.PolizeiDatenschutzGeklaert) f++;
+            if (!string.IsNullOrWhiteSpace(_kontaktForm.PolizeiKontaktName)) f++;
+            if (!string.IsNullOrWhiteSpace(_kontaktForm.PolizeiDienstnummer)) f++;
+            if (!string.IsNullOrWhiteSpace(_kontaktForm.PolizeiTelefon)) f++;
+            if (_kontaktForm.PolizeiVermisstenmeldungAufgenommen) f++;
+            if (_kontaktForm.PolizeiKoordinationBesprochen) f++;
+            if (_kontaktForm.PolizeiSuchabschnittAbgestimmt) f++;
+            if (_kontaktForm.PolizeiRueckmeldepflichtVereinbart) f++;
+            if (_kontaktForm.PolizeiDatenschutzGeklaert) f++;
             return (f, 8);
         }
     }
@@ -667,12 +743,12 @@ public partial class EinsatzLeitung : IDisposable
         get
         {
             var f = 0;
-            if (!string.IsNullOrWhiteSpace(_vi.BosEinheit)) f++;
-            if (!string.IsNullOrWhiteSpace(_vi.BosZugfuehrer)) f++;
-            if (!string.IsNullOrWhiteSpace(_vi.BosFunkrufname)) f++;
-            if (!string.IsNullOrWhiteSpace(_vi.BosAufgabenteilung)) f++;
-            if (_vi.BosAbschnittAbgestimmt) f++;
-            if (_vi.BosRessourcenBesprochen) f++;
+            if (!string.IsNullOrWhiteSpace(_kontaktForm.BosEinheit)) f++;
+            if (!string.IsNullOrWhiteSpace(_kontaktForm.BosZugfuehrer)) f++;
+            if (!string.IsNullOrWhiteSpace(_kontaktForm.BosFunkrufname)) f++;
+            if (!string.IsNullOrWhiteSpace(_kontaktForm.BosAufgabenteilung)) f++;
+            if (_kontaktForm.BosAbschnittAbgestimmt) f++;
+            if (_kontaktForm.BosRessourcenBesprochen) f++;
             return (f, 6);
         }
     }
@@ -924,6 +1000,8 @@ public partial class EinsatzLeitung : IDisposable
 
     private void OnStateChanged()
     {
+        if (!_savingEinsatzkontakte)
+            PopulateEinsatzkontakteForm();
         _ = PlayAlertIfEscalatedAsync();
         InvokeAsync(StateHasChanged);
     }
@@ -984,6 +1062,8 @@ public partial class EinsatzLeitung : IDisposable
 
     private void OnVermisstenChanged()
     {
+        if (!_savingEinsatzkontakte)
+            PopulateEinsatzkontakteForm();
         if (_activeTab != "vermisst")
         {
             var latest = EinsatzService.CurrentEinsatz.VermisstenInfo;

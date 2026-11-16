@@ -9,6 +9,7 @@ namespace Einsatzueberwachung.Domain.Services
         {
             await ApplyStaffelFallbackAsync(einsatzData);
             EnsureAlarmTime(einsatzData);
+            EinsatzKontaktMigration.MigrateLegacyContacts(einsatzData);
 
             _currentEinsatz = einsatzData;
             lock (_teamOrderSync)
@@ -35,6 +36,21 @@ namespace Einsatzueberwachung.Domain.Services
             _currentEinsatz.IstEinsatz = einsatzData.IstEinsatz;
             _currentEinsatz.Szenario = einsatzData.Szenario;
             _currentEinsatz.EinsatzNummer = einsatzData.EinsatzNummer;
+            _currentEinsatz.EinsatzkontakteMigriert = einsatzData.EinsatzkontakteMigriert;
+            _currentEinsatz.PolizeiKontaktName = einsatzData.PolizeiKontaktName;
+            _currentEinsatz.PolizeiDienstnummer = einsatzData.PolizeiDienstnummer;
+            _currentEinsatz.PolizeiTelefon = einsatzData.PolizeiTelefon;
+            _currentEinsatz.PolizeiVermisstenmeldungAufgenommen = einsatzData.PolizeiVermisstenmeldungAufgenommen;
+            _currentEinsatz.PolizeiKoordinationBesprochen = einsatzData.PolizeiKoordinationBesprochen;
+            _currentEinsatz.PolizeiSuchabschnittAbgestimmt = einsatzData.PolizeiSuchabschnittAbgestimmt;
+            _currentEinsatz.PolizeiRueckmeldepflichtVereinbart = einsatzData.PolizeiRueckmeldepflichtVereinbart;
+            _currentEinsatz.PolizeiDatenschutzGeklaert = einsatzData.PolizeiDatenschutzGeklaert;
+            _currentEinsatz.BosEinheit = einsatzData.BosEinheit;
+            _currentEinsatz.BosZugfuehrer = einsatzData.BosZugfuehrer;
+            _currentEinsatz.BosFunkrufname = einsatzData.BosFunkrufname;
+            _currentEinsatz.BosAufgabenteilung = einsatzData.BosAufgabenteilung;
+            _currentEinsatz.BosAbschnittAbgestimmt = einsatzData.BosAbschnittAbgestimmt;
+            _currentEinsatz.BosRessourcenBesprochen = einsatzData.BosRessourcenBesprochen;
             _currentEinsatz.Einsatzort = einsatzData.Einsatzort;
             _currentEinsatz.MapAddress = einsatzData.MapAddress;
             _currentEinsatz.Alarmiert = einsatzData.Alarmiert;
@@ -136,6 +152,7 @@ namespace Einsatzueberwachung.Domain.Services
 
                 _teams.Clear();
                 _currentEinsatz = snapshot.CurrentEinsatz ?? new EinsatzData();
+                EinsatzKontaktMigration.MigrateLegacyContacts(_currentEinsatz);
 
                 foreach (var team in snapshot.Teams ?? new List<Team>())
                 {

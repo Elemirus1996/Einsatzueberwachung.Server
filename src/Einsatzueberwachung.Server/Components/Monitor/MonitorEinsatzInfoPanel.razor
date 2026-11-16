@@ -1,0 +1,91 @@
+@if (!string.IsNullOrWhiteSpace(Einsatz.EinsatzNummer))
+{
+    <div class="monitor-summary-primary">
+        <span class="monitor-summary-kicker">Polizei-Einsatznummer</span>
+        <strong class="monitor-summary-primary-value">@Einsatz.EinsatzNummer</strong>
+    </div>
+}
+else
+{
+    <div class="monitor-summary-primary">
+        <span class="monitor-summary-kicker">Polizei-Einsatznummer</span>
+        <strong class="monitor-summary-primary-value monitor-summary-value-missing">Nicht hinterlegt</strong>
+    </div>
+}
+<div class="monitor-summary-subline">
+    <span>@Einsatz.EinsatzTyp</span>
+</div>
+<div class="monitor-summary-key-details">
+    @if (PoliceContacts.Count == 0)
+    {
+        <div class="monitor-summary-key-detail">
+            <span class="monitor-summary-key-label">Polizei-Kontakt</span>
+            <span class="monitor-summary-key-value">Nicht hinterlegt</span>
+        </div>
+    }
+    else
+    {
+        @foreach (var contact in PoliceContacts)
+        {
+            <div class="monitor-summary-key-detail">
+                <span class="monitor-summary-key-label">@(Einsatz.Vermisste?.Count > 1 ? contact.PersonName : "Polizei-Kontakt")</span>
+                <span class="monitor-summary-key-value">@FormatContact(contact.ContactName, contact.ServiceNumber, contact.Phone)</span>
+            </div>
+        }
+    }
+    <div class="monitor-summary-key-detail">
+        <span class="monitor-summary-key-label">BOS-Kontakt</span>
+        <span class="monitor-summary-key-value">@(string.IsNullOrWhiteSpace(BosContactSummary) ? "Nicht hinterlegt" : BosContactSummary)</span>
+    </div>
+</div>
+<div id="panel-details-einsatz-info" class="monitor-summary-details" hidden="@(!DetailsExpanded)">
+    <dl class="monitor-summary-detail-grid mb-0 small">
+        <div>
+            <dt>Teams</dt>
+            <dd>@TeamCount / @Einsatz.AnzahlTeams geplant</dd>
+        </div>
+        <div>
+            <dt>Datum</dt>
+            <dd>@Einsatz.EinsatzDatum.ToString("dd.MM.yyyy HH:mm")</dd>
+        </div>
+        @if (Einsatz.AlarmierungsZeit.HasValue)
+        {
+            <div>
+                <dt>Alarmierung</dt>
+                <dd>@Einsatz.AlarmierungsZeit.Value.ToString("HH:mm") Uhr</dd>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Einsatz.Einsatzleiter))
+        {
+            <div>
+                <dt>Einsatzleiter</dt>
+                <dd>@Einsatz.Einsatzleiter</dd>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Einsatz.Fuehrungsassistent))
+        {
+            <div>
+                <dt>FA</dt>
+                <dd>@Einsatz.Fuehrungsassistent</dd>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Einsatz.Alarmiert))
+        {
+            <div>
+                <dt>Alarmiert durch</dt>
+                <dd>@Einsatz.Alarmiert</dd>
+            </div>
+        }
+    </dl>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EinsatzData Einsatz { get; set; } = default!;
+    [Parameter] public IReadOnlyList<MonitorPoliceContactSummary> PoliceContacts { get; set; } = Array.Empty<MonitorPoliceContactSummary>();
+    [Parameter] public string BosContactSummary { get; set; } = string.Empty;
+    [Parameter] public int TeamCount { get; set; }
+    [Parameter] public bool DetailsExpanded { get; set; }
+
+    private static string FormatContact(params string?[] values) =>
+        string.Join(" · ", values.Where(value => !string.IsNullOrWhiteSpace(value)));
+}

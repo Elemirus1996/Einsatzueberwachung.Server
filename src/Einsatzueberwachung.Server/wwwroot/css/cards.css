@@ -265,6 +265,33 @@
     flex: 1;
 }
 
+.modal-modern--sm {
+    max-width: 460px;
+}
+
+.modal-modern--480 {
+    max-width: 480px;
+}
+
+.modal-modern--md {
+    max-width: 520px;
+}
+
+.modal-modern--640 {
+    max-width: 640px;
+}
+
+.modal-modern--lg {
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-modern-header--warning {
+    background: var(--bs-warning);
+    color: #212529;
+}
+
 .card {
     background: var(--ui-surface);
     border: 1px solid var(--ui-border);
@@ -284,4 +311,3 @@
     border-bottom: 1px solid var(--ui-card-header-border);
     color: var(--ui-card-header-text);
 }
-

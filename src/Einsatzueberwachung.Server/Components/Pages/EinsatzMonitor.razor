@@ -39,14 +39,197 @@
     {
 
     <main id="monitor-dashboard-grid" class="monitor-dashboard-grid" aria-label="Einsatz-Dashboard">
-        @foreach (var panel in _currentLayout.Where(p => p.IsVisible))
+        @if (_currentLayout.Any(p => p.IsVisible && IsSummaryPanel(p.PanelId)))
         {
+            <section class="monitor-summary-grid monitor-surface @(_summaryGridCollapsed ? "is-collapsed" : "")"
+                     aria-label="Einsatzinformationen">
+                <div id="monitor-summary-tiles"
+                     class="monitor-summary-grid-tiles"
+                     hidden="@_summaryGridCollapsed">
+                    @foreach (var summaryPanel in _currentLayout.Where(panel => panel.IsVisible && IsSummaryPanel(panel.PanelId)))
+                    {
+                        @if (summaryPanel.PanelId == KnownPanels.EinsatzInfo)
+                        {
+                            <MonitorEinsatzInfoSummary Einsatz="EinsatzService.CurrentEinsatz"
+                                                       TeamCount="EinsatzService.Teams.Count"
+                                                       PoliceContacts="GetPoliceContactSummaries()"
+                                                       BosContact="GetBosContactDetails()"
+                                                       CoordinationItems="GetCoordinationItems()"
+                                                       IsCoordinationUpdating="_coordinationUpdateInProgress"
+                                                       DetailsExpanded="_einsatzInfoDetailsExpanded"
+                                                       OnEditEinsatz="OpenEditEinsatzModal"
+                                                       OnOpenCoordination="OpenCoordinationModal"
+                                                       OnCompleteCoordination="CompleteCoordinationFromSummaryAsync" />
+                        }
+                        else if (summaryPanel.PanelId == KnownPanels.Vermissten)
+                        {
+                            <MonitorVermisstenSummary Vermisste="EinsatzService.CurrentEinsatz.Vermisste"
+                                                      AllowMultiple="EinsatzService.CurrentEinsatz.Szenario.AllowsMultipleVermisste()"
+                                                      @bind-SelectedId="_vermisstenPanelSelectedId"
+                                                      OnEdit="OpenVermisstenModal"
+                                                      OnAdd="OpenVermisstenModalNew"
+                                                      OnEditSection="OpenVermisstenModalAt" />
+                        }
+                        else if (summaryPanel.PanelId == KnownPanels.Wetter)
+                        {
+                            var forecastItems = _monitorWeather is null ? new List<WeatherData>() : GetMonitorForecastItems().ToList();
+                            var temperatureTrend = GetWeatherTrend("Temperatur", weather => weather.Temperatur, 1, true);
+                            var windTrend = GetWeatherTrend("Wind", weather => weather.Windgeschwindigkeit, 0);
+                            var rainTrend = GetWeatherTrend("Niederschlag", weather => weather.Niederschlag, 1);
+                            var dogHeatWarning = _monitorWeather is not null
+                                && (_monitorWeather.Temperatur > 30 || forecastItems.Take(3).Any(item => item.Temperatur > 30));
+                            <MonitorWeatherSummary Weather="_monitorWeather"
+                                                   ForecastItems="forecastItems"
+                                                   TemperatureTrend="temperatureTrend"
+                                                   WindTrend="windTrend"
+                                                   RainTrend="rainTrend"
+                                                   DogHeatWarning="dogHeatWarning"
+                                                   IsLoading="_monitorWeatherLoading"
+                                                   DetailsExpanded="_wetterDetailsExpanded"
+                                                   UsingFallback="_monitorWeatherUsingFallback"
+                                                   LoadedAtLocal="_monitorWeatherLoadedAtLocal"
+                                                   Error="@_monitorWeatherError" />
+                        }
+                    }
+                </div>
+                @if (_summaryGridCollapsed)
+                {
+                    <span class="monitor-summary-collapsed-label">Einsatzinformationen</span>
+                }
+                <button class="monitor-summary-toggle"
+                    type="button"
+                    aria-controls="monitor-summary-tiles"
+                    aria-expanded="@(_summaryGridCollapsed ? "false" : "true")"
+                    aria-label="@(_summaryGridCollapsed ? "Einsatzinformationen einblenden" : "Einsatzinformationen ausblenden")"
+                    title="@(_summaryGridCollapsed ? "Einsatzinformationen einblenden" : "Einsatzinformationen ausblenden")"
+                    @onclick="ToggleSummaryGrid">
+                    <i class="bi bi-chevron-@(_summaryGridCollapsed ? "down" : "up")" aria-hidden="true"></i>
+                </button>
+            </section>
+        }
+
+        @{
+            var workPanels = _currentLayout
+                .Where(panel => panel.IsVisible && !IsSummaryPanel(panel.PanelId))
+                .ToArray();
+            var tabletPanels = workPanels
+                .OrderBy(panel => TabletPanelOrder(panel.PanelId))
+                .ToArray();
+            var activeTabletPanelId = tabletPanels
+                .FirstOrDefault(panel => panel.PanelId == _tabletActivePanelId)?.PanelId
+                ?? tabletPanels.FirstOrDefault(panel => panel.PanelId == KnownPanels.Teams)?.PanelId
+                ?? tabletPanels.FirstOrDefault()?.PanelId;
+        }
+
+        @if (tabletPanels.Length > 1)
+        {
+            <div class="monitor-tablet-tabs" role="group" aria-label="Lagebereiche">
+                @foreach (var tabletPanel in tabletPanels)
+                {
+                    var isActive = tabletPanel.PanelId == activeTabletPanelId;
+                    <button id="monitor-tablet-tab-@tabletPanel.PanelId"
+                            class="monitor-tablet-tab @(isActive ? "is-active" : "")"
+                            type="button"
+                            aria-pressed="@isActive.ToString().ToLowerInvariant()"
+                            aria-controls="monitor-tablet-panel-@tabletPanel.PanelId"
+                            @onclick="() => SelectTabletPanel(tabletPanel.PanelId)">
+                        @PanelLabel(tabletPanel.PanelId)
+                    </button>
+                }
+            </div>
+        }
+
+        @foreach (var panel in workPanels)
+        {
+            var forecastItems = new List<WeatherData>();
+            var temperatureTrend = MonitorWeatherMetricTrend.Unavailable;
+            var windTrend = MonitorWeatherMetricTrend.Unavailable;
+            var rainTrend = MonitorWeatherMetricTrend.Unavailable;
+            var dogHeatWarning = false;
             <div @key="panel.PanelId"
-                 class="dashboard-panel-wrapper"
+                 id="monitor-tablet-panel-@panel.PanelId"
+                 class="dashboard-panel-wrapper @(IsSummaryPanel(panel.PanelId) ? "dashboard-panel-wrapper--summary" : "") @(panel.PanelId == activeTabletPanelId ? "" : "monitor-tablet-panel-hidden")"
                  data-panel-id="@panel.PanelId">
-                <section class="dashboard-panel" aria-labelledby="panel-title-@panel.PanelId">
-                    <div class="dashboard-panel-header @(panel.PanelId == KnownPanels.Teams && EinsatzService.Teams.Count > 0 ? "dashboard-panel-header--teams" : "")">
-                        <h2 class="dashboard-panel-title" id="panel-title-@panel.PanelId">@PanelLabel(panel.PanelId)</h2>
+                <section class="dashboard-panel monitor-surface" aria-labelledby="panel-title-@panel.PanelId">
+                    <div class="dashboard-panel-header @(panel.PanelId == KnownPanels.Teams && EinsatzService.Teams.Count > 0 ? "dashboard-panel-header--teams" : "") @(IsSummaryPanel(panel.PanelId) ? "dashboard-panel-header--summary" : "")">
+                        @if (IsSummaryPanel(panel.PanelId))
+                        {
+                            <h2 class="dashboard-panel-title @(panel.PanelId is KnownPanels.EinsatzInfo or KnownPanels.Vermissten ? "dashboard-panel-title--editable" : "")" id="panel-title-@panel.PanelId">
+                                @if (CanExpandSummaryDetails(panel.PanelId))
+                                {
+                                    <button class="monitor-summary-title-toggle @(panel.PanelId is KnownPanels.EinsatzInfo or KnownPanels.Vermissten ? "monitor-summary-title-toggle--inline" : "")" type="button"
+                                            aria-expanded="@IsSummaryDetailsExpanded(panel.PanelId)"
+                                            aria-controls="panel-details-@panel.PanelId"
+                                            @onclick="() => ToggleSummaryDetails(panel.PanelId)">
+                                        <span>@PanelLabel(panel.PanelId)</span>
+                                        <i class="bi bi-chevron-@((IsSummaryDetailsExpanded(panel.PanelId)) ? "up" : "down")" aria-hidden="true"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    @PanelLabel(panel.PanelId)
+                                }
+                            </h2>
+                            @if (panel.PanelId == KnownPanels.EinsatzInfo)
+                            {
+                                <button class="monitor-summary-edit-button" type="button" @onclick="OpenEditEinsatzModal" title="Einsatzdaten bearbeiten" aria-label="Einsatzdaten bearbeiten">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                </button>
+                            }
+                            else if (panel.PanelId == KnownPanels.Vermissten)
+                            {
+                                <button class="monitor-summary-edit-button" type="button" @onclick="OpenVermisstenModal"
+                                        title="@(EinsatzService.CurrentEinsatz.Vermisste?.Count > 0 ? "Vermisstendaten bearbeiten" : "Vermissteninfo erfassen")"
+                                        aria-label="@(EinsatzService.CurrentEinsatz.Vermisste?.Count > 0 ? "Vermisstendaten bearbeiten" : "Vermissteninfo erfassen")">
+                                    <i class="bi @(EinsatzService.CurrentEinsatz.Vermisste?.Count > 0 ? "bi-pencil" : "bi-plus-lg")" aria-hidden="true"></i>
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <h2 class="dashboard-panel-title" id="panel-title-@panel.PanelId">
+                                @if (panel.PanelId == KnownPanels.Teams)
+                                {
+                                    <a class="dashboard-panel-title-popout"
+                                       href="/popout-teams"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       aria-label="Teams in neuem Fenster öffnen"
+                                       title="Team-Übersicht in neuem Fenster öffnen">
+                                        <span>@PanelLabel(panel.PanelId)</span>
+                                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                    </a>
+                                }
+                                else if (panel.PanelId == KnownPanels.Notizen)
+                                {
+                                    <a class="dashboard-panel-title-popout"
+                                       href="/popout-notes"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       aria-label="Notizen in neuem Fenster öffnen"
+                                       title="Notizen in neuem Fenster öffnen">
+                                        <span>@PanelLabel(panel.PanelId)</span>
+                                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                    </a>
+                                }
+                                else if (panel.PanelId == KnownPanels.Suchgebiete)
+                                {
+                                    <a class="dashboard-panel-title-popout"
+                                       href="/einsatz-karte"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       aria-label="Suchgebiete auf der Karte in neuem Fenster öffnen"
+                                       title="Suchgebiete auf der Karte öffnen">
+                                        <span>@PanelLabel(panel.PanelId)</span>
+                                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    @PanelLabel(panel.PanelId)
+                                }
+                            </h2>
+                        }
                         @if (panel.PanelId == KnownPanels.Teams)
                         {
                             @if (EinsatzService.Teams.Count > 0)
@@ -96,22 +279,17 @@
                                 </div>
                             }
                             <div class="ms-auto d-flex align-items-center gap-2 flex-shrink-0">
-                                <button class="btn btn-sm btn-outline-success" type="button"
+                                <button class="btn btn-sm btn-outline-secondary" type="button"
                                         @onclick="OpenTeamMobileModalAsync"
                                         title="QR-Code für Team-Smartphones"
                                         aria-label="QR-Code für Team-Smartphones">
                                     <i class="bi bi-qr-code" aria-hidden="true"></i>
                                 </button>
-                                <a class="btn btn-sm btn-outline-secondary"
-                                   href="/popout-teams"
-                                   target="_blank"
-                                   rel="noopener noreferrer"
-                                   title="In neuem Fenster öffnen (Multi-Monitor)"
-                                   aria-label="Team-Übersicht in neuem Fenster öffnen">
-                                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
-                                </a>
-                                <button class="btn btn-sm theme-accent-btn" @onclick="OpenNewTeamModal">
-                                    <i class="bi bi-plus-circle me-1"></i>Team anlegen
+                                <button class="btn btn-sm btn-outline-secondary" type="button"
+                                        @onclick="OpenNewTeamModal"
+                                        title="Team hinzufügen"
+                                        aria-label="Team hinzufügen">
+                                    <i class="bi bi-plus-circle" aria-hidden="true"></i>
                                 </button>
                             </div>
                         }
@@ -121,30 +299,6 @@
                                 <button class="btn btn-sm btn-link text-muted p-1" type="button" @onclick="OpenTeamMessageModal" title="Nachricht an ein Team-Smartphone" aria-label="Nachricht an ein Team-Smartphone">
                                     <i class="bi bi-megaphone" aria-hidden="true"></i>
                                 </button>
-                                <a class="btn btn-sm btn-outline-secondary"
-                                   href="/popout-notes"
-                                   target="_blank"
-                                   rel="noopener noreferrer"
-                                   title="In neuem Fenster öffnen (Multi-Monitor)"
-                                   aria-label="Notizen in neuem Fenster öffnen">
-                                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
-                                </a>
-                            </div>
-                        }
-                        else if (panel.PanelId == KnownPanels.EinsatzInfo)
-                        {
-                            <div class="ms-auto">
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="OpenEditEinsatzModal" title="Bearbeiten" aria-label="Einsatzdaten bearbeiten">
-                                    <i class="bi bi-pencil" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        }
-                        else if (panel.PanelId == KnownPanels.Vermissten)
-                        {
-                            <div class="ms-auto">
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="OpenVermisstenModal" title="Bearbeiten" aria-label="Vermisstendaten bearbeiten">
-                                    <i class="bi bi-pencil" aria-hidden="true"></i>
-                                </button>
                             </div>
                         }
                     </div>
@@ -153,465 +307,63 @@
                         @switch (panel.PanelId)
                         {
                                 case KnownPanels.EinsatzInfo:
-                                    <dl class="row mb-0 small">
-                                        <dt class="col-5">Typ</dt>
-                                        <dd class="col-7 mb-1">@EinsatzService.CurrentEinsatz.EinsatzTyp</dd>
-                                        <dt class="col-5">Einsatzort</dt>
-                                        <dd class="col-7 mb-1">@EinsatzService.CurrentEinsatz.Einsatzort</dd>
-                                        @if (EinsatzService.CurrentEinsatz.AlarmierungsZeit.HasValue)
-                                        {
-                                            <dt class="col-5">Einsatzzeit</dt>
-                                            <dd class="col-7 mb-1"><i class="bi bi-clock-history me-1"></i>@GetEinsatzdauerDisplay()</dd>
-                                        }
-                                        <dt class="col-5">Teams</dt>
-                                        <dd class="col-7 mb-1">@EinsatzService.Teams.Count / @EinsatzService.CurrentEinsatz.AnzahlTeams geplant</dd>
-                                    </dl>
-                                    <button class="btn btn-link btn-sm p-0 mt-1 text-muted" @onclick="() => _einsatzInfoDetailsExpanded = !_einsatzInfoDetailsExpanded">
-                                        <i class="bi bi-chevron-@(_einsatzInfoDetailsExpanded ? "up" : "down") me-1"></i>@(_einsatzInfoDetailsExpanded ? "Weniger" : "Details")
-                                    </button>
-                                    @if (_einsatzInfoDetailsExpanded)
-                                    {
-                                        <dl class="row mb-0 small mt-1">
-                                            @if (!string.IsNullOrWhiteSpace(EinsatzService.CurrentEinsatz.EinsatzNummer))
-                                            {
-                                                <dt class="col-5">Einsatznummer</dt>
-                                                <dd class="col-7 mb-1">@EinsatzService.CurrentEinsatz.EinsatzNummer</dd>
-                                            }
-                                            <dt class="col-5">Datum</dt>
-                                            <dd class="col-7 mb-1">@EinsatzService.CurrentEinsatz.EinsatzDatum.ToString("dd.MM.yyyy HH:mm")</dd>
-                                            @if (EinsatzService.CurrentEinsatz.AlarmierungsZeit.HasValue)
-                                            {
-                                                <dt class="col-5">Alarmierung</dt>
-                                                <dd class="col-7 mb-1">@EinsatzService.CurrentEinsatz.AlarmierungsZeit.Value.ToString("HH:mm") Uhr</dd>
-                                            }
-                                            @if (!string.IsNullOrWhiteSpace(EinsatzService.CurrentEinsatz.Einsatzleiter))
-                                            {
-                                                <dt class="col-5">Einsatzleiter</dt>
-                                                <dd class="col-7 mb-1">@EinsatzService.CurrentEinsatz.Einsatzleiter</dd>
-                                            }
-                                            @if (!string.IsNullOrWhiteSpace(EinsatzService.CurrentEinsatz.Fuehrungsassistent))
-                                            {
-                                                <dt class="col-5">FA</dt>
-                                                <dd class="col-7 mb-1">@EinsatzService.CurrentEinsatz.Fuehrungsassistent</dd>
-                                            }
-                                            @if (!string.IsNullOrWhiteSpace(EinsatzService.CurrentEinsatz.Alarmiert))
-                                            {
-                                                <dt class="col-5">Alarmiert durch</dt>
-                                                <dd class="col-7 mb-1">@EinsatzService.CurrentEinsatz.Alarmiert</dd>
-                                            }
-                                        </dl>
-                                    }
+                                    <MonitorEinsatzInfoPanel Einsatz="EinsatzService.CurrentEinsatz"
+                                                             PoliceContacts="GetPoliceContactSummaries()"
+                                                             BosContactSummary="@FormatBosContactSummary(GetBosContactDetails())"
+                                                             TeamCount="EinsatzService.Teams.Count"
+                                                             DetailsExpanded="_einsatzInfoDetailsExpanded" />
                                     break;
 
                                 case KnownPanels.Teams:
-                                    @if (!string.IsNullOrWhiteSpace(_teamStatusMessage))
-                                    {
-                                        <div class="alert @(_teamStatusIsError ? "alert-warning" : "alert-success") alert-dismissible py-2 mb-3" role="alert">
-                                            @_teamStatusMessage
-                                            <button type="button" class="btn-close" @onclick="() => _teamStatusMessage = string.Empty"></button>
-                                        </div>
-                                    }
-                                    @if (EinsatzService.Teams.Count == 0)
-                                    {
-                                        <div class="alert alert-info mb-0">
-                                            Noch keine Teams vorhanden. Klicken Sie auf "Team anlegen".
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="teams-monitor-list" @ref="_teamsMonitorList">
-                                            @foreach (var team in OrderTeamsForMonitor(GetFilteredTeams()))
-                                            {
-                                                var isDogConflict = !team.IsRunning && !team.IsPausing && !team.IsManuallyPaused
-                                                    && !string.IsNullOrWhiteSpace(team.DogId)
-                                                    && EinsatzService.IsDogRunning(team.DogId);
-                                                var conflictingTeamName = isDogConflict
-                                                    ? EinsatzService.Teams.FirstOrDefault(t => t.TeamId != team.TeamId && t.IsRunning && t.DogId == team.DogId)?.TeamName
-                                                    : null;
-                                                <div @key="team.TeamId" class="team-order-item" data-team-id="@team.TeamId">
-                                                    <TeamCard Team="team"
-                                                              IsDogConflict="isDogConflict"
-                                                              ConflictingTeamName="conflictingTeamName"
-                                                              DroneList="_droneList"
-                                                              IsExpanded="_expandedTeamIds.Contains(team.TeamId)"
-                                                              LastCollarLocation="GetLastCollarLocation(team)"
-                                                              LastPhoneLocation="EinsatzService.PhoneLocations.GetValueOrDefault(team.TeamId)"
-                                                              LatestNoteEntries="GetLatestTeamNoteEntries(team, 3)"
-                                                              CompletedSearches="GetCompletedSearches(team, 5)"
-                                                              OnStart="StartTeamAsync"
-                                                              OnPause="PauseTeamAsync"
-                                                              OnStop="StopTeamAsync"
-                                                              OnReset="RequestResetTeamAsync"
-                                                              OnEdit="id => EditTeam(id)"
-                                                              OnToggleExpand="ToggleTeamExpand" />
-                                                </div>
-                                            }
-                                        </div>
-                                    }
+                                    <MonitorTeamsPanel HasTeams="@(EinsatzService.Teams.Count > 0)"
+                                                       Items="GetMonitorTeamCardItems()"
+                                                       DroneList="_droneList"
+                                                       StatusMessage="@_teamStatusMessage"
+                                                       StatusIsError="_teamStatusIsError"
+                                                       OnClearStatus="ClearTeamStatusMessage"
+                                                       OnStart="StartTeamAsync"
+                                                       OnPause="PauseTeamAsync"
+                                                       OnStop="StopTeamAsync"
+                                                       OnReset="RequestResetTeamAsync"
+                                                       OnEdit="EditTeam"
+                                                       OnToggleExpand="ToggleTeamExpand" />
                                     break;
 
                                 case KnownPanels.Notizen:
-                                    <div id="note-expander-form" class="note-input-section mb-3">
-                                        <div class="mb-2 d-flex flex-wrap align-items-center gap-1">
-                                            <span class="note-source-label">Quelle:</span>
-                                            @foreach (var team in EinsatzService.Teams.OrderBy(t => t.TeamName))
-                                            {
-                                                <button type="button"
-                                                        class="btn btn-sm note-source-chip @(_newNoteSourceId == team.TeamId ? "active" : "")"
-                                                        @onclick="() => _newNoteSourceId = team.TeamId">
-                                                    @team.TeamName
-                                                </button>
-                                            }
-                                            <button type="button"
-                                                    class="btn btn-sm note-source-chip @(_newNoteSourceId == "einsatzleitung" ? "active" : "")"
-                                                    @onclick='() => _newNoteSourceId = "einsatzleitung"'>
-                                                <i class="bi bi-shield-fill me-1"></i>EL
-                                            </button>
-                                        </div>
-                                        <div class="mb-2 d-flex gap-2 align-items-center">
-                                            <select class="form-select" @bind="_newNoteType">
-                                                <option value="Notiz">Notiz</option>
-                                                <option value="Funk">Funk</option>
-                                            </select>
-                                            @if (_quickNoteTemplates.Count > 0)
-                                            {
-                                                <div class="monitor-panel-picker-wrapper mon-anchor-quicknote flex-shrink-0">
-                                                    <button class="btn btn-outline-success" type="button"
-                                                            @onclick="() => _showQuickNoteDropdown = !_showQuickNoteDropdown"
-                                                            title="Schnell-Notiz" aria-label="Schnell-Notiz einfügen">
-                                                        <i class="bi bi-lightning-fill"></i>
-                                                    </button>
-                                                    @if (_showQuickNoteDropdown)
-                                                    {
-                                                        <div class="panel-picker-dropdown">
-                                                            @foreach (var quickTemplate in _quickNoteTemplates)
-                                                            {
-                                                                <button class="btn btn-sm w-100 text-start mb-1"
-                                                                        @onclick="() => { _ = AddQuickNoteAsync(quickTemplate); _showQuickNoteDropdown = false; }"
-                                                                        @onclick:stopPropagation="true">
-                                                                    @quickTemplate
-                                                                </button>
-                                                            }
-                                                        </div>
-                                                        <button type="button"
-                                                                class="panel-picker-backdrop"
-                                                                @onclick="() => _showQuickNoteDropdown = false"
-                                                                aria-label="Schließen"></button>
-                                                    }
-                                                </div>
-                                            }
-                                        </div>
-                                        <MentionTextarea @bind-Value="_newNoteText"
-                                                         Mentions="@GetNoteMentions()"
-                                                         Rows="3"
-                                                         Placeholder="Neuer Funkspruch oder Notiz..."
-                                                         AdditionalClass="mb-2" />
-                                        <button class="btn btn-primary w-100"
-                                                @onclick="AddGlobalNoteAsync"
-                                                disabled="@(string.IsNullOrWhiteSpace(_newNoteText) || string.IsNullOrWhiteSpace(_newNoteSourceId))">
-                                            <i class="bi bi-send-fill"></i> Hinzufügen
-                                        </button>
-                                    </div>
-
-                                    <div class="notes-list">
-                                        @if (EinsatzService.GlobalNotes.Count == 0)
-                                        {
-                                            <p class="text-muted mb-0">Noch keine Einträge.</p>
-                                        }
-                                        else
-                                        {
-                                            @foreach (var note in EinsatzService.GlobalNotes.OrderByDescending(n => n.Timestamp).Take(10))
-                                            {
-                                                <div class="note-card @GetNoteCssClass(note) @(note.Replies.Count > 0 ? "has-replies" : string.Empty)">
-                                                    <div class="d-flex justify-content-between">
-                                                        <strong>@(string.IsNullOrWhiteSpace(note.SourceTeamName) ? "System" : note.SourceTeamName)</strong>
-                                                        <span class="text-muted">@note.FormattedTimestamp</span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                                        <div>@MentionTextarea.RenderWithMentions(note.Text)</div>
-                                                        <button class="btn btn-sm btn-link p-0 ms-2 text-muted flex-shrink-0" @onclick="() => ToggleReplyForm(note.Id)" title="Antworten">
-                                                            <i class="bi bi-reply-fill"></i>
-                                                        </button>
-                                                    </div>
-
-                                                    @if (IsReplyFormVisible(note.Id))
-                                                    {
-                                                        <div class="d-flex gap-2 mb-2">
-                                                            <select class="form-select form-select-sm monitor-source-select"
-                                                                    value="@GetReplySourceId(note.Id)"
-                                                                    @onchange="e => SetReplySourceId(note.Id, e.Value?.ToString())">
-                                                                <option value="einsatzleitung">Einsatzleitung</option>
-                                                                @foreach (var team in EinsatzService.Teams.OrderBy(team => team.TeamName))
-                                                                {
-                                                                    <option value="@team.TeamId">@team.TeamName</option>
-                                                                }
-                                                            </select>
-                                                            <input class="form-control form-control-sm"
-                                                                   placeholder="Antwort"
-                                                                   value="@GetReplyText(note.Id)"
-                                                                   @oninput="e => SetReplyText(note.Id, e.Value?.ToString())"
-                                                                   @onkeydown="e => HandleReplyKeyDown(note.Id, e)" />
-                                                            <button class="btn btn-sm btn-primary" @onclick="() => AddReplyAsync(note.Id)" title="Senden" aria-label="Antwort senden">
-                                                                <i class="bi bi-send-fill"></i>
-                                                            </button>
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => CancelReplyForm(note.Id)" title="Abbrechen" aria-label="Antwort abbrechen">
-                                                                <i class="bi bi-x-lg"></i>
-                                                            </button>
-                                                        </div>
-                                                    }
-
-                                                    @if (note.Replies.Count > 0)
-                                                    {
-                                                        <div class="small">
-                                                            @foreach (var reply in note.Replies.OrderBy(r => r.Timestamp))
-                                                            {
-                                                                <div class="monitor-reply-thread ps-2 py-1 mb-1">
-                                                                    <div class="text-muted">@reply.SourceTeamName · @reply.FormattedTimestamp</div>
-                                                                    <div>@MentionTextarea.RenderWithMentions(reply.Text)</div>
-                                                                </div>
-                                                            }
-                                                        </div>
-                                                    }
-                                                </div>
-                                            }
-                                        }
-                                    </div>
+                                    <MonitorNotesPanel Teams="EinsatzService.Teams"
+                                                       Notes="EinsatzService.GlobalNotes"
+                                                       Mentions="GetNoteMentions()"
+                                                       QuickNoteTemplates="_quickNoteTemplates"
+                                                       OnAddNote="AddGlobalNoteAsync"
+                                                       OnAddQuickNote="AddQuickNoteAsync"
+                                                       OnAddReply="AddReplyAsync" />
                                     break;
 
                                 case KnownPanels.Wetter:
-                                    @if (!string.IsNullOrWhiteSpace(_monitorWeatherError))
-                                    {
-                                        <div class="alert alert-warning py-2 mb-2 small">@_monitorWeatherError</div>
-                                    }
-                                    @if (_monitorWeather is not null)
-                                    {
-                                        <div class="wetter-panel-content">
-                                            @{
-                                                var forecastItems = GetMonitorForecastItems().ToList();
-                                            }
-                                            <div class="d-flex align-items-start gap-3 mb-2">
-                                                <div class="fs-2 fw-bold">@_monitorWeather.Temperatur.ToString("0.0")°C</div>
-                                                <div>
-                                                    @if (_monitorWeather.HatWarnung)
-                                                    {
-                                                        <div class="mb-1"><span class="badge @_monitorWeather.GetWarnungBadgeClass()">DWD: @_monitorWeather.WarnungsStufe</span></div>
-                                                    }
-                                                    <div class="small text-muted">
-                                                        <i class="bi bi-wind me-1"></i>@_monitorWeather.Windgeschwindigkeit.ToString("0") km/h
-                                                        <i class="bi bi-droplet ms-2 me-1"></i>@_monitorWeather.Niederschlag.ToString("0.0") mm/h
-                                                    </div>
-                                                    <div class="small mt-1">
-                                                        <span class="badge @GetWeatherRiskBadgeClass(_monitorWeather)">@GetWeatherRiskLabel(_monitorWeather)</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button class="btn btn-link btn-sm p-0 text-muted" @onclick="() => _wetterDetailsExpanded = !_wetterDetailsExpanded">
-                                                <i class="bi bi-chevron-@(_wetterDetailsExpanded ? "up" : "down") me-1"></i>@(_wetterDetailsExpanded ? "Weniger" : "Vorhersage")
-                                            </button>
-                                            @if (_wetterDetailsExpanded)
-                                            {
-                                                @if (_monitorWeather.Windboeen > 0)
-                                                {
-                                                    <div class="small text-muted mt-1"><i class="bi bi-wind me-1"></i>Böen: @_monitorWeather.Windboeen.ToString("0") km/h</div>
-                                                }
-                                                <div class="small text-muted mt-1">
-                                                    DWD &bull; @_monitorWeatherLoadedAtLocal.ToString("HH:mm") Uhr
-                                                    @if (_monitorWeatherUsingFallback)
-                                                    {
-                                                        <span class="text-warning ms-1">(Fallback)</span>
-                                                    }
-                                                </div>
-                                                @if (forecastItems.Count > 0)
-                                                {
-                                                    <div class="forecast-strip mt-2">
-                                                        @foreach (var item in forecastItems)
-                                                        {
-                                                            <div class="forecast-item @GetForecastRiskClass(item)">
-                                                                <div class="small fw-bold">@Ortszeit.AusUtc(item.Zeitpunkt).ToString("HH:mm")</div>
-                                                                <div class="small">@item.Temperatur.ToString("0")°</div>
-                                                                <div class="small text-muted">@item.Niederschlag.ToString("0.0") mm</div>
-                                                            </div>
-                                                        }
-                                                    </div>
-                                                }
-                                            }
-                                        </div>
-                                    }
-                                    else if (_monitorWeatherLoading)
-                                    {
-                                        <div class="text-muted small"><i class="bi bi-cloud me-1"></i>Wetterdaten werden geladen...</div>
-                                    }
-                                    else
-                                    {
-                                        <div class="text-muted small"><i class="bi bi-cloud me-1"></i>Wetter: ELW-Position auf Karte setzen</div>
-                                    }
+                                    <MonitorWeatherPanel Weather="_monitorWeather"
+                                                         ForecastItems="forecastItems"
+                                                         TemperatureTrend="temperatureTrend"
+                                                         WindTrend="windTrend"
+                                                         RainTrend="rainTrend"
+                                                         DogHeatWarning="dogHeatWarning"
+                                                         DetailsExpanded="_wetterDetailsExpanded"
+                                                         IsLoading="_monitorWeatherLoading"
+                                                         UsingFallback="_monitorWeatherUsingFallback"
+                                                         LoadedAtLocal="_monitorWeatherLoadedAtLocal"
+                                                         Error="@_monitorWeatherError" />
                                     break;
 
                                 case KnownPanels.Suchgebiete:
-                                    @if (EinsatzService.CurrentEinsatz.SearchAreas.Count == 0)
-                                    {
-                                        <div class="text-muted small"><i class="bi bi-map me-1"></i>Noch keine Suchgebiete auf der Karte angelegt.</div>
-                                    }
-                                    else
-                                    {
-                                        <div class="suchgebiete-list">
-                                            @foreach (var area in EinsatzService.CurrentEinsatz.SearchAreas.OrderBy(a => a.Name))
-                                            {
-                                                var areaTeam = EinsatzService.Teams.FirstOrDefault(t => t.SearchAreaId == area.Id);
-                                                <div class="suchgebiet-row @(area.IsCompleted ? "suchgebiet-done" : "")">
-                                                    <span class="suchgebiet-color-dot" style="background:@area.Color"></span>
-                                                    <div class="suchgebiet-info">
-                                                        <div class="fw-semibold small">@area.Name</div>
-                                                        <div class="small text-muted">@area.FormattedArea</div>
-                                                    </div>
-                                                    <div class="suchgebiet-team ms-auto">
-                                                        @if (areaTeam is not null)
-                                                        {
-                                                            <span class="badge" style="background:@GetTeamColor(areaTeam)">@areaTeam.TeamName</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-secondary">Unbesetzt</span>
-                                                        }
-                                                        @if (area.IsCompleted)
-                                                        {
-                                                            <span class="badge bg-success ms-1"><i class="bi bi-check-lg"></i></span>
-                                                        }
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
+                                    <MonitorSearchAreasPanel Items="GetMonitorSearchAreaItems()" />
                                     break;
 
                                 case KnownPanels.Vermissten:
-                                    {
-                                        var vermissteList = EinsatzService.CurrentEinsatz.Vermisste ?? new();
-                                        var allowMulti = EinsatzService.CurrentEinsatz.Szenario.AllowsMultipleVermisste();
-                                        VermisstenInfo? activeVi = null;
-                                        if (vermissteList.Count > 0)
-                                        {
-                                            activeVi = (_vermisstenPanelSelectedId.HasValue
-                                                ? vermissteList.FirstOrDefault(v => v.Id == _vermisstenPanelSelectedId.Value)
-                                                : null) ?? vermissteList[0];
-                                        }
-                                    @if (vermissteList.Count == 0)
-                                    {
-                                        <div class="text-center py-3">
-                                            <p class="text-muted small mb-2"><i class="bi bi-person-exclamation me-1"></i>Noch keine Vermissteninfo erfasst.</p>
-                                            <button class="btn btn-sm btn-primary" @onclick="OpenVermisstenModal">
-                                                <i class="bi bi-plus-circle me-1"></i>Jetzt erfassen
-                                            </button>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        var _vi = activeVi!;
-                                        @if (vermissteList.Count > 1 || allowMulti)
-                                        {
-                                            <div class="vermissten-panel-tabs mb-2">
-                                                @for (var i = 0; i < vermissteList.Count; i++)
-                                                {
-                                                    var p = vermissteList[i];
-                                                    var idx = i + 1;
-                                                    var isActive = p.Id == _vi.Id;
-                                                    <button class="vermissten-panel-tab @(isActive ? "active" : "")"
-                                                            type="button"
-                                                            @onclick="() => _vermisstenPanelSelectedId = p.Id"
-                                                            title="@p.VollerName">
-                                                        <span>@idx</span>
-                                                    </button>
-                                                }
-                                                @if (allowMulti)
-                                                {
-                                                    <button class="vermissten-panel-tab vermissten-panel-tab-add" type="button"
-                                                            @onclick="OpenVermisstenModalNew" title="Weitere Person erfassen">
-                                                        <i class="bi bi-plus-lg"></i>
-                                                    </button>
-                                                }
-                                            </div>
-                                        }
-                                        <div class="vermissten-panel-view">
-                                            <div class="row g-2 small">
-                                                <div class="col-6">
-                                                    <div class="vermissten-field-label">Name</div>
-                                                    <div class="vermissten-field-value fw-semibold">@_vi.VollerName</div>
-                                                </div>
-                                                <div class="col-3">
-                                                    <div class="vermissten-field-label">Alter</div>
-                                                    <div class="vermissten-field-value">@(string.IsNullOrWhiteSpace(_vi.Alter) ? "—" : _vi.Alter)</div>
-                                                </div>
-                                                <div class="col-3">
-                                                    <div class="vermissten-field-label">Mobilität</div>
-                                                    <div class="vermissten-field-value">@_vi.Mobilitaet</div>
-                                                </div>
-                                                @if (_vi.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja)
-                                                {
-                                                    <div class="col-12">
-                                                        <div class="alert alert-danger py-1 mb-0 small">
-                                                            <i class="bi bi-exclamation-triangle-fill me-1"></i><strong>Suizidrisiko</strong>
-                                                        </div>
-                                                    </div>
-                                                }
-                                                @if (_vi.Bewaffnet == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja)
-                                                {
-                                                    <div class="col-12">
-                                                        <div class="alert alert-danger py-1 mb-0 small">
-                                                            <i class="bi bi-exclamation-triangle-fill me-1"></i><strong>Bewaffnet</strong>
-                                                        </div>
-                                                    </div>
-                                                }
-                                            </div>
-                                            <button class="btn btn-link btn-sm p-0 mt-1 text-muted" @onclick="() => _vermisstenDetailsExpanded = !_vermisstenDetailsExpanded">
-                                                <i class="bi bi-chevron-@(_vermisstenDetailsExpanded ? "up" : "down") me-1"></i>@(_vermisstenDetailsExpanded ? "Weniger" : "Details")
-                                            </button>
-                                            @if (_vermisstenDetailsExpanded)
-                                            {
-                                                <div class="row g-2 small mt-1">
-                                                    @if (!string.IsNullOrWhiteSpace(_vi.Kleidung))
-                                                    {
-                                                        <div class="col-12">
-                                                            <div class="vermissten-field-label">Kleidung</div>
-                                                            <div class="vermissten-field-value">@_vi.Kleidung</div>
-                                                        </div>
-                                                    }
-                                                    @if (!string.IsNullOrWhiteSpace(_vi.ZuletztGesehenOrt))
-                                                    {
-                                                        <div class="col-8">
-                                                            <div class="vermissten-field-label">Zuletzt gesehen (Ort)</div>
-                                                            <div class="vermissten-field-value">@_vi.ZuletztGesehenOrt</div>
-                                                        </div>
-                                                        <div class="col-4">
-                                                            <div class="vermissten-field-label">Uhrzeit</div>
-                                                            <div class="vermissten-field-value">@_vi.ZuletztGesehenZeit</div>
-                                                        </div>
-                                                    }
-                                                    @if (!string.IsNullOrWhiteSpace(_vi.Vorerkrankungen))
-                                                    {
-                                                        <div class="col-12">
-                                                            <div class="vermissten-field-label">Vorerkrankungen</div>
-                                                            <div class="vermissten-field-value">@_vi.Vorerkrankungen</div>
-                                                        </div>
-                                                    }
-                                                    @if (!string.IsNullOrWhiteSpace(_vi.PolizeiKontaktName))
-                                                    {
-                                                        <div class="col-12 mt-1">
-                                                            <div class="vermissten-field-label text-primary"><i class="bi bi-shield me-1"></i>Polizei-Kontakt</div>
-                                                            <div class="vermissten-field-value">@_vi.PolizeiKontaktName @(string.IsNullOrWhiteSpace(_vi.PolizeiTelefon) ? "" : $"· {_vi.PolizeiTelefon}")</div>
-                                                        </div>
-                                                    }
-                                                    @if (_vi.ZuletztAktualisiert.HasValue)
-                                                    {
-                                                        <div class="col-12">
-                                                            <div class="text-muted monitor-timestamp-small">Stand: @_vi.ZuletztAktualisiert.Value.ToString("dd.MM. HH:mm")</div>
-                                                        </div>
-                                                    }
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                    }
-                    break;
+                                    <MonitorVermisstenPanel Vermisste="EinsatzService.CurrentEinsatz.Vermisste"
+                                                           AllowMultiple="EinsatzService.CurrentEinsatz.Szenario.AllowsMultipleVermisste()"
+                                                           @bind-SelectedId="_vermisstenPanelSelectedId"
+                                                           DetailsExpanded="_vermisstenDetailsExpanded"
+                                                           OnAdd="OpenVermisstenModalNew" />
+                                    break;
                         }
                     </div>
                 </section>
@@ -621,825 +373,95 @@
     }
 </div>
 
-    @if (_showCollarSelectModal)
-    {
-        var collarSelectTeam = _collarSelectTeamId != null
-            ? EinsatzService.Teams.FirstOrDefault(t => t.TeamId == _collarSelectTeamId)
-            : null;
-        <div class="modal-overlay">
-            <button type="button" class="modal-overlay-dismiss" @onclick="CollarSelectCancel" aria-label="Dialog schließen"></button>
-            <div class="modal-modern modal-modern--sm" @onclick:stopPropagation="true">
-                <div class="modal-modern-header">
-                    <h4 class="mb-0"><i class="bi bi-broadcast me-2"></i>GPS-Halsband zuweisen</h4>
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="CollarSelectCancel">×</button>
-                </div>
-                <div class="modal-modern-body">
-                    <p class="text-muted small mb-3">
-                        Team <strong>@(collarSelectTeam?.TeamName ?? "?")</strong> hat noch kein Halsband.
-                        Bitte jetzt zuweisen oder ohne Halsband starten.
-                    </p>
-                    <label class="form-label">GPS-Halsband</label>
-                    <select class="form-select mb-0" @bind="_collarSelectCollarId">
-                        <option value="">-- Kein Halsband (ohne Tracking starten) --</option>
-                        @foreach (var collar in CollarTrackingService.GetAvailableCollars().OrderBy(c => c.CollarName))
-                        {
-                            <option value="@collar.Id">@collar.CollarName [@collar.Id]</option>
-                        }
-                    </select>
-                </div>
-                <div class="modal-modern-footer">
-                    <button class="btn btn-outline-secondary" @onclick="CollarSelectCancel">Abbrechen</button>
-                    @if (string.IsNullOrEmpty(_collarSelectCollarId))
-                    {
-                        <button class="btn btn-warning" @onclick="CollarSelectStartWithoutAsync">
-                            <i class="bi bi-play-fill me-1"></i>Ohne Halsband starten
-                        </button>
-                    }
-                    else
-                    {
-                        <button class="btn btn-success" @onclick="CollarSelectConfirmAsync">
-                            <i class="bi bi-broadcast me-1"></i>Zuweisen &amp; starten
-                        </button>
-                    }
-                </div>
-            </div>
-        </div>
-    }
+    <MonitorCollarSelectDialog IsOpen="_showCollarSelectModal"
+                               TeamName='@(EinsatzService.Teams.FirstOrDefault(team => team.TeamId == _collarSelectTeamId)?.TeamName ?? "?")'
+                               @bind-SelectedCollarId="_collarSelectCollarId"
+                               AvailableCollars="CollarTrackingService.GetAvailableCollars()"
+                               OnCancel="CollarSelectCancel"
+                               OnStartWithout="CollarSelectStartWithoutAsync"
+                               OnAssignAndStart="CollarSelectConfirmAsync" />
 
 @* ===== Modals ===== *@
 
-@if (_showCloseMissionModal)
-{
-    <div class="modal-overlay">
-        <button type="button" class="modal-overlay-dismiss" @onclick="CloseCloseMissionModal" aria-label="Dialog schließen"></button>
-        <div class="modal-modern modal-close-mission" @onclick:stopPropagation="true">
-            <div class="modal-modern-header modal-close-mission-header">
-                <h3 class="mb-0"><i class="bi bi-exclamation-octagon me-1"></i>Einsatz beenden und archivieren</h3>
-                <button class="btn btn-sm btn-outline-light" @onclick="CloseCloseMissionModal" disabled="@_closingMission">X</button>
-            </div>
-            <div class="modal-modern-body">
-                <div class="alert alert-warning py-2 mb-3">
-                    Nach dem Beenden wird der Einsatz archiviert, ein PDF erzeugt und das System für den nächsten Einsatz vorbereitet.
-                </div>
+<MonitorCloseMissionDialog IsOpen="_showCloseMissionModal"
+                           IsClosing="_closingMission"
+                           Form="_closeMissionForm"
+                           Personnel="ActivePersonnel"
+                           Dogs="ActiveDogs"
+                           ResultOptions="_closeMissionResultOptions"
+                           SelectedPersonnelIds="_selectedPersonnelIds"
+                           SelectedDogIds="_selectedDogIds"
+                           TrackCount="_closeMissionTrackCount"
+                           PointCount="_closeMissionPunktCount"
+                           TeamCount="EinsatzService.Teams.Count"
+                           SelectedPersonnelCount="SelectedPersonnelNames.Count"
+                           SelectedDogCount="SelectedDogNames.Count"
+                           NotesCount="EinsatzService.GlobalNotes.Count"
+                           Error="@_closeMissionModalError"
+                           OnClose="CloseCloseMissionModal"
+                           OnConfirm="ConfirmCloseMissionAsync"
+                           OnPersonnelSelectionChanged="TogglePersonnelSelection"
+                           OnDogSelectionChanged="ToggleDogSelection" />
 
-                @if (!string.IsNullOrWhiteSpace(_closeMissionModalError))
-                {
-                    <div class="alert alert-danger py-2">@_closeMissionModalError</div>
-                }
+<MonitorPauseResetDialog IsOpen="_showPauseResetModal"
+                         Team="EinsatzService.Teams.FirstOrDefault(team => team.TeamId == _pauseResetTeamId)"
+                         OnCancel="ClosePauseResetModal"
+                         OnConfirm="ConfirmResetTeamAsync" />
 
-                <div class="row g-3 mb-3">
-                    <div class="col-12 col-md-8">
-                        <label class="form-label">Ergebnis</label>
-                        <select class="form-select" @bind="_closeMissionResult">
-                            <option value="">-- Bitte wählen --</option>
-                            @foreach (var option in _closeMissionResultOptions)
-                            {
-                                <option value="@option">@ErgebnisText.Anzeige(option)</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <label class="form-label">Ende-Zeit</label>
-                        <input type="time" class="form-control" @bind="_closeMissionEndTime" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Bemerkungen</label>
-                        <textarea class="form-control" rows="2" @bind="_closeMissionRemarks" placeholder="Zusatzinformationen zum Abschluss..."></textarea>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" @bind="_closeMissionIncludeTracks" />
-                            <span class="form-check-label">
-                                <i class="bi bi-geo-alt me-1"></i>GPS-Livetracking dem PDF hinzufügen
-                                @if (_closeMissionTrackCount > 0)
-                                {
-                                    <span class="badge bg-info ms-1">@_closeMissionTrackCount Track(s)</span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted ms-1">(keine Tracks vorhanden)</span>
-                                }
-                            </span>
-                        </label>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" @bind="_closeMissionIncludePunkte" disabled="@(_closeMissionPunktCount == 0)" />
-                            <span class="form-check-label">
-                                <i class="bi bi-pin-map me-1"></i>Kartenpunkte dem PDF hinzufügen
-                                @if (_closeMissionPunktCount > 0)
-                                {
-                                    <span class="badge bg-info ms-1">@_closeMissionPunktCount Punkt(e)</span>
-                                    <span class="text-muted ms-1">(werden dafür archiviert)</span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted ms-1">(keine Punkte vorhanden)</span>
-                                }
-                            </span>
-                        </label>
-                    </div>
-                    @if (_closeMissionIncludeTracks || _closeMissionIncludePunkte)
-                    {
-                        <div class="col-12 col-md-6">
-                            <label class="form-label">Karte im Bericht</label>
-                            <select class="form-select" @bind="_closeMissionKartenart">
-                                @foreach (var (art, name) in PdfBerichtOptionen.Kartenarten)
-                                {
-                                    <option value="@art">@name</option>
-                                }
-                            </select>
-                        </div>
-                    }
-                </div>
+<MonitorCoordinationModal IsOpen="_showCoordinationModal"
+                          Items="GetCoordinationItems()"
+                          IsUpdating="_coordinationUpdateInProgress"
+                          ErrorMessage="@_editEinsatzMessage"
+                          IsError="_editEinsatzIsError"
+                          OnClose="CloseCoordinationModal"
+                          OnToggle="CompleteCoordinationFromModalAsync" />
 
-                <div class="border rounded p-2 mb-3">
-                    <div class="small fw-semibold mb-2">Einsatz-Zusammenfassung</div>
-                    <div class="row g-2 small text-muted">
-                        <div class="col-6 col-md-3">Teams: @EinsatzService.Teams.Count</div>
-                        <div class="col-6 col-md-3">Personal: @SelectedPersonnelNames.Count</div>
-                        <div class="col-6 col-md-3">Hunde: @SelectedDogNames.Count</div>
-                        <div class="col-6 col-md-3">Notizen/Funk: @EinsatzService.GlobalNotes.Count</div>
-                    </div>
-                </div>
+<MonitorEditEinsatzDialog IsOpen="_showEditEinsatzModal"
+                          Form="_editEinsatzForm"
+                          EinsatzleiterOptions="SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(person => person.IsActive && person.Skills.HasFlag(PersonalSkills.Einsatzleiter))).ToArray()"
+                          FuehrungsassistentOptions="SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(person => person.IsActive && person.Skills.HasFlag(PersonalSkills.Fuehrungsassistent))).ToArray()"
+                          Message="@_editEinsatzMessage"
+                          IsError="_editEinsatzIsError"
+                          OnClose="CloseEditEinsatzModal"
+                          OnSave="SaveEditEinsatzAsync" />
+<MonitorVermisstenEditor IsOpen="_showVermisstenModal"
+                         Model="_vForm"
+                         Message="@_vermisstenMessage"
+                         IsError="_vermisstenIsError"
+                         OnClose="CloseVermisstenModal"
+                         OnSave="SaveVermisstenAsync" />
 
-                <div class="row g-3">
-                    <div class="col-12 col-lg-6">
-                        <div class="border rounded p-2 h-100">
-                            <div class="small fw-semibold mb-2">Welches Personal war vor Ort?</div>
-                            <div class="monitor-checklist-scroll">
-                                @if (!ActivePersonnel.Any())
-                                {
-                                    <div class="small text-muted">Kein aktives Personal vorhanden.</div>
-                                }
-                                else
-                                {
-                                    @foreach (var person in ActivePersonnel)
-                                    {
-                                        <label class="form-check d-block mb-1">
-                                            <input class="form-check-input" type="checkbox" checked="@_selectedPersonnelIds.Contains(person.Id)" @onchange="args => TogglePersonnelSelection(person.Id, args)" />
-                                            <span class="form-check-label">@person.FullName</span>
-                                        </label>
-                                    }
-                                }
-                            </div>
-                        </div>
-                    </div>
+<MonitorTeamEditorDialog IsOpen="_showTeamModal"
+                         IsEditing="@(_editingTeamId is not null)"
+                         Model="_teamForm"
+                         ActivePersonnel="ActivePersonnel"
+                         HundefuehrerOptions="HundefuehrerOptions"
+                         HelferOptions="HelferOptions"
+                         DrohnenpilotOptions="DrohnenpilotOptions"
+                         AvailableDogs="AvailableDogs"
+                         AvailableDrones="AvailableDrones"
+                         SearchAreas="EinsatzService.CurrentEinsatz.SearchAreas"
+                         Collars="CollarTrackingService.Collars"
+                         Message="@_teamFormMessage"
+                         IsError="_teamFormIsError"
+                         OnClose="CloseTeamModal"
+                         OnSave="SaveTeamAsync"
+                         OnReset="ResetTeamForm"
+                         OnTeamTypeChanged="OnTeamTypeChangedAsync"
+                         OnDogChanged="OnDogChangedAsync"
+                         OnDroneChanged="OnDroneChangedAsync"
+                         OnHandlerChanged="OnHandlerChangedAsync" />
 
-                    <div class="col-12 col-lg-6">
-                        <div class="border rounded p-2 h-100">
-                            <div class="small fw-semibold mb-2">Welche Hunde waren im Einsatz?</div>
-                            <div class="monitor-checklist-scroll">
-                                @if (!ActiveDogs.Any())
-                                {
-                                    <div class="small text-muted">Keine aktiven Hunde vorhanden.</div>
-                                }
-                                else
-                                {
-                                    @foreach (var dog in ActiveDogs)
-                                    {
-                                        <label class="form-check d-block mb-1">
-                                            <input class="form-check-input" type="checkbox" checked="@_selectedDogIds.Contains(dog.Id)" @onchange="args => ToggleDogSelection(dog.Id, args)" />
-                                            <span class="form-check-label">@dog.Name</span>
-                                        </label>
-                                    }
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<MonitorTeamMessageDialog IsOpen="_showTeamMessageModal"
+                          Teams="EinsatzService.Teams"
+                          @bind-TargetId="_teamMessageTargetId"
+                          @bind-Text="_teamMessageText"
+                          Feedback="@_teamMessageFeedback"
+                          OnSend="SendTeamMessage"
+                          OnClose="CloseTeamMessageModal" />
 
-                <label class="form-check mt-3">
-                    <input class="form-check-input" type="checkbox" @bind="_closeMissionChecklistConfirmed" />
-                    <span class="form-check-label">Ich habe die eingesetzten Ressourcen und Beteiligten geprüft.</span>
-                </label>
-            </div>
-            <div class="modal-modern-footer">
-                <button class="btn btn-outline-secondary" @onclick="CloseCloseMissionModal" disabled="@_closingMission">Abbrechen</button>
-                <button class="btn btn-primary" @onclick="ConfirmCloseMissionAsync" disabled="@_closingMission">
-                    @(_closingMission ? "Wird abgeschlossen..." : "Einsatz beenden & archivieren")
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
-@if (_showPauseResetModal)
-{
-    var pauseTeam = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == _pauseResetTeamId);
-    @if (pauseTeam is not null)
-    {
-        <div class="modal-overlay">
-            <button type="button" class="modal-overlay-dismiss" @onclick="ClosePauseResetModal" aria-label="Dialog schließen"></button>
-            <div class="modal-modern modal-modern--480" @onclick:stopPropagation="true">
-                <div class="modal-modern-header modal-modern-header--warning">
-                    <h4 class="mb-0"><i class="bi bi-pause-circle-fill me-2"></i>Pflichtpause nicht abgeschlossen</h4>
-                    <button class="btn btn-sm btn-outline-dark" @onclick="ClosePauseResetModal">X</button>
-                </div>
-                <div class="modal-modern-body">
-                    <div class="alert alert-warning py-2 mb-3">
-                        <strong>@pauseTeam.DogName</strong> hat noch nicht die volle Pflichtpause erreicht.
-                    </div>
-                    <table class="table table-sm mb-3">
-                        <tbody>
-                            <tr>
-                                <td>Gelaufene Zeit</td>
-                                <td><strong>@((int)pauseTeam.RunTimeBeforePause.TotalMinutes) Minuten</strong></td>
-                            </tr>
-                            <tr>
-                                <td>Pflichtpause</td>
-                                <td><strong>@pauseTeam.RequiredPauseMinutes Minuten</strong>
-                                    @if (pauseTeam.RunTimeBeforePause.TotalMinutes <= 20)
-                                    {
-                                        <span class="text-muted"> (≤ 20 Min. gelaufen → 60 Min. Pause)</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted"> (> 20 Min. gelaufen → 3 Std. Pause)</span>
-                                    }
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Bisherige Pause</td>
-                                <td><strong>@((int)pauseTeam.PausedDuration.TotalMinutes) Minuten</strong></td>
-                            </tr>
-                            <tr class="table-danger">
-                                <td>Noch erforderlich</td>
-                                <td><strong>@pauseTeam.RemainingPauseMinutes Minuten</strong></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <p class="small text-muted mb-0">
-                        Wenn Sie den Timer trotzdem zurücksetzen, übernehmen Sie die Verantwortung
-                        für die Gesundheit des Hundes. Bitte nur im absoluten Ausnahmefall fortfahren.
-                    </p>
-                </div>
-                <div class="modal-modern-footer">
-                    <button class="btn btn-outline-secondary" @onclick="ClosePauseResetModal">Abbrechen</button>
-                    <button class="btn btn-primary" @onclick="ConfirmResetTeamAsync">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Trotzdem zurücksetzen
-                    </button>
-                </div>
-            </div>
-        </div>
-    }
-}
-
-@if (_showEditEinsatzModal)
-{
-    <div class="modal-overlay">
-        <button type="button" class="modal-overlay-dismiss" @onclick="CloseEditEinsatzModal" aria-label="Dialog schließen"></button>
-        <div class="modal-modern modal-modern--640" @onclick:stopPropagation="true">
-            <div class="modal-modern-header">
-                <h3><i class="bi bi-pencil-square me-2"></i>Einsatz bearbeiten</h3>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseEditEinsatzModal">Schließen</button>
-            </div>
-            <div class="modal-modern-body">
-                @if (!string.IsNullOrWhiteSpace(_editEinsatzMessage))
-                {
-                    <div class="alert @(_editEinsatzIsError ? "alert-danger" : "alert-success") py-2">@_editEinsatzMessage</div>
-                }
-
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Typ</label>
-                        <select class="form-select" @bind="_editEinsatzForm.IstEinsatz">
-                            <option value="true">Einsatz</option>
-                            <option value="false">Übung</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Einsatznummer</label>
-                        <input class="form-control" @bind="_editEinsatzForm.EinsatzNummer" placeholder="z. B. EVD-2026-001" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Alarmierungszeit</label>
-                        <input class="form-control" type="time" step="60"
-                               value="@_editEinsatzForm.AlarmierungsZeit"
-                               @onchange="e => _editEinsatzForm.AlarmierungsZeit = e.Value?.ToString() ?? _editEinsatzForm.AlarmierungsZeit" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Einsatzort <span class="text-danger">*</span></label>
-                        <input class="form-control" @bind="_editEinsatzForm.Einsatzort" placeholder="Strasse, Ort" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Karten-Adresse</label>
-                        <input class="form-control" @bind="_editEinsatzForm.MapAddress" placeholder="Adresse für Kartensuche" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Alarmiert durch (Melder)</label>
-                        <input class="form-control" @bind="_editEinsatzForm.Alarmiert" placeholder="z. B. Leitstelle" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Anzahl Teams (geplant)</label>
-                        <input class="form-control" type="number" min="0" @bind="_editEinsatzForm.AnzahlTeams" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Einsatzleiter</label>
-                        <div class="input-group">
-                            <select class="form-select" @onchange="e => _editEinsatzForm.Einsatzleiter = e.Value?.ToString() ?? _editEinsatzForm.Einsatzleiter">
-                                <option value="">- aus Stammdaten -</option>
-                                @foreach (var p in SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(x => x.IsActive && x.Skills.HasFlag(PersonalSkills.Einsatzleiter))))
-                                {
-                                    <option value="@p.FullName">@p.FullName</option>
-                                }
-                            </select>
-                            <input class="form-control" @bind="_editEinsatzForm.Einsatzleiter" placeholder="oder Freitext" />
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Führungsassistent</label>
-                        <div class="input-group">
-                            <select class="form-select" @onchange="e => _editEinsatzForm.Fuehrungsassistent = e.Value?.ToString() ?? _editEinsatzForm.Fuehrungsassistent">
-                                <option value="">- aus Stammdaten -</option>
-                                @foreach (var p in SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(x => x.IsActive && x.Skills.HasFlag(PersonalSkills.Fuehrungsassistent))))
-                                {
-                                    <option value="@p.FullName">@p.FullName</option>
-                                }
-                            </select>
-                            <input class="form-control" @bind="_editEinsatzForm.Fuehrungsassistent" placeholder="oder Freitext" />
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Bemerkungen</label>
-                        <textarea class="form-control" rows="3" @bind="_editEinsatzForm.Bemerkungen" placeholder="Weitere Informationen zum Einsatz"></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-modern-footer">
-                <button class="btn btn-outline-secondary" @onclick="CloseEditEinsatzModal">Abbrechen</button>
-                <button class="btn btn-primary" @onclick="SaveEditEinsatzAsync">
-                    <i class="bi bi-check-lg me-1"></i>Speichern
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
-@if (_showVermisstenModal)
-{
-    <div class="modal-overlay">
-        <button type="button" class="modal-overlay-dismiss" @onclick="CloseVermisstenModal" aria-label="Dialog schließen"></button>
-        <div class="modal-modern modal-modern--lg" @onclick:stopPropagation="true">
-            <div class="modal-modern-header">
-                <h3><i class="bi bi-person-exclamation me-2"></i>Vermissteninfo</h3>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseVermisstenModal">Schließen</button>
-            </div>
-            <div class="modal-modern-body">
-
-                @if (!string.IsNullOrWhiteSpace(_vermisstenMessage))
-                {
-                    <div class="alert @(_vermisstenIsError ? "alert-danger" : "alert-success") py-2">@_vermisstenMessage</div>
-                }
-
-                <h6 class="text-muted text-uppercase small fw-bold mb-2">Person</h6>
-                <div class="row g-2 mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label form-label-sm">Vorname</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.Vorname" placeholder="Vorname" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label form-label-sm">Nachname</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.Nachname" placeholder="Nachname" />
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label form-label-sm">Geburtsdatum</label>
-                        <input class="form-control form-control-sm"
-                               value="@_vForm.Geburtsdatum"
-                               @onchange="OnVFormGeburtsdatumChanged"
-                               placeholder="TT.MM.JJJJ" />
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label form-label-sm">Alter <small class="text-muted">(auto.)</small></label>
-                        <input class="form-control form-control-sm" @bind="_vForm.Alter" placeholder="z.B. 73" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label form-label-sm">Kleidung</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.Kleidung" placeholder="z.B. blaue Jacke, braune Hose" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label form-label-sm">Besonderheiten / Körpergröße</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.Besonderheiten" placeholder="z.B. ca. 175 cm, Brille" />
-                    </div>
-                </div>
-
-                <h6 class="text-muted text-uppercase small fw-bold mb-2">Letzter bekannter Aufenthalt</h6>
-                <div class="row g-2 mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label form-label-sm">Ort</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.ZuletztGesehenOrt" placeholder="z.B. Parkplatz Waldstraße 12" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label form-label-sm">Uhrzeit</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.ZuletztGesehenZeit" placeholder="z.B. 14:30" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label form-label-sm">Gesehen von</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.ZuletztGesehenVon" placeholder="z.B. Tochter" />
-                    </div>
-                </div>
-
-                <h6 class="text-muted text-uppercase small fw-bold mb-2">Medizin &amp; Verhalten</h6>
-                <div class="row g-2 mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label form-label-sm">Orientierung</label>
-                        <select class="form-select form-select-sm" @bind="_vForm.Orientierung">
-                            @foreach (var v in Enum.GetValues<Einsatzueberwachung.Domain.Models.OrientierungsStatus>())
-                            {
-                                <option value="@v">@v</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label form-label-sm">Mobilität</label>
-                        <select class="form-select form-select-sm" @bind="_vForm.Mobilitaet">
-                            @foreach (var v in Enum.GetValues<Einsatzueberwachung.Domain.Models.MobilitaetsStatus>())
-                            {
-                                <option value="@v">@v</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label form-label-sm">Suizidrisiko</label>
-                        <select class="form-select form-select-sm @(_vForm.Suizidrisiko == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja ? "border-danger" : "")" @bind="_vForm.Suizidrisiko">
-                            @foreach (var v in Enum.GetValues<Einsatzueberwachung.Domain.Models.RisikoStatus>())
-                            {
-                                <option value="@v">@v</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label form-label-sm">Bewaffnet</label>
-                        <select class="form-select form-select-sm @(_vForm.Bewaffnet == Einsatzueberwachung.Domain.Models.RisikoStatus.Ja ? "border-danger" : "")" @bind="_vForm.Bewaffnet">
-                            @foreach (var v in Enum.GetValues<Einsatzueberwachung.Domain.Models.RisikoStatus>())
-                            {
-                                <option value="@v">@v</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label form-label-sm">Vorerkrankungen</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.Vorerkrankungen" placeholder="z.B. Demenz, Diabetes" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label form-label-sm">Medikamente</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.Medikamente" placeholder="z.B. Metformin, Blutverdünner" />
-                    </div>
-                </div>
-
-                <h6 class="text-muted text-uppercase small fw-bold mb-2"><i class="bi bi-shield me-1"></i>Polizei-Kontakt</h6>
-                <div class="row g-2 mb-2">
-                    <div class="col-md-4">
-                        <label class="form-label form-label-sm">Name Kontaktbeamter</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.PolizeiKontaktName" placeholder="PHK Müller" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label form-label-sm">Dienstnummer / Rufname</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.PolizeiDienstnummer" placeholder="z.B. 1234 oder Florian 5" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label form-label-sm">Telefon</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.PolizeiTelefon" placeholder="+49 ..." />
-                    </div>
-                </div>
-                <div class="row g-1 mb-3">
-                    @foreach (var (label, getter, setter) in GetPolizeiChecklist())
-                    {
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" checked="@getter()" @onchange="e => setter((bool)(e.Value ?? false))" />
-                                <label class="form-check-label small">@label</label>
-                            </div>
-                        </div>
-                    }
-                </div>
-
-                <h6 class="text-muted text-uppercase small fw-bold mb-2"><i class="bi bi-truck me-1"></i>Weitere BOS / Feuerwehr</h6>
-                <div class="row g-2 mb-2">
-                    <div class="col-md-4">
-                        <label class="form-label form-label-sm">Einheit</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.BosEinheit" placeholder="z.B. FF Musterstadt" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label form-label-sm">Zugführer</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.BosZugfuehrer" placeholder="Name" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label form-label-sm">Funkrufname</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.BosFunkrufname" placeholder="z.B. Florian 1/20" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label form-label-sm">Aufgabenteilung</label>
-                        <input class="form-control form-control-sm" @bind="_vForm.BosAufgabenteilung" placeholder="z.B. Feuerwehr übernimmt Wassersuche" />
-                    </div>
-                </div>
-                <div class="row g-1 mb-1">
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" @bind="_vForm.BosAbschnittAbgestimmt" />
-                            <label class="form-check-label small">Einsatzabschnitt abgestimmt</label>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" @bind="_vForm.BosRessourcenBesprochen" />
-                            <label class="form-check-label small">Ressourcen besprochen (Wärmebild, etc.)</label>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            <div class="modal-modern-footer">
-                <button class="btn btn-outline-secondary" @onclick="CloseVermisstenModal">Abbrechen</button>
-                <button class="btn btn-primary" @onclick="SaveVermisstenAsync">
-                    <i class="bi bi-check-lg me-1"></i>Speichern
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
-@if (_showTeamModal)
-{
-    <div class="modal-overlay">
-        <button type="button" class="modal-overlay-dismiss" @onclick="CloseTeamModal" aria-label="Dialog schließen"></button>
-        <div class="modal-modern" @onclick:stopPropagation="true">
-            <div class="modal-modern-header">
-                <h3>@(_editingTeamId is null ? "Team anlegen" : "Team bearbeiten")</h3>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="CloseTeamModal">Schließen</button>
-            </div>
-            <div class="modal-modern-body">
-                @if (!string.IsNullOrWhiteSpace(_teamFormMessage))
-                {
-                    <div class="alert @(_teamFormIsError ? "alert-danger" : "alert-success") py-2">@_teamFormMessage</div>
-                }
-
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label">Teamtyp</label>
-                        <select class="form-select" @bind="_teamForm.TeamType" @bind:after="OnTeamTypeChangedAsync">
-                            <option value="dog">Hundeteam</option>
-                            <option value="drone">Drohnenteam</option>
-                            <option value="support">Support-Team</option>
-                        </select>
-                    </div>
-
-                    <div class="col-12">
-                        <label class="form-label">Teamname</label>
-                        <input class="form-control" @bind="_teamForm.TeamName" placeholder="z. B. Team Alpha" />
-                    </div>
-
-                    @if (_teamForm.TeamType == "dog")
-                    {
-                        <div class="col-12">
-                            <label class="form-label">Hund</label>
-                            <select class="form-select" value="@_teamForm.DogId" @onchange="OnDogChangedAsync">
-                                <option value="">Hund auswählen</option>
-                                @foreach (var dog in AvailableDogs)
-                                {
-                                    <option value="@dog.Id">@dog.Name (@dog.SpecializationsShortDisplay)</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Hundeführer</label>
-                            <select class="form-select" @bind="_teamForm.HundefuehrerId" @bind:after="OnHandlerChangedAsync">
-                                <option value="">Hundeführer auswählen</option>
-                                @foreach (var person in HundefuehrerOptions)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Helfer 1</label>
-                            <select class="form-select" @bind="_teamForm.HelferId">
-                                <option value="">Helfer auswählen</option>
-                                @foreach (var person in HelferOptions)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Helfer 2 <span class="text-muted small">(optional)</span></label>
-                            <select class="form-select" @bind="_teamForm.HelferId2">
-                                <option value="">— kein zweiter Helfer —</option>
-                                @foreach (var person in HelferOptions)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Helfer 3 <span class="text-muted small">(optional)</span></label>
-                            <select class="form-select" @bind="_teamForm.HelferId3">
-                                <option value="">— kein dritter Helfer —</option>
-                                @foreach (var person in HelferOptions)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
-                        </div>
-                    }
-                    else if (_teamForm.TeamType == "drone")
-                    {
-                        <div class="col-12">
-                            <label class="form-label">Drohne</label>
-                            <select class="form-select" @bind="_teamForm.DroneId" @bind:after="OnDroneChangedAsync">
-                                <option value="">Drohne auswählen</option>
-                                @foreach (var drone in AvailableDrones)
-                                {
-                                    <option value="@drone.Id">@drone.DisplayName (@drone.FullDescription)</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Pilot</label>
-                            <select class="form-select" @bind="_teamForm.HundefuehrerId">
-                                <option value="">Pilot auswählen</option>
-                                @foreach (var person in DrohnenpilotOptions)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Unterstützung</label>
-                            <select class="form-select" @bind="_teamForm.HelferId">
-                                <option value="">Person auswählen</option>
-                                @foreach (var person in ActivePersonnel)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="col-md-6">
-                            <label class="form-label">Leitung / Führung</label>
-                            <select class="form-select" @bind="_teamForm.HundefuehrerId">
-                                <option value="">Person auswählen</option>
-                                @foreach (var person in ActivePersonnel)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Zweite Person</label>
-                            <select class="form-select" @bind="_teamForm.HelferId">
-                                <option value="">Person auswählen</option>
-                                @foreach (var person in ActivePersonnel)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
-                        </div>
-                    }
-
-                    <div class="col-12">
-                        <label class="form-label">Suchgebiet</label>
-                        <select class="form-select" @bind="_teamForm.SearchAreaId">
-                            <option value="">Kein Gebiet</option>
-                            @foreach (var area in EinsatzService.CurrentEinsatz.SearchAreas.OrderBy(area => area.Name))
-                            {
-                                <option value="@area.Id">@area.Name</option>
-                            }
-                        </select>
-                    </div>
-
-                    @if (_teamForm.TeamType == "dog")
-                    {
-                        <div class="col-12">
-                            <label class="form-label"><i class="bi bi-broadcast me-1"></i>GPS-Halsband</label>
-                            <select class="form-select" @bind="_teamForm.CollarId">
-                                <option value="">-- Kein Halsband --</option>
-                                @foreach (var collar in CollarTrackingService.Collars
-                                    .Where(c => !c.IsAssigned || c.Id == _teamForm.CollarId)
-                                    .OrderBy(c => c.CollarName))
-                                {
-                                    <option value="@collar.Id">@collar.CollarName [@collar.Id]</option>
-                                }
-                            </select>
-                        </div>
-                    }
-
-                    <div class="col-md-6">
-                        <label class="form-label">Warnung 1 (Minuten)</label>
-                        <input class="form-control" type="number" min="1" @bind="_teamForm.FirstWarningMinutes" />
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Warnung 2 (Minuten)</label>
-                        <input class="form-control" type="number" min="1" @bind="_teamForm.SecondWarningMinutes" />
-                    </div>
-
-                    <div class="col-12">
-                        <label class="form-label">Notizen</label>
-                        <textarea class="form-control" rows="3" @bind="_teamForm.Notes"></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-modern-footer">
-                <button class="btn btn-primary" @onclick="SaveTeamAsync">@(_editingTeamId is null ? "Team speichern" : "Änderungen speichern")</button>
-                <button class="btn btn-outline-secondary" @onclick="ResetTeamForm">Formular leeren</button>
-            </div>
-        </div>
-    </div>
-}
-
-@if (_showTeamMessageModal)
-{
-    <div class="modal-overlay">
-        <button type="button" class="modal-overlay-dismiss" @onclick="CloseTeamMessageModal" aria-label="Dialog schließen"></button>
-        <div class="modal-modern modal-modern--md" @onclick:stopPropagation="true">
-            <div class="modal-modern-header bg-warning text-dark">
-                <h3 class="mb-0"><i class="bi bi-megaphone me-1"></i>Nachricht an Team</h3>
-                <button class="btn btn-sm btn-outline-dark" @onclick="CloseTeamMessageModal">X</button>
-            </div>
-            <div class="modal-modern-body">
-                @if (EinsatzService.Teams.Count == 0)
-                {
-                    <div class="alert alert-info">Keine Teams im Einsatz.</div>
-                }
-                else
-                {
-                    <div class="mb-3">
-                        <label class="form-label">Empfänger</label>
-                        <select class="form-select" @bind="_teamMessageTargetId">
-                            @foreach (var t in EinsatzService.Teams.OrderBy(t => t.TeamName))
-                            {
-                                <option value="@t.TeamId">@t.TeamName @(string.IsNullOrWhiteSpace(t.DogName) ? "" : " / " + t.DogName)</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Nachricht</label>
-                        <textarea class="form-control" rows="3" @bind="_teamMessageText" placeholder="kurze Nachricht..."></textarea>
-                    </div>
-                    @if (!string.IsNullOrEmpty(_teamMessageFeedback))
-                    {
-                        <div class="alert @(_teamMessageFeedback.StartsWith("Nachricht") ? "alert-success" : "alert-danger") py-2 mb-0">@_teamMessageFeedback</div>
-                    }
-                    <p class="small text-muted mt-2 mb-0">
-                        <i class="bi bi-info-circle me-1"></i>Erscheint sofort am Smartphone des gewaehlten Teams (max. 5 letzte Nachrichten).
-                    </p>
-                }
-            </div>
-            <div class="modal-modern-footer">
-                <button class="btn btn-warning" @onclick="SendTeamMessage" disabled="@(EinsatzService.Teams.Count == 0)">Senden</button>
-                <button class="btn btn-outline-secondary" @onclick="CloseTeamMessageModal">Schließen</button>
-            </div>
-        </div>
-    </div>
-}
-
-@if (_showTeamMobileModal)
-{
-    <div class="modal-overlay">
-        <button type="button" class="modal-overlay-dismiss" @onclick="CloseTeamMobileModal" aria-label="Dialog schließen"></button>
-        <div class="modal-modern modal-modern--md" @onclick:stopPropagation="true">
-            <div class="modal-modern-header bg-success text-white">
-                <h3 class="mb-0"><i class="bi bi-qr-code me-1"></i>Team-Mobile Anmelde-Code</h3>
-                <button class="btn btn-sm btn-outline-light" @onclick="CloseTeamMobileModal">X</button>
-            </div>
-            <div class="modal-modern-body text-center">
-                @if (string.IsNullOrEmpty(_teamMobileFullUrl))
-                {
-                    <div class="alert alert-warning">
-                        Es ist gerade kein Einsatz aktiv. Starte einen Einsatz, um einen Anmelde-Code zu generieren.
-                    </div>
-                }
-                else
-                {
-                    <p class="text-muted small mb-2">
-                        Teams scannen diesen QR-Code mit dem Smartphone, um sich auf <strong>/team/login</strong> anzumelden.
-                    </p>
-                    <img src="@_teamMobileQrDataUrl" alt="QR-Code" class="monitor-qr-image" />
-                    @if (!string.IsNullOrEmpty(TeamMobileTokenService.CurrentMasterToken))
-                    {
-                        @* Zum Vorlesen per Funk oder Abtippen auf /team/login, wenn ein Handy den QR-Code nicht scannt *@
-                        <div class="monitor-team-code" aria-label="Anmelde-Code">@TeamCodeLesbar(TeamMobileTokenService.CurrentMasterToken)</div>
-                        <div class="small text-muted">Anmelde-Code – auf <strong>/team/login</strong> eintippen</div>
-                    }
-                    <div class="mt-3">
-                        <input type="text" class="form-control text-center" readonly value="@_teamMobileFullUrl" onclick="this.select()" />
-                    </div>
-                    <p class="small text-muted mt-3 mb-0">
-                        <i class="bi bi-info-circle me-1"></i>Der Code wird beim Einsatz-Ende automatisch ungültig.
-                    </p>
-                }
-            </div>
-            <div class="modal-modern-footer">
-                <button class="btn btn-outline-secondary" @onclick="CloseTeamMobileModal">Schließen</button>
-            </div>
-        </div>
-    </div>
-}
+<MonitorTeamMobileDialog IsOpen="_showTeamMobileModal"
+                         FullUrl="@_teamMobileFullUrl"
+                         QrDataUrl="@_teamMobileQrDataUrl"
+                         ReadableCode='@(string.IsNullOrEmpty(TeamMobileTokenService.CurrentMasterToken) ? string.Empty : TeamCodeLesbar(TeamMobileTokenService.CurrentMasterToken))'
+                         OnClose="CloseTeamMobileModal" />

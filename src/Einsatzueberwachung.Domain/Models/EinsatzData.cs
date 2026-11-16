@@ -27,6 +27,21 @@ namespace Einsatzueberwachung.Domain.Models
         public DateTime? EinsatzEnde { get; set; }
 
         public string EinsatzNummer { get; set; }
+        public bool EinsatzkontakteMigriert { get; set; }
+        public string PolizeiKontaktName { get; set; } = string.Empty;
+        public string PolizeiDienstnummer { get; set; } = string.Empty;
+        public string PolizeiTelefon { get; set; } = string.Empty;
+        public bool PolizeiVermisstenmeldungAufgenommen { get; set; }
+        public bool PolizeiKoordinationBesprochen { get; set; }
+        public bool PolizeiSuchabschnittAbgestimmt { get; set; }
+        public bool PolizeiRueckmeldepflichtVereinbart { get; set; }
+        public bool PolizeiDatenschutzGeklaert { get; set; }
+        public string BosEinheit { get; set; } = string.Empty;
+        public string BosZugfuehrer { get; set; } = string.Empty;
+        public string BosFunkrufname { get; set; } = string.Empty;
+        public string BosAufgabenteilung { get; set; } = string.Empty;
+        public bool BosAbschnittAbgestimmt { get; set; }
+        public bool BosRessourcenBesprochen { get; set; }
         public string StaffelName { get; set; }
         public string StaffelAdresse { get; set; }
         public string StaffelTelefon { get; set; }

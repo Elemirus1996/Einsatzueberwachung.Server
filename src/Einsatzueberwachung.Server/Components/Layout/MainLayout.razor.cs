@@ -4,6 +4,7 @@ using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
 namespace Einsatzueberwachung.Server.Components.Layout;
@@ -21,7 +22,9 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
     private bool _isDarkMode;
     private bool _sidebarCollapsed;
     private bool _mobileNavOpen;
+    private bool _topbarActionsMenuOpen;
     private bool _hilfeOpen;
+    private ElementReference _topbarActionsButton;
     private DotNetObjectReference<MainLayout>? _dotNetRef;
     private bool _showCriticalWarningPopup;
     private string _criticalWarningTitle = string.Empty;
@@ -208,6 +211,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
     private async Task SetSzenarioAsync(EinsatzSzenarioType szenario)
     {
         _szenarioMenuOpen = false;
+        CloseTopbarActionsMenu();
         await EinsatzService.UpdateSzenarioAsync(szenario);
     }
 
@@ -272,6 +276,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
     {
         // Handy: nach dem Antippen eines Menuepunkts die Navigation wieder zuklappen
         _mobileNavOpen = false;
+        _topbarActionsMenuOpen = false;
         try
         {
             await ApplyPersistedThemeAsync();
@@ -304,8 +309,28 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
 
     private void OpenCloseMissionFromTopbar()
     {
+        CloseTopbarActionsMenu();
         var token = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         Navigation.NavigateTo($"/einsatz-monitor?openCloseMissionAt={token}");
+    }
+
+    private void ToggleTopbarActionsMenu() => _topbarActionsMenuOpen = !_topbarActionsMenuOpen;
+
+    private void CloseTopbarActionsMenu() => _topbarActionsMenuOpen = false;
+
+    private async Task HandleTopbarActionsMenuKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            CloseTopbarActionsMenu();
+            await _topbarActionsButton.FocusAsync();
+        }
+    }
+
+    private void OpenHelpFromTopbar()
+    {
+        CloseTopbarActionsMenu();
+        _hilfeOpen = true;
     }
 
     private async Task ToggleThemeAsync()
@@ -313,6 +338,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
         if (BrowserPrefs.Preferences.ThemeMode != "Manual")
             return;
 
+        CloseTopbarActionsMenu();
         _isDarkMode = !_isDarkMode;
         BrowserPrefs.Update(p => p.IsDarkMode = _isDarkMode);
         await BrowserPrefs.SaveAsync();
@@ -327,6 +353,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
 
     private async Task ToggleFullscreenAsync()
     {
+        CloseTopbarActionsMenu();
         await JS.InvokeVoidAsync("layoutTools.toggleFullscreen");
     }
 

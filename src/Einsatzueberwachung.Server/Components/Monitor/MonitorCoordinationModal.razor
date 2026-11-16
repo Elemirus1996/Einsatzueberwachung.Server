@@ -1,0 +1,78 @@
+@if (IsOpen)
+{
+    var policeItems = Items.Where(item => !item.IsBos).ToArray();
+    var bosItems = Items.Where(item => item.IsBos).ToArray();
+    <div class="modal-overlay">
+        <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
+        <div id="coordination-modal"
+             class="modal-modern modal-modern--640"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="coordination-modal-title"
+             @onclick:stopPropagation="true">
+            <div class="modal-modern-header">
+                <h3 id="coordination-modal-title"><i class="bi bi-list-check me-2" aria-hidden="true"></i>Offene Abstimmungen</h3>
+                <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="OnClose">Schließen</button>
+            </div>
+            <div class="modal-modern-body">
+                @if (IsError && !string.IsNullOrWhiteSpace(ErrorMessage))
+                {
+                    <div class="alert alert-danger py-2" role="alert">@ErrorMessage</div>
+                }
+
+                <section class="monitor-coordination-modal-section" aria-labelledby="coordination-police-title">
+                    <h4 id="coordination-police-title" class="h6">Polizei</h4>
+                    @foreach (var item in policeItems)
+                    {
+                        <label @key="item.Id" class="monitor-coordination-check">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   checked="@item.IsConfirmed"
+                                   disabled="@IsUpdating"
+                                   aria-label="@($"{item.Label} {(item.IsConfirmed ? "wieder öffnen" : "als erledigt markieren")}")"
+                                   @onchange="args => OnToggle.InvokeAsync(new MonitorCoordinationToggle(item.Id, ReadCheckedValue(args)))" />
+                            <span>@item.Label</span>
+                        </label>
+                    }
+                </section>
+
+                @if (bosItems.Length > 0)
+                {
+                    <section class="monitor-coordination-modal-section" aria-labelledby="coordination-bos-title">
+                        <h4 id="coordination-bos-title" class="h6">BOS / Feuerwehr</h4>
+                        @foreach (var item in bosItems)
+                        {
+                            <label @key="item.Id" class="monitor-coordination-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       checked="@item.IsConfirmed"
+                                       disabled="@IsUpdating"
+                                       aria-label="@($"{item.Label} {(item.IsConfirmed ? "wieder öffnen" : "als erledigt markieren")}")"
+                                       @onchange="args => OnToggle.InvokeAsync(new MonitorCoordinationToggle(item.Id, ReadCheckedValue(args)))" />
+                                <span>@item.Label</span>
+                            </label>
+                        }
+                    </section>
+                }
+            </div>
+            <div class="modal-modern-footer">
+                <button class="btn btn-primary" type="button" @onclick="OnClose">Fertig</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public IReadOnlyList<MonitorCoordinationItem> Items { get; set; } = Array.Empty<MonitorCoordinationItem>();
+    [Parameter] public bool IsUpdating { get; set; }
+    [Parameter] public string ErrorMessage { get; set; } = string.Empty;
+    [Parameter] public bool IsError { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<MonitorCoordinationToggle> OnToggle { get; set; }
+
+    private static bool ReadCheckedValue(ChangeEventArgs args) =>
+        args.Value is bool value
+            ? value
+            : bool.TryParse(args.Value?.ToString(), out var parsed) && parsed;
+}

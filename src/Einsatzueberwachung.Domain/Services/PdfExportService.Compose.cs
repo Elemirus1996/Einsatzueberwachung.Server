@@ -183,7 +183,50 @@ namespace Einsatzueberwachung.Domain.Services
             });
         }
 
-        private void ComposeVermisste(IContainer container, List<VermisstenInfo> vermisste)
+        private void ComposeEinsatzkontakte(IContainer container, EinsatzKontaktDaten kontakte)
+        {
+            if (!kontakte.HasContent) return;
+
+            container.Column(column =>
+            {
+                column.Item().Element(c => ComposeSectionHeader(c, "Polizei- und BOS-Kontakte"));
+                column.Item().PaddingTop(6).Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(190);
+                        columns.RelativeColumn();
+                    });
+
+                    if (!string.IsNullOrWhiteSpace(kontakte.PolizeiKontaktName))
+                        AddTableRow(table, "Polizei-Kontakt:", kontakte.PolizeiKontaktName);
+                    if (!string.IsNullOrWhiteSpace(kontakte.PolizeiDienstnummer))
+                        AddTableRow(table, "Polizei-Dienstnummer:", kontakte.PolizeiDienstnummer);
+                    if (!string.IsNullOrWhiteSpace(kontakte.PolizeiTelefon))
+                        AddTableRow(table, "Polizei-Telefon:", kontakte.PolizeiTelefon);
+                    if (!string.IsNullOrWhiteSpace(kontakte.BosEinheit))
+                        AddTableRow(table, "BOS-Einheit:", kontakte.BosEinheit);
+                    if (!string.IsNullOrWhiteSpace(kontakte.BosZugfuehrer))
+                        AddTableRow(table, "BOS-Zugführer:", kontakte.BosZugfuehrer);
+                    if (!string.IsNullOrWhiteSpace(kontakte.BosFunkrufname))
+                        AddTableRow(table, "BOS-Funkrufname:", kontakte.BosFunkrufname);
+                    if (!string.IsNullOrWhiteSpace(kontakte.BosAufgabenteilung))
+                        AddTableRow(table, "BOS-Aufgabenteilung:", kontakte.BosAufgabenteilung);
+
+                    AddTableRow(table, "Vermisstenmeldung aufgenommen:", YesNo(kontakte.PolizeiVermisstenmeldungAufgenommen));
+                    AddTableRow(table, "Einsatzkoordination besprochen:", YesNo(kontakte.PolizeiKoordinationBesprochen));
+                    AddTableRow(table, "Suchabschnitte abgestimmt:", YesNo(kontakte.PolizeiSuchabschnittAbgestimmt));
+                    AddTableRow(table, "Rückmeldepflicht vereinbart:", YesNo(kontakte.PolizeiRueckmeldepflichtVereinbart));
+                    AddTableRow(table, "Datenschutz geklärt:", YesNo(kontakte.PolizeiDatenschutzGeklaert));
+                    AddTableRow(table, "BOS-Einsatzabschnitt abgestimmt:", YesNo(kontakte.BosAbschnittAbgestimmt));
+                    AddTableRow(table, "BOS-Ressourcen besprochen:", YesNo(kontakte.BosRessourcenBesprochen));
+                });
+            });
+        }
+
+        private static string YesNo(bool value) => value ? "Ja" : "Nein";
+
+        private void ComposeVermisste(IContainer container, List<VermisstenInfo> vermisste, bool includeLegacyContacts)
         {
             container.Column(column =>
             {
@@ -236,17 +279,37 @@ namespace Einsatzueberwachung.Domain.Services
                             AddTableRow(table, "Vorerkrankungen:", v.Vorerkrankungen);
                         if (!string.IsNullOrWhiteSpace(v.Medikamente))
                             AddTableRow(table, "Medikamente:", v.Medikamente);
-                        if (!string.IsNullOrWhiteSpace(v.PolizeiKontaktName))
+                        if (includeLegacyContacts)
                         {
-                            var polizei = v.PolizeiKontaktName;
-                            if (!string.IsNullOrWhiteSpace(v.PolizeiTelefon))
-                                polizei += $" · {v.PolizeiTelefon}";
+                            if (!string.IsNullOrWhiteSpace(v.PolizeiKontaktName))
+                                AddTableRow(table, "Polizei-Kontakt:", v.PolizeiKontaktName);
                             if (!string.IsNullOrWhiteSpace(v.PolizeiDienstnummer))
-                                polizei += $" (Dienstnr. {v.PolizeiDienstnummer})";
-                            AddTableRow(table, "Polizei-Kontakt:", polizei);
+                                AddTableRow(table, "Polizei-Dienstnummer:", v.PolizeiDienstnummer);
+                            if (!string.IsNullOrWhiteSpace(v.PolizeiTelefon))
+                                AddTableRow(table, "Polizei-Telefon:", v.PolizeiTelefon);
+                            if (v.PolizeiVermisstenmeldungAufgenommen)
+                                AddTableRow(table, "Vermisstenmeldung aufgenommen:", "Ja");
+                            if (v.PolizeiKoordinationBesprochen)
+                                AddTableRow(table, "Einsatzkoordination besprochen:", "Ja");
+                            if (v.PolizeiSuchabschnittAbgestimmt)
+                                AddTableRow(table, "Suchabschnitte abgestimmt:", "Ja");
+                            if (v.PolizeiRueckmeldepflichtVereinbart)
+                                AddTableRow(table, "Rückmeldepflicht vereinbart:", "Ja");
+                            if (v.PolizeiDatenschutzGeklaert)
+                                AddTableRow(table, "Datenschutz geklärt:", "Ja");
+                            if (!string.IsNullOrWhiteSpace(v.BosEinheit))
+                                AddTableRow(table, "BOS-Einheit:", v.BosEinheit);
+                            if (!string.IsNullOrWhiteSpace(v.BosZugfuehrer))
+                                AddTableRow(table, "BOS-Zugführer:", v.BosZugfuehrer);
+                            if (!string.IsNullOrWhiteSpace(v.BosFunkrufname))
+                                AddTableRow(table, "BOS-Funkrufname:", v.BosFunkrufname);
+                            if (!string.IsNullOrWhiteSpace(v.BosAufgabenteilung))
+                                AddTableRow(table, "BOS-Aufgabenteilung:", v.BosAufgabenteilung);
+                            if (v.BosAbschnittAbgestimmt)
+                                AddTableRow(table, "BOS-Einsatzabschnitt abgestimmt:", "Ja");
+                            if (v.BosRessourcenBesprochen)
+                                AddTableRow(table, "BOS-Ressourcen besprochen:", "Ja");
                         }
-                        if (!string.IsNullOrWhiteSpace(v.BosEinheit))
-                            AddTableRow(table, "BOS-Einheit:", v.BosEinheit);
                     });
 
                     if (v.Checkliste is not null && v.Checkliste.Items.Count > 0)

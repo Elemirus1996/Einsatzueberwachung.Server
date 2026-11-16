@@ -20,41 +20,6 @@
                     }
                     <span class="badge badge-status-muted">Bereit: @ReadyTeamsCount</span>
 
-                    <div class="monitor-szenario-wrap">
-                        <button class="badge monitor-szenario-btn"
-                                type="button"
-                                style="--monitor-szenario-color:@EinsatzService.CurrentEinsatz.Szenario.GetColorHex();"
-                                title="Szenario wechseln (auf Anweisung der EL)"
-                                @onclick="() => _szenarioMenuOpen = !_szenarioMenuOpen">
-                            <i class="bi bi-diagram-3 me-1"></i>@EinsatzService.CurrentEinsatz.Szenario.GetDisplayName()
-                            <i class="bi bi-caret-down-fill ms-1"></i>
-                        </button>
-
-                        @if (_szenarioMenuOpen)
-                        {
-                            <button type="button"
-                                    class="monitor-szenario-backdrop"
-                                    @onclick="() => _szenarioMenuOpen = false"
-                                    aria-label="Szenario-Menü schließen"></button>
-                            <ul class="monitor-szenario-menu">
-                                @foreach (var sz in new[] { EinsatzSzenarioType.Mantrailer, EinsatzSzenarioType.Flaeche, EinsatzSzenarioType.Truemmer, EinsatzSzenarioType.Sonstige })
-                                {
-                                    <li>
-                                        <button class="monitor-szenario-item @(EinsatzService.CurrentEinsatz.Szenario == sz ? "active" : "")"
-                                                type="button"
-                                                @onclick="() => SetSzenarioAsync(sz)">
-                                            <span class="monitor-szenario-dot" style="background:@sz.GetColorHex();"></span>
-                                            <span>@sz.GetDisplayName()</span>
-                                        </button>
-                                    </li>
-                                }
-                            </ul>
-                        }
-                    </div>
-
-                    
-
-
                     <span class="mission-status-location">@EinsatzService.CurrentEinsatz.Einsatzort</span>
                 }
                 else
@@ -69,10 +34,6 @@
                         <i class="bi bi-bell-fill me-1"></i>@_lastWarning.Title
                     </a>
                 }
-            </div>
-
-            <div class="mission-topbar-page-slot @(MissionTopbar.Content is null ? "is-empty" : "")">
-                @MissionTopbar.Content
             </div>
 
             <div class="mission-topbar-clock" aria-live="polite">
@@ -90,49 +51,123 @@
             </div>
 
             <div class="mission-topbar-actions">
-                @if (HasActiveEinsatz)
-                {
-                    <button class="btn btn-sm btn-primary"
-                            type="button"
-                            title="Einsatz beenden"
-                            @onclick="OpenCloseMissionFromTopbar">
-                        <i class="bi bi-stop-circle me-1"></i>Beenden
-                    </button>
-                }
+                <button @ref="_topbarActionsButton"
+                        class="btn btn-sm btn-outline-secondary mission-topbar-actions-trigger"
+                        type="button"
+                        aria-label="@(_topbarActionsMenuOpen ? "Einsatzaktionen schließen" : "Einsatzaktionen öffnen")"
+                        aria-expanded="@_topbarActionsMenuOpen.ToString().ToLowerInvariant()"
+                        aria-controls="mission-topbar-actions-menu"
+                        @onclick="ToggleTopbarActionsMenu">
+                    <i class="bi bi-three-dots" aria-hidden="true"></i>
+                    <span>Aktionen</span>
+                </button>
 
-                <div class="topbar-utils">
-                    <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
-                            type="button"
-                            title="@(BrowserPrefs.Preferences.ThemeMode == "Auto" ? "Theme: Automatisch (Systemmodus) — in Einstellungen ändern" : BrowserPrefs.Preferences.ThemeMode == "Scheduled" ? "Theme: Zeitsteuerung aktiv — in Einstellungen ändern" : (_isDarkMode ? "Dark Mode deaktivieren" : "Dark Mode aktivieren"))"
-                            disabled="@(BrowserPrefs.Preferences.ThemeMode != "Manual")"
-                            @onclick="ToggleThemeAsync">
-                        <i class="bi @(_isDarkMode ? "bi-sun" : "bi-moon-stars")"></i>
-                        @if (BrowserPrefs.Preferences.ThemeMode != "Manual")
-                        {
-                            <span class="topbar-theme-mode-label">@(BrowserPrefs.Preferences.ThemeMode == "Auto" ? "Auto" : "Plan")</span>
-                        }
-                    </button>
+                <div id="mission-topbar-actions-menu"
+                     class="mission-topbar-actions-menu"
+                     role="group"
+                     aria-label="Aktionen"
+                     aria-hidden="@(!_topbarActionsMenuOpen).ToString().ToLowerInvariant()"
+                     hidden="@(!_topbarActionsMenuOpen)"
+                     @onkeydown="HandleTopbarActionsMenuKeyDownAsync">
+                    @if (_topbarActionsMenuOpen && MissionTopbar.Content is not null)
+                    {
+                        <div class="mission-topbar-actions-section">
+                            <span class="mission-topbar-actions-label">Bereiche</span>
+                            @MissionTopbar.Content
+                        </div>
+                    }
 
-                    <button class="btn btn-sm btn-outline-secondary"
-                            type="button"
-                            title="Vollbild umschalten (F11)"
-                            @onclick="ToggleFullscreenAsync">
-                        <i class="bi bi-arrows-fullscreen"></i>
-                    </button>
-
-                    <button class="btn btn-sm btn-outline-secondary"
-                            type="button"
-                            title="Hilfe anzeigen"
-                            @onclick="() => _hilfeOpen = true">
-                        <i class="bi bi-question-circle"></i>
-                    </button>
-
-                    <form method="post" action="/leitung/abmelden" class="d-inline">
-                        <button class="btn btn-sm btn-outline-secondary" type="submit" title="Abmelden">
-                            <i class="bi bi-box-arrow-right"></i>
+                    <div class="mission-topbar-actions-section">
+                        <span class="mission-topbar-actions-label">Anzeige</span>
+                        <button class="btn btn-outline-secondary"
+                                type="button"
+                                title="@(BrowserPrefs.Preferences.ThemeMode == "Auto" ? "Theme: Automatisch (Systemmodus) — in Einstellungen ändern" : BrowserPrefs.Preferences.ThemeMode == "Scheduled" ? "Theme: Zeitsteuerung aktiv — in Einstellungen ändern" : (_isDarkMode ? "Dark Mode deaktivieren" : "Dark Mode aktivieren"))"
+                                disabled="@(BrowserPrefs.Preferences.ThemeMode != "Manual")"
+                                @onclick="ToggleThemeAsync">
+                            <i class="bi @(_isDarkMode ? "bi-sun" : "bi-moon-stars")" aria-hidden="true"></i>
+                            <span>@(BrowserPrefs.Preferences.ThemeMode == "Manual"
+                                ? (_isDarkMode ? "Helles Design" : "Dunkles Design")
+                                : BrowserPrefs.Preferences.ThemeMode == "Auto" ? "Design: Automatik" : "Design: Zeitplan")</span>
                         </button>
-                    </form>
+                        <button class="btn btn-outline-secondary"
+                                type="button"
+                                title="Vollbild umschalten (F11)"
+                                @onclick="ToggleFullscreenAsync">
+                            <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
+                            <span>Vollbild</span>
+                        </button>
+                    </div>
+
+                    <div class="mission-topbar-actions-section">
+                        <span class="mission-topbar-actions-label">Konto und Hilfe</span>
+                        <button class="btn btn-outline-secondary"
+                                type="button"
+                                title="Hilfe anzeigen"
+                                @onclick="OpenHelpFromTopbar">
+                            <i class="bi bi-question-circle" aria-hidden="true"></i>
+                            <span>Hilfe</span>
+                        </button>
+                        <form method="post" action="/leitung/abmelden">
+                            <button class="btn btn-outline-secondary" type="submit" title="Abmelden">
+                                <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                <span>Abmelden</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    @if (HasActiveEinsatz)
+                    {
+                        <div class="mission-topbar-actions-section">
+                            <span class="mission-topbar-actions-label">Aktiver Einsatz</span>
+                            <div class="monitor-szenario-wrap">
+                                <button class="badge monitor-szenario-btn"
+                                        type="button"
+                                        style="--monitor-szenario-color:@EinsatzService.CurrentEinsatz.Szenario.GetColorHex();"
+                                        title="Szenario wechseln (auf Anweisung der EL)"
+                                        @onclick="() => _szenarioMenuOpen = !_szenarioMenuOpen">
+                                    <i class="bi bi-diagram-3 me-1"></i>@EinsatzService.CurrentEinsatz.Szenario.GetDisplayName()
+                                    <i class="bi bi-caret-down-fill ms-1"></i>
+                                </button>
+
+                                @if (_szenarioMenuOpen)
+                                {
+                                    <button type="button"
+                                            class="monitor-szenario-backdrop"
+                                            @onclick="() => _szenarioMenuOpen = false"
+                                            aria-label="Szenario-Menü schließen"></button>
+                                    <ul class="monitor-szenario-menu">
+                                        @foreach (var sz in new[] { EinsatzSzenarioType.Mantrailer, EinsatzSzenarioType.Flaeche, EinsatzSzenarioType.Truemmer, EinsatzSzenarioType.Sonstige })
+                                        {
+                                            <li>
+                                                <button class="monitor-szenario-item @(EinsatzService.CurrentEinsatz.Szenario == sz ? "active" : "")"
+                                                        type="button"
+                                                        @onclick="() => SetSzenarioAsync(sz)">
+                                                    <span class="monitor-szenario-dot" style="background:@sz.GetColorHex();"></span>
+                                                    <span>@sz.GetDisplayName()</span>
+                                                </button>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                            <button class="btn btn-primary"
+                                    type="button"
+                                    title="Einsatz beenden"
+                                    @onclick="OpenCloseMissionFromTopbar">
+                                <i class="bi bi-stop-circle" aria-hidden="true"></i>
+                                <span>Einsatz beenden</span>
+                            </button>
+                        </div>
+                    }
                 </div>
+
+                @if (_topbarActionsMenuOpen)
+                {
+                    <button class="mission-topbar-actions-backdrop"
+                            type="button"
+                            aria-label="Aktionsmenü schließen"
+                            @onclick="CloseTopbarActionsMenu"></button>
+                }
             </div>
         </div>
 

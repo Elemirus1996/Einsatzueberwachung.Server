@@ -34,6 +34,21 @@ namespace Einsatzueberwachung.Domain.Models
         public EinsatzSzenarioType Szenario { get; set; } = EinsatzSzenarioType.Unbestimmt;
         public DateTime EinsatzDatum { get; set; }
         public string EinsatzNummer { get; set; } = string.Empty;
+        public bool EinsatzkontakteMigriert { get; set; }
+        public string PolizeiKontaktName { get; set; } = string.Empty;
+        public string PolizeiDienstnummer { get; set; } = string.Empty;
+        public string PolizeiTelefon { get; set; } = string.Empty;
+        public bool PolizeiVermisstenmeldungAufgenommen { get; set; }
+        public bool PolizeiKoordinationBesprochen { get; set; }
+        public bool PolizeiSuchabschnittAbgestimmt { get; set; }
+        public bool PolizeiRueckmeldepflichtVereinbart { get; set; }
+        public bool PolizeiDatenschutzGeklaert { get; set; }
+        public string BosEinheit { get; set; } = string.Empty;
+        public string BosZugfuehrer { get; set; } = string.Empty;
+        public string BosFunkrufname { get; set; } = string.Empty;
+        public string BosAufgabenteilung { get; set; } = string.Empty;
+        public bool BosAbschnittAbgestimmt { get; set; }
+        public bool BosRessourcenBesprochen { get; set; }
         public string StaffelName { get; set; } = string.Empty;
         public string StaffelAdresse { get; set; } = string.Empty;
         public string StaffelTelefon { get; set; } = string.Empty;
@@ -121,6 +136,21 @@ namespace Einsatzueberwachung.Domain.Models
                 Szenario = data.Szenario,
                 EinsatzDatum = data.EinsatzDatum,
                 EinsatzNummer = data.EinsatzNummer,
+                EinsatzkontakteMigriert = data.EinsatzkontakteMigriert,
+                PolizeiKontaktName = data.PolizeiKontaktName,
+                PolizeiDienstnummer = data.PolizeiDienstnummer,
+                PolizeiTelefon = data.PolizeiTelefon,
+                PolizeiVermisstenmeldungAufgenommen = data.PolizeiVermisstenmeldungAufgenommen,
+                PolizeiKoordinationBesprochen = data.PolizeiKoordinationBesprochen,
+                PolizeiSuchabschnittAbgestimmt = data.PolizeiSuchabschnittAbgestimmt,
+                PolizeiRueckmeldepflichtVereinbart = data.PolizeiRueckmeldepflichtVereinbart,
+                PolizeiDatenschutzGeklaert = data.PolizeiDatenschutzGeklaert,
+                BosEinheit = data.BosEinheit,
+                BosZugfuehrer = data.BosZugfuehrer,
+                BosFunkrufname = data.BosFunkrufname,
+                BosAufgabenteilung = data.BosAufgabenteilung,
+                BosAbschnittAbgestimmt = data.BosAbschnittAbgestimmt,
+                BosRessourcenBesprochen = data.BosRessourcenBesprochen,
                 StaffelName = data.StaffelName,
                 StaffelAdresse = data.StaffelAdresse,
                 StaffelTelefon = data.StaffelTelefon,

@@ -1,370 +1,74 @@
-/* ========================================
-   MODERN MONITOR STYLES
-   ======================================== */
-
-.monitor-container {
-    max-width: 1800px;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
-
-/* Classic 2-column monitor layout (original style) */
-.monitor-container-classic {
-    max-width: 1800px;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
-
-.monitor-header {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 90%, #0a1628) 0%, color-mix(in srgb, var(--theme-primary) 72%, #050d1c) 100%);
-    border-radius: 16px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-
-    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-primary) 28%, transparent);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 2rem;
-}
-
-.einsatz-info-card {
-    flex: 1;
-    min-width: 300px;
-}
-
-.einsatz-badge {
-    margin-bottom: 1rem;
-}
-
-.badge-einsatz {
-    background: var(--danger-fill);
-    color: var(--danger-on-fill);
-    padding: 0.5rem 1.5rem;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 1.1rem;
-    display: inline-block;
-    animation: pulse-badge 2s infinite;
-}
-
-
-.badge-uebung {
-    background: var(--signal-warning-hue);
-    color: var(--warning-on-fill);
-    padding: 0.5rem 1.5rem;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 1.1rem;
-    display: inline-block;
-}
-
-.einsatz-info-card h1 {
-    font-size: 2.5rem;
-    margin: 0.5rem 0;
-    font-weight: 700;
-}
-
-.einsatz-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2rem;
-    margin-top: 1rem;
-    font-size: 1.1rem;
-}
-
-.einsatz-meta span {
-    opacity: 0.95;
-}
-
-.header-actions {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.monitor-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 2rem;
-}
-
-/* Section Headers */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 3px solid var(--primary-color);
-}
-
-.section-header h2 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--primary-color);
-    margin: 0;
-}
-
-/* Teams Section */
-.teams-section {
-    background: rgba(0, 0, 0, 0.02);
-    border-radius: 16px;
-    padding: 2rem;
-}
-
-.teams-monitor-grid {
-    display: grid;
-    gap: 1.5rem;
-}
-
-
-/* Custom Marker Styles */
-.custom-marker {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: white;
-    border-radius: 50%;
-    border: 3px solid var(--info-color);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    font-size: 1.5rem;
-}
-
-.custom-marker.einsatzort {
-    border-color: var(--danger-color);
-    background: var(--danger-fill);
-    color: var(--danger-on-fill);
-
-}
-
-.custom-marker.team {
-    border-color: var(--success-color);
-    background: var(--success-fill);
-    color: var(--success-on-fill);
-
-}
-
-.settings-page .card-header,
-.monitor-page .card-header {
-    background: var(--ui-card-header-bg);
-    border-bottom: 1px solid var(--ui-card-header-border);
-}
-
-.monitor-stat-card {
-    background: var(--ui-tile-bg);
-    border: 1px solid var(--ui-tile-border);
-    border-radius: 10px;
-    padding: 0.85rem 0.95rem;
-    min-height: 92px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.monitor-stat-warning {
-    border-color: var(--ui-warning-accent);
-    box-shadow: inset 0 0 0 1px var(--ui-warning-shadow);
-}
-
-.monitor-stat-label {
-    color: var(--ui-tile-muted-text);
-    font-size: 0.86rem;
-}
-
-.monitor-stat-value {
-    color: var(--ui-tile-strong-text);
-    font-size: 1.5rem;
-    line-height: 1.1;
-    font-weight: 700;
-    margin-top: 0.2rem;
-}
-
-.monitor-quick-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid var(--ui-tile-border);
-    min-width: 150px;
-}
-
-.monitor-quick-actions .btn {
-    border-radius: 0;
-    border: 0;
-    border-bottom: 1px solid var(--ui-separator-strong);
-    justify-content: center;
-    min-height: 44px;
-    font-weight: 600;
-}
-
-.monitor-quick-actions .btn:last-child {
-    border-bottom: 0;
-}
-
-.monitor-page .card {
-    border-color: var(--ui-tile-border);
-}
-
-.monitor-page .table > :not(caption) > * > * {
-    padding-top: 0.6rem;
-    padding-bottom: 0.6rem;
-}
-
-.modal-close-mission {
-    width: min(920px, 95vw);
-}
-
-.modal-close-mission-header {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--danger-color) 80%, #000000) 0%, var(--danger-color) 100%);
-    color: var(--danger-on-fill);
-    border-bottom-color: rgba(255, 255, 255, 0.18);
-}
-
-.modal-close-mission .border.rounded {
-    background: var(--ui-tile-bg);
-    border-color: var(--ui-tile-border) !important;
-}
-
-.modal-close-mission .text-muted {
-    color: var(--ui-muted) !important;
-}
-
-.modal-close-mission .btn-outline-light {
-    border-color: rgba(255, 255, 255, 0.4);
-    color: var(--danger-on-fill);
-}
-
-.modal-close-mission .btn-outline-light:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.6);
-    color: var(--danger-on-fill);
-}
-
-.monitor-checklist-scroll {
-    max-height: 180px;
+.panel-picker-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: var(--z-dropdown, 1050);
+    min-width: 200px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .15);
+    max-height: min(50vh, 20rem);
     overflow-y: auto;
-    padding-right: 0.25rem;
+    overscroll-behavior: contain;
 }
 
-.monitor-weather-card {
-    border-color: var(--ui-tile-border);
-}
+@supports (anchor-name: --a) {
+    .mon-anchor-quicknote > .btn { anchor-name: --picker-quicknote; }
 
-.monitor-weather-metric {
-    background: var(--ui-tile-bg);
-    border: 1px solid var(--ui-tile-border);
-    border-radius: 10px;
-    padding: 0.65rem 0.75rem;
-    height: 100%;
-}
-
-.monitor-weather-value {
-    color: var(--ui-tile-strong-text);
-    font-size: 1rem;
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.monitor-weather-label {
-    color: var(--ui-tile-muted-text);
-    font-size: 0.82rem;
-    margin-top: 0.15rem;
-}
-
-.monitor-weather-forecast {
-    border-top: 1px solid var(--ui-row-border);
-    padding-top: 0.85rem;
-}
-
-.monitor-weather-forecast-title {
-    color: var(--ui-tile-muted-text);
-    font-size: 0.85rem;
-    margin-bottom: 0.45rem;
-    font-weight: 600;
-}
-
-.monitor-weather-forecast-grid {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0.45rem;
-}
-
-.monitor-weather-forecast-item {
-    background: var(--ui-tile-bg);
-    border: 1px solid var(--ui-tile-border);
-    border-radius: 9px;
-    padding: 0.45rem 0.5rem;
-}
-
-.monitor-weather-forecast-item.forecast-warning {
-    border-color: var(--ui-warning-accent);
-    box-shadow: inset 0 0 0 1px var(--ui-warning-shadow);
-}
-
-.monitor-weather-forecast-item.forecast-critical {
-    border-color: var(--danger-border);
-    box-shadow: inset 0 0 0 1px var(--danger-shadow);
-}
-
-.monitor-weather-forecast-item .forecast-time {
-    font-size: 0.82rem;
-    color: var(--ui-tile-muted-text);
-    margin-bottom: 0.1rem;
-}
-
-.monitor-weather-forecast-item .forecast-temp {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--ui-tile-strong-text);
-}
-
-.monitor-weather-forecast-item .forecast-rain,
-.monitor-weather-forecast-item .forecast-wind {
-    font-size: 0.78rem;
-    color: var(--ui-tile-muted-text);
-}
-
-@media (max-width: 992px) {
-    .monitor-quick-actions {
-        width: 100%;
-        flex-direction: row;
-        min-width: 0;
+    .mon-anchor-quicknote .panel-picker-dropdown {
+        width: min(20rem, calc(100vw - 1rem));
+        position: fixed;
+        position-anchor: --picker-quicknote;
+        top: anchor(bottom);
+        left: auto;
+        right: anchor(right);
+        position-try-fallbacks: flip-block, flip-inline;
     }
 
-    .monitor-quick-actions .btn {
-        flex: 1;
-        border-bottom: 0;
-        border-right: 1px solid var(--ui-separator-strong);
+    .mon-anchor-teamfilter > .btn { anchor-name: --picker-teamfilter; }
+
+    .mon-anchor-teamfilter .panel-picker-dropdown {
+        position: fixed;
+        position-anchor: --picker-teamfilter;
+        top: anchor(bottom);
+        left: anchor(left);
+        right: auto;
+        position-try-fallbacks: flip-block;
     }
 
-    .monitor-quick-actions .btn:last-child {
-        border-right: 0;
-    }
-
-    .monitor-weather-forecast-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    @media (max-height: 700px) {
+        .mon-anchor-quicknote .panel-picker-dropdown,
+        .mon-anchor-teamfilter .panel-picker-dropdown {
+            top: auto;
+            bottom: anchor(top);
+        }
     }
 }
 
-@media (max-width: 576px) {
-    .monitor-weather-forecast-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+@supports not (anchor-name: --a) {
+    @media (max-height: 680px) {
+        .mon-anchor-quicknote .panel-picker-dropdown,
+        .mon-anchor-teamfilter .panel-picker-dropdown {
+            top: auto;
+            bottom: calc(100% + 0.25rem);
+        }
     }
 }
 
-.page-headline-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    border-bottom: 1px solid var(--ui-page-headline-border);
-    padding-bottom: 0.8rem;
+.panel-picker-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-backdrop, 1049);
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.monitor-panel-picker-wrapper {
+    position: relative;
 }
 
 /* ========================================
@@ -376,12 +80,14 @@ main:has(.monitor-dashboard-wrapper) {
     overflow: hidden;
 }
 main:has(.monitor-dashboard-wrapper) .app-content {
-    padding: 0;
+    padding: 0 !important;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    min-width: 0;
+    max-width: none;
 }
 
 .monitor-dashboard-wrapper {
@@ -395,90 +101,260 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 /* CSS-Grid 12-spaltig */
 .monitor-dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    grid-template-rows: auto 1fr;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: max-content minmax(0, 1fr);
     grid-auto-flow: dense;
     gap: 1.25rem;
     padding: 0.75rem;
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    background: color-mix(in srgb, var(--theme-primary) 4%, var(--ui-surface-2));
+    background: var(--ui-surface-2);
 }
 
-/* ── Panel-Positionen (relative Breiten) ────────────────────────── */
-
-/* Notizen: feste rechte Spalte über beide Zeilen — EXPLIZIT verankert
-   (Start-Zeile UND Start-Spalte). Ohne festen Zeilenstart platziert der
-   Grid-Algorithmus das rowspan-2-Panel beim Ein-/Ausblenden anderer Panels
-   in eine andere Zeile, wodurch die übrigen Panels verrutschen und
-   unterschiedlich hoch erscheinen. */
-[data-panel-id="notizen"]      { grid-column: 10 / span 3; grid-row: 1 / span 2; }
-
-/* Komplette Info-Zeile ausgeblendet: Notizen NICHT mehr über beide Zeilen
-   spannen, sonst ragt es um die (leere) Zeile 1 + Row-Gap über Teams/Suchgebiete
-   hinaus. Stattdessen nur Zeile 2 belegen → bündig mit der Arbeitszeile. */
-.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"] {
-    grid-row: 2;
+.monitor-surface,
+.dashboard-panel {
+    border: 1px solid var(--ui-border);
+    border-radius: var(--theme-border-radius, 10px);
 }
 
-/* Zeile 1: Info | Vermissten | Wetter (je 3 Spalten neben Notizen) */
-[data-panel-id="einsatz-info"] { grid-column: span 3; grid-row: 1; }
-[data-panel-id="vermissten"]   { grid-column: span 3; grid-row: 1; }
-[data-panel-id="wetter"]       { grid-column: span 3; grid-row: 1; }
+/* Compact, data-driven information tiles above the main work area */
+.monitor-summary-grid {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    background: var(--ui-surface);
+}
 
-/* Zeile 2: Teams (default 9 Sp.) | Suchgebiete (3 Sp.) */
-[data-panel-id="teams"]        { grid-column: span 9; grid-row: 2; }
-[data-panel-id="suchgebiete"]  { grid-column: span 3; grid-row: 2; }
+.monitor-summary-toggle {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    margin: 0 6px 6px auto;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ui-muted);
+    font-size: 0.75rem;
+}
 
-/* Suchgebiete sichtbar: Teams auf 6 Spalten (Notizen belegt 3) */
-.monitor-dashboard-grid:has([data-panel-id="suchgebiete"]) [data-panel-id="teams"] {
+.monitor-summary-toggle:hover {
+    background: var(--ui-surface-2);
+    color: var(--ui-text);
+}
+
+.monitor-summary-toggle:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 1px;
+}
+
+.monitor-summary-grid-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    align-content: start;
+    align-items: stretch;
+    gap: 8px 16px;
+    min-width: 0;
+    padding: 8px 12px 0;
+}
+
+.monitor-summary-grid-tiles[hidden] {
+    display: none !important;
+}
+
+.monitor-summary-grid.is-collapsed {
+    flex-direction: row;
+    align-items: center;
+    min-height: 36px;
+    padding-left: 12px;
+}
+
+.monitor-summary-collapsed-label {
+    min-width: 0;
+    color: var(--ui-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.monitor-summary-grid.is-collapsed .monitor-summary-toggle {
+    margin: 0 6px 0 auto;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .monitor-summary-toggle {
+        width: 44px;
+        height: 44px;
+        margin-bottom: 0;
+    }
+}
+
+/* Keep the currently running pre-restart Razor page in its original layout. */
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)) [data-panel-id="einsatz-info"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)) [data-panel-id="vermissten"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)) [data-panel-id="wetter"] {
+    grid-row: 1;
+    grid-column: span 4;
+}
+
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="vermissten"])) [data-panel-id="einsatz-info"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])) [data-panel-id="vermissten"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])) [data-panel-id="wetter"] {
     grid-column: span 6;
 }
-/* Teams ausgeblendet, Suchgebiete sichtbar: Suchgebiete füllt die Arbeitszeile */
+
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] {
+    grid-column: span 12;
+}
+
+.monitor-info-tile {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    gap: 8px;
+    min-width: 0;
+    min-height: 0;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.monitor-info-tile-header {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    flex: 0 0 44px;
+    min-height: 44px;
+    overflow: hidden;
+}
+
+.monitor-info-tile-label {
+    display: inline-flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0.35rem;
+    color: var(--ui-tile-muted-text);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.monitor-info-tile-label i {
+    flex: 0 0 auto;
+    font-size: 0.9rem;
+}
+
+.monitor-info-tile-value {
+    min-width: 0;
+    color: var(--ui-tile-strong-text);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.monitor-info-tile-actions {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease-out;
+}
+
+.monitor-info-tile:hover .monitor-info-tile-actions,
+.monitor-info-tile:focus-within .monitor-info-tile-actions {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.monitor-info-tile-actions,
+.monitor-info-actions {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 0.15rem;
+}
+
+.monitor-info-actions {
+    align-self: start;
+    min-height: 2rem;
+}
+
+.monitor-info-details {
+    grid-column: 1 / -1;
+    min-width: 0;
+    padding: 0.75rem;
+    border: 1px solid var(--ui-tile-border);
+    border-radius: 0.625rem;
+    background: var(--ui-tile-bg);
+}
+
+.monitor-info-details[hidden] {
+    display: none !important;
+}
+
+/* Teams are the primary work surface; notes and search areas remain available beside them. */
+[data-panel-id="notizen"] { grid-column: 9 / span 4; grid-row: 2; }
+[data-panel-id="teams"] { grid-column: span 6; grid-row: 2; }
+[data-panel-id="suchgebiete"] { grid-column: span 2; grid-row: 2; }
+
+.monitor-dashboard-grid:not(:has([data-panel-id="suchgebiete"])) [data-panel-id="teams"] {
+    grid-column: span 8;
+}
+
 .monitor-dashboard-grid:not(:has([data-panel-id="teams"])) [data-panel-id="suchgebiete"] {
     grid-column: span 9;
 }
 
-/* ── Zeile-1-Lücken füllen, wenn Info-Panels ausgeblendet werden (Notizen sichtbar) ──
-   Frei sind 9 Spalten. Zwei sichtbar → 5 + 4, eins sichtbar → 9. */
-.monitor-dashboard-grid:not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 5; }
-.monitor-dashboard-grid:not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"]   { grid-column: span 4; }
-.monitor-dashboard-grid:not(:has([data-panel-id="vermissten"])) [data-panel-id="einsatz-info"] { grid-column: span 5; }
-.monitor-dashboard-grid:not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"]      { grid-column: span 4; }
-.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])) [data-panel-id="vermissten"] { grid-column: span 5; }
-.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])) [data-panel-id="wetter"]     { grid-column: span 4; }
-.monitor-dashboard-grid:not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 9; }
-.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"] { grid-column: span 9; }
-.monitor-dashboard-grid:not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"] { grid-column: span 9; }
-
-/* ── Notizen ausgeblendet: volle 12 Spalten pro Zeile ── */
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="einsatz-info"] { grid-column: span 4; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="vermissten"]   { grid-column: span 4; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="wetter"]       { grid-column: span 4; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="teams"]        { grid-column: span 12; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"]  { grid-column: span 4; }
-
-/* Suchgebiete sichtbar (ohne Notizen): Teams 8 Sp., Suchgebiete 4 Sp. */
-.monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="teams"] {
-    grid-column: span 8;
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):has([data-panel-id="suchgebiete"]) [data-panel-id="teams"] {
+    grid-column: span 9;
 }
-/* Teams ausgeblendet (ohne Notizen): Suchgebiete volle Breite */
+
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
+    grid-column: span 3;
+}
+
+.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="suchgebiete"])) [data-panel-id="teams"] {
+    grid-column: span 12;
+}
+
 .monitor-dashboard-grid:not(:has([data-panel-id="teams"])):not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
     grid-column: span 12;
 }
 
-/* Zwei Info-Panels (ohne Notizen) → 6 + 6 */
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 6; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"]   { grid-column: span 6; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="einsatz-info"] { grid-column: span 6; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"]      { grid-column: span 6; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])) [data-panel-id="vermissten"] { grid-column: span 6; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])) [data-panel-id="wetter"]      { grid-column: span 6; }
-/* Ein Info-Panel (ohne Notizen) → volle 12 */
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="einsatz-info"] { grid-column: span 12; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="wetter"])) [data-panel-id="vermissten"] { grid-column: span 12; }
-.monitor-dashboard-grid:not(:has([data-panel-id="notizen"])):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])) [data-panel-id="wetter"] { grid-column: span 12; }
+.monitor-dashboard-grid:not(:has([data-panel-id="teams"])) [data-panel-id="notizen"] {
+    grid-column: 10 / span 3;
+}
+
+.monitor-dashboard-grid:not(:has([data-panel-id="teams"])):not(:has([data-panel-id="suchgebiete"])) [data-panel-id="notizen"] {
+    grid-column: 1 / -1;
+}
+
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) {
+    grid-template-rows: minmax(0, 1fr);
+}
+
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="teams"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="suchgebiete"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"] {
+    grid-row: 1;
+}
 
 /* Panel-Wrapper & Panel */
 .dashboard-panel-wrapper {
@@ -491,32 +367,21 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 .dashboard-panel {
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--ui-border);
-    border-top: 3px solid var(--primary-color);
-    border-radius: 0.5rem;
     overflow: hidden;
     background: var(--ui-surface);
     height: 100%;
-    box-shadow: 0 1px 4px color-mix(in srgb, var(--theme-primary) 8%, rgba(0, 0, 0, 0.07));
+    box-shadow: var(--theme-card-shadow);
     transition: box-shadow 0.15s ease;
 }
-.dashboard-panel:hover {
-    box-shadow: 0 3px 14px color-mix(in srgb, var(--theme-primary) 16%, rgba(0, 0, 0, 0.13));
-}
-
 [data-intensity="dezent"] .dashboard-panel {
     box-shadow: none;
-    border-top-width: 0;
-    border-top-color: transparent;
-}
-
-[data-intensity="dezent"] .dashboard-panel:hover {
-    box-shadow: 0 1px 6px color-mix(in srgb, var(--theme-primary) 8%, transparent);
+    border-top-width: 1px;
+    border-top-color: var(--ui-border);
 }
 
 [data-intensity="lebhaft"] .dashboard-panel {
-    border-top-width: 4px;
-    box-shadow: 0 4px 18px color-mix(in srgb, var(--theme-primary) 22%, rgba(0, 0, 0, 0.13));
+    border-top-width: 1px;
+    border-top-color: var(--ui-border);
 }
 
 .dashboard-panel-header {
@@ -543,17 +408,392 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     margin: 0;
 }
 
+.dashboard-panel-title-popout {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    min-height: 44px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.dashboard-panel-title-popout > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dashboard-panel-title-popout > i {
+    flex: 0 0 auto;
+    color: var(--ui-muted);
+    font-size: 0.8rem;
+}
+
+.dashboard-panel-title-popout:hover {
+    color: var(--ui-heading-text);
+    text-decoration: underline;
+}
+
+.dashboard-panel-title-popout:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 1px;
+}
+
 .dashboard-panel-body {
     padding: 0.75rem;
     overflow-y: auto;
     flex: 1;
 }
 
-/* Ausgeblendetes Panel (wird nicht gerendert, nur im Dropdown-Picker sichtbar) */
+.dashboard-panel-wrapper--summary {
+    align-self: start;
+}
 
-/* Wetter-Panel */
-.wetter-panel-content {
-    font-size: 0.9rem;
+.dashboard-panel-wrapper--summary .dashboard-panel {
+    height: auto;
+    border-top: 1px solid var(--ui-border);
+    box-shadow: none;
+}
+
+[data-intensity="dezent"] .dashboard-panel-wrapper--summary .dashboard-panel {
+    border-top-width: 0;
+}
+
+[data-intensity="lebhaft"] .dashboard-panel-wrapper--summary .dashboard-panel {
+    border-top: 3px solid var(--primary-color);
+}
+
+.dashboard-panel-wrapper--summary .dashboard-panel-header {
+    min-height: 2.5rem;
+    padding: 0.25rem 0.65rem 0;
+    background: transparent;
+    border-bottom: 0;
+}
+
+.dashboard-panel-wrapper--summary .dashboard-panel-title {
+    color: var(--ui-tile-muted-text);
+    font-size: 0.82rem;
+}
+
+.dashboard-panel-wrapper--summary .dashboard-panel-title--editable {
+    flex: 0 1 auto;
+}
+
+.dashboard-panel-wrapper--summary .dashboard-panel-body {
+    padding: 0.15rem 0.75rem 0.65rem;
+    overflow-y: visible;
+    flex: 0 0 auto;
+}
+
+.monitor-summary-title-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.monitor-summary-title-toggle--inline {
+    justify-content: flex-start;
+    width: auto;
+    min-height: 2.75rem;
+}
+
+.monitor-summary-title-toggle:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+}
+
+.monitor-summary-title-toggle i {
+    flex: 0 0 auto;
+    font-size: 0.8rem;
+}
+
+.monitor-summary-edit-button {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--ui-tile-muted-text);
+    font-size: 0.8rem;
+}
+
+.monitor-summary-edit-button:hover {
+    background: var(--ui-surface-2);
+    color: var(--ui-text);
+}
+
+.monitor-summary-edit-button:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 1px;
+}
+
+.monitor-info-tile .monitor-summary-edit-button {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.monitor-info-tile:hover .monitor-summary-edit-button,
+.monitor-info-tile:focus-within .monitor-summary-edit-button,
+.monitor-info-tile .monitor-summary-edit-button:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .monitor-info-tile .monitor-summary-edit-button {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .monitor-info-tile .monitor-summary-edit-button {
+        transition: none;
+    }
+}
+
+.monitor-summary-kicker {
+    display: block;
+    color: var(--ui-tile-muted-text);
+    font-size: 0.72rem;
+    line-height: 1.15;
+}
+
+.monitor-summary-primary-value {
+    color: var(--ui-tile-strong-text);
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.monitor-summary-value-missing {
+    color: var(--ui-tile-muted-text);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.monitor-summary-subline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 0.65rem;
+    color: var(--ui-tile-muted-text);
+    font-size: 0.8rem;
+    line-height: 1.25;
+}
+
+.monitor-summary-details {
+    margin-top: 0.6rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--ui-border);
+}
+
+.monitor-summary-details[hidden] {
+    display: none !important;
+}
+
+.monitor-summary-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem 0.75rem;
+}
+
+.monitor-summary-detail-grid > div {
+    min-width: 0;
+}
+
+.monitor-summary-detail-grid dt {
+    color: var(--ui-tile-muted-text);
+    font-size: 0.76rem;
+    font-weight: 400;
+}
+
+.monitor-summary-detail-grid dd {
+    margin: 0;
+    color: var(--ui-tile-strong-text);
+    overflow-wrap: anywhere;
+}
+
+.monitor-summary-empty {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: var(--ui-tile-muted-text);
+    font-size: 0.82rem;
+}
+
+.monitor-summary-empty .btn {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.monitor-summary-person {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.85rem;
+    flex-wrap: wrap;
+}
+
+.monitor-summary-person-main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.7rem;
+    min-width: 0;
+}
+
+.monitor-summary-person-meta {
+    color: var(--ui-tile-muted-text);
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+.monitor-summary-key-details {
+    display: grid;
+    gap: 0.2rem;
+    margin-top: 0.4rem;
+}
+
+.monitor-summary-key-detail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem 0.55rem;
+    font-size: 0.8rem;
+    line-height: 1.25;
+}
+
+.monitor-summary-key-label {
+    flex: 0 0 auto;
+    color: var(--ui-tile-muted-text);
+    font-size: 0.75rem;
+}
+
+.monitor-summary-key-value {
+    min-width: 0;
+    color: var(--ui-tile-strong-text);
+    overflow-wrap: anywhere;
+}
+
+.monitor-text-secondary {
+    color: var(--ui-tile-muted-text);
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+.monitor-text-caption {
+    color: var(--ui-tile-muted-text);
+    font-size: 0.72rem;
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+.monitor-weather-refreshing {
+    margin-top: 0.25rem;
+}
+
+.monitor-coordination-checklist {
+    display: grid;
+    gap: 0.25rem;
+    margin-top: 0.4rem;
+}
+
+.monitor-coordination-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-height: 44px;
+    margin: 0;
+    color: var(--ui-tile-strong-text);
+    font-size: 0.875rem;
+    line-height: 1.3;
+    cursor: pointer;
+}
+
+.monitor-coordination-check .form-check-input {
+    flex: 0 0 auto;
+    margin: 0.15rem 0 0;
+}
+
+.monitor-coordination-check span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.monitor-coordination-more {
+    display: block;
+    padding: 0 0.25rem;
+    color: var(--ui-tile-muted-text);
+    font-size: 0.8rem;
+    line-height: 1.2;
+}
+
+.monitor-summary-person-tabs {
+    margin-bottom: 0.35rem;
+}
+
+.monitor-summary-person-tabs .vermissten-panel-tab {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.monitor-summary-alerts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.monitor-summary-alert {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.45rem;
+    border: 1px solid var(--danger-border);
+    border-radius: 0.35rem;
+    background: var(--danger-soft);
+    color: var(--danger-color);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+@media (pointer: coarse) {
+    .monitor-info-tile-actions {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .monitor-info-tile-actions {
+        transition: none;
+    }
+}
+
+.monitor-summary-error {
+    color: var(--warning-color);
+    font-size: 0.78rem;
+    line-height: 1.25;
 }
 
 /* Vorhersage-Leiste */
@@ -571,22 +811,15 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     min-width: 3.2rem;
 }
 
-.forecast-critical {
-    background: var(--danger-soft);
-    color: var(--danger-color);
-    border: 1px solid var(--danger-border);
-}
-
-.forecast-warning {
+.forecast-item.forecast-heat-warning {
     background: var(--warning-soft);
     color: var(--warning-color);
     border: 1px solid var(--warning-border);
 }
 
 /* Second channel for risk — never color alone. A leading marker keeps the
-   warning/critical state legible under colorblindness and bright sunlight. */
-.forecast-warning::before,
-.forecast-critical::before {
+   heat warning legible under colorblindness and bright sunlight. */
+.forecast-item.forecast-heat-warning::before {
     content: "\26A0";
     display: block;
     font-size: 0.7rem;
@@ -594,280 +827,191 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     margin-bottom: 0.05rem;
 }
 
-/* Team-Notizen Badge */
-.team-notes-badge {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    background: var(--warning-soft);
-    border: 1px solid var(--warning-border);
-    border-radius: 0.25rem;
-    font-size: 0.8rem;
-    line-height: 1.4;
-    max-height: 3.5rem;
-    overflow: hidden;
+.monitor-tablet-tabs {
+    display: none;
+    position: sticky;
+    bottom: 0;
+    z-index: var(--z-sticky, 1020);
 }
 
-/* Reply thread — full subtle box instead of a side stripe */
-.monitor-reply-thread {
-    border: 1px solid var(--ui-border);
-    border-radius: 0.25rem;
-    background: color-mix(in srgb, var(--ui-muted) 6%, transparent);
-}
-
-/* Suchgebiete-Panel */
-.suchgebiete-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-}
-
-.suchgebiet-row {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.4rem 0.5rem;
-    border-radius: 0.25rem;
-    background: var(--ui-surface-2);
-    border: 1px solid var(--ui-border);
-}
-
-.suchgebiet-row.suchgebiet-done {
-    opacity: 0.55;
-    text-decoration: line-through;
-}
-
-.suchgebiet-color-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    border: 2px solid rgba(255,255,255,.4);
-    box-shadow: 0 0 0 1px rgba(0,0,0,.15);
-}
-
-.suchgebiet-info {
-    flex: 1;
+.monitor-tablet-tab {
     min-width: 0;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ui-muted);
+    font: inherit;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
 }
 
-.suchgebiet-team {
-    flex-shrink: 0;
+.monitor-tablet-tab:hover {
+    background: var(--ui-surface-2);
+    color: var(--ui-text);
 }
 
-/* Responsive: Tablet 768–1199 px → 6-Spalten-Grid */
-@media (min-width: 768px) and (max-width: 1199px) {
+.monitor-tablet-tab.is-active {
+    border-color: var(--theme-primary-border);
+    background: var(--theme-primary-soft);
+    color: var(--theme-primary-text);
+}
+
+.monitor-tablet-tab:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+}
+
+.monitor-dashboard-grid .dashboard-panel-header .btn-sm,
+.monitor-dashboard-grid .dashboard-panel-body .btn-sm {
+    min-height: 44px;
+}
+
+.monitor-dashboard-grid .dashboard-panel-header .btn-sm:not(.teams-filter-trigger) {
+    min-width: 44px;
+}
+
+/* Tablet workspace: switch modules instead of stacking scrollable panels */
+@media (min-width: 768px) and (max-width: 1200px) {
     .monitor-dashboard-grid {
-        grid-template-columns: repeat(6, 1fr);
-        grid-template-rows: auto auto 1fr auto;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-rows: max-content minmax(0, 1fr) max-content;
         gap: 0.75rem;
     }
 
-    /* Zeile 1: Info (2) | Vermissten (2) | Wetter (2) */
-    [data-panel-id="einsatz-info"] { grid-column: span 2 !important; grid-row: 1; }
-    [data-panel-id="vermissten"]   { grid-column: span 2 !important; grid-row: 1; }
-    [data-panel-id="wetter"]       { grid-column: span 2 !important; grid-row: 2; }
-    /* Notizen: eigene Zeile unten, kein Row-Span */
-    [data-panel-id="notizen"]      { grid-column: span 6 !important; grid-row: 5; }
-
-    /* Teams + Suchgebiete */
-    [data-panel-id="teams"]       { grid-column: span 6 !important; grid-row: 3; }
-    [data-panel-id="suchgebiete"] { grid-column: span 6 !important; grid-row: 4; }
-
-    /* Desktop-:has()-Regeln für Tablet aufheben */
-    .monitor-dashboard-grid:has([data-panel-id="suchgebiete"]) [data-panel-id="teams"],
-    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="teams"],
-    .monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="teams"] {
-        grid-column: 1 / 7 !important;
-    }
-    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="einsatz-info"],
-    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="vermissten"] {
-        grid-column: revert;
-    }
-    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="wetter"],
-    .monitor-dashboard-grid:not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"],
-    .monitor-dashboard-grid:has([data-panel-id="suchgebiete"]):not(:has([data-panel-id="notizen"])) [data-panel-id="suchgebiete"] {
-        grid-column: 1 / 7 !important;
-    }
-}
-
-/* Responsive: Smartphone < 768 px → 1-spaltig, scrollbar */
-@media (max-width: 767px) {
-    .monitor-dashboard-grid {
-        grid-template-columns: 1fr;
-        grid-template-rows: none;
-        grid-auto-rows: auto;
-        overflow-y: auto;
+    .monitor-summary-grid {
+        grid-column: 1 / -1 !important;
+        grid-row: 1;
     }
 
-    [data-panel-id="einsatz-info"],
-    [data-panel-id="vermissten"],
-    [data-panel-id="wetter"],
+    .monitor-tablet-tabs {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-row: 3;
+        grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+        gap: 4px;
+        padding: 4px;
+        padding-bottom: max(4px, env(safe-area-inset-bottom));
+        border: 1px solid var(--ui-border);
+        border-radius: 12px;
+        background: var(--ui-surface);
+    }
+
     [data-panel-id="teams"],
     [data-panel-id="suchgebiete"],
     [data-panel-id="notizen"] {
-        grid-column: 1 / 2 !important;
-        grid-row: auto !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 2 !important;
+    }
+
+    .monitor-tablet-panel-hidden {
+        display: none !important;
+    }
+
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) {
+        grid-template-rows: minmax(0, 1fr) max-content;
+    }
+
+}
+
+/* Mobile and tablet share one active workspace; the navigation stays at the bottom. */
+@media (max-width: 767.98px) {
+    .monitor-dashboard-grid {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: max-content minmax(0, 1fr) max-content;
+        grid-auto-rows: auto;
+        gap: 8px;
+        overflow: hidden;
+    }
+
+    .monitor-summary-grid-tiles {
+        padding-bottom: 0;
+    }
+
+    .monitor-summary-grid {
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+    }
+
+    .monitor-tablet-tabs {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-row: 3;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 2px;
+        padding: 4px;
+        padding-bottom: max(4px, env(safe-area-inset-bottom));
+        border: 1px solid var(--ui-border);
+        border-radius: 12px;
+        background: var(--ui-surface);
+    }
+
+    .monitor-tablet-tab {
+        min-height: 48px;
+        padding: 4px 2px;
+        font-size: 0.8rem;
+        line-height: 1.15;
+        white-space: normal;
+    }
+
+    [data-panel-id="teams"],
+    [data-panel-id="suchgebiete"],
+    [data-panel-id="notizen"] {
+        grid-column: 1 / -1 !important;
+        grid-row: 2 !important;
+    }
+
+    .monitor-tablet-panel-hidden {
+        display: none !important;
+    }
+
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) {
+        grid-template-rows: minmax(0, 1fr) max-content;
+    }
+
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) .monitor-tablet-tabs {
+        grid-row: 2;
+    }
+
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="teams"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="suchgebiete"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"] {
+        grid-row: 1 !important;
     }
 }
 
-/* ---- Einsatzdauer im Monitor-Header ---- */
-.einsatz-dauer-badge {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--ui-text);
-    gap: 0.25rem;
+@media (min-width: 360px) and (max-width: 575px) {
+    .monitor-summary-grid-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .monitor-info-tile {
+        padding: 6px 8px;
+    }
 }
 
-/* Szenario-Dropdown im EinsatzMonitor-Header */
-.monitor-szenario-wrap {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    /* Separator: status badges (readout) → szenario button (control) */
-    margin-left: 0.2rem;
-    padding-left: 0.55rem;
-    border-left: 1px solid var(--ui-topbar-border);
-}
-.monitor-szenario-btn {
-    cursor: pointer;
-    background: color-mix(in srgb, var(--monitor-szenario-color, var(--theme-primary)) 78%, var(--theme-secondary) 22%);
-    color: var(--theme-on-accent);
-}
-.monitor-szenario-btn:hover,
-.monitor-szenario-btn:focus {
-    filter: saturate(1.06) brightness(1.05);
-}
-.monitor-szenario-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: var(--z-backdrop, 1049);
-    background: transparent;
-}
-.monitor-szenario-menu {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    z-index: var(--z-dropdown, 1050);
-    min-width: 220px;
-    margin: 0;
-    padding: 4px 0;
-    list-style: none;
-    background: var(--ui-surface);
-    color: var(--ui-text);
-    border: 1px solid var(--ui-border);
-    border-radius: 6px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-}
-.monitor-szenario-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 6px 12px;
-    border: 0;
-    background: transparent;
-    text-align: left;
-    color: inherit;
-    font-size: 14px;
-    cursor: pointer;
-}
-.monitor-szenario-item:hover,
-.monitor-szenario-item:focus {
-    background: var(--ui-surface-2);
-}
-.monitor-szenario-item.active {
-    background: color-mix(in srgb, var(--theme-primary) 20%, var(--ui-surface));
-    font-weight: 600;
-}
-.monitor-szenario-dot {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    flex-shrink: 0;
+@media (min-width: 768px) and (max-width: 960px) {
+    .monitor-summary-grid-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
-.monitor-action-btn {
-    border-width: 1px;
-    border-style: solid;
-}
+@media (max-width: 575px) {
+    [data-panel-id="teams"] .dashboard-panel-header {
+        flex-wrap: wrap;
+        row-gap: 4px;
+        overflow: visible;
+    }
 
-.monitor-action-btn--map {
-    background: color-mix(in srgb, var(--theme-secondary) var(--theme-button-fill), var(--ui-surface));
-    border-color: color-mix(in srgb, var(--theme-secondary) 45%, var(--ui-border));
-    color: color-mix(in srgb, var(--theme-secondary) 80%, var(--ui-text));
-}
-
-.monitor-action-btn--team-mobile {
-    background: transparent;
-    border-color: color-mix(in srgb, var(--theme-secondary) 48%, var(--ui-border));
-    color: color-mix(in srgb, var(--theme-secondary) 84%, var(--ui-text));
-}
-
-.monitor-action-btn--push {
-    background: transparent;
-    border-color: color-mix(in srgb, var(--theme-secondary) 52%, var(--ui-border));
-    color: color-mix(in srgb, var(--theme-secondary) 86%, var(--ui-text));
-}
-
-.monitor-action-btn--stop {
-    background: color-mix(in srgb, var(--theme-primary) var(--theme-button-fill), var(--ui-surface));
-    border-color: var(--theme-primary-border);
-    color: var(--theme-on-accent);
-}
-
-.monitor-action-btn--accent-solid {
-    background: var(--monitor-action-btn-bg, transparent);
-    border-color: var(--monitor-action-btn-border, var(--ui-border));
-    color: var(--monitor-action-btn-text, var(--ui-text));
-    box-shadow: var(--monitor-action-btn-shadow, none);
-}
-
-.monitor-action-btn--accent-solid:hover,
-.monitor-action-btn--accent-solid:focus-visible {
-    background: var(--monitor-action-btn-bg-hover, var(--monitor-action-btn-bg, transparent));
-    border-color: var(--monitor-action-btn-border-hover, var(--monitor-action-btn-border, var(--ui-border)));
-    color: var(--monitor-action-btn-text-hover, var(--monitor-action-btn-text, var(--ui-text)));
-    box-shadow: var(--monitor-action-btn-shadow-hover, var(--monitor-action-btn-shadow, none));
-}
-
-.monitor-action-btn--accent-success {
-    --monitor-action-btn-bg: color-mix(in srgb, var(--theme-secondary) var(--theme-button-fill), var(--ui-surface));
-    --monitor-action-btn-border: color-mix(in srgb, var(--theme-secondary) var(--theme-intensity-border), var(--ui-border));
-    --monitor-action-btn-text: color-mix(in srgb, var(--theme-secondary) var(--theme-intensity-text), var(--ui-text));
-    --monitor-action-btn-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--theme-secondary) var(--theme-intensity-shadow), transparent);
-    --monitor-action-btn-bg-hover: color-mix(in srgb, var(--theme-secondary) 100%, var(--ui-surface));
-    --monitor-action-btn-border-hover: var(--theme-secondary);
-    --monitor-action-btn-text-hover: color-mix(in srgb, var(--theme-secondary) var(--theme-intensity-text), var(--ui-text));
-    --monitor-action-btn-shadow-hover: 0 0 0 0.2rem color-mix(in srgb, var(--theme-secondary) 28%, transparent);
-}
-
-.monitor-action-btn:hover,
-.monitor-action-btn:focus-visible {
-    filter: saturate(1.08);
-}
-
-[data-intensity="dezent"] .monitor-action-btn--map,
-[data-intensity="dezent"] .monitor-action-btn--stop,
-[data-intensity="dezent"] .monitor-action-btn--team-mobile {
-    background: transparent;
-    color: var(--ui-text);
-}
-
-[data-intensity="dezent"] .monitor-action-btn--accent-solid {
-    background: transparent;
-    box-shadow: none;
-    --monitor-action-btn-shadow: none;
-    --monitor-action-btn-shadow-hover: none;
-}
-
-[data-intensity="lebhaft"] .monitor-action-btn--accent-solid {
-    background: var(--monitor-action-btn-bg, transparent);
-    box-shadow: var(--monitor-action-btn-shadow, none);
+    [data-panel-id="teams"] .dashboard-panel-header .dashboard-panel-title {
+        flex: 0 0 100%;
+        overflow: visible;
+        white-space: normal;
+    }
 }
 
 /* Multi-Vermisste Panel-Tabs (Dashboard) */
@@ -904,23 +1048,65 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     color: var(--ui-muted);
 }
 
-[data-intensity="dezent"] .monitor-szenario-btn {
-    background: transparent;
-    color: var(--monitor-szenario-color, var(--ui-text));
+/* The operational modules share one quiet surface; state remains explicit in their content. */
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel {
+    border: 1px solid var(--ui-tile-border);
+    border-radius: var(--theme-border-radius, 10px);
+    box-shadow: none;
+    background: var(--ui-surface);
+    transition: none;
 }
 
-[data-intensity="dezent"] .monitor-action-btn--push,
-[data-intensity="dezent"] .monitor-action-btn--accent-solid.monitor-action-btn--accent-success {
-    background: transparent;
-}.theme-preview-surface {
-    border-color: var(--theme-secondary, var(--ui-border)) !important;
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel:hover {
+    box-shadow: none;
 }
 
-/* Anmelde-Code der Teams im QR-Dialog: gross und in Viererbloecken zum Vorlesen */
-.monitor-team-code {
-    margin-top: 12px;
-    font: 700 1.6rem/1.2 'JetBrains Mono', ui-monospace, 'Cascadia Mono', monospace;
-    letter-spacing: 0.08em;
-    text-align: center;
-    user-select: all;
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel .dashboard-panel-header {
+    min-height: 2.75rem;
+    padding: 0.65rem 0.875rem 0.2rem;
+    border-bottom: 0;
+    background: transparent;
+}
+
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel .dashboard-panel-title {
+    color: var(--ui-text);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel .dashboard-panel-body {
+    padding: 0.35rem 0.875rem 0.875rem;
+    background: var(--ui-surface);
+}
+
+[data-panel-id="suchgebiete"] {
+    align-self: start;
+    max-height: 100%;
+}
+
+[data-panel-id="suchgebiete"] > .dashboard-panel {
+    height: auto;
+    max-height: 100%;
+}
+
+[data-panel-id="suchgebiete"] > .dashboard-panel .dashboard-panel-body {
+    min-height: 0;
+}
+
+@media (max-width: 767.98px) {
+    .monitor-dashboard-grid .dashboard-panel-wrapper,
+    .monitor-dashboard-grid .dashboard-panel,
+    .monitor-dashboard-grid [data-panel-id="suchgebiete"] {
+        height: 100%;
+        max-height: none;
+        min-height: 0;
+    }
+
+    .monitor-dashboard-grid .dashboard-panel-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        overflow-y: auto;
+    }
 }

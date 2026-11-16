@@ -1,0 +1,15 @@
+.monitor-coordination-modal-section {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.monitor-coordination-modal-section + .monitor-coordination-modal-section {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--ui-border);
+}
+
+.monitor-coordination-modal-section h4 {
+    margin-bottom: 0.25rem;
+    color: var(--ui-heading);
+}

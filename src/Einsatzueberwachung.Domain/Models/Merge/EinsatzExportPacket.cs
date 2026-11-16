@@ -37,6 +37,7 @@ namespace Einsatzueberwachung.Domain.Models.Merge
         public List<SearchArea> SearchAreas { get; set; } = new();
         public List<MapMarker> MapMarkers { get; set; } = new();
         public List<TeamTrackSnapshot> TrackSnapshots { get; set; } = new();
+        public EinsatzKontaktDaten? Einsatzkontakte { get; set; }
         public List<VermisstenInfo> Vermisste { get; set; } = new();
     }
 }

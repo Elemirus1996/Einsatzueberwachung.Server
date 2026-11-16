@@ -1,0 +1,31 @@
+.monitor-info-tile--person .monitor-info-tile-value {
+    font-size: 1.125rem;
+}
+
+.monitor-info-person-main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem 0.55rem;
+    min-width: 0;
+}
+
+.monitor-info-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.monitor-info-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 100%;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--ui-tile-border);
+    border-radius: 999px;
+    color: var(--ui-tile-strong-text);
+    font-size: 0.76rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}

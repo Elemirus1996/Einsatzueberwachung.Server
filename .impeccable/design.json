@@ -59,6 +59,8 @@
     "typographyMeta": {
       "heading": { "displayName": "Heading", "purpose": "Page and section titles (h1, weight 700, Heading Blue)." },
       "body": { "displayName": "Body", "purpose": "Default reading text, 16px / 1.6, system sans. Cap prose 65–75ch." },
+      "secondary": { "displayName": "Secondary", "purpose": "Supporting details and metric labels (0.8rem, weight 400, line-height 1.2, muted text)." },
+      "caption": { "displayName": "Caption", "purpose": "Compact metadata and transient status (0.72rem, weight 400, line-height 1.2, muted text)." },
       "label": { "displayName": "Label", "purpose": "Form labels and control captions, weight 600." },
       "data": { "displayName": "Data / Mono", "purpose": "JetBrains Mono for times, coordinates, IDs, and the radio log only." }
     },
@@ -118,7 +120,15 @@
       "refersTo": "card",
       "description": "Resting surface container with a themed gradient header. Flat in 'dezent'.",
       "html": "<article class=\"ds-card\"><header class=\"ds-card__header\">Team 1 — Rex</header><div class=\"ds-card__body\">Flächensuche · Abschnitt Nord</div></article>",
-      "css": ".ds-card { border: 1px solid var(--ui-border, #d5deea); border-radius: 12px; background: var(--ui-surface, #ffffff); box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; } .ds-card__header { padding: 1.25rem; border-bottom: 1px solid var(--ui-card-header-border, #d6dfeb); background: var(--ui-card-header-bg, linear-gradient(90deg, #f3f6fb 0%, #edf1f8 100%)); color: var(--ui-card-header-text, #2b3a4f); font: 600 1rem 'Segoe UI', sans-serif; } .ds-card__body { padding: 1.5rem; color: var(--ui-text, #1f2937); }"
+      "css": ".ds-card { border: 1px solid var(--ui-border, #d5deea); border-radius: var(--theme-border-radius, 10px); background: var(--ui-surface, #ffffff); box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; } .ds-card__header { padding: 1.25rem; border-bottom: 1px solid var(--ui-card-header-border, #d6dfeb); background: var(--ui-card-header-bg, linear-gradient(90deg, #f3f6fb 0%, #edf1f8 100%)); color: var(--ui-card-header-text, #2b3a4f); font: 600 1rem 'Segoe UI', sans-serif; } .ds-card__body { padding: 1.5rem; color: var(--ui-text, #1f2937); }"
+    },
+    {
+      "name": "Monitor Surface",
+      "kind": "container",
+      "refersTo": "card",
+      "description": "Shared token border and intensity-adaptive radius; surface fill follows content hierarchy.",
+      "html": "<section class=\"monitor-surface\" aria-label=\"Teamübersicht\">…</section>",
+      "css": ".monitor-surface { border: 1px solid var(--ui-border); border-radius: var(--theme-border-radius, 10px); }"
     },
     {
       "name": "Status Badge",
@@ -159,6 +169,7 @@
       { "name": "The Re-Derivation Rule", "body": "Never hardcode a hex value in a component. Every color comes from a token (--theme-*, --ui-*, --signal-*). If a new element breaks when the operator switches preset, toggles dark mode, or changes intensity, it is wrong.", "section": "colors" },
       { "name": "The Reserved-Brand Rule", "body": "The saturated brand primary appears on primary actions, current selection, and active state only — never as decoration. Headings use Heading Blue, not the brand.", "section": "colors" },
       { "name": "The Fixed-Scale Rule", "body": "Type sizes are a fixed rem scale, never clamp()-fluid. Users work at a consistent DPI across desktop and mounted tablets.", "section": "typography" },
+      { "name": "The Supporting-Text Tiers Rule", "body": "Use shared monitor-text-secondary and monitor-text-caption roles for supporting details, metric labels, compact metadata, and transient status. Component styles control layout, not duplicate typography.", "section": "typography" },
       { "name": "The Mono-For-Data Rule", "body": "JetBrains Mono is for machine-readable values only (times, coords, IDs, radio traffic). Never for prose, buttons, or non-data labels.", "section": "typography" },
       { "name": "The Intensity-Gated Depth Rule", "body": "Any new shadow or glow must be expressed through the intensity tokens so dezent stays flat and lebhaft can amplify it.", "section": "elevation" }
     ],

@@ -208,6 +208,26 @@ public class EinsatzServiceTests
     }
 
     [Fact]
+    public async Task ResetTimer_RejectsRunningTeamWithoutChangingSearchState()
+    {
+        var svc = CreateService();
+        var team = await svc.AddTeamAsync(new Team
+        {
+            TeamName = "Hotel",
+            ElapsedTime = TimeSpan.FromMinutes(5)
+        });
+        await svc.StartTeamTimerAsync(team.TeamId);
+        var elapsedBeforeReset = team.ElapsedTime;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => svc.ResetTeamTimerAsync(team.TeamId));
+
+        Assert.Equal("Die Suche läuft – bitte zuerst beenden.", exception.Message);
+        Assert.True(team.IsRunning);
+        Assert.Equal(elapsedBeforeReset, team.ElapsedTime);
+    }
+
+    [Fact]
     public void StopTimer_DogTeam_AlwaysEntersPauseModeEvenBelowConfiguredThreshold()
     {
         var team = new Team
