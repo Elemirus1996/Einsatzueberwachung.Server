@@ -310,9 +310,9 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 
 /* Teams are the primary work surface; notes and search areas remain available beside them. */
-[data-panel-id="notizen"] { grid-column: 9 / span 4; grid-row: 2; }
+[data-panel-id="notizen"] { grid-column: 10 / span 3; grid-row: 2; }
 [data-panel-id="teams"] { grid-column: span 6; grid-row: 2; }
-[data-panel-id="suchgebiete"] { grid-column: span 2; grid-row: 2; }
+[data-panel-id="suchgebiete"] { grid-column: span 3; grid-row: 2; }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="suchgebiete"])) [data-panel-id="teams"] {
     grid-column: span 8;
@@ -1091,6 +1091,27 @@ main:has(.monitor-dashboard-wrapper) .app-content {
         grid-column: 1 / -1;
         grid-row: 3;
         max-height: 12rem;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]) > [data-panel-id="ressourcen"] {
+        grid-column: 7 / span 3;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]) > [data-panel-id="notizen"] {
+        grid-row: 2 / span 2;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="notizen"])):has(> [data-panel-id="teams"]) > [data-panel-id="ressourcen"] {
+        grid-column: 10 / span 3;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="teams"])):has(> [data-panel-id="notizen"]) > [data-panel-id="ressourcen"] {
+        grid-column: 1 / span 3;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="teams"])):not(:has(> [data-panel-id="notizen"])) > [data-panel-id="ressourcen"] {
+        grid-column: 1 / -1;
     }
 }
 
