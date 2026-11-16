@@ -34,7 +34,8 @@ namespace Einsatzueberwachung.Domain.Services
                     }
 
                     AddTableRow(table, "Einsatzort:", einsatzData.Einsatzort);
-                    AddTableRow(table, "Alarmiert durch:", einsatzData.Alarmiert);
+                    if (Melder(einsatzData.Alarmiert) is { } melderLaufend)
+                        AddTableRow(table, "Alarmiert durch:", melderLaufend);
                     AddTableRow(table, "Einsatzleiter:", einsatzData.Einsatzleiter);
                     AddTableRow(table, "Führungsassistent:", einsatzData.Fuehrungsassistent);
                 });
@@ -55,8 +56,8 @@ namespace Einsatzueberwachung.Domain.Services
                         columns.RelativeColumn(2);
                         columns.RelativeColumn(2);
                         columns.RelativeColumn(1.5f);
-                        columns.ConstantColumn(55);
-                        columns.ConstantColumn(60);
+                        columns.ConstantColumn(66);
+                        columns.ConstantColumn(72);
                     });
 
                     table.Header(header =>
@@ -86,7 +87,9 @@ namespace Einsatzueberwachung.Domain.Services
                             else if (!string.IsNullOrWhiteSpace(team.DogName))
                             {
                                 col.Item().Text(team.DogName).FontSize(9);
-                                col.Item().Text($"({team.DogSpecialization.GetShortName()})").FontSize(8).Italic();
+                                var spezialisierung = team.DogSpecialization.GetShortName();
+                                if (!string.IsNullOrWhiteSpace(spezialisierung))
+                                    col.Item().Text($"({spezialisierung})").FontSize(8).Italic();
                             }
                             else
                                 col.Item().Text("Support").FontSize(9).Italic();
@@ -356,9 +359,9 @@ namespace Einsatzueberwachung.Domain.Services
                     {
                         columns.RelativeColumn(2);
                         columns.RelativeColumn(2);
-                        columns.RelativeColumn(1.5f);
+                        columns.RelativeColumn(2.2f);
                         columns.RelativeColumn(2);
-                        columns.RelativeColumn(3);
+                        columns.RelativeColumn(2.3f);
                     });
 
                     table.Header(header =>
@@ -381,7 +384,7 @@ namespace Einsatzueberwachung.Domain.Services
                         table.Cell().Element(c => CellStyle(c, bg)).Text(area.Name);
                         table.Cell().Element(c => CellStyle(c, bg)).Text(area.AssignedTeamName ?? "-");
                         table.Cell().Element(c => CellStyle(c, bg))
-                            .Text(area.IsCompleted ? "✓ Abgeschlossen" : "— In Bearbeitung")
+                            .Text(area.IsCompleted ? "Abgeschlossen" : "In Bearbeitung")
                             .FontColor(area.IsCompleted ? "#27AE60" : "#7F8C8D");
                         table.Cell().Element(c => CellStyle(c, bg)).Column(col =>
                         {
@@ -441,7 +444,7 @@ namespace Einsatzueberwachung.Domain.Services
                             .AlignCenter().Text(note.SourceTeamName ?? "-").FontSize(8).Italic();
 
                         table.Cell().Element(c => RowCell(c, bg))
-                            .Text(note.Text).FontSize(9);
+                            .Text(NotizText(note.Text, note.Timestamp)).FontSize(9);
 
                         static IContainer RowCell(IContainer c, string bg) =>
                             c.Background(bg).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5);
@@ -563,9 +566,9 @@ namespace Einsatzueberwachung.Domain.Services
                         columns.RelativeColumn(2);
                         columns.RelativeColumn(2);
                         columns.RelativeColumn(2.5f);
-                        columns.ConstantColumn(55);
-                        columns.ConstantColumn(55);
-                        columns.ConstantColumn(60);
+                        columns.ConstantColumn(66);
+                        columns.ConstantColumn(66);
+                        columns.ConstantColumn(66);
                         columns.RelativeColumn(1.5f);
                     });
 
@@ -671,9 +674,10 @@ namespace Einsatzueberwachung.Domain.Services
                         AddTableRow(table, "Einsatzende:", einsatz.EinsatzEnde.Value.ToString("HH:mm"));
                     }
 
-                    AddTableRow(table, "Dauer:", einsatz.DauerFormatiert);
+                    AddTableRow(table, "Dauer:", einsatz.Dauer is { } dauerGesamt ? FormatTimeSpan(dauerGesamt) : "Unbekannt");
                     AddTableRow(table, "Einsatzort:", einsatz.Einsatzort);
-                    AddTableRow(table, "Alarmiert durch:", einsatz.Alarmiert);
+                    if (Melder(einsatz.Alarmiert) is { } melder)
+                        AddTableRow(table, "Alarmiert durch:", melder);
                     AddTableRow(table, "Einsatzleiter:", einsatz.Einsatzleiter);
                     AddTableRow(table, "Führungsassistent:", einsatz.Fuehrungsassistent);
                 });

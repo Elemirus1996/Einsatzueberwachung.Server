@@ -319,8 +319,8 @@ namespace Einsatzueberwachung.Domain.Services
                             column.Item().PaddingVertical(10).Element(c => ComposeZusammenfassung(c,
                                 einsatz.AnzahlTeams, einsatz.SearchAreas?.Count ?? 0,
                                 einsatz.GlobalNotesEntries?.Count ?? 0,
-                                einsatz.DauerFormatiert,
-                                einsatz.Ergebnis));
+                                einsatz.Dauer is { } dauer ? FormatTimeSpan(dauer) : "Unbekannt",
+                                string.IsNullOrWhiteSpace(einsatz.Ergebnis) ? null : ErgebnisText.Anzeige(einsatz.Ergebnis)));
                             column.Item().PaddingVertical(10).Element(c => ComposeErgebnis(c, einsatz));
                             if ((einsatz.PersonalNamen?.Any() ?? false) || (einsatz.HundeNamen?.Any() ?? false))
                                 column.Item().PaddingVertical(10).Element(c => ComposeVorOrtChecklisten(c, einsatz));
