@@ -296,32 +296,30 @@ namespace Einsatzueberwachung.Domain.Services
                 container.Page(page =>
                 {
                     page.Size(PageSizes.A4);
-                    page.Margin(2, Unit.Centimetre);
+                    page.MarginHorizontal(16, Unit.Millimetre);
+                    page.MarginTop(14, Unit.Millimetre);
+                    page.MarginBottom(10, Unit.Millimetre);
                     page.PageColor(Colors.White);
-                    page.DefaultTextStyle(x => x.FontSize(11));
+                    page.DefaultTextStyle(x => x.FontSize(10).FontColor(BerichtTinte));
 
-                    page.Header()
-                        .BorderTop(4).BorderColor(einsatz.IstEinsatz ? "#C0392B" : "#2C3E50")
-                        .Background(Colors.White)
-                        .Padding(20)
-                        .Element(c => ComposeReportHeader(c,
-                            einsatz.IstEinsatz ? "EINSATZBERICHT" : "ÜBUNGSBERICHT",
-                            einsatz.IstEinsatz ? "#C0392B" : "#2C3E50",
-                            staffelInfo));
+                    page.Content().Element(c => ComposeBerichtSeite1(c, einsatz, staffelInfo));
+                    page.Footer().Element(c => ComposeBerichtFuss(c, einsatz));
+                });
+
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.MarginHorizontal(16, Unit.Millimetre);
+                    page.MarginTop(12, Unit.Millimetre);
+                    page.MarginBottom(10, Unit.Millimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontColor(BerichtTinte));
+
+                    page.Header().Element(c => ComposeBerichtKopfSchmal(c, einsatz, staffelInfo));
 
                     page.Content()
                         .Column(column =>
                         {
-                            column.Item().PaddingVertical(10).Element(c => ComposeArchivedGrunddaten(c, einsatz));
-                            var einsatzkontakte = EinsatzKontaktDaten.From(einsatz);
-                            if (einsatzkontakte.HasContent)
-                                column.Item().PaddingVertical(10).Element(c => ComposeEinsatzkontakte(c, einsatzkontakte));
-                            column.Item().PaddingVertical(10).Element(c => ComposeZusammenfassung(c,
-                                einsatz.AnzahlTeams, einsatz.SearchAreas?.Count ?? 0,
-                                einsatz.GlobalNotesEntries?.Count ?? 0,
-                                einsatz.Dauer is { } dauer ? FormatTimeSpan(dauer) : "Unbekannt",
-                                string.IsNullOrWhiteSpace(einsatz.Ergebnis) ? null : ErgebnisText.Anzeige(einsatz.Ergebnis)));
-                            column.Item().PaddingVertical(10).Element(c => ComposeErgebnis(c, einsatz));
                             if ((einsatz.PersonalNamen?.Any() ?? false) || (einsatz.HundeNamen?.Any() ?? false))
                                 column.Item().PaddingVertical(10).Element(c => ComposeVorOrtChecklisten(c, einsatz));
                             if (einsatz.Vermisste?.Any() == true)
@@ -337,11 +335,6 @@ namespace Einsatzueberwachung.Domain.Services
                                 column.Item().PageBreak();
                                 column.Item().PaddingVertical(10).Element(c => ComposeGpsTracks(c, tracks));
                             }
-                            if (coverage?.Any() == true)
-                            {
-                                column.Item().PageBreak();
-                                column.Item().PaddingVertical(10).Element(c => ComposeCoverageAnalysis(c, coverage, coverageHeatmap));
-                            }
                             if (einsatz.GlobalNotesEntries?.Any() == true)
                             {
                                 column.Item().PageBreak();
@@ -349,23 +342,7 @@ namespace Einsatzueberwachung.Domain.Services
                             }
                         });
 
-                    page.Footer()
-                        .Row(row =>
-                        {
-                            row.RelativeItem().AlignMiddle().PaddingRight(8).Text(text =>
-                            {
-                                text.DefaultTextStyle(x => x.FontSize(10));
-                                text.Span("Archiviert am: ");
-                                text.Span($"{einsatz.ArchivedAt:dd.MM.yyyy HH:mm}").Bold();
-                                text.Span(" | Erstellt am: ");
-                                text.Span($"{Now:dd.MM.yyyy HH:mm}");
-                                text.Span(" | Seite ");
-                                text.CurrentPageNumber();
-                                text.Span(" von ");
-                                text.TotalPages();
-                            });
-                            row.ConstantItem(100).Element(ComposeFussLogo);
-                        });
+                    page.Footer().Element(c => ComposeBerichtFuss(c, einsatz));
                 });
             });
         }

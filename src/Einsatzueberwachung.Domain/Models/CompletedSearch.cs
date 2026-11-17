@@ -20,6 +20,15 @@ namespace Einsatzueberwachung.Domain.Models
         public string? SearchAreaId { get; set; }
         public string? SearchAreaName { get; set; }
 
+        /// <summary>Einsatzart beim Start der Suche (ab 1.17.0); null = nicht festgelegt.</summary>
+        public Einsatzart? Einsatzart { get; set; }
+        /// <summary>Nur Trails (Mantrailer): Grund für das Ende der Spur aus der Liste der Einstellungen.</summary>
+        public string Abbruchgrund { get; set; } = string.Empty;
+        /// <summary>Nur Trails (Mantrailer): Geruchsartikel.</summary>
+        public string Geruchsartikel { get; set; } = string.Empty;
+
+        public bool IstTrail => Einsatzart == Enums.Einsatzart.Mantrailer;
+
         /// <summary>
         /// GPS-Tracks dieser Suche. Maximal 1× CollarTrack und 1× HumanTrack.
         /// </summary>

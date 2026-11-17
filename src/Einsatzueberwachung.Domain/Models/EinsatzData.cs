@@ -27,6 +27,9 @@ namespace Einsatzueberwachung.Domain.Models
         public DateTime? EinsatzEnde { get; set; }
 
         public string EinsatzNummer { get; set; }
+        /// <summary>Vorgangs- bzw. Einsatznummer der Polizei (ab 1.17.0).</summary>
+        public string Vorgangsnummer { get; set; } = string.Empty;
+        public EinsatzFund Fund { get; set; } = new();
         public bool EinsatzkontakteMigriert { get; set; }
         public string PolizeiKontaktName { get; set; } = string.Empty;
         public string PolizeiDienstnummer { get; set; } = string.Empty;

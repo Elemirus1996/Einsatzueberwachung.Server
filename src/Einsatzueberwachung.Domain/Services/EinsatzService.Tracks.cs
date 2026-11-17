@@ -27,7 +27,8 @@ namespace Einsatzueberwachung.Domain.Services
                 SearchStart = start,
                 SearchEnd = end,
                 SearchAreaId = area?.Id,
-                SearchAreaName = area?.Name
+                SearchAreaName = area?.Name,
+                Einsatzart = team.SucheEinsatzart ?? team.Einsatzart
             };
 
             _currentEinsatz.CompletedSearches ??= new List<CompletedSearch>();

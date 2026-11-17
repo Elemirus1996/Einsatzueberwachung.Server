@@ -138,6 +138,7 @@ namespace Einsatzueberwachung.Domain.Services
             target.DogName = source.DogName;
             target.DogId = source.DogId;
             target.DogSpecialization = source.DogSpecialization;
+            target.Einsatzart = source.Einsatzart;
             target.HundefuehrerName = source.HundefuehrerName;
             target.HundefuehrerId = source.HundefuehrerId;
             target.HelferIds = new List<string>(source.HelferIds);

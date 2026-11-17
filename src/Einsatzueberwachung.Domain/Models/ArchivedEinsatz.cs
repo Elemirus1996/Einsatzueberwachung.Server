@@ -34,6 +34,8 @@ namespace Einsatzueberwachung.Domain.Models
         public EinsatzSzenarioType Szenario { get; set; } = EinsatzSzenarioType.Unbestimmt;
         public DateTime EinsatzDatum { get; set; }
         public string EinsatzNummer { get; set; } = string.Empty;
+        public string Vorgangsnummer { get; set; } = string.Empty;
+        public EinsatzFund Fund { get; set; } = new();
         public bool EinsatzkontakteMigriert { get; set; }
         public string PolizeiKontaktName { get; set; } = string.Empty;
         public string PolizeiDienstnummer { get; set; } = string.Empty;
@@ -136,6 +138,8 @@ namespace Einsatzueberwachung.Domain.Models
                 Szenario = data.Szenario,
                 EinsatzDatum = data.EinsatzDatum,
                 EinsatzNummer = data.EinsatzNummer,
+                Vorgangsnummer = data.Vorgangsnummer ?? string.Empty,
+                Fund = data.Fund ?? new(),
                 EinsatzkontakteMigriert = data.EinsatzkontakteMigriert,
                 PolizeiKontaktName = data.PolizeiKontaktName,
                 PolizeiDienstnummer = data.PolizeiDienstnummer,
@@ -228,6 +232,7 @@ namespace Einsatzueberwachung.Domain.Models
         public string Status { get; set; } = string.Empty;
         public List<string> MemberNames { get; set; } = new();
         public string DogName { get; set; } = string.Empty;
+        public Einsatzart? Einsatzart { get; set; }
         public string DroneName { get; set; } = string.Empty;
         public DateTime? AusrueckZeit { get; set; }
         public DateTime? EinrueckZeit { get; set; }
@@ -242,6 +247,7 @@ namespace Einsatzueberwachung.Domain.Models
                 Funkrufname = team.TeamName, // TeamName wird als Funkrufname verwendet
                 Status = team.IsRunning ? "Im Einsatz" : "Beendet",
                 DogName = team.DogName ?? string.Empty,
+                Einsatzart = team.Einsatzart,
                 DroneName = team.IsDroneTeam ? team.DroneType ?? string.Empty : string.Empty,
                 TrackSnapshots = team.TrackSnapshots?.ToList() ?? new()
             };
