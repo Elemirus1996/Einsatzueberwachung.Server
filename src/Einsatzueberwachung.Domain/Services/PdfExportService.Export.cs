@@ -27,7 +27,6 @@ namespace Einsatzueberwachung.Domain.Services
                 if (tracks != null && _mapRenderer != null)
                 {
                     await RenderTrackMapsAsync(tracks);
-                    (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, einsatzData.ElwPosition);
                 }
 
                 var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo, tracks, coverage, coverageHeatmap);
@@ -67,18 +66,7 @@ namespace Einsatzueberwachung.Domain.Services
                 var filename = $"Einsatzbericht_{archivedEinsatz.EinsatzNummer}_{archivedEinsatz.EinsatzDatum:yyyyMMdd}.pdf";
                 var einsatzPath = AppPathResolver.GetReportDirectory();
                 var filePath = Path.Combine(einsatzPath, filename);
-                var tracks = optionen.WaehleTracks(archivedEinsatz.TrackSnapshots);
-                List<SearchAreaCoverageResult>? coverage = null;
-                byte[]? coverageHeatmap = null;
-
-                if (tracks?.Any(t => t.Points.Count >= 2) == true && _mapRenderer != null)
-                {
-                    await RenderTrackMapsAsync(tracks, optionen.Kartenart);
-                    (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, archivedEinsatz.ElwPosition, optionen.Kartenart);
-                }
-
-                var punkteKarte = await RenderPunkteKarteAsync(archivedEinsatz, optionen.Kartenart);
-                var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, coverage, coverageHeatmap, punkteKarte);
+                var pdfDocument = await BerichtDokumentAsync(archivedEinsatz, staffelInfo, optionen);
 
                 await Task.Run(() =>
                 {
@@ -110,18 +98,7 @@ namespace Einsatzueberwachung.Domain.Services
         public async Task<byte[]> ExportArchivedEinsatzToPdfBytesAsync(ArchivedEinsatz archivedEinsatz, PdfBerichtOptionen optionen)
         {
             var staffelInfo = await ResolveStaffelInfoAsync(archivedEinsatz);
-            var tracks = optionen.WaehleTracks(archivedEinsatz.TrackSnapshots);
-            List<SearchAreaCoverageResult>? coverage = null;
-            byte[]? coverageHeatmap = null;
-
-            if (tracks?.Any(t => t.Points.Count >= 2) == true && _mapRenderer != null)
-            {
-                await RenderTrackMapsAsync(tracks, optionen.Kartenart);
-                (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, archivedEinsatz.ElwPosition, optionen.Kartenart);
-            }
-
-            var punkteKarte = await RenderPunkteKarteAsync(archivedEinsatz, optionen.Kartenart);
-            var pdfDocument = CreateArchivedEinsatzDocument(archivedEinsatz, staffelInfo, tracks, coverage, coverageHeatmap, punkteKarte);
+            var pdfDocument = await BerichtDokumentAsync(archivedEinsatz, staffelInfo, optionen);
 
             return await Task.Run(() =>
             {
@@ -144,7 +121,6 @@ namespace Einsatzueberwachung.Domain.Services
             if (tracks?.Any(t => t.Points.Count >= 2) == true && _mapRenderer != null)
             {
                 await RenderTrackMapsAsync(tracks);
-                (coverage, coverageHeatmap) = await CalculateAndRenderCoverageAsync(tracks, einsatzData.ElwPosition);
             }
 
             var pdfDocument = CreateEinsatzDocument(einsatzData, teams, notes, staffelInfo, tracks, coverage, coverageHeatmap);
@@ -272,24 +248,14 @@ namespace Einsatzueberwachung.Domain.Services
             });
         }
 
-        /// <summary>Karte der Kartenpunkte, nur wenn sie beim Einsatzende fuer den Bericht archiviert wurden (Variante C)</summary>
-        private async Task<byte[]?> RenderPunkteKarteAsync(ArchivedEinsatz archivedEinsatz, MapTileType kartenart)
+        /// <summary>Karten rendern (falls ein Renderer da ist) und den Bericht aufbauen</summary>
+        private async Task<Document> BerichtDokumentAsync(ArchivedEinsatz einsatz, StaffelInfo staffelInfo, PdfBerichtOptionen optionen)
         {
-            if (archivedEinsatz.MapMarkers?.Any() != true || _mapRenderer == null) return null;
-            try
-            {
-                return await _mapRenderer.RenderSearchAreaMapAsync(archivedEinsatz.SearchAreas ?? new List<SearchArea>(),
-                    archivedEinsatz.ElwPosition, new MapPrintOptions { TileType = kartenart, ShowPointMarkers = true },
-                    archivedEinsatz.MapMarkers);
-            }
-            catch (Exception)
-            {
-                // Ohne Kartenkacheln (offline) bleibt die Liste der Punkte im Bericht
-                return null;
-            }
+            var karten = await RenderBerichtKartenAsync(einsatz, optionen);
+            return CreateArchivedEinsatzDocument(einsatz, staffelInfo, optionen, karten);
         }
 
-        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo, List<TeamTrackSnapshot>? tracks = null, List<SearchAreaCoverageResult>? coverage = null, byte[]? coverageHeatmap = null, byte[]? punkteKarte = null)
+        private Document CreateArchivedEinsatzDocument(ArchivedEinsatz einsatz, StaffelInfo staffelInfo, PdfBerichtOptionen optionen, BerichtKarten karten)
         {
             return Document.Create(container =>
             {
@@ -302,7 +268,7 @@ namespace Einsatzueberwachung.Domain.Services
                     page.PageColor(Colors.White);
                     page.DefaultTextStyle(x => x.FontSize(10).FontColor(BerichtTinte));
 
-                    page.Content().Element(c => ComposeBerichtSeite1(c, einsatz, staffelInfo));
+                    page.Content().Element(c => ComposeBerichtSeite1(c, einsatz, staffelInfo, optionen));
                     page.Footer().Element(c => ComposeBerichtFuss(c, einsatz));
                 });
 
@@ -317,30 +283,7 @@ namespace Einsatzueberwachung.Domain.Services
 
                     page.Header().Element(c => ComposeBerichtKopfSchmal(c, einsatz, staffelInfo));
 
-                    page.Content()
-                        .Column(column =>
-                        {
-                            if ((einsatz.PersonalNamen?.Any() ?? false) || (einsatz.HundeNamen?.Any() ?? false))
-                                column.Item().PaddingVertical(10).Element(c => ComposeVorOrtChecklisten(c, einsatz));
-                            if (einsatz.Vermisste?.Any() == true)
-                                column.Item().PaddingVertical(10).Element(c => ComposeVermisste(c, einsatz.Vermisste, !einsatz.EinsatzkontakteMigriert));
-                            if (einsatz.Teams?.Any() == true)
-                                column.Item().PaddingVertical(10).Element(c => ComposeArchivedTeams(c, einsatz.Teams, einsatz.GlobalNotesEntries ?? new()));
-                            if (einsatz.SearchAreas?.Any() == true)
-                                column.Item().PaddingVertical(10).Element(c => ComposeSuchgebiete(c, einsatz.SearchAreas));
-                            if (einsatz.MapMarkers?.Any() == true)
-                                column.Item().PaddingVertical(10).Element(c => ComposeKartenpunkte(c, einsatz.MapMarkers, einsatz.Teams ?? new(), punkteKarte));
-                            if (tracks?.Any() == true)
-                            {
-                                column.Item().PageBreak();
-                                column.Item().PaddingVertical(10).Element(c => ComposeGpsTracks(c, tracks));
-                            }
-                            if (einsatz.GlobalNotesEntries?.Any() == true)
-                            {
-                                column.Item().PageBreak();
-                                column.Item().PaddingVertical(10).Element(c => ComposeNotizen(c, einsatz.GlobalNotesEntries));
-                            }
-                        });
+                    page.Content().Element(c => ComposeBerichtFolgeseiten(c, einsatz, optionen, karten));
 
                     page.Footer().Element(c => ComposeBerichtFuss(c, einsatz));
                 });

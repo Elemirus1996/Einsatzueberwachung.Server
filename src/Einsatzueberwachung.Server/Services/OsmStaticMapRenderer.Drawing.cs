@@ -73,6 +73,36 @@ public sealed partial class OsmStaticMapRenderer
         canvas.DrawText("N", cx, cy - r + 6f, SKTextAlign.Center, nFont, nPaint);
     }
 
+    /// <summary>Maßstabsleiste unten links (Einsatzbericht); Länge gerundet auf 10, 20, 50 … m</summary>
+    private static void DrawScaleBar(SKCanvas canvas, int width, int height, Func<double, float> toX, double lat, double minLon, double maxLon)
+    {
+        var pixel = toX(maxLon) - toX(minLon);
+        if (pixel <= 1 || maxLon <= minLon) return;
+        var meterJePixel = (maxLon - minLon) * 111_320.0 * Math.Cos(lat * Math.PI / 180.0) / pixel;
+        if (!double.IsFinite(meterJePixel) || meterJePixel <= 0) return;
+
+        double[] stufen = [10, 20, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000];
+        var maxMeter = width * 0.22 * meterJePixel;
+        var meter = stufen.LastOrDefault(s => s <= maxMeter);
+        if (meter <= 0) meter = stufen[0];
+        var laenge = (float)(meter / meterJePixel);
+        var text = meter >= 1_000 ? $"{meter / 1_000:0.#} km" : $"{meter:0} m";
+
+        const float x = 14f;
+        var y = height - 18f;
+        using var typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold);
+        using var font = new SKFont(typeface, 12f);
+        font.MeasureText(text, out var tb);
+        using var bgPaint = new SKPaint { Style = SKPaintStyle.Fill, Color = new SKColor(255, 255, 255, 210), IsAntialias = true };
+        canvas.DrawRoundRect(x - 6, y - tb.Height - 14, Math.Max(laenge, tb.Width) + 12, tb.Height + 24, 3, 3, bgPaint);
+        using var linePaint = new SKPaint { Style = SKPaintStyle.Stroke, Color = new SKColor(30, 30, 30), StrokeWidth = 2f, IsAntialias = true };
+        canvas.DrawLine(x, y, x + laenge, y, linePaint);
+        canvas.DrawLine(x, y - 5, x, y + 3, linePaint);
+        canvas.DrawLine(x + laenge, y - 5, x + laenge, y + 3, linePaint);
+        using var textPaint = new SKPaint { Color = new SKColor(30, 30, 30), IsAntialias = true };
+        canvas.DrawText(text, x, y - 8, SKTextAlign.Left, font, textPaint);
+    }
+
     private static void DrawAttribution(SKCanvas canvas, int width, int height, string attribution)
     {
         using var font = new SKFont(SKTypeface.Default, 10);

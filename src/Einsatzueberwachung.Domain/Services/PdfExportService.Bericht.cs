@@ -20,7 +20,7 @@ namespace Einsatzueberwachung.Domain.Services
         private const string BerichtGruenFlaeche = "#EEF7F1";
         private const string BerichtFlaeche = "#F3F5F8";
 
-        private void ComposeBerichtSeite1(IContainer container, ArchivedEinsatz einsatz, StaffelInfo staffel)
+        private void ComposeBerichtSeite1(IContainer container, ArchivedEinsatz einsatz, StaffelInfo staffel, PdfBerichtOptionen optionen)
         {
             container.Column(col =>
             {
@@ -32,12 +32,16 @@ namespace Einsatzueberwachung.Domain.Services
                 {
                     row.RelativeItem().Element(c => ComposeBerichtPolizei(c, einsatz));
                     row.ConstantItem(18);
-                    row.RelativeItem().Element(c => ComposeBerichtVermisste(c, einsatz));
+                    if (optionen.Zeigt("vermisste"))
+                        row.RelativeItem().Element(c => ComposeBerichtVermisste(c, einsatz));
+                    else
+                        row.RelativeItem();
                 });
 
-                col.Item().Element(c => ComposeBerichtAblauf(c, einsatz));
+                if (optionen.Zeigt("zeitleiste"))
+                    col.Item().Element(c => ComposeBerichtAblauf(c, einsatz));
 
-                var suchen = BerichtSuchen(einsatz);
+                var suchen = optionen.Zeigt("teams") ? BerichtSuchen(einsatz) : new List<CompletedSearch>();
                 if (suchen.Count > 0)
                     col.Item().Element(c => ComposeBerichtSuchen(c, einsatz, suchen));
 
