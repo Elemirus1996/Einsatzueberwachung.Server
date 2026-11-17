@@ -11,9 +11,16 @@ namespace Einsatzueberwachung.Domain.Models
     public sealed record PdfBerichtOptionen(
         bool Tracks = true,
         MapTileType Kartenart = MapTileType.Streets,
-        IReadOnlyCollection<string>? TeamIds = null)
+        IReadOnlyCollection<string>? TeamIds = null,
+        IReadOnlyCollection<string>? Abschnitte = null)
     {
         public static PdfBerichtOptionen OhneTracks { get; } = new(Tracks: false);
+
+        /// <summary>Abwählbare Abschnitte (APP_API EL Abschnitt 10); Kopf, Ergebnis und Polizei sind immer dabei.</summary>
+        public static IReadOnlyList<string> AlleAbschnitte { get; } = ["vermisste", "zeitleiste", "teams", "karten", "tracks", "funk", "vorort"];
+
+        /// <summary>null = alle Abschnitte</summary>
+        public bool Zeigt(string abschnitt) => Abschnitte is null || Abschnitte.Contains(abschnitt);
 
         /// <summary>Kartenarten, die im Bericht angeboten werden (Google bewusst nicht – Nutzungsbedingungen)</summary>
         public static IReadOnlyList<(MapTileType Art, string Name)> Kartenarten { get; } =
@@ -25,7 +32,7 @@ namespace Einsatzueberwachung.Domain.Models
 
         public List<TeamTrackSnapshot>? WaehleTracks(IEnumerable<TeamTrackSnapshot>? alle)
         {
-            if (!Tracks || alle is null) return null;
+            if (!Tracks || !Zeigt("tracks") || alle is null) return null;
             return TeamIds is null ? alle.ToList() : alle.Where(t => TeamIds.Contains(t.TeamId)).ToList();
         }
     }

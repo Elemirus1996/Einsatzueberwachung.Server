@@ -726,7 +726,7 @@ aus dem Track; Abbruchgrund und Geruchsartikel kommen aus dem Abschluss.
   "vorgangsnummer": "",
   "melder": "ILS Rhein-Neckar",
   "polizei": { "name": "PHK Meier", "dienstnummer": "", "telefon": "0621 …" },
-  "fund": { "zeit": null, "lat": null, "lng": null, "ort": "", "uebergabeAn": "",
+  "fund": { "zeit": null, "lat": null, "lng": null, "ort": "", "uebergabeAn": "", "teamId": null,
             "vorschlag": { "lat": 49.312, "lng": 8.431, "zeit": "…Z", "teamId": "…" } },
   "teams": [ { "teamId": "…", "teamName": "Team Rex", "einsatzart": null, "erlaubt": ["Flaeche", "Mantrailer"] } ],
   "trails": [ { "sucheId": "…", "teamId": "…", "teamName": "Team Rex", "beginn": "…Z", "ende": "…Z",
@@ -737,6 +737,7 @@ aus dem Track; Abbruchgrund und Geruchsartikel kommen aus dem Abschluss.
 ```
 
 - `melder` = „Alarmiert durch“ des Einsatzes, `polizei` = Polizeikontakt wie in `/vermisste`.
+- `fund.teamId`: Team, das gefunden hat („Gefunden durch“ im Bericht); der Vorschlag bringt es mit.
 - `fund.vorschlag`: jüngster Kartenpunkt mit `typ = fund` (Team-Rolle Abschnitt 13, im Monitor ebenso setzbar), sonst `null`. Die App übernimmt ihn nur auf Wunsch.
 - `abbruchgruende`: feste Liste für `trails[].abbruchgrund`, in den Server-Einstellungen anpassbar (oben die Vorgabe).
   Ein gespeicherter Grund bleibt, auch wenn er später aus der Liste entfernt wird.
@@ -748,12 +749,13 @@ aus dem Track; Abbruchgrund und Geruchsartikel kommen aus dem Abschluss.
 
 **`POST /einsatz/beenden`** bekommt zusätzlich, alles optional:
 
-- `abschluss`: `{ "vorgangsnummer", "melder", "polizei": { "name", "dienstnummer", "telefon" }, "fund": { "zeit", "lat", "lng", "ort", "uebergabeAn" },
+- `abschluss`: `{ "vorgangsnummer", "melder", "polizei": { "name", "dienstnummer", "telefon" }, "fund": { "zeit", "lat", "lng", "ort", "uebergabeAn", "teamId" },
   "teams": [ { "teamId", "einsatzart" } ], "trails": [ { "sucheId", "abbruchgrund", "geruchsartikel" } ] }`.
   Fehlende Felder bleiben, wie sie sind; Texte höchstens 200 Zeichen. `abbruchgrund` muss aus `abbruchgruende` sein. `fund.zeit` in UTC wie `endzeit`. Unbekannte `teamId`/`sucheId`
   oder eine `einsatzart` außerhalb der Liste → `400`. Der Server speichert die Angaben vor dem Beenden.
 - `unvollstaendigBestaetigt`: Fehlt danach noch etwas (wie `fehlend`, dazu `fund` bei einem Ergebnis mit `fund: true`), antwortet
-  der Server ohne `true` mit `409` + `{ "error", "fehlend": [ … ] }` und beendet nicht. So bestätigt die Einsatzleitung ausdrücklich.
+  der Server bei `false` mit `409` + `{ "error", "fehlend": [ … ] }` und beendet nicht. So bestätigt die Einsatzleitung ausdrücklich.
+  Ab 1.17.0 schickt die App das Feld immer (erst `false`, nach der Bestätigung `true`); ohne das Feld (ältere Apps) beendet der Server wie bisher.
 - `pdf.abschnitte`: Abschnitte des Berichts, `null` = alle: `vermisste` · `zeitleiste` · `teams` · `karten` · `tracks` · `funk` · `vorort`.
   Seite 1 (Kopf, Ergebnis, Polizei) ist immer dabei. `pdf.tracks = false` entspricht `tracks` nicht in der Liste (bleibt für ältere Apps).
   `GET /einsatz/bericht/{archivId}` nimmt dieselbe Liste als `?abschnitte=vermisste,teams,…`.

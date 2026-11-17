@@ -103,6 +103,7 @@ public sealed partial class ElAppController
             {
                 sucheId = s.Id,
                 teamId = s.TeamId,
+                einsatzart = s.Einsatzart?.ToString(),
                 beginn = AppZeit.Utc(s.SearchStart),
                 ende = AppZeit.Utc(s.SearchEnd),
                 tracks = s.Tracks.Select(t => new

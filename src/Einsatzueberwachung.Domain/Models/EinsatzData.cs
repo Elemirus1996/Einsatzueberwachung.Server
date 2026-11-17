@@ -120,6 +120,8 @@ namespace Einsatzueberwachung.Domain.Models
             EinsatzDatum = Ortszeit.Jetzt;
             EinsatzEnde = null;
             EinsatzNummer = string.Empty;
+            Vorgangsnummer = string.Empty;
+            Fund = new EinsatzFund();
             StaffelName = string.Empty;
             StaffelAdresse = string.Empty;
             StaffelTelefon = string.Empty;

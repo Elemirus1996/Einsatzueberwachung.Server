@@ -87,10 +87,62 @@ public sealed partial class ElAppController
         return Ok(new { doppelt = false, einsatz = new { aktiv = true, beginn = AppZeit.Utc(modell.EinsatzDatum) } });
     }, laufenderEinsatzNoetig: false);
 
-    public sealed record ElPdfWahl(bool Tracks = true, string? Kartenart = null, IReadOnlyList<string>? TeamIds = null, bool Punkte = false);
+    public sealed record ElPdfWahl(bool Tracks = true, string? Kartenart = null, IReadOnlyList<string>? TeamIds = null, bool Punkte = false,
+        IReadOnlyList<string>? Abschnitte = null);
+
+    public sealed record ElAbschlussFund(string? Zeit, double? Lat, double? Lng, string? Ort, string? UebergabeAn, string? TeamId);
+
+    public sealed record ElAbschluss(string? Vorgangsnummer, string? Melder, AbschlussPolizei? Polizei, ElAbschlussFund? Fund,
+        IReadOnlyList<AbschlussTeam>? Teams, IReadOnlyList<AbschlussTrail>? Trails);
 
     public sealed record ElEinsatzEnde(string? Id, string? Ergebnis, bool RessourcenGeprueft, string? Bemerkungen = null,
-        string? Endzeit = null, ElPdfWahl? Pdf = null, IReadOnlyList<string>? PersonalIds = null, IReadOnlyList<string>? HundeIds = null);
+        string? Endzeit = null, ElPdfWahl? Pdf = null, IReadOnlyList<string>? PersonalIds = null, IReadOnlyList<string>? HundeIds = null,
+        ElAbschluss? Abschluss = null, bool? UnvollstaendigBestaetigt = null);
+
+    /// <summary>Alles, was der Beenden-Dialog abfragt, mit den aktuellen Werten (APP_API EL Abschnitt 10)</summary>
+    [HttpGet("einsatz/abschluss")]
+    public async Task<IActionResult> GetAbschluss()
+    {
+        if (!Lesen()) return Zugang();
+        var e = einsatz!.CurrentEinsatz;
+        if (!ElPositionService.Laeuft(e)) return Konflikt("Kein laufender Einsatz.");
+        var teams = einsatz.Teams.ToList();
+        var hunde = stammdaten is null ? [] : await stammdaten.GetDogListAsync();
+        var fund = e.Fund ?? new EinsatzFund();
+        var vorschlag = AbschlussAngaben.FundVorschlag(e);
+
+        return Ok(new
+        {
+            vorgangsnummer = e.Vorgangsnummer ?? "",
+            melder = e.Alarmiert ?? "",
+            polizei = new { name = e.PolizeiKontaktName ?? "", dienstnummer = e.PolizeiDienstnummer ?? "", telefon = e.PolizeiTelefon ?? "" },
+            fund = new
+            {
+                zeit = fund.ZeitUtc is { } z ? AppZeit.Utc(DateTime.SpecifyKind(z, DateTimeKind.Utc)) : (DateTime?)null,
+                lat = fund.Latitude, lng = fund.Longitude, ort = fund.Ort ?? "", uebergabeAn = fund.UebergabeAn ?? "", teamId = fund.TeamId,
+                vorschlag = vorschlag is null ? null : new
+                {
+                    lat = vorschlag.Latitude, lng = vorschlag.Longitude, zeit = AppZeit.Utc(vorschlag.CreatedAt), teamId = vorschlag.TeamId
+                }
+            },
+            teams = AbschlussAngaben.Hundeteams(teams).Select(t => new
+            {
+                teamId = t.TeamId,
+                teamName = t.TeamName,
+                einsatzart = t.Einsatzart?.ToString(),
+                erlaubt = EinsatzartExtensions.AusSpezialisierungen(
+                    hunde.FirstOrDefault(d => d.Id == t.DogId)?.Specializations ?? t.DogSpecialization).Select(a => a.ToString())
+            }),
+            trails = AbschlussAngaben.Trails(e, teams).Select(s => new
+            {
+                sucheId = s.Id, teamId = s.TeamId, teamName = s.TeamName,
+                beginn = AppZeit.Utc(s.SearchStart), ende = AppZeit.Utc(s.SearchEnd),
+                abbruchgrund = s.Abbruchgrund ?? "", geruchsartikel = s.Geruchsartikel ?? ""
+            }),
+            abbruchgruende = AbschlussAngaben.Abbruchgruende(einstellungen is null ? null : await einstellungen.GetAppSettingsAsync()),
+            fehlend = AbschlussAngaben.Fehlend(e, teams)
+        });
+    }
 
     /// <summary>Aktives Personal und aktive Hunde wie in /el/beenden, sortiert, mit der Vorauswahl aus den eingeteilten Teams</summary>
     private async Task<(List<PersonalEntry> Personal, List<DogEntry> Hunde, HashSet<string> PersonalIds, HashSet<string> HundeIds)> VorOrtListen()
@@ -126,6 +178,24 @@ public sealed partial class ElAppController
         if (a.Pdf?.Kartenart is { } wahl && !(Enum.TryParse(wahl, ignoreCase: false, out kartenart)
             && !int.TryParse(wahl, out _) && PdfBerichtOptionen.Kartenarten.Any(k => k.Art == kartenart)))
             return BadRequest(new { error = "Unbekannte Kartenart.", kartenarten = PdfBerichtOptionen.Kartenarten.Select(k => k.Art.ToString()) });
+        if (a.Pdf?.Abschnitte?.FirstOrDefault(x => !PdfBerichtOptionen.AlleAbschnitte.Contains(x)) is { } unbekannt)
+            return BadRequest(new { error = $"Unbekannter Abschnitt {unbekannt}.", abschnitte = PdfBerichtOptionen.AlleAbschnitte });
+        AbschlussEingabe? angaben = null;
+        if (a.Abschluss is { } ab)
+        {
+            DateTime? fundZeit = null;
+            if (!string.IsNullOrWhiteSpace(ab.Fund?.Zeit))
+            {
+                if (!MitZeitzone(ab.Fund.Zeit) || !DateTimeOffset.TryParse(ab.Fund.Zeit, System.Globalization.CultureInfo.InvariantCulture,
+                        System.Globalization.DateTimeStyles.None, out var fz))
+                    return BadRequest(new { error = "fund.zeit als Zeitpunkt in UTC, z. B. „2026-10-31T17:45:00Z“." });
+                fundZeit = fz.UtcDateTime;
+            }
+            angaben = new AbschlussEingabe(ab.Vorgangsnummer, ab.Melder, ab.Polizei,
+                ab.Fund is { } f ? new AbschlussFund(fundZeit, f.Lat, f.Lng, f.Ort, f.UebergabeAn, f.TeamId) : null,
+                ab.Teams, ab.Trails);
+        }
+
         // Ende als Zeitpunkt in UTC (wie alle Zeiten der App-Schnittstelle); fuer den Bericht in Ortszeit
         DateTime? ende = null;
         if (!string.IsNullOrWhiteSpace(a.Endzeit))
@@ -158,7 +228,19 @@ public sealed partial class ElAppController
                 kartenart,
                 a.Pdf?.TeamIds,
                 ende,
-                a.Pdf?.Punkte ?? false));
+                a.Pdf?.Punkte ?? false,
+                angaben,
+                // Ohne das Feld (Apps vor 1.17.0) beendet der Server wie bisher
+                a.UnvollstaendigBestaetigt ?? true,
+                a.Pdf?.Abschnitte));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (AbschlussUnvollstaendigException ex)
+        {
+            return Conflict(new { error = ex.Message, fehlend = ex.Fehlend });
         }
         catch (InvalidOperationException ex)
         {
@@ -177,7 +259,8 @@ public sealed partial class ElAppController
 
     /// <summary>Bericht eines beendeten Einsatzes als PDF wie der Download im Archiv – zum Öffnen und Teilen in der App (Idee 6.2)</summary>
     [HttpGet("einsatz/bericht/{archivId}")]
-    public async Task<IActionResult> GetBericht(string archivId, string? karte = null, string? teams = null, string? tracks = null)
+    public async Task<IActionResult> GetBericht(string archivId, string? karte = null, string? teams = null, string? tracks = null,
+        string? abschnitte = null)
     {
         if (!Lesen()) return Zugang();
         if (archiv is null || pdfExport is null) return NotFound();
@@ -188,7 +271,7 @@ public sealed partial class ElAppController
         try
         {
             bytes = await pdfExport.ExportArchivedEinsatzToPdfBytesAsync(archiviert,
-                Extensions.DownloadEndpoints.BerichtOptionenAusAdresse(archiviert, karte, teams, tracks));
+                Extensions.DownloadEndpoints.BerichtOptionenAusAdresse(archiviert, karte, teams, tracks, abschnitte));
         }
         catch (Exception ex)
         {
@@ -207,5 +290,5 @@ public sealed partial class ElAppController
         text.EndsWith('Z') || System.Text.RegularExpressions.Regex.IsMatch(text, @"[+-]\d{2}:\d{2}$");
 
     private static IEnumerable<object> Ergebnisse() =>
-        EinsatzAbschlussService.ErgebnisOptionen.Select(o => new { wert = o, anzeige = ErgebnisText.Anzeige(o) });
+        EinsatzAbschlussService.ErgebnisOptionen.Select(o => new { wert = o, anzeige = ErgebnisText.Anzeige(o), fund = ErgebnisText.IstFund(o) });
 }
