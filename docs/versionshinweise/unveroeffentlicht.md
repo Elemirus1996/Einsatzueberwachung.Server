@@ -22,10 +22,17 @@
 ### Fund-Punkt aus der App
 - Teams können in der App einen Punkt als **Fund** setzen. Er erscheint im Monitor rot mit Warnhinweis und wird beim Beenden als Fundort vorgeschlagen („Fund-Punkt übernehmen“). Dafür braucht es die neue App-Version.
 
+### EL-App: Wer bin ich, wer darf was
+- Nach der Anmeldung der Einsatzleitung in der App wählt ihr aus den Stammdaten, wer das Handy bedient.
+- Daraus folgt die Rolle im laufenden Einsatz: Der **Einsatzleiter** steuert und sendet seinen Standort, der **Führungsassistent** steuert ohne Standort, **alle anderen lesen nur** (Lage, Karte, Funk, Vermisste) und senden keinen Standort. So kommen sich mehrere EL-Handys im ELW nicht in die Quere.
+- Wechselt im Monitor der Einsatzleiter, gilt die neue Rolle sofort. Einen Einsatz anlegen darf jeder mit EL-Zugang.
+- Dafür braucht es die neue App-Version. Ältere Apps arbeiten wie bisher mit vollen Rechten.
+
 ### Einstellungen
 - Datenschutzerklärung für die App, Packliste und Löschfristen stehen jetzt unter Einstellungen → **Staffel**.
 - Unter Einstellungen → System → Updates stehen die **Versionshinweise** der neuesten Version – bei einem verfügbaren Update vor dem Installieren, sonst für die installierte Version.
 
 ## Technik
 - Schnittstelle erweitert (Beschreibung in `docs/APP_API.md`, Einsatzleitung Abschnitt 10): `einsatzart` in `/lage` und `/tracks`, `typ` bei `POST /punkt`, `alarmiertDurch` und `melder` bei `/einsatz/start`, neu `GET /einsatz/abschluss`, bei `/einsatz/beenden` die Felder `abschluss`, `unvollstaendigBestaetigt` und `pdf.abschnitte`, bei `/einsatz/bericht` der Parameter `abschnitte`. Ältere Apps laufen weiter wie bisher; die neuen Angaben werden dann im Monitor beim Beenden abgefragt.
+- EL-App: neu `GET /personen` und `POST /ich`, `ich` mit `rolle` in `/lage`, Aktionen mit Rolle `lesen` → `403`, Standort nur vom Einsatzleiter (`docs/APP_API.md`, Einsatzleitung Abschnitt 4a).
 - Keine neuen Pakete, keine nginx-Änderung, keine Datenmigration. Neue Einstellungen werden beim ersten Speichern angelegt.

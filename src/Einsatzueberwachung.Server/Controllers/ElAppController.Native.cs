@@ -47,7 +47,7 @@ public sealed partial class ElAppController
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
         var alt = Bearer();
         var jetzt = DateTime.UtcNow;
-        if (!tokens.TryPruefen(alt, jetzt, out var altAblauf, out var anmeldung) || einsatz is null) return Gone();
+        if (!tokens.TryPruefen(alt, jetzt, out var altAblauf, out var anmeldung, out var personId) || einsatz is null) return Gone();
         if (!ElPositionService.Laeuft(einsatz.CurrentEinsatz))
             return Conflict(new { error = "Verlängern geht nur während eines Einsatzes oder einer Übung." });
 
@@ -56,7 +56,7 @@ public sealed partial class ElAppController
         if (neuAblauf <= altAblauf)
             return Conflict(new { error = "Bitte neu mit dem Staffel-Passwort anmelden (höchstens 72 Stunden ohne Passwort)." });
 
-        var neu = tokens.Ausstellen(neuAblauf, anmeldung);
+        var neu = tokens.Ausstellen(neuAblauf, anmeldung, personId);
         tokens.Abmelden(alt!, altAblauf);
         audit?.Log("Zugang verlängert (EL-App)", Geraet(anfrage?.Geraet));
         return Ok(await AnmeldeAntwortAsync(neu, neuAblauf, anmeldung, mitAnmeldung: true));
@@ -103,8 +103,10 @@ public sealed partial class ElAppController
     public async Task<IActionResult> GetLage()
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
-        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _) || einsatz is null) return Gone();
-        return Ok(ElLage.Erstellen(einsatz, halsbaender, positionen.Modus, await AppDatenschutzAntwort.VersionAsync(einstellungen)));
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _, out _, out var personId) || einsatz is null) return Gone();
+        var ich = await IchAsync(personId);
+        return Ok(ElLage.Erstellen(einsatz, halsbaender, ModusFuer(ich, positionen.Modus), await AppDatenschutzAntwort.VersionAsync(einstellungen),
+            new { personId = ich.PersonId, name = ich.Name, rolle = ich.Rolle }));
     }
 
     /// <summary>Datenschutzerklaerung der Staffel zum Nachlesen (#148); 404, wenn keine hinterlegt ist</summary>
@@ -200,7 +202,8 @@ public sealed partial class ElAppController
 public static class ElLage
 {
     public static object Erstellen(Einsatzueberwachung.Domain.Interfaces.IEinsatzService einsatzService,
-        Einsatzueberwachung.Domain.Interfaces.ICollarTrackingService? halsbaender, OrtungsModus modus, object? datenschutz = null)
+        Einsatzueberwachung.Domain.Interfaces.ICollarTrackingService? halsbaender, OrtungsModus modus, object? datenschutz = null,
+        object? ich = null)
     {
         var e = einsatzService.CurrentEinsatz;
         var aktiv = ElPositionService.Laeuft(e);
@@ -208,6 +211,7 @@ public static class ElLage
         {
             mode = OrtungsSteuerung.AlsText(modus),
             serverZeit = DateTime.UtcNow,
+            ich,
             einsatz = new
             {
                 aktiv,

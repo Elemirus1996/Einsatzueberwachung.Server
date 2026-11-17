@@ -497,6 +497,42 @@ Die App erkennt im selben Scanner wie beim Team-Code eine `https://`-Adresse mit
 `/` am Ende egal, Abfrageteil wird ignoriert), übernimmt daraus nur den Server, zeigt den Servernamen zur Bestätigung und fragt das
 Staffel-Passwort ab (`POST /login`). Ein Team-Code (`/team/login/…`) bleibt eine Team-Anmeldung. Keine neue Schnittstelle.
 
+### 4a. Wer bin ich: Person und Rolle (ab Server 1.17.0)
+
+Nach dem Passwort wählt die App aus den Stammdaten, wer sie bedient. Daraus folgt je Einsatz die Rolle (Entscheidung Paul 17.11.2026).
+Es geht nicht um Schutz vor Missbrauch (wer das Staffel-Passwort hat, könnte sich jeden Namen geben), sondern darum, dass mehrere
+EL-Handys im ELW sich nicht in die Quere kommen: nur die Einsatzleitung steuert und sendet ihren Standort.
+
+**`GET /personen`** (EL-Token): aktive Einträge der Stammdaten, nach Vorname:
+`{ "personen": [ { "personId": "…", "name": "Anna Berg", "einsatzleiter": true, "fuehrungsassistent": false } ] }`
+(`einsatzleiter`/`fuehrungsassistent` = Qualifikation laut Stammdaten, nur als Hinweis bei der Auswahl).
+
+**`POST /ich`** `{ "personId": "…" }`: neues Token mit dieser Person (gleicher Ablauf, gleiche Anmeldung, also keine Verlängerung);
+das alte ist danach gesperrt wie bei `/verlaengern`. Antwort wie `/verlaengern`, zusätzlich `ich` (siehe unten). Unbekannte oder
+inaktive Person → `400`. Darf jederzeit erneut aufgerufen werden (Person wechseln). Eintrag im Audit-Log.
+`/verlaengern` behält die Person.
+
+**Rolle** (`ich.rolle`), bei jeder Anfrage neu aus dem laufenden Einsatz bestimmt (Vergleich mit dem Namen in den Einsatzdaten):
+
+| Rolle | wann | darf |
+|---|---|---|
+| `einsatzleiter` | Person = Einsatzleiter des laufenden Einsatzes | alles, sendet ihren Standort |
+| `fuehrungsassistent` | Person = Führungsassistent | alles, **sendet keinen Standort** |
+| `lesen` | sonst, und immer ohne laufenden Einsatz | nur lesen (Lage, Karte, Funk, Vermisste, Tracks, Bericht) |
+
+- Aktionen (Abschnitt 7) mit Rolle `lesen` → `403` + `{ "error" }`. Ausnahme `/einsatz/start`: ohne laufenden Einsatz darf jeder mit
+  EL-Zugang anlegen; wer sich dabei als Einsatzleiter einträgt, hat danach die Rolle `einsatzleiter`.
+- Standort: `GET /status` und `POST /positions` antworten bei `fuehrungsassistent` und `lesen` mit `mode = pause`; `POST /positions`
+  verwirft die Punkte dann (`accepted = 0`). Die App sendet in diesen Rollen nichts.
+- `GET /lage` enthält `"ich": { "personId": "…", "name": "Anna Berg", "rolle": "einsatzleiter" }`. Ändert sich der Einsatzleiter im
+  Monitor, gilt die neue Rolle ab der nächsten Anfrage; die App lädt `/lage` bei jedem Ereignis ohnehin neu.
+- **Ohne gewählte Person** (Apps vor 1.17.0, Token ohne Person): Rolle `einsatzleiter` wie bisher, `ich.personId = null`. Die App
+  ab 1.17.0 fragt nach der Anmeldung immer nach der Person, bevor sie die Lage zeigt.
+- Token-Format `e4.…` (mit Person); `e3` gilt weiter (ohne Person).
+
+**Ein Handy, zwei Rollen:** Ist auf dem Handy zusätzlich ein Team angemeldet, sendet es seinen Standort nur als Team (die Ortung der
+EL ruht), damit der Suchtrack nicht abreißt. Die App zeigt auf der Startseite beide Anmeldungen und oben immer, in welcher Rolle man ist.
+
 ### 5. `GET /lage`
 
 ```json

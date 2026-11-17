@@ -46,19 +46,20 @@ public sealed partial class ElAppController(
     }
 
     [HttpGet("status")]
-    public IActionResult GetStatus()
+    public async Task<IActionResult> GetStatus()
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
-        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out var ablaufUtc)) return Gone();
-        return Ok(Anweisung(ablaufUtc));
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out var ablaufUtc, out _, out var personId)) return Gone();
+        return Ok(Anweisung(ablaufUtc, await IchAsync(personId)));
     }
 
     [HttpPost("positions")]
     [RequestSizeLimit(256 * 1024)]
-    public IActionResult PostPositions([FromBody] TeamMobileAppController.AppPositionenRequest? request)
+    public async Task<IActionResult> PostPositions([FromBody] TeamMobileAppController.AppPositionenRequest? request)
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
-        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out var ablaufUtc)) return Gone();
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out var ablaufUtc, out _, out var personId)) return Gone();
+        var ich = await IchAsync(personId);
 
         var liste = request?.Positions ?? [];
         if (liste.Count > TeamMobileAppController.MaxPositionenProUpload)
@@ -66,10 +67,11 @@ public sealed partial class ElAppController(
 
         // Geraetename aus dem VPN (z. B. „Tablet EL“) – so sieht der Fuehrungsassistent, wer wo ist
         var geraet = geraete.NameFuer(HttpContext.Connection.RemoteIpAddress) ?? LeitungsGeraetNamen.Einsatzleitung;
-        var angenommen = positionen.Melden(geraet, liste.Select(p => (p.Lat, p.Lng, p.Accuracy,
+        // Nur der Einsatzleiter meldet seinen Standort (APP_API EL Abschnitt 4a); sonst verwerfen
+        var angenommen = !ElRolle.SendetStandort(ich.Rolle) ? 0 : positionen.Melden(geraet, liste.Select(p => (p.Lat, p.Lng, p.Accuracy,
             p.Timestamp > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(p.Timestamp).UtcDateTime : DateTime.UtcNow, p.Battery)));
 
-        var antwort = Anweisung(ablaufUtc);
+        var antwort = Anweisung(ablaufUtc, ich);
         return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = angenommen });
     }
 
@@ -80,8 +82,8 @@ public sealed partial class ElAppController(
     }
 
     // Kein Einsatz: GPS aus, aber angemeldet bleiben – beim naechsten Einsatz geht es ohne Eingabe weiter
-    private ElAnweisung Anweisung(DateTime ablaufUtc) =>
-        new(OrtungsSteuerung.AlsText(positionen.Modus), 30, 60, 120, ablaufUtc);
+    private ElAnweisung Anweisung(DateTime ablaufUtc, ElIch ich) =>
+        new(OrtungsSteuerung.AlsText(ModusFuer(ich, positionen.Modus)), 30, 60, 120, ablaufUtc);
 
     private IActionResult Gone()
     {
