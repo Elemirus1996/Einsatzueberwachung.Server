@@ -99,7 +99,7 @@
             @if (_activeTab == SettingsTab.Staffel)
             {
                 <h2 class="cfg-pane-title"><i class="bi bi-building me-2"></i>Staffel</h2>
-                <p class="cfg-pane-subtitle">Stammdaten der Staffel und Logos für Berichte.</p>
+                <p class="cfg-pane-subtitle">Stammdaten, Logos, Datenschutz und Packliste der Staffel.</p>
 
                 <div class="cfg-section">
                     <h3 class="cfg-sub-header">Kontaktdaten</h3>
@@ -174,6 +174,86 @@
                             }
                         </div>
                     </div>
+                </div>
+
+                <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-file-earmark-lock me-1"></i>Datenschutzerklärung für die App</h3>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="cfg-ds-titel">Titel und Text</label>
+                        <p class="text-muted small mb-2">Die App zeigt sie vor der ersten Anmeldung an diesem Server und lässt die Kenntnisnahme
+                            bestätigen. Nach jeder Änderung fragt die App erneut. Leer = keine Erklärung hinterlegt.</p>
+                        <input id="cfg-ds-titel" class="cfg-input mb-2" maxlength="@AppDatenschutz.MaxTitelLaenge"
+                               placeholder="Titel, z. B. Datenschutzerklärung RHS Musterstadt" @bind="_appSettings.AppDatenschutzTitel" />
+                        <textarea class="cfg-input" rows="12" maxlength="@AppDatenschutz.MaxTextLaenge" aria-label="Text der Datenschutzerklärung (Markdown)"
+                                  placeholder="Text (einfaches Markdown: ## Überschrift, - Liste, **fett**)" @bind="_appSettings.AppDatenschutzText"></textarea>
+                        @if (string.IsNullOrWhiteSpace(_appSettings.AppDatenschutzText))
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" @onclick="DatenschutzVorlageEinfuegen">Vorlage einfügen</button>
+                        }
+                        else if (_appSettings.AppDatenschutzStandUtc is { } stand)
+                        {
+                            <p class="text-muted small mt-2 mb-0">Gespeicherte Fassung vom @Ortszeit.AusUtc(stand).ToString("dd.MM.yyyy HH:mm") Uhr.
+                                Platzhalter in [eckigen Klammern] vor dem Einsatz ausfüllen.</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-backpack me-1"></i>Packliste für die App</h3>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="cfg-packliste">Punkte</label>
+                        <p class="text-muted small mb-2">Was jedes Mitglied für einen Einsatz dabeihaben sollte. Die App zeigt die Liste, erinnert
+                            regelmäßig daran und lässt sie abhaken. Abgehakt wird nur auf dem Handy, der Server erfährt davon nichts.
+                            Eine Zeile je Punkt; eine Zeile mit Doppelpunkt am Ende beginnt eine Gruppe. Leer = keine Packliste.</p>
+                        <textarea id="cfg-packliste" class="cfg-input" rows="10" maxlength="@AppPackliste.MaxEingabeLaenge"
+                                  placeholder="@PacklisteBeispiel" @bind="_appSettings.AppPacklisteText"></textarea>
+                        @{ var packlisteAnzahl = AppPackliste.Punkte(_appSettings.AppPacklisteText).Count; }
+                        @if (packlisteAnzahl > 0)
+                        {
+                            <p class="text-muted small mt-2 mb-0">@packlisteAnzahl @(packlisteAnzahl == 1 ? "Punkt" : "Punkte")@(_appSettings.AppPacklisteStandUtc is { } packStand ? $", gespeicherte Fassung vom {Ortszeit.AusUtc(packStand):dd.MM.yyyy HH:mm} Uhr" : "").</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-shield-lock me-1"></i>Löschfristen (Datenschutz)</h3>
+                    @if (_appSettings.LoeschfristLaufwegeTage is null && _appSettings.LoeschfristNotizenTage is null && _appSettings.LoeschfristVermissteTage is null)
+                    {
+                        <p class="alert alert-warning py-2 mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Noch keine Löschfristen festgelegt: Der Server löscht
+                            archivierte Einsätze nie automatisch. Bitte legt als Staffel fest, wie lange ihr die Daten aufbewahrt.</p>
+                    }
+                    <p class="text-muted small mb-2">Tage ab Ende des Einsatzes; leer = nicht automatisch löschen. Der Server prüft einmal täglich und löscht
+                        dann nur die gewählte Datenart aus dem Archiv, dazu den gespeicherten PDF-Bericht (im Archiv neu erzeugbar). Laufende Einsätze
+                        werden nie gelöscht. In der Datenschutzerklärung für die App setzen <code>{frist.laufwege}</code>, <code>{frist.notizen}</code>,
+                        <code>{frist.vermisste}</code> und <code>{frist.uebungen}</code> die Fristen automatisch ein.</p>
+                    <div class="cfg-grid cfg-grid-2">
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Laufwege">Laufwege (Handy und Halsband)</label>
+                            <InputNumber id="cfg-lf-Laufwege" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristLaufwegeTage" />
+                            <small class="text-muted">Tracks und abgeschlossene Suchen im Archiv</small>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Notizen">Notizen, Statusmeldungen, Funk</label>
+                            <InputNumber id="cfg-lf-Notizen" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristNotizenTage" />
+                            <small class="text-muted">im Archiv, dazu alte Einträge der Funk-Datenbank</small>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Vermisste">Angaben zur vermissten Person</label>
+                            <InputNumber id="cfg-lf-Vermisste" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristVermissteTage" />
+                            <small class="text-muted">Vermisstenprofile im Archiv</small>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Uebungen">Übungen (alle Datenarten)</label>
+                            <InputNumber id="cfg-lf-Uebungen" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristUebungenTage" />
+                            <small class="text-muted">leer = wie bei Einsätzen</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">Die Protokolle des Webservers (nginx, mit IP-Adressen) liegen außerhalb der Anwendung und werden dort
+                        eingestellt (z. B. logrotate).</p>
                 </div>
             }
 
@@ -297,78 +377,6 @@
                             </label>
                         </div>
                     </div>
-                    <div class="cfg-field mt-3">
-                        <label class="cfg-label" for="cfg-ds-titel">Datenschutzerklärung für die App</label>
-                        <p class="text-muted small mb-2">Die App zeigt sie vor der ersten Anmeldung an diesem Server und lässt die Kenntnisnahme
-                            bestätigen. Nach jeder Änderung fragt die App erneut. Leer = keine Erklärung hinterlegt.</p>
-                        <input id="cfg-ds-titel" class="cfg-input mb-2" maxlength="@AppDatenschutz.MaxTitelLaenge"
-                               placeholder="Titel, z. B. Datenschutzerklärung RHS Musterstadt" @bind="_appSettings.AppDatenschutzTitel" />
-                        <textarea class="cfg-input" rows="12" maxlength="@AppDatenschutz.MaxTextLaenge" aria-label="Text der Datenschutzerklärung (Markdown)"
-                                  placeholder="Text (einfaches Markdown: ## Überschrift, - Liste, **fett**)" @bind="_appSettings.AppDatenschutzText"></textarea>
-                        @if (string.IsNullOrWhiteSpace(_appSettings.AppDatenschutzText))
-                        {
-                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" @onclick="DatenschutzVorlageEinfuegen">Vorlage einfügen</button>
-                        }
-                        else if (_appSettings.AppDatenschutzStandUtc is { } stand)
-                        {
-                            <p class="text-muted small mt-2 mb-0">Gespeicherte Fassung vom @Ortszeit.AusUtc(stand).ToString("dd.MM.yyyy HH:mm") Uhr.
-                                Platzhalter in [eckigen Klammern] vor dem Einsatz ausfüllen.</p>
-                        }
-                    </div>
-                    <div class="cfg-field mt-3">
-                        <label class="cfg-label" for="cfg-packliste">Packliste für die App</label>
-                        <p class="text-muted small mb-2">Was jedes Mitglied für einen Einsatz dabeihaben sollte. Die App zeigt die Liste, erinnert
-                            regelmäßig daran und lässt sie abhaken. Abgehakt wird nur auf dem Handy, der Server erfährt davon nichts.
-                            Eine Zeile je Punkt; eine Zeile mit Doppelpunkt am Ende beginnt eine Gruppe. Leer = keine Packliste.</p>
-                        <textarea id="cfg-packliste" class="cfg-input" rows="10" maxlength="@AppPackliste.MaxEingabeLaenge"
-                                  placeholder="@PacklisteBeispiel" @bind="_appSettings.AppPacklisteText"></textarea>
-                        @{ var packlisteAnzahl = AppPackliste.Punkte(_appSettings.AppPacklisteText).Count; }
-                        @if (packlisteAnzahl > 0)
-                        {
-                            <p class="text-muted small mt-2 mb-0">@packlisteAnzahl @(packlisteAnzahl == 1 ? "Punkt" : "Punkte")@(_appSettings.AppPacklisteStandUtc is { } packStand ? $", gespeicherte Fassung vom {Ortszeit.AusUtc(packStand):dd.MM.yyyy HH:mm} Uhr" : "").</p>
-                        }
-                    </div>
-                </div>
-
-                <div class="cfg-section">
-                    <h3 class="cfg-sub-header"><i class="bi bi-shield-lock me-1"></i>Löschfristen (Datenschutz)</h3>
-                    @if (_appSettings.LoeschfristLaufwegeTage is null && _appSettings.LoeschfristNotizenTage is null && _appSettings.LoeschfristVermissteTage is null)
-                    {
-                        <p class="alert alert-warning py-2 mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Noch keine Löschfristen festgelegt: Der Server löscht
-                            archivierte Einsätze nie automatisch. Bitte legt als Staffel fest, wie lange ihr die Daten aufbewahrt.</p>
-                    }
-                    <p class="text-muted small mb-2">Tage ab Ende des Einsatzes; leer = nicht automatisch löschen. Der Server prüft einmal täglich und löscht
-                        dann nur die gewählte Datenart aus dem Archiv, dazu den gespeicherten PDF-Bericht (im Archiv neu erzeugbar). Laufende Einsätze
-                        werden nie gelöscht. In der Datenschutzerklärung für die App setzen <code>{frist.laufwege}</code>, <code>{frist.notizen}</code>,
-                        <code>{frist.vermisste}</code> und <code>{frist.uebungen}</code> die Fristen automatisch ein.</p>
-                    <div class="cfg-grid cfg-grid-2">
-                        <div class="cfg-field">
-                            <label class="cfg-label" for="cfg-lf-Laufwege">Laufwege (Handy und Halsband)</label>
-                            <InputNumber id="cfg-lf-Laufwege" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
-                                         @bind-Value="_appSettings.LoeschfristLaufwegeTage" />
-                            <small class="text-muted">Tracks und abgeschlossene Suchen im Archiv</small>
-                        </div>
-                        <div class="cfg-field">
-                            <label class="cfg-label" for="cfg-lf-Notizen">Notizen, Statusmeldungen, Funk</label>
-                            <InputNumber id="cfg-lf-Notizen" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
-                                         @bind-Value="_appSettings.LoeschfristNotizenTage" />
-                            <small class="text-muted">im Archiv, dazu alte Einträge der Funk-Datenbank</small>
-                        </div>
-                        <div class="cfg-field">
-                            <label class="cfg-label" for="cfg-lf-Vermisste">Angaben zur vermissten Person</label>
-                            <InputNumber id="cfg-lf-Vermisste" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
-                                         @bind-Value="_appSettings.LoeschfristVermissteTage" />
-                            <small class="text-muted">Vermisstenprofile im Archiv</small>
-                        </div>
-                        <div class="cfg-field">
-                            <label class="cfg-label" for="cfg-lf-Uebungen">Übungen (alle Datenarten)</label>
-                            <InputNumber id="cfg-lf-Uebungen" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
-                                         @bind-Value="_appSettings.LoeschfristUebungenTage" />
-                            <small class="text-muted">leer = wie bei Einsätzen</small>
-                        </div>
-                    </div>
-                    <p class="text-muted small mt-2 mb-0">Die Protokolle des Webservers (nginx, mit IP-Adressen) liegen außerhalb der Anwendung und werden dort
-                        eingestellt (z. B. logrotate).</p>
                 </div>
 
                 <div class="cfg-section">
