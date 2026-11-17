@@ -32,6 +32,9 @@ namespace Einsatzueberwachung.Domain.Services
         public DateTime? LastInstalledAt { get; set; }
         public string? LastError { get; set; }
         public string LastMessage { get; set; } = string.Empty;
+        /// <summary>Versionshinweise (Markdown) des neuesten Releases, zum Anzeigen unter Einstellungen → Updates</summary>
+        public string LatestReleaseNotes { get; set; } = string.Empty;
+        public string LatestReleaseUrl { get; set; } = string.Empty;
 
         public UpdateRuntimeStatus Clone() => (UpdateRuntimeStatus)MemberwiseClone();
     }

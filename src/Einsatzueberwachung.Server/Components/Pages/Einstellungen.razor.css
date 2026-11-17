@@ -728,6 +728,54 @@
     gap: 0.3rem 1rem;
 }
 
+/* Versionshinweise des Releases unter Updates */
+::deep .cfg-versionshinweise {
+    border: 1px solid var(--ui-border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    background: var(--ui-surface);
+}
+
+::deep .cfg-versionshinweise summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--ui-text);
+}
+
+::deep .cfg-versionshinweise-text {
+    max-height: 420px;
+    overflow-y: auto;
+    margin: 0.5rem 0;
+    color: var(--ui-text);
+    font-size: 0.9rem;
+}
+
+::deep .cfg-versionshinweise-text h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0.75rem 0 0.25rem;
+}
+
+::deep .cfg-versionshinweise-text h5 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0.6rem 0 0.2rem;
+}
+
+::deep .cfg-versionshinweise-text p {
+    margin: 0 0 0.3rem;
+}
+
+::deep .cfg-versionshinweise-punkt {
+    padding-left: 1rem;
+    text-indent: -0.7rem;
+}
+
+::deep .cfg-versionshinweise-punkt::before {
+    content: "• ";
+    color: var(--ui-muted);
+}
+
 ::deep .cfg-path {
     font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.78rem;

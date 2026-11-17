@@ -1460,6 +1460,42 @@
                         <dt>Letzte Installation</dt><dd>@DisplayDateTime(_updateStatus.LastInstalledAt)</dd>
                     </dl>
 
+                    @if (!string.IsNullOrWhiteSpace(_updateStatus.LatestReleaseNotes))
+                    {
+                        <details class="cfg-versionshinweise mt-2" open="@_updateStatus.UpdateAvailable">
+                            <summary>
+                                @(_updateStatus.UpdateAvailable
+                                    ? $"Was Version {DisplayLatestVersion()} bringt"
+                                    : $"Neu in der installierten Version {_updateStatus.CurrentVersion}")
+                            </summary>
+                            <div class="cfg-versionshinweise-text">
+                                @foreach (var block in Versionshinweise.Zerlegen(_updateStatus.LatestReleaseNotes))
+                                {
+                                    var teile = block.Teile;
+                                    @switch (block.Art)
+                                    {
+                                        case Versionshinweise.BlockArt.Ueberschrift:
+                                            <h4>@InlineText(teile)</h4>
+                                            break;
+                                        case Versionshinweise.BlockArt.Unterueberschrift:
+                                            <h5>@InlineText(teile)</h5>
+                                            break;
+                                        case Versionshinweise.BlockArt.Punkt:
+                                            <p class="cfg-versionshinweise-punkt">@InlineText(teile)</p>
+                                            break;
+                                        default:
+                                            <p>@InlineText(teile)</p>
+                                            break;
+                                    }
+                                }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(_updateStatus.LatestReleaseUrl))
+                            {
+                                <a class="cfg-help" href="@_updateStatus.LatestReleaseUrl" target="_blank" rel="noopener">Release auf GitHub</a>
+                            }
+                        </details>
+                    }
+
                     <div class="cfg-grid cfg-grid-2 mt-2">
                         <div class="cfg-field">
                             <label class="cfg-label">Update-URL</label>

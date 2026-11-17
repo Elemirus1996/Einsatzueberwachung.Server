@@ -251,6 +251,24 @@ public partial class Einstellungen
     }
 
     /// <summary>Vorlage der Datenschutzerklaerung fuer die App einfuegen (#148); nur wenn noch kein Text da ist</summary>
+    /// <summary>Text eines Absatzes der Versionshinweise mit **fett** und `Code`, ohne HTML einzubetten</summary>
+    private static RenderFragment InlineText(IReadOnlyList<Versionshinweise.Teil> teile) => builder =>
+    {
+        foreach (var teil in teile)
+        {
+            if (teil.Fett || teil.Code)
+            {
+                builder.OpenElement(0, teil.Code ? "code" : "strong");
+                builder.AddContent(1, teil.Text);
+                builder.CloseElement();
+            }
+            else
+            {
+                builder.AddContent(2, teil.Text);
+            }
+        }
+    };
+
     /// <summary>Abbruchgründe als Text, eine Zeile je Grund; leer = Vorgabe</summary>
     private string AbbruchgruendeText
     {
