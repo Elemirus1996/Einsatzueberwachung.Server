@@ -296,10 +296,10 @@
                         else if (panel.PanelId == KnownPanels.Ressourcen)
                         {
                             <div class="ms-auto d-flex align-items-center gap-2">
-                                <span class="small text-muted">@GetAvailableResourceCount() verfügbar</span>
-                                <a class="btn btn-sm btn-outline-secondary" href="/verfuegungsraum">
+                                <span class="small text-muted">@GetAvailableResourceCount() im Verfügungsraum</span>
+                                <a class="btn btn-sm btn-outline-secondary" href="/ressourcenverwaltung">
                                     <i class="bi bi-sliders" aria-hidden="true"></i>
-                                    Verwalten
+                                    Ressourcen verwalten
                                 </a>
                             </div>
                         }
@@ -345,7 +345,7 @@
                                     {
                                         <div class="resource-monitor-empty">
                                             <span>Noch keine Ressourcen eingecheckt.</span>
-                                            <a href="/verfuegungsraum">Zum Check-in</a>
+                                            <a href="/ressourcenverwaltung">Zum Check-in</a>
                                         </div>
                                     }
                                     else

@@ -21,7 +21,7 @@ public partial class EinsatzService
         if (string.IsNullOrWhiteSpace(resource.EntityId))
             throw new ArgumentException("Die Ressourcen-ID darf nicht leer sein.", nameof(resource));
         if (resource.Status is not (ResourceStatus.Verfuegbar or ResourceStatus.AufAnfahrt))
-            throw new ArgumentException("Beim Check-in sind nur die Status Verfügbar und Auf Anfahrt zulässig.", nameof(resource));
+            throw new ArgumentException("Beim Check-in sind nur die Status Im Verfügungsraum und Auf Anfahrt zulässig.", nameof(resource));
 
         var resources = CurrentEinsatz.Resources ??= new List<EinsatzResource>();
         var existing = resources.FirstOrDefault(entry =>
@@ -68,8 +68,6 @@ public partial class EinsatzService
     {
         if (string.IsNullOrWhiteSpace(entityId))
             throw new ArgumentException("Die Ressourcen-ID darf nicht leer sein.", nameof(entityId));
-        if (status == ResourceStatus.InSuche)
-            throw new ArgumentException("Der Status In Suche wird ausschließlich durch die Suchzuweisung gesetzt.", nameof(status));
         if (status == ResourceStatus.Sonderauftrag && string.IsNullOrWhiteSpace(note))
             throw new ArgumentException("Für einen Sonderauftrag ist eine Notiz erforderlich.", nameof(note));
 
@@ -190,7 +188,7 @@ public partial class EinsatzService
                 && string.Equals(entry.EntityId, id, StringComparison.Ordinal));
             if (resource?.Status != ResourceStatus.Verfuegbar
                 && !(alreadyAssignedToSearch && resource?.Status == ResourceStatus.InSuche))
-                throw new InvalidOperationException($"Die Ressource '{id}' ist nicht eingecheckt und verfügbar.");
+                throw new InvalidOperationException($"Die Ressource '{id}' ist nicht im Verfügungsraum und kann nicht zugewiesen werden.");
         }
     }
 }

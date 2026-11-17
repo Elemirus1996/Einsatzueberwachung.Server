@@ -6,7 +6,7 @@ public static class ResourceStatusPresentation
 {
     public static string Label(ResourceStatus status) => status switch
     {
-        ResourceStatus.Verfuegbar => "Verfügbar",
+        ResourceStatus.Verfuegbar => "Im Verfügungsraum",
         ResourceStatus.VoruebergehendAbwesend => "Vorübergehend abwesend",
         ResourceStatus.Pause => "Pause",
         ResourceStatus.AufAnfahrt => "Auf Anfahrt",

@@ -46,19 +46,17 @@
 
 .resource-monitor-link,
 .resource-type-switch .btn,
-.resource-new-button,
-.resource-quick-create-actions .btn,
-.resource-quick-create > .resource-section-heading .btn,
+.resource-checkin-toggle,
+.resource-quick-create-button,
 .resource-row-actions .btn {
     min-height: 44px;
 }
 
 .resource-checkin-section,
 .resource-roster-section,
-.resource-quick-create,
 .resource-empty-state {
     border: 1px solid var(--ui-border);
-    border-radius: 12px;
+    border-radius: var(--theme-border-radius);
     background: var(--ui-surface);
     padding: 1.25rem;
 }
@@ -66,7 +64,39 @@
 .resource-checkin-section,
 .resource-roster-section {
     display: grid;
+    gap: 0.75rem;
+}
+
+.resource-checkin-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 1rem;
+}
+
+.resource-checkin-summary h2 {
+    margin: 0;
+    color: var(--ui-heading-text);
+    font-size: 1.25rem;
+    font-weight: 650;
+}
+
+.resource-checkin-summary .resource-search-hint {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.resource-checkin-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.resource-checkin-controls {
+    display: grid;
+    gap: 0.75rem;
 }
 
 .resource-section-heading h2 {
@@ -80,8 +110,6 @@
 }
 
 .resource-type-switch,
-.resource-checkin-controls,
-.resource-quick-create-actions,
 .resource-row-actions {
     display: flex;
     align-items: end;
@@ -89,17 +117,19 @@
     gap: 0.5rem;
 }
 
-.resource-checkin-controls {
+.resource-checkin-toolbar {
+    display: grid;
+    grid-template-columns: auto minmax(170px, 210px) minmax(220px, 1fr);
     align-items: end;
     gap: 0.75rem;
 }
 
 .resource-search-field {
-    flex: 1 1 320px;
+    min-width: 0;
 }
 
 .resource-initial-status {
-    flex: 0 1 220px;
+    min-width: 0;
 }
 
 .resource-search-field > span:first-child,
@@ -140,7 +170,10 @@
 
 .resource-suggestions {
     display: grid;
+    max-height: 25rem;
+    overflow-y: auto;
     border-top: 1px solid var(--ui-border);
+    border-bottom: 1px solid var(--ui-border);
 }
 
 .resource-suggestion {
@@ -148,9 +181,13 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    min-height: 60px;
-    padding: 0.5rem 0.25rem;
+    min-height: 64px;
+    padding: 0.5rem;
     border-bottom: 1px solid var(--ui-border);
+}
+
+.resource-suggestion:last-child {
+    border-bottom: 0;
 }
 
 .resource-suggestion-identity {
@@ -179,10 +216,14 @@
     color: var(--ui-heading-text);
 }
 
-.resource-quick-create {
-    display: grid;
+.resource-quick-create-prompt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 1rem;
-    background: var(--ui-surface-2);
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--ui-border);
+    color: var(--ui-muted);
 }
 
 .resource-quick-create-grid {
@@ -191,9 +232,58 @@
     gap: 0.75rem;
 }
 
+.resource-quick-create-grid label {
+    display: block;
+}
+
+.resource-quick-create-grid label > span {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+}
+
 .resource-quick-create-grid .form-control {
     min-height: 44px;
     background: var(--ui-form-bg);
+}
+
+.resource-quick-create-dialog .modal-modern-header {
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.resource-quick-create-dialog .modal-modern-header h3 {
+    font-size: 1.25rem;
+}
+
+.resource-quick-create-dialog .resource-eyebrow {
+    margin-bottom: 0.35rem;
+}
+
+.resource-quick-create-dialog .modal-modern-body {
+    padding: 1.5rem;
+}
+
+.resource-quick-create-explainer {
+    margin: 0 0 1rem;
+    color: var(--ui-muted);
+}
+
+.resource-quick-create-dialog .modal-modern-footer {
+    flex-wrap: wrap;
+    padding: 1rem 1.5rem;
+}
+
+.resource-quick-create-dialog .modal-modern-footer .btn {
+    min-height: 44px;
+}
+
+.resource-quick-create-dialog .modal-modern-footer .btn:first-child {
+    flex: 2 1 18rem;
+}
+
+.resource-quick-create-dialog .modal-modern-footer .btn:last-child {
+    flex: 1 1 8rem;
 }
 
 .resource-counts {
@@ -319,7 +409,8 @@
     }
 
     .resource-page-header,
-    .resource-section-heading {
+    .resource-section-heading,
+    .resource-checkin-summary {
         align-items: flex-start;
     }
 
@@ -335,9 +426,21 @@
         flex: 1;
     }
 
+    .resource-checkin-summary {
+        flex-direction: column;
+    }
+
+    .resource-checkin-toggle {
+        width: 100%;
+    }
+
+    .resource-checkin-toolbar {
+        grid-template-columns: 1fr;
+    }
+
     .resource-initial-status,
-    .resource-new-button {
-        flex: 1 1 100%;
+    .resource-search-field {
+        width: 100%;
     }
 
     .resource-suggestion {
@@ -350,9 +453,34 @@
         min-height: 44px;
     }
 
+    .resource-quick-create-prompt {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .resource-quick-create-button {
+        width: 100%;
+    }
+
     .resource-roster-section,
     .resource-checkin-section {
         padding: 1rem;
+    }
+
+    .resource-quick-create-dialog .modal-modern-header,
+    .resource-quick-create-dialog .modal-modern-body,
+    .resource-quick-create-dialog .modal-modern-footer {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .resource-quick-create-dialog .modal-modern-footer {
+        flex-direction: column;
+    }
+
+    .resource-quick-create-dialog .modal-modern-footer .btn {
+        width: 100%;
+        flex-basis: auto;
     }
 
     .resource-table {

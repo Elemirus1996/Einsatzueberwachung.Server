@@ -1,11 +1,35 @@
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Domain.Services;
+using Einsatzueberwachung.Server.Components.Shared;
 
 namespace Einsatzueberwachung.Tests;
 
 public sealed class EinsatzResourceTests
 {
+    [Fact]
+    public void VerfuegbarStatus_HasOperationalLabel()
+    {
+        Assert.Equal("Im Verfügungsraum", ResourceStatusPresentation.Label(ResourceStatus.Verfuegbar));
+    }
+
+    [Fact]
+    public async Task ResourceCanBeManuallyMarkedInSearch()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "person-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+
+        await einsatz.SetResourceStatusAsync(ResourceEntityType.Person, "person-1", ResourceStatus.InSuche);
+
+        Assert.Equal(ResourceStatus.InSuche, Assert.Single(einsatz.GetEinsatzResources()).Status);
+        Assert.False(einsatz.CanAssignResourceToSearch(ResourceEntityType.Person, "person-1"));
+    }
+
     [Fact]
     public async Task Sonderauftrag_RequiresNoteAndCanBeChangedPerResource()
     {

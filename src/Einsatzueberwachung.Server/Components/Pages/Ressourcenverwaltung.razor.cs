@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace Einsatzueberwachung.Server.Components.Pages;
 
-public partial class Verfuegungsraum
+public partial class Ressourcenverwaltung
 {
     [Inject] private IEinsatzService EinsatzService { get; set; } = default!;
     [Inject] private IMasterDataService MasterDataService { get; set; } = default!;
@@ -23,6 +23,7 @@ public partial class Verfuegungsraum
     private string _message = string.Empty;
     private bool _messageIsError;
     private bool _showQuickCreate;
+    private bool _checkInExpanded;
     private bool _isSaving;
     private PersonalEntry _newPerson = new();
     private DogEntry _newDog = new();
@@ -36,16 +37,17 @@ public partial class Verfuegungsraum
         .ThenBy(resource => ResourceName(resource), StringComparer.CurrentCultureIgnoreCase)
         .ToList();
 
-    private int AvailableCount => SortedResources.Count(resource => resource.Status == ResourceStatus.Verfuegbar);
+    private int InVerfuegungsraumCount => SortedResources.Count(resource => resource.Status == ResourceStatus.Verfuegbar);
 
-    private List<ResourceSuggestion> SearchSuggestions
+    private int ActiveMasterDataCount => _searchType == ResourceEntityType.Person
+        ? _personnel.Count(person => person.IsActive)
+        : _dogs.Count(dog => dog.IsActive);
+
+    private List<ResourceSuggestion> CheckInCandidates
     {
         get
         {
             var query = _searchText.Trim();
-            if (query.Length < 3)
-                return new List<ResourceSuggestion>();
-
             var checkedIn = EinsatzService.GetEinsatzResources()
                 .Where(resource => resource.EntityType == _searchType)
                 .Select(resource => resource.EntityId)
@@ -60,10 +62,10 @@ public partial class Verfuegungsraum
                         person.Id,
                         person.FullName,
                         person.Organisation))
-                    .Where(suggestion => ContainsSearchTerm(suggestion.Name, query)
+                    .Where(suggestion => string.IsNullOrWhiteSpace(query)
+                        || ContainsSearchTerm(suggestion.Name, query)
                         || ContainsSearchTerm(suggestion.Detail, query))
                     .OrderBy(suggestion => suggestion.Name, StringComparer.CurrentCultureIgnoreCase)
-                    .Take(10)
                     .ToList();
             }
 
@@ -74,10 +76,10 @@ public partial class Verfuegungsraum
                     dog.Id,
                     dog.Name,
                     string.Join(" · ", new[] { dog.Rasse, dog.Organisation }.Where(value => !string.IsNullOrWhiteSpace(value)))))
-                .Where(suggestion => ContainsSearchTerm(suggestion.Name, query)
+                .Where(suggestion => string.IsNullOrWhiteSpace(query)
+                    || ContainsSearchTerm(suggestion.Name, query)
                     || ContainsSearchTerm(suggestion.Detail, query))
                 .OrderBy(suggestion => suggestion.Name, StringComparer.CurrentCultureIgnoreCase)
-                .Take(10)
                 .ToList();
         }
     }
@@ -86,6 +88,7 @@ public partial class Verfuegungsraum
     {
         _personnel = await MasterDataService.GetPersonalListAsync();
         _dogs = await MasterDataService.GetDogListAsync();
+        _checkInExpanded = EinsatzService.GetEinsatzResources().Count == 0;
         EinsatzService.ResourcesChanged += OnResourcesChanged;
         EinsatzService.EinsatzChanged += OnEinsatzChanged;
     }
@@ -99,6 +102,8 @@ public partial class Verfuegungsraum
 
     private void OnResourcesChanged() => _ = InvokeAsync(StateHasChanged);
     private void OnEinsatzChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private void ToggleCheckIn() => _checkInExpanded = !_checkInExpanded;
 
     private void SelectSearchType(ResourceEntityType type)
     {
@@ -281,6 +286,7 @@ public partial class Verfuegungsraum
         if (type == ResourceEntityType.Dog)
             yield return ResourceStatus.Pause;
         yield return ResourceStatus.AufAnfahrt;
+        yield return ResourceStatus.InSuche;
         yield return ResourceStatus.Drohneneinsatz;
         yield return ResourceStatus.Sonderauftrag;
         yield return ResourceStatus.Abgemeldet;

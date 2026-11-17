@@ -34,7 +34,7 @@ public static class HilfeContent
                 "Team pausieren: Team-Karte -> 'Pause'-Button",
                 "Team zurückmelden: Team-Karte -> 'Zurück'-Button",
                 "Neues Team: '+ Team hinzufügen'-Button oben rechts",
-                "Ressourcen verwalten: Panel-Link 'Verfügungsraum'"
+                "Ressourcen verwalten: Panel-Link 'Ressourcenverwaltung'"
             }),
 
         ["/einsatz-karte"] = new(
@@ -100,17 +100,17 @@ public static class HilfeContent
                 "Navigation -> Divera 24/7",
                 "API-Key konfigurieren: Einstellungen -> Divera",
                 "Divera Benutzer-ID pflegen: Stammdaten -> Personal",
-                "Ressourcenstatus verwalten: Navigation -> Verfügungsraum"
+                "Ressourcenstatus verwalten: Navigation -> Ressourcenverwaltung"
             }),
 
-        ["/verfuegungsraum"] = new(
-            "Verfügungsraum",
-            "Hier werden Personen und Hunde für den laufenden Einsatz eingecheckt und disponiert. Stammdaten erscheinen ab drei Suchzeichen; neue Einträge können direkt angelegt und gespeichert werden. Statuswechsel gelten je Ressource. Für einen Sonderauftrag ist ein Zweck erforderlich. Ressourcen in Anfahrt, Abwesenheit, Pause, Suche, Drohneneinsatz, Sonderauftrag oder Abmeldung sind nicht für neue Suchsektoren verfügbar.",
+        ["/ressourcenverwaltung"] = new(
+            "Ressourcenverwaltung",
+            "Hier werden Personen und Hunde für den laufenden Einsatz eingecheckt und disponiert. Die Liste zeigt aktive, noch nicht eingecheckte Stammdaten; Einträge lassen sich direkt übernehmen. Neue Einträge werden per Schnellaufnahme dauerhaft in den Stammdaten gespeichert und eingecheckt. „In Suche“ kann automatisch durch eine Sektorzuweisung oder manuell gesetzt werden. Eine manuelle Statusänderung erzeugt keine Sektorzuweisung; nur Ressourcen eines Suchauftrags werden nach dessen Abschluss automatisch zurückgesetzt. Für einen Sonderauftrag ist ein Zweck erforderlich. Nur Ressourcen mit Status „Im Verfügungsraum“ sind für neue Suchsektoren auswählbar.",
             new[]
             {
-                "Navigation -> Verfügungsraum",
-                "Person oder Hund wählen -> mindestens drei Zeichen eingeben -> Ressource übernehmen",
-                "Neue Ressource: 'Neu anlegen' -> Angaben speichern und einchecken",
+                "Navigation -> Ressourcenverwaltung",
+                "Personen oder Hunde wählen -> Ressource mit 'Einchecken' übernehmen",
+                "Fehlende Ressource: 'Schnell erfassen' -> in Stammdaten speichern und einchecken",
                 "Sonderauftrag: Status wählen -> Zweck eintragen -> bestätigen",
                 "DIVERA-Zuordnung für Personen: Stammdaten -> Personal -> Divera Benutzer-ID"
             }),
