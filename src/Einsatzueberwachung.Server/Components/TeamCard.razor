@@ -37,6 +37,13 @@
                         <span class="tc-dog-name-text">@Team.DogName</span>
                     </span>
                 }
+                @if (ShowResourceStatus(ResourceEntityType.Dog, Team.DogId))
+                {
+                    <ResourceStatusIndicator Status="GetResourceStatus(ResourceEntityType.Dog, Team.DogId)"
+                                             ShowUnknown="true"
+                                             Name="@GetResourceDisplayName(ResourceEntityType.Dog, Team.DogId)"
+                                             Variant="team" />
+                }
                 <button class="btn btn-outline-secondary btn-sm tc-icon-button tc-edit-button"
                         @onclick="() => OnEdit.InvokeAsync(Team.TeamId)"
                         title="Bearbeiten"
@@ -67,15 +74,44 @@
                     <span class="tc-crew-item" title="Hundeführer: @Team.HundefuehrerName">
                         <i class="bi bi-person-fill" aria-hidden="true"></i>
                         <span class="visually-hidden">Hundeführer: </span>
-                        <span class="tc-crew-name">@Team.HundefuehrerName</span>
+                        <span class="tc-crew-name">
+                            @Team.HundefuehrerName
+                            @if (ShowResourceStatus(ResourceEntityType.Person, Team.HundefuehrerId))
+                            {
+                                <ResourceStatusIndicator Status="GetResourceStatus(ResourceEntityType.Person, Team.HundefuehrerId)"
+                                                         ShowUnknown="true"
+                                                         Name="@GetResourceDisplayName(ResourceEntityType.Person, Team.HundefuehrerId)"
+                                                         Variant="team" />
+                            }
+                        </span>
                     </span>
                 }
-                @if (Team.HelferNames.Count > 0)
+                @{
+                    var helperMembers = GetTeamHelperMembers();
+                }
+                @if (helperMembers.Count > 0)
                 {
                     <span class="tc-crew-item tc-crew-item--helpers" title="Helfer: @Team.HelferNamesJoined">
                         <i class="bi bi-people-fill" aria-hidden="true"></i>
                         <span class="visually-hidden">Helfer: </span>
-                        <span class="tc-crew-name">@Team.HelferNamesJoined</span>
+                        @for (var index = 0; index < helperMembers.Count; index++)
+                        {
+                            var helperMember = helperMembers[index];
+                            @if (index > 0)
+                            {
+                                <span aria-hidden="true">,</span>
+                            }
+                            <span class="tc-crew-name">
+                                @helperMember.Name
+                                @if (ShowResourceStatus(ResourceEntityType.Person, helperMember.Id))
+                                {
+                                    <ResourceStatusIndicator Status="GetResourceStatus(ResourceEntityType.Person, helperMember.Id)"
+                                                             ShowUnknown="true"
+                                                             Name="@helperMember.Name"
+                                                             Variant="team" />
+                                }
+                            </span>
+                        }
                     </span>
                 }
             </div>
@@ -319,6 +355,7 @@
     [Parameter, EditorRequired] public Team Team { get; set; } = default!;
     [Parameter] public bool IsDogConflict { get; set; }
     [Parameter] public string? ConflictingTeamName { get; set; }
+    [Parameter] public IReadOnlyList<EinsatzResource> Resources { get; set; } = Array.Empty<EinsatzResource>();
     [Parameter] public IReadOnlyList<DroneEntry> DroneList { get; set; } = Array.Empty<DroneEntry>();
     [Parameter] public bool IsExpanded { get; set; }
     [Parameter] public CollarLocation? LastCollarLocation { get; set; }
@@ -341,6 +378,56 @@
     [Parameter] public EventCallback<string> OnReset { get; set; }
     [Parameter] public EventCallback<string> OnEdit { get; set; }
     [Parameter] public EventCallback<string> OnToggleExpand { get; set; }
+
+    private bool ShowResourceStatus(ResourceEntityType entityType, string? entityId)
+    {
+        var resourceIsTracked = Resources.Count > 0 && !string.IsNullOrWhiteSpace(entityId);
+        return ResourceStatusPresentation.ShouldShowTeamCardIndicator(resourceIsTracked, IsTeamNotStarted);
+    }
+
+    private bool IsTeamNotStarted =>
+        !Team.IsRunning
+        && !Team.IsManuallyPaused
+        && !Team.IsPausing
+        && Team.ElapsedTime == TimeSpan.Zero;
+
+    private ResourceStatus? GetResourceStatus(ResourceEntityType entityType, string? entityId) =>
+        string.IsNullOrWhiteSpace(entityId)
+            ? null
+            : Resources.FirstOrDefault(resource =>
+                resource.EntityType == entityType
+                && string.Equals(resource.EntityId, entityId, StringComparison.Ordinal))?.Status;
+
+    private string GetResourceDisplayName(ResourceEntityType entityType, string entityId)
+    {
+        if (entityType == ResourceEntityType.Dog)
+            return string.IsNullOrWhiteSpace(Team.DogName) ? "Hund" : $"Hund {Team.DogName}";
+
+        if (string.Equals(Team.HundefuehrerId, entityId, StringComparison.Ordinal))
+            return string.IsNullOrWhiteSpace(Team.HundefuehrerName) ? "Hundeführer" : Team.HundefuehrerName;
+
+        var helperIndex = Team.HelferIds.FindIndex(id => string.Equals(id, entityId, StringComparison.Ordinal));
+        if (helperIndex >= 0 && helperIndex < Team.HelferNames.Count)
+            return string.IsNullOrWhiteSpace(Team.HelferNames[helperIndex]) ? "Helfer" : Team.HelferNames[helperIndex];
+
+        return "Person";
+    }
+
+    private IReadOnlyList<(string Name, string Id)> GetTeamHelperMembers()
+    {
+        var helpers = new List<(string Name, string Id)>();
+        for (var index = 0; index < Team.HelferNames.Count; index++)
+        {
+            var name = Team.HelferNames[index];
+            if (string.IsNullOrWhiteSpace(name))
+                continue;
+
+            var id = index < Team.HelferIds.Count ? Team.HelferIds[index] : string.Empty;
+            helpers.Add((name, id));
+        }
+
+        return helpers;
+    }
 
     private bool DogNameMatchesTeamName =>
         !string.IsNullOrWhiteSpace(Team.TeamName)

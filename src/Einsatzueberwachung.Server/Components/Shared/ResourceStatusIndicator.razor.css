@@ -1,0 +1,33 @@
+.resource-status-indicator {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    color: var(--ui-muted);
+    line-height: 1;
+}
+
+.resource-status-indicator--select {
+    width: 1.25rem;
+    font-size: 0.95rem;
+}
+
+.resource-status-indicator--team {
+    font-size: 0.8rem;
+}
+
+.resource-status--available {
+    color: var(--success-color);
+}
+
+.resource-status--pending {
+    color: var(--warning-color);
+}
+
+.resource-status--bound {
+    color: var(--info-color);
+}
+
+.resource-status--off {
+    color: var(--ui-muted);
+}

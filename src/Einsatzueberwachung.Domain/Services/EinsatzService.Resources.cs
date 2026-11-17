@@ -92,8 +92,11 @@ public partial class EinsatzService
     public bool CanAssignResourceToSearch(ResourceEntityType entityType, string entityId)
     {
         RefreshExpiredDogResourcePauses();
-        return (CurrentEinsatz.Resources ??= new List<EinsatzResource>())
-            .Any(resource =>
+        var resources = CurrentEinsatz.Resources ??= new List<EinsatzResource>();
+        if (resources.Count == 0)
+            return true;
+
+        return resources.Any(resource =>
                 resource.EntityType == entityType
                 && string.Equals(resource.EntityId, entityId, StringComparison.Ordinal)
                 && resource.Status == ResourceStatus.Verfuegbar);
@@ -168,6 +171,9 @@ public partial class EinsatzService
     private void EnsureTeamResourcesAvailable(Team team, bool allowAssignedInSearch = false)
     {
         var resources = CurrentEinsatz.Resources ??= new List<EinsatzResource>();
+        if (resources.Count == 0)
+            return;
+
         var alreadyAssignedToSearch = allowAssignedInSearch
             && !string.IsNullOrWhiteSpace(team.SearchAreaId)
             && CurrentEinsatz.SearchAreas.Any(area =>

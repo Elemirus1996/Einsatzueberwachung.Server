@@ -302,11 +302,17 @@ public partial class EinsatzMonitor
         .OrderBy(name => name)
         .ToList();
 
-    private IEnumerable<PersonalEntry> TeamPersonnelOptions => SelectionListOrdering
-        .OrderPersonnelByFirstName(_personalList.Where(person =>
-            person.IsActive
-            && (IsPersonSelectedForCurrentTeam(person.Id)
-                || EinsatzService.CanAssignResourceToSearch(ResourceEntityType.Person, person.Id))));
+    private IEnumerable<PersonalEntry> TeamPersonnelOptions
+    {
+        get
+        {
+            var resources = EinsatzService.GetEinsatzResources();
+            return SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(person =>
+                person.IsActive
+                && (IsPersonSelectedForCurrentTeam(person.Id)
+                    || IsInTeamPlanningRoster(resources, ResourceEntityType.Person, person.Id))));
+        }
+    }
 
     private IEnumerable<PersonalEntry> HundefuehrerOptions
     {
@@ -334,12 +340,29 @@ public partial class EinsatzMonitor
     private IEnumerable<PersonalEntry> DrohnenpilotOptions => TeamPersonnelOptions
         .Where(person => person.Skills.HasFlag(PersonalSkills.Drohnenpilot));
 
-    private IEnumerable<DogEntry> AvailableDogs => _dogList
-        .Where(dog => dog.IsActive
-            && (_teamForm.DogId == dog.Id
-                || EinsatzService.CanAssignResourceToSearch(ResourceEntityType.Dog, dog.Id))
-            && (string.IsNullOrWhiteSpace(_teamForm.HundefuehrerId) || dog.HundefuehrerIds.Contains(_teamForm.HundefuehrerId)))
-        .OrderBy(dog => dog.Name);
+    private IEnumerable<DogEntry> AvailableDogs
+    {
+        get
+        {
+            var resources = EinsatzService.GetEinsatzResources();
+            return _dogList
+                .Where(dog => dog.IsActive
+                    && (_teamForm.DogId == dog.Id
+                        || IsInTeamPlanningRoster(resources, ResourceEntityType.Dog, dog.Id))
+                    && (string.IsNullOrWhiteSpace(_teamForm.HundefuehrerId)
+                        || dog.HundefuehrerIds.Contains(_teamForm.HundefuehrerId)))
+                .OrderBy(dog => dog.Name);
+        }
+    }
+
+    private static bool IsInTeamPlanningRoster(
+        IReadOnlyList<EinsatzResource> resources,
+        ResourceEntityType entityType,
+        string entityId) =>
+        resources.Count == 0
+        || resources.Any(resource =>
+            resource.EntityType == entityType
+            && string.Equals(resource.EntityId, entityId, StringComparison.Ordinal));
 
     private bool IsPersonSelectedForCurrentTeam(string personId) =>
         _teamForm.HundefuehrerId == personId

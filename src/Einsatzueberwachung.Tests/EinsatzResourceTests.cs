@@ -13,6 +13,78 @@ public sealed class EinsatzResourceTests
         Assert.Equal("Im Verfügungsraum", ResourceStatusPresentation.Label(ResourceStatus.Verfuegbar));
     }
 
+    [Theory]
+    [InlineData(true, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    public void TeamCardIndicator_IsShownForTrackedResourcesOnlyBeforeSearchStarts(
+        bool resourceIsTracked,
+        bool teamNotStarted,
+        bool expected)
+    {
+        Assert.Equal(expected, ResourceStatusPresentation.ShouldShowTeamCardIndicator(resourceIsTracked, teamNotStarted));
+    }
+
+    [Fact]
+    public void EveryResourceStatusHasAnIconAndLabel()
+    {
+        foreach (var status in Enum.GetValues<ResourceStatus>())
+        {
+            Assert.False(string.IsNullOrWhiteSpace(ResourceStatusPresentation.Icon(status)));
+            Assert.False(string.IsNullOrWhiteSpace(ResourceStatusPresentation.Label(status)));
+        }
+    }
+
+    [Theory]
+    [InlineData(ResourceEntityType.Person, "person-1")]
+    [InlineData(ResourceEntityType.Dog, "dog-1")]
+    public async Task CanAssignResourceToSearch_FallsBackToMasterDataWhenNoResourcesAreCheckedIn(
+        ResourceEntityType entityType,
+        string entityId)
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+
+        Assert.Empty(einsatz.GetEinsatzResources());
+        Assert.True(einsatz.CanAssignResourceToSearch(entityType, entityId));
+    }
+
+    [Fact]
+    public async Task CanAssignResourceToSearch_OnlyAllowsCheckedInResourcesOnceResourceManagementIsUsed()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "person-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+
+        Assert.True(einsatz.CanAssignResourceToSearch(ResourceEntityType.Person, "person-1"));
+        Assert.False(einsatz.CanAssignResourceToSearch(ResourceEntityType.Person, "person-2"));
+        Assert.False(einsatz.CanAssignResourceToSearch(ResourceEntityType.Dog, "dog-1"));
+    }
+
+    [Fact]
+    public async Task TeamAssignmentAndTimerWorkWhenNoResourcesAreCheckedIn()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        var team = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Suchteam",
+            HundefuehrerId = "person-1",
+            DogId = "dog-1",
+            DogName = "Rex"
+        });
+        var area = await einsatz.AddSearchAreaAsync(new SearchArea { Name = "Sektor A" });
+
+        await einsatz.AssignTeamToSearchAreaAsync(area.Id, team.TeamId);
+        await einsatz.StartTeamTimerAsync(team.TeamId);
+
+        Assert.Equal(team.TeamId, area.AssignedTeamId);
+        Assert.True(team.IsRunning);
+        Assert.Empty(einsatz.GetEinsatzResources());
+    }
+
     [Fact]
     public async Task ResourceCanBeManuallyMarkedInSearch()
     {

@@ -61,4 +61,7 @@ public static class ResourceStatusPresentation
         ResourceStatus.Abgemeldet => 4,
         _ => 5
     };
+
+    public static bool ShouldShowTeamCardIndicator(bool resourceIsTracked, bool teamNotStarted) =>
+        resourceIsTracked && teamNotStarted;
 }
