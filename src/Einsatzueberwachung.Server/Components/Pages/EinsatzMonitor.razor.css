@@ -161,36 +161,150 @@
     }
 }
 
-.resource-monitor-table-wrap {
-    overflow-x: auto;
-}
-
-.resource-monitor-table {
-    margin: 0;
-    color: var(--ui-text);
-    vertical-align: middle;
-}
-
-.resource-monitor-table th {
+.resource-monitor-count {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.2rem;
     color: var(--ui-muted);
-    font-size: 0.8rem;
-    font-weight: 650;
+    font-size: 0.75rem;
     white-space: nowrap;
 }
 
-.resource-monitor-table td {
-    border-color: var(--ui-border);
+.resource-monitor-count strong {
+    color: var(--ui-text);
+    font-size: 0.95rem;
+    font-weight: 700;
 }
 
-.resource-monitor-table td:first-child {
-    min-width: 180px;
+.resource-monitor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.resource-monitor-item {
+    min-width: 0;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--ui-border);
+}
+
+.resource-monitor-item:last-child {
+    border-bottom: 0;
+}
+
+.resource-monitor-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.65rem;
+    min-width: 0;
+}
+
+.resource-monitor-identity {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.resource-monitor-identity > i {
+    flex: 0 0 auto;
+    color: var(--ui-muted);
+}
+
+.resource-monitor-identity > strong {
+    min-width: 0;
+    color: var(--ui-text);
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+}
+
+.resource-monitor-status-chip {
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    color: var(--ui-text);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.resource-monitor-status-chip:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 2px;
+}
+
+.resource-monitor-status-chip option {
+    color: var(--ui-text);
+    background-color: var(--ui-surface);
+}
+
+.resource-monitor-status-chip.resource-status--available {
+    color: var(--success-color);
+}
+
+.resource-monitor-status-chip.resource-status--pending {
+    color: var(--warning-color);
+}
+
+.resource-monitor-status-chip.resource-status--bound {
+    color: var(--info-color);
+}
+
+.resource-monitor-status-chip.resource-status--off {
+    color: var(--ui-muted);
+}
+
+@media (hover: none), (pointer: coarse) {
+    .resource-monitor-status-chip {
+        min-height: 44px;
+    }
 }
 
 .resource-monitor-note {
     display: block;
     margin-top: 0.15rem;
     color: var(--ui-muted);
+    font-size: 0.75rem;
     overflow-wrap: anywhere;
+}
+
+.resource-monitor-special-editor {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.resource-monitor-special-editor label {
+    display: grid;
+    gap: 0.25rem;
+    color: var(--ui-muted);
+    font-size: 0.75rem;
+}
+
+.resource-monitor-special-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.resource-monitor-error {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid color-mix(in srgb, var(--danger-color) 45%, var(--ui-border));
+    border-radius: var(--theme-border-radius, 10px);
+    background: color-mix(in srgb, var(--danger-color) 10%, var(--ui-surface));
+    color: var(--danger-color);
+    font-size: 0.8rem;
 }
 
 .resource-monitor-empty {

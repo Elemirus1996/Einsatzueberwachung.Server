@@ -279,18 +279,8 @@ public partial class Ressourcenverwaltung
         }
     }
 
-    private IEnumerable<ResourceStatus> StatusOptions(ResourceEntityType type)
-    {
-        yield return ResourceStatus.Verfuegbar;
-        yield return ResourceStatus.VoruebergehendAbwesend;
-        if (type == ResourceEntityType.Dog)
-            yield return ResourceStatus.Pause;
-        yield return ResourceStatus.AufAnfahrt;
-        yield return ResourceStatus.InSuche;
-        yield return ResourceStatus.Drohneneinsatz;
-        yield return ResourceStatus.Sonderauftrag;
-        yield return ResourceStatus.Abgemeldet;
-    }
+    private IEnumerable<ResourceStatus> StatusOptions(ResourceEntityType type) =>
+        ResourceStatusPresentation.Options(type);
 
     private string ResourceName(EinsatzResource resource)
     {

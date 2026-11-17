@@ -4,10 +4,23 @@ namespace Einsatzueberwachung.Server.Components.Shared;
 
 public static class ResourceStatusPresentation
 {
+    public static IEnumerable<ResourceStatus> Options(ResourceEntityType type)
+    {
+        yield return ResourceStatus.Verfuegbar;
+        yield return ResourceStatus.VoruebergehendAbwesend;
+        if (type == ResourceEntityType.Dog)
+            yield return ResourceStatus.Pause;
+        yield return ResourceStatus.AufAnfahrt;
+        yield return ResourceStatus.InSuche;
+        yield return ResourceStatus.Drohneneinsatz;
+        yield return ResourceStatus.Sonderauftrag;
+        yield return ResourceStatus.Abgemeldet;
+    }
+
     public static string Label(ResourceStatus status) => status switch
     {
         ResourceStatus.Verfuegbar => "Im Verfügungsraum",
-        ResourceStatus.VoruebergehendAbwesend => "Vorübergehend abwesend",
+        ResourceStatus.VoruebergehendAbwesend => "Abwesend",
         ResourceStatus.Pause => "Pause",
         ResourceStatus.AufAnfahrt => "Auf Anfahrt",
         ResourceStatus.InSuche => "In Suche",

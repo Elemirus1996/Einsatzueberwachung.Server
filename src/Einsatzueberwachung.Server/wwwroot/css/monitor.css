@@ -1070,6 +1070,10 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     background: transparent;
 }
 
+[data-panel-id="ressourcen"] > .dashboard-panel .dashboard-panel-header {
+    flex-wrap: wrap;
+}
+
 :is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel .dashboard-panel-title {
     color: var(--ui-text);
     font-size: 1rem;
@@ -1084,13 +1088,13 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
 @media (min-width: 1200.01px) {
     .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]) {
-        grid-template-rows: max-content minmax(0, 1fr) max-content;
+        grid-template-rows: max-content max-content minmax(12rem, 1fr);
     }
 
     .monitor-dashboard-grid > [data-panel-id="ressourcen"] {
         grid-column: 1 / -1;
         grid-row: 3;
-        max-height: 12rem;
+        min-height: 12rem;
     }
 
     .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]) > [data-panel-id="ressourcen"] {
@@ -1112,6 +1116,13 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
     .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="teams"])):not(:has(> [data-panel-id="notizen"])) > [data-panel-id="ressourcen"] {
         grid-column: 1 / -1;
+    }
+
+}
+
+@media (min-width: 1200.01px) and (max-height: 800px) {
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]) {
+        overflow-y: auto;
     }
 }
 

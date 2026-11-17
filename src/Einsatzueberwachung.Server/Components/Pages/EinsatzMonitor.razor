@@ -224,6 +224,18 @@
                                         <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                     </a>
                                 }
+                                else if (panel.PanelId == KnownPanels.Ressourcen)
+                                {
+                                    <a class="dashboard-panel-title-popout"
+                                       href="/ressourcenverwaltung"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       aria-label="Ressourcenverwaltung in neuem Fenster öffnen"
+                                       title="Ressourcenverwaltung öffnen">
+                                        <span>@PanelLabel(panel.PanelId)</span>
+                                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                    </a>
+                                }
                                 else
                                 {
                                     @PanelLabel(panel.PanelId)
@@ -295,12 +307,9 @@
                         }
                         else if (panel.PanelId == KnownPanels.Ressourcen)
                         {
-                            <div class="ms-auto d-flex align-items-center gap-2">
-                                <span class="small text-muted">@GetAvailableResourceCount() im Verfügungsraum</span>
-                                <a class="btn btn-sm btn-outline-secondary" href="/ressourcenverwaltung">
-                                    <i class="bi bi-sliders" aria-hidden="true"></i>
-                                    Ressourcen verwalten
-                                </a>
+                            <div class="resource-monitor-count ms-auto" aria-label="@($"{GetAvailableResourceCount()} Ressourcen im Verfügungsraum")">
+                                <strong>@GetAvailableResourceCount()</strong>
+                                <span>im Verfügungsraum</span>
                             </div>
                         }
                         else if (panel.PanelId == KnownPanels.Notizen)
@@ -350,38 +359,64 @@
                                     }
                                     else
                                     {
-                                        <div class="resource-monitor-table-wrap">
-                                            <table class="table table-sm resource-monitor-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th scope="col">Ressource</th>
-                                                        <th scope="col">Art</th>
-                                                        <th scope="col">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var row in resourceRows)
+                                        @if (!string.IsNullOrWhiteSpace(_resourceStatusError))
+                                        {
+                                            <div class="resource-monitor-error" role="alert">@_resourceStatusError</div>
+                                        }
+                                        <ul class="resource-monitor-list" aria-label="Eingecheckte Ressourcen">
+                                            @foreach (var row in resourceRows)
+                                            {
+                                                <li class="resource-monitor-item" @key="row.Key">
+                                                    <div class="resource-monitor-row">
+                                                        <div class="resource-monitor-identity">
+                                                            <i class="bi @(row.EntityType == ResourceEntityType.Person ? "bi-person" : "bi-shield")"
+                                                               title="@row.TypeLabel"
+                                                               aria-hidden="true"></i>
+                                                            <strong>@row.Name</strong>
+                                                        </div>
+                                                        <select class="resource-monitor-status-chip @ResourceStatusPresentation.CssClass(row.Status)"
+                                                                aria-label="@($"Status für {row.TypeLabel} {row.Name} ändern")"
+                                                                value="@row.Status"
+                                                                disabled="@_isUpdatingResourceStatus"
+                                                                @onchange="args => OnResourceStatusSelectedAsync(row, args.Value?.ToString())">
+                                                            @foreach (var status in ResourceStatusPresentation.Options(row.EntityType))
+                                                            {
+                                                                <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                                                            }
+                                                        </select>
+                                                    </div>
+                                                    @if (!string.IsNullOrWhiteSpace(row.Note))
                                                     {
-                                                        <tr @key="row.Key">
-                                                            <td>
-                                                                <strong>@row.Name</strong>
-                                                                @if (!string.IsNullOrWhiteSpace(row.Note))
-                                                                {
-                                                                    <small class="resource-monitor-note">@row.Note</small>
-                                                                }
-                                                            </td>
-                                                            <td>@row.TypeLabel</td>
-                                                            <td>
-                                                                <span class="resource-status @ResourceStatusPresentation.CssClass(row.Status)">
-                                                                    <i class="bi @ResourceStatusPresentation.Icon(row.Status)" aria-hidden="true"></i>
-                                                                    @ResourceStatusPresentation.Label(row.Status)
-                                                                </span>
-                                                            </td>
-                                                        </tr>
+                                                        <small class="resource-monitor-note">@row.Note</small>
                                                     }
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                                    @if (_pendingSpecialResourceKey == row.Key)
+                                                    {
+                                                        <div class="resource-monitor-special-editor">
+                                                            <label>
+                                                                <span>Auftrag / Zweck (Pflichtfeld)</span>
+                                                                <input class="form-control form-control-sm"
+                                                                       value="@_pendingSpecialResourceNote"
+                                                                       @oninput="args => SetPendingSpecialResourceNote(args.Value?.ToString())" />
+                                                            </label>
+                                                            <div class="resource-monitor-special-actions">
+                                                                <button type="button"
+                                                                        class="btn btn-sm btn-primary"
+                                                                        disabled="@(_isUpdatingResourceStatus || string.IsNullOrWhiteSpace(_pendingSpecialResourceNote))"
+                                                                        @onclick="() => ConfirmSpecialResourceAssignmentAsync(row)">
+                                                                    Bestätigen
+                                                                </button>
+                                                                <button type="button"
+                                                                        class="btn btn-sm btn-outline-secondary"
+                                                                        disabled="@_isUpdatingResourceStatus"
+                                                                        @onclick="CancelSpecialResourceAssignment">
+                                                                    Abbrechen
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
                                     }
                                     break;
 
