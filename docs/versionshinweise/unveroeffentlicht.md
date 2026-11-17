@@ -16,6 +16,7 @@
 ### Beenden fragt alle offenen Angaben ab
 - Der Dialog „Einsatz beenden“ zeigt einen Block „Angaben für den Bericht“: Alarmiert durch, Vorgangsnummer und Polizeikontakt (nur wenn die Polizei alarmiert hat, nie bei Übungen), bei einem Fund Fundzeit, Fundort, „Gefunden durch“ und Übergabe, „Eingesetzt als“ je Team und für jeden Trail Abbruchgrund und Geruchsartikel.
 - Fehlt etwas, nennt der Dialog es. Beenden geht trotzdem, aber nur mit dem Haken „Trotzdem ohne diese Angaben beenden“. **Nach dem Beenden ist nichts mehr änderbar** – deshalb jetzt die Nachfrage, gerade wenn die Polizei die Vorgangsnummer erst spät nennt.
+- Dasselbe gilt für „Einsatz beenden“ in der Einsatzleitung im Browser (Tablet/Handy, `/el/beenden`).
 - „Keine Polizei beteiligt“ ankreuzen, wenn das zutrifft: Dann entfallen die Polizeiangaben, und der Bericht nennt es so.
 - Die **Abbruchgründe für Trails** stehen unter Einstellungen → Einsatzbetrieb und lassen sich dort anpassen.
 
