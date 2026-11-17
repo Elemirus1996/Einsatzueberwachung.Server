@@ -1,0 +1,271 @@
+@using Einsatzueberwachung.Domain.Models
+@using Einsatzueberwachung.Domain.Models.Enums
+@using Einsatzueberwachung.Server.Components.Shared
+
+@if (IsOpen)
+{
+    <div class="modal-overlay">
+        <button type="button" class="modal-overlay-dismiss" disabled="@IsBusy" @onclick="OnCancel" aria-label="Dialog schließen"></button>
+        <div class="modal-modern modal-modern--resource-resolution"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="team-start-resolution-title"
+             @onclick:stopPropagation="true">
+            <div class="modal-modern-header modal-modern-header--warning">
+                <h4 id="team-start-resolution-title" class="mb-0">
+                    <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>Team „@TeamName“ kann nicht starten
+                </h4>
+                <button class="btn btn-sm btn-outline-secondary" type="button" disabled="@IsBusy" aria-label="Dialog schließen" @onclick="OnCancel">×</button>
+            </div>
+            <div class="modal-modern-body">
+                @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+                {
+                    <div class="alert alert-danger py-2" role="alert">@ErrorMessage</div>
+                }
+
+                <div class="d-flex flex-column gap-2">
+                    @foreach (var issue in Issues)
+                    {
+                        <section class="border rounded p-2" @key="ResourceKey(issue)">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                                <div>
+                                    <strong>@issue.Role: @issue.Name</strong>
+                                    <div class="monitor-text-caption">
+                                        @GetBlockedReason(issue)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap align-items-end gap-2">
+                                <div class="flex-grow-1">
+                                    <label class="form-label mb-1" for="@StatusSelectId(issue)">
+                                        @(issue.CurrentStatus is null ? "Einchecken als" : "Status ändern zu")
+                                    </label>
+                                    <select id="@StatusSelectId(issue)"
+                                            class="form-select form-select-sm"
+                                            value="@GetSelectedStatusValue(issue)"
+                                            disabled="@IsBusy"
+                                            @onchange="args => SetSelectedStatus(issue, args)">
+                                        <option value="">Keine Änderung</option>
+                                        @foreach (var status in StatusOptions(issue))
+                                        {
+                                            <option value="@status" disabled="@(issue.CurrentStatus == status)">
+                                                @ResourceStatusPresentation.Label(status)
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                                @if (issue.CanRemove)
+                                {
+                                    <div class="form-check mb-2">
+                                        <input id="@RemoveCheckboxId(issue)"
+                                               class="form-check-input"
+                                               type="checkbox"
+                                               checked="@IsMarkedForRemoval(issue)"
+                                               disabled="@IsBusy"
+                                               @onchange="args => SetMarkedForRemoval(issue, args)" />
+                                        <label class="form-check-label" for="@RemoveCheckboxId(issue)">Aus Team nehmen</label>
+                                    </div>
+                                }
+                            </div>
+
+                            @if (GetSelectedStatus(issue) == ResourceStatus.Sonderauftrag)
+                            {
+                                <div class="mt-2">
+                                    <label class="form-label mb-1" for="@StatusNoteId(issue)">Notiz zum Sonderauftrag</label>
+                                    <input id="@StatusNoteId(issue)"
+                                           class="form-control form-control-sm"
+                                           value="@GetStatusNote(issue)"
+                                           disabled="@IsBusy"
+                                           @oninput="args => SetStatusNote(issue, args)"
+                                           maxlength="500" />
+                                </div>
+                            }
+
+                            @if (IsMarkedForRemoval(issue) && (issue.Role is "Hundeführer" or "Pilot" or "Teamleitung"))
+                            {
+                                <div class="monitor-text-caption mt-2">
+                                    Teamleitung wird neu zugewiesen.
+                                </div>
+                            }
+                            else if (issue.EntityType == ResourceEntityType.Person && !issue.CanRemove)
+                            {
+                                <div class="monitor-text-caption mt-2">
+                                    @(issue.Role is "Hundeführer" or "Pilot" or "Teamleitung"
+                                        ? "Ein geeigneter Ersatz muss im Team bleiben."
+                                        : "Mindestens eine Person muss im Team bleiben.")
+                                </div>
+                            }
+                        </section>
+                    }
+                </div>
+
+                <p class="monitor-text-caption mt-3 mb-0">
+                    @if (HasPendingChanges)
+                    {
+                        <span>Auswahl gesammelt übernehmen; verbleibende Konflikte werden erneut angezeigt.</span>
+                    }
+                    else
+                    {
+                        <span>Ohne Änderungen können Sie die Einsatzbereitschaft trotz der angezeigten Status bestätigen.</span>
+                    }
+                </p>
+            </div>
+            <div class="modal-modern-footer">
+                <button class="btn btn-outline-secondary" type="button" disabled="@IsBusy" @onclick="OnCancel">Abbrechen</button>
+                @if (HasPendingChanges)
+                {
+                    <button class="btn btn-primary"
+                            type="button"
+                            disabled="@(!CanApplyChanges)"
+                            @onclick="ApplyChangesAndStartAsync">
+                        <i class="bi bi-play-fill me-1" aria-hidden="true"></i>Übernehmen &amp; starten
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-warning"
+                            type="button"
+                            disabled="@IsBusy"
+                            @onclick="OnIgnoreAndStart">
+                        <i class="bi bi-play-fill me-1" aria-hidden="true"></i>Trotz Status starten
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private static readonly ResourceStatus[] CheckInStatuses =
+    [
+        ResourceStatus.Verfuegbar,
+        ResourceStatus.AufAnfahrt
+    ];
+
+    private readonly Dictionary<string, ResourceStatus?> _selectedStatuses = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _statusNotes = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _markedForRemoval = new(StringComparer.Ordinal);
+    private bool _wasOpen;
+    private IReadOnlyList<TeamStartResourceIssueViewModel>? _lastIssues;
+
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public string TeamName { get; set; } = string.Empty;
+    [Parameter] public IReadOnlyList<TeamStartResourceIssueViewModel> Issues { get; set; } = Array.Empty<TeamStartResourceIssueViewModel>();
+    [Parameter] public string ErrorMessage { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnIgnoreAndStart { get; set; }
+    [Parameter] public EventCallback<IReadOnlyList<TeamStartResourceResolution>> OnApplyChangesAndStart { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && (!_wasOpen || !ReferenceEquals(_lastIssues, Issues)))
+        {
+            _selectedStatuses.Clear();
+            _statusNotes.Clear();
+            _markedForRemoval.Clear();
+        }
+
+        foreach (var issue in Issues)
+        {
+            var key = ResourceKey(issue);
+            _selectedStatuses.TryAdd(key, null);
+            _statusNotes.TryAdd(key, string.Empty);
+        }
+
+        _wasOpen = IsOpen;
+        _lastIssues = Issues;
+    }
+
+    private static string ResourceKey(TeamStartResourceIssueViewModel issue) =>
+        $"{issue.EntityType}:{issue.EntityId}";
+
+    private static string RemoveCheckboxId(TeamStartResourceIssueViewModel issue) =>
+        $"team-start-remove-{ResourceKey(issue).Replace(':', '-')}";
+
+    private static string GetBlockedReason(TeamStartResourceIssueViewModel issue) =>
+        issue.CurrentStatus is { } status
+            ? $"{ResourceStatusPresentation.Label(status)} · blockiert den Start"
+            : "Nicht eingecheckt · blockiert den Start";
+
+    private static string StatusSelectId(TeamStartResourceIssueViewModel issue) =>
+        $"team-start-status-{ResourceKey(issue).Replace(':', '-')}";
+
+    private static string StatusNoteId(TeamStartResourceIssueViewModel issue) =>
+        $"team-start-note-{ResourceKey(issue).Replace(':', '-')}";
+
+    private ResourceStatus? GetSelectedStatus(TeamStartResourceIssueViewModel issue) =>
+        _selectedStatuses[ResourceKey(issue)];
+
+    private string GetSelectedStatusValue(TeamStartResourceIssueViewModel issue) =>
+        GetSelectedStatus(issue)?.ToString() ?? string.Empty;
+
+    private string GetStatusNote(TeamStartResourceIssueViewModel issue) =>
+        _statusNotes[ResourceKey(issue)];
+
+    private bool IsMarkedForRemoval(TeamStartResourceIssueViewModel issue) =>
+        _markedForRemoval.Contains(ResourceKey(issue));
+
+    private bool HasPendingChanges =>
+        Issues.Any(issue => IsMarkedForRemoval(issue) || GetSelectedStatus(issue).HasValue);
+
+    private bool CanApplyChanges =>
+        !IsBusy
+        && HasPendingChanges
+        && Issues.All(issue =>
+            GetSelectedStatus(issue) != ResourceStatus.Sonderauftrag
+            || !string.IsNullOrWhiteSpace(GetStatusNote(issue)));
+
+    private IEnumerable<ResourceStatus> StatusOptions(TeamStartResourceIssueViewModel issue) =>
+        issue.CurrentStatus is null
+            ? CheckInStatuses
+            : ResourceStatusPresentation.Options(issue.EntityType);
+
+    private void SetSelectedStatus(TeamStartResourceIssueViewModel issue, ChangeEventArgs args)
+    {
+        if (Enum.TryParse<ResourceStatus>(args.Value?.ToString(), ignoreCase: true, out var status))
+        {
+            _selectedStatuses[ResourceKey(issue)] = status;
+            _markedForRemoval.Remove(ResourceKey(issue));
+        }
+        else
+        {
+            _selectedStatuses[ResourceKey(issue)] = null;
+        }
+    }
+
+    private void SetMarkedForRemoval(TeamStartResourceIssueViewModel issue, ChangeEventArgs args)
+    {
+        var key = ResourceKey(issue);
+        if (bool.TryParse(args.Value?.ToString(), out var isMarked) && isMarked)
+        {
+            _markedForRemoval.Add(key);
+            _selectedStatuses[key] = null;
+        }
+        else
+        {
+            _markedForRemoval.Remove(key);
+        }
+    }
+
+    private void SetStatusNote(TeamStartResourceIssueViewModel issue, ChangeEventArgs args) =>
+        _statusNotes[ResourceKey(issue)] = args.Value?.ToString() ?? string.Empty;
+
+    private Task ApplyChangesAndStartAsync()
+    {
+        var changes = Issues
+            .Where(issue => IsMarkedForRemoval(issue) || GetSelectedStatus(issue).HasValue)
+            .Select(issue => new TeamStartResourceResolution(
+                issue.EntityType,
+                issue.EntityId,
+                GetSelectedStatus(issue),
+                GetStatusNote(issue),
+                IsMarkedForRemoval(issue)))
+            .ToArray();
+
+        return CanApplyChanges
+            ? OnApplyChangesAndStart.InvokeAsync(changes)
+            : Task.CompletedTask;
+    }
+}

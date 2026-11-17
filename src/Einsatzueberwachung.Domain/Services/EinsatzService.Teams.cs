@@ -141,13 +141,20 @@ namespace Einsatzueberwachung.Domain.Services
         public Task<Team?> GetTeamByIdAsync(string teamId)
             => Task.FromResult(_teams.FirstOrDefault(t => t.TeamId == teamId));
 
-        public async Task StartTeamTimerAsync(string teamId)
+        public Task StartTeamTimerAsync(string teamId) =>
+            StartTeamTimerCoreAsync(teamId, ignoreResourceAvailability: false);
+
+        public Task StartTeamTimerIgnoringResourceAvailabilityAsync(string teamId) =>
+            StartTeamTimerCoreAsync(teamId, ignoreResourceAvailability: true);
+
+        private async Task StartTeamTimerCoreAsync(string teamId, bool ignoreResourceAvailability)
         {
             var team = await GetTeamByIdAsync(teamId);
             if (team == null) return;
 
             RefreshExpiredDogResourcePauses();
-            EnsureTeamResourcesAvailable(team, allowAssignedInSearch: true);
+            if (!ignoreResourceAvailability)
+                EnsureTeamResourcesAvailable(team, allowAssignedInSearch: true);
 
             if (!string.IsNullOrWhiteSpace(team.DogId))
             {

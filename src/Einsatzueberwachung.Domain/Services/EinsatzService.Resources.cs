@@ -13,6 +13,16 @@ public partial class EinsatzService
             .ToArray();
     }
 
+    public IReadOnlyList<TeamResourceAvailabilityIssue> GetTeamStartResourceIssues(string teamId)
+    {
+        var team = _teams.FirstOrDefault(entry => entry.TeamId == teamId);
+        if (team is null)
+            return Array.Empty<TeamResourceAvailabilityIssue>();
+
+        RefreshExpiredDogResourcePauses();
+        return GetTeamStartResourceIssues(team, allowAssignedInSearch: true);
+    }
+
     public Task CheckInResourceAsync(EinsatzResource resource)
     {
         ArgumentNullException.ThrowIfNull(resource);
@@ -170,9 +180,18 @@ public partial class EinsatzService
 
     private void EnsureTeamResourcesAvailable(Team team, bool allowAssignedInSearch = false)
     {
+        var unavailableResources = GetTeamStartResourceIssues(team, allowAssignedInSearch);
+        if (unavailableResources.Count > 0)
+            throw new TeamResourceAvailabilityException(unavailableResources);
+    }
+
+    private IReadOnlyList<TeamResourceAvailabilityIssue> GetTeamStartResourceIssues(
+        Team team,
+        bool allowAssignedInSearch)
+    {
         var resources = CurrentEinsatz.Resources ??= new List<EinsatzResource>();
         if (resources.Count == 0)
-            return;
+            return Array.Empty<TeamResourceAvailabilityIssue>();
 
         var alreadyAssignedToSearch = allowAssignedInSearch
             && !string.IsNullOrWhiteSpace(team.SearchAreaId)
@@ -185,8 +204,9 @@ public partial class EinsatzService
                 : Array.Empty<(ResourceEntityType EntityType, string Id)>());
         var requiredResources = required.ToList();
         if (requiredResources.Count == 0)
-            return;
+            return Array.Empty<TeamResourceAvailabilityIssue>();
 
+        var unavailableResources = new List<TeamResourceAvailabilityIssue>();
         foreach (var (entityType, id) in requiredResources)
         {
             var resource = resources.FirstOrDefault(entry =>
@@ -194,7 +214,11 @@ public partial class EinsatzService
                 && string.Equals(entry.EntityId, id, StringComparison.Ordinal));
             if (resource?.Status != ResourceStatus.Verfuegbar
                 && !(alreadyAssignedToSearch && resource?.Status == ResourceStatus.InSuche))
-                throw new InvalidOperationException($"Die Ressource '{id}' ist nicht im Verfügungsraum und kann nicht zugewiesen werden.");
+            {
+                unavailableResources.Add(new TeamResourceAvailabilityIssue(entityType, id, resource?.Status));
+            }
         }
+
+        return unavailableResources;
     }
 }

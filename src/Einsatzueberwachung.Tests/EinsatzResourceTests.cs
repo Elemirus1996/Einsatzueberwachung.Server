@@ -188,10 +188,103 @@ public sealed class EinsatzResourceTests
         });
         var area = await einsatz.AddSearchAreaAsync(new SearchArea { Name = "Sektor A" });
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<TeamResourceAvailabilityException>(() =>
             einsatz.AssignTeamToSearchAreaAsync(area.Id, team.TeamId));
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<TeamResourceAvailabilityException>(() =>
             einsatz.StartTeamTimerAsync(team.TeamId));
+    }
+
+    [Fact]
+    public async Task GetTeamStartResourceIssues_ReturnsAllUnavailableTeamResources()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "person-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        await einsatz.SetResourceStatusAsync(
+            ResourceEntityType.Person,
+            "person-1",
+            ResourceStatus.VoruebergehendAbwesend);
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Dog,
+            EntityId = "dog-1",
+            Status = ResourceStatus.AufAnfahrt
+        });
+
+        var team = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Suchteam",
+            HundefuehrerId = "person-1",
+            HelferIds = new List<string> { "person-2" },
+            DogId = "dog-1"
+        });
+
+        Assert.Equal(
+            new[]
+            {
+                new TeamResourceAvailabilityIssue(
+                    ResourceEntityType.Person,
+                    "person-1",
+                    ResourceStatus.VoruebergehendAbwesend),
+                new TeamResourceAvailabilityIssue(ResourceEntityType.Person, "person-2", null),
+                new TeamResourceAvailabilityIssue(ResourceEntityType.Dog, "dog-1", ResourceStatus.AufAnfahrt)
+            },
+            einsatz.GetTeamStartResourceIssues(team.TeamId));
+    }
+
+    [Fact]
+    public async Task StartTeamTimerAsync_ThrowsStructuredResourceAvailabilityException()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "person-1",
+            Status = ResourceStatus.AufAnfahrt
+        });
+        var team = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Suchteam",
+            HundefuehrerId = "person-1"
+        });
+
+        var exception = await Assert.ThrowsAsync<TeamResourceAvailabilityException>(
+            () => einsatz.StartTeamTimerAsync(team.TeamId));
+
+        Assert.Equal("person-1", Assert.Single(exception.UnavailableResources).EntityId);
+        Assert.False(team.IsRunning);
+    }
+
+    [Fact]
+    public async Task StartTeamTimerIgnoringResourceAvailability_StartsAndMarksTeamResourcesInSearch()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "person-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        await einsatz.SetResourceStatusAsync(
+            ResourceEntityType.Person,
+            "person-1",
+            ResourceStatus.VoruebergehendAbwesend);
+        var team = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Suchteam",
+            HundefuehrerId = "person-1"
+        });
+
+        await einsatz.StartTeamTimerIgnoringResourceAvailabilityAsync(team.TeamId);
+
+        Assert.True(team.IsRunning);
+        Assert.Equal(
+            ResourceStatus.InSuche,
+            Assert.Single(einsatz.GetEinsatzResources()).Status);
     }
 
     private static async Task<EinsatzService> CreateActiveEinsatzAsync()

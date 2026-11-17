@@ -473,7 +473,16 @@
                                OnStartWithout="CollarSelectStartWithoutAsync"
                                OnAssignAndStart="CollarSelectConfirmAsync" />
 
-@* ===== Modals ===== *@
+    <MonitorTeamStartResolutionDialog IsOpen="_showTeamStartResolutionModal"
+                                      IsBusy="_teamStartResolutionBusy"
+                                      TeamName='@(EinsatzService.Teams.FirstOrDefault(team => team.TeamId == _teamStartResolutionTeamId)?.TeamName ?? "?")'
+                                      Issues="_teamStartResolutionIssues"
+                                      ErrorMessage="@_teamStartResolutionError"
+                                      OnCancel="CloseTeamStartResolutionDialog"
+                                      OnIgnoreAndStart="IgnoreTeamStartResourceIssuesAsync"
+                                      OnApplyChangesAndStart="ApplyTeamStartResourceResolutionsAndStartAsync" />
+
+    @* ===== Modals ===== *@
 
 <MonitorCloseMissionDialog IsOpen="_showCloseMissionModal"
                            IsClosing="_closingMission"

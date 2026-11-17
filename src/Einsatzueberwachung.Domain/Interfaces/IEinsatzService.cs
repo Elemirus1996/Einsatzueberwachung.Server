@@ -50,6 +50,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         Task CheckInResourceAsync(EinsatzResource resource);
         Task SetResourceStatusAsync(ResourceEntityType entityType, string entityId, ResourceStatus status, string? note = null);
         bool CanAssignResourceToSearch(ResourceEntityType entityType, string entityId);
+        IReadOnlyList<TeamResourceAvailabilityIssue> GetTeamStartResourceIssues(string teamId);
         void RefreshExpiredDogResourcePauses();
 
         Task StartEinsatzAsync(EinsatzData einsatzData);
@@ -63,6 +64,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         Task<Team?> GetTeamByIdAsync(string teamId);
 
         Task StartTeamTimerAsync(string teamId);
+        Task StartTeamTimerIgnoringResourceAvailabilityAsync(string teamId);
         Task PauseTeamTimerAsync(string teamId);
         Task StopTeamTimerAsync(string teamId);
         Task ResetTeamTimerAsync(string teamId);

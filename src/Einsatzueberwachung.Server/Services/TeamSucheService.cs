@@ -36,17 +36,26 @@ public sealed class TeamSucheService
     }
 
     /// <exception cref="InvalidOperationException">z. B. Hund laeuft bereits in einem anderen Team.</exception>
-    public async Task StartAsync(string teamId)
+    public Task StartAsync(string teamId) =>
+        StartCoreAsync(teamId, ignoreResourceAvailability: false);
+
+    public Task StartIgnoringResourceAvailabilityAsync(string teamId) =>
+        StartCoreAsync(teamId, ignoreResourceAvailability: true);
+
+    private async Task StartCoreAsync(string teamId, bool ignoreResourceAvailability)
     {
         var team = _einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
+        var clearCollarHistory = team is { IsManuallyPaused: false }
+            && !string.IsNullOrEmpty(team.CollarId);
 
-        // "Weiter" nach manueller Kurzpause: Track laeuft nahtlos weiter. Sonst beginnt eine neue Suche mit frischem Track.
-        if (team is { IsManuallyPaused: false } && !string.IsNullOrEmpty(team.CollarId))
-        {
-            _collarTrackingService.ClearCollarHistory(team.CollarId);
-        }
+        if (ignoreResourceAvailability)
+            await _einsatzService.StartTeamTimerIgnoringResourceAvailabilityAsync(teamId);
+        else
+            await _einsatzService.StartTeamTimerAsync(teamId);
 
-        await _einsatzService.StartTeamTimerAsync(teamId);
+        // "Weiter" nach manueller Kurzpause behaelt die Track-Historie; neue Suchen beginnen mit einem frischen Track.
+        if (clearCollarHistory && team is not null)
+            _collarTrackingService.ClearCollarHistory(team.CollarId!);
     }
 
     /// <summary>
