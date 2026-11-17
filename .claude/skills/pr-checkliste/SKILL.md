@@ -9,6 +9,7 @@ user-invocable: true
 ## Vor dem PR prüfen
 
 - [ ] Schnittstelle geändert? Dann ist `docs/APP_API.md` im selben oder einem vorherigen gemergten PR beschrieben.
+- [ ] Für Staffeln sichtbare Änderung? Dann `docs/versionshinweise/unveroeffentlicht.md` ergänzt (Skill `release`).
 - [ ] Zeiten in UTC mit `Z` (oder Unix-ms), keine Ortszeit ohne Zone.
 - [ ] Ungültiges, abgelaufenes oder gesperrtes Token: Team `410` + `{"mode":"stop"}`, EL ebenso. Öffentlicher Zugang für `api/el/`: `404`.
 - [ ] Nichts loggen, was Token oder Positionen enthält.
