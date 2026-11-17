@@ -29,13 +29,18 @@ public sealed partial class ElAppController
         });
     }
 
-    /// <summary>Person waehlen: neues Token mit Person, gleicher Ablauf und gleiche Anmeldung; das alte wird gesperrt</summary>
+    /// <summary>
+    /// Person einmal waehlen: neues Token mit Person, gleicher Ablauf und gleiche Anmeldung; das alte wird gesperrt.
+    /// Kein Wechsel (Entscheidung Paul 17.11.2026): Steht schon eine Person im Token oder am VPN-Geraet, 409.
+    /// </summary>
     [HttpPost("ich")]
     public async Task<IActionResult> Ich([FromBody] ElIchRequest? anfrage)
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
         var alt = Bearer();
-        if (!tokens.TryPruefen(alt, DateTime.UtcNow, out var ablauf, out var anmeldung, out _) || einsatz is null) return Gone();
+        if (!tokens.TryPruefen(alt, DateTime.UtcNow, out var ablauf, out var anmeldung, out var bisher) || einsatz is null) return Gone();
+        if (!string.IsNullOrEmpty(bisher) || geraete.PersonFuer(HttpContext.Connection.RemoteIpAddress) is not null)
+            return Conflict(new { error = "Die Person ist für diese Anmeldung schon festgelegt. Wechsel nur über Abmelden und neu Anmelden." });
         var person = (await AktivesPersonalAsync()).FirstOrDefault(p => p.Id == anfrage?.PersonId);
         if (person is null) return BadRequest(new { error = "Person nicht gefunden oder nicht aktiv." });
 
@@ -54,8 +59,20 @@ public sealed partial class ElAppController
     private ElIch IchFuer(PersonalEntry person) =>
         new(person.Id, person.FullName, ElRolle.Bestimmen(einsatz!.CurrentEinsatz, person.FullName, personGewaehlt: true));
 
-    /// <summary>Person und Rolle zum Token; ohne Person (aeltere Apps) Rolle Einsatzleiter wie bisher</summary>
+    /// <summary>
+    /// Person und Rolle: die feste Person des VPN-Geraets vor der im Token; ohne beide (aeltere Apps) Rolle
+    /// Einsatzleiter wie bisher. Der Name geht ins Audit-Log (Geraet()).
+    /// </summary>
     private async Task<ElIch> IchAsync(string? personId)
+    {
+        var ich = await IchOhneProtokollAsync(geraete.PersonFuer(HttpContext.Connection.RemoteIpAddress) ?? personId);
+        if (ich.Name is not null) HttpContext.Items[PersonImProtokoll] = ich.Name;
+        return ich;
+    }
+
+    private const string PersonImProtokoll = "el.person";
+
+    private async Task<ElIch> IchOhneProtokollAsync(string? personId)
     {
         if (string.IsNullOrEmpty(personId) || einsatz is null)
             return new ElIch(null, null, ElRolle.Einsatzleiter);

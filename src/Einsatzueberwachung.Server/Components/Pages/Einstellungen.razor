@@ -1370,12 +1370,22 @@
                         @if (_vpnDevices.Count > 0)
                         {
                             <table class="table table-sm align-middle">
-                                <thead><tr><th>Gerät</th><th>IP</th><th>Letzter Kontakt</th><th>Gültig bis</th><th></th></tr></thead>
+                                <thead><tr><th>Gerät</th><th>Person (EL-App)</th><th>IP</th><th>Letzter Kontakt</th><th>Gültig bis</th><th></th></tr></thead>
                                 <tbody>
                                     @foreach (var d in _vpnDevices)
                                     {
                                         <tr>
                                             <td>@d.Device.Name</td>
+                                            <td>
+                                                <select class="cfg-input" aria-label="Person für @d.Device.Name" value="@(d.Device.PersonId ?? "")"
+                                                        @onchange="e => VpnPersonSetzen(d.Device, e.Value?.ToString())">
+                                                    <option value="">bei Anmeldung wählen</option>
+                                                    @foreach (var p in _vpnPersonen)
+                                                    {
+                                                        <option value="@p.Id">@p.FullName</option>
+                                                    }
+                                                </select>
+                                            </td>
                                             <td><code>@d.Device.Ip</code></td>
                                             <td>@(d.LastHandshakeUtc is { } h ? Ortszeit.AusUtc(h).ToString("dd.MM. HH:mm") : "noch nie")</td>
                                             <td>@(d.Device.ExpiresUtc is { } e ? Ortszeit.AusUtc(e).ToString("dd.MM. HH:mm") : "unbegrenzt")</td>
