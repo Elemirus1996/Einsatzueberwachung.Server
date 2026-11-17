@@ -68,6 +68,7 @@ public partial class EinsatzMonitor
     private string? _pauseResetTeamId;
     private bool _closingMission;
     private readonly MonitorCloseMissionForm _closeMissionForm = new();
+    private readonly MonitorAbschlussModel _abschluss = new();
     private int _closeMissionPunktCount;
     private bool _closeMissionChecklistConfirmed
     {
@@ -161,7 +162,7 @@ public partial class EinsatzMonitor
         !string.IsNullOrWhiteSpace(EinsatzService.CurrentEinsatz.Einsatzort)
         && EinsatzService.CurrentEinsatz.EinsatzEnde is null;
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (!string.IsNullOrWhiteSpace(OpenCloseMissionAt)
             && !string.Equals(OpenCloseMissionAt, _lastCloseMissionRequestToken, StringComparison.Ordinal))
@@ -169,7 +170,7 @@ public partial class EinsatzMonitor
             _lastCloseMissionRequestToken = OpenCloseMissionAt;
             if (HasActiveEinsatz)
             {
-                OpenCloseMissionModal();
+                await OpenCloseMissionModalAsync();
             }
         }
 

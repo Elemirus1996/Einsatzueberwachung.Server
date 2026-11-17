@@ -114,7 +114,7 @@ public sealed partial class ElAppController
         return Ok(new
         {
             vorgangsnummer = e.Vorgangsnummer ?? "",
-            melder = e.Alarmiert ?? "",
+            melder = AbschlussAngaben.Melder(e.Alarmiert),
             polizei = new { name = e.PolizeiKontaktName ?? "", dienstnummer = e.PolizeiDienstnummer ?? "", telefon = e.PolizeiTelefon ?? "" },
             fund = new
             {

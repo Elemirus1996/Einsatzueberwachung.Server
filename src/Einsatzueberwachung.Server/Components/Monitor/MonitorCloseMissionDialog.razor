@@ -87,6 +87,11 @@
                     }
                 </div>
 
+                @if (Abschluss is not null)
+                {
+                    <MonitorAbschlussAngaben Model="Abschluss" Ergebnis="@Form.Result" Teams="Teams" />
+                }
+
                 <div class="border rounded p-2 mb-3">
                     <div class="small fw-semibold mb-2">Einsatz-Zusammenfassung</div>
                     <div class="row g-2 monitor-text-caption">
@@ -160,6 +165,8 @@
 
 @code {
     [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public MonitorAbschlussModel? Abschluss { get; set; }
+    [Parameter] public IEnumerable<Team> Teams { get; set; } = Array.Empty<Team>();
     [Parameter] public bool IsClosing { get; set; }
     [Parameter, EditorRequired] public MonitorCloseMissionForm Form { get; set; } = default!;
     [Parameter] public IEnumerable<PersonalEntry> Personnel { get; set; } = Array.Empty<PersonalEntry>();

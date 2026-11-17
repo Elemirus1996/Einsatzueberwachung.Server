@@ -183,7 +183,7 @@ namespace Einsatzueberwachung.Domain.Services
                     ("Ansprechpartner", Leer(kontakte.PolizeiKontaktName)),
                     ("Dienstnummer", Leer(kontakte.PolizeiDienstnummer)),
                     ("Telefon", Leer(kontakte.PolizeiTelefon)),
-                    ("Alarmiert durch", Leer(einsatz.Alarmiert))
+                    ("Alarmiert durch", Leer(AbschlussAngaben.Melder(einsatz.Alarmiert)))
                 }, 0.42f));
             });
         }
@@ -222,7 +222,7 @@ namespace Einsatzueberwachung.Domain.Services
         {
             var eintraege = new List<(DateTime Zeit, string Text)>();
             if (einsatz.AlarmierungsZeit is { } alarm)
-                eintraege.Add((alarm, string.IsNullOrWhiteSpace(einsatz.Alarmiert) ? "Alarmierung" : $"Alarmierung durch {einsatz.Alarmiert}"));
+                eintraege.Add((alarm, AbschlussAngaben.Melder(einsatz.Alarmiert) is { Length: > 0 } melder ? $"Alarmierung durch {melder}" : "Alarmierung"));
             var ort = string.IsNullOrWhiteSpace(einsatz.Einsatzort) ? "" : $", Einsatzort {einsatz.Einsatzort}";
             eintraege.Add((einsatz.EinsatzDatum, $"Einsatz eröffnet{ort}"));
 

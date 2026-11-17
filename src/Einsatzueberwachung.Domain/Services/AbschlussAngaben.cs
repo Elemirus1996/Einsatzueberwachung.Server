@@ -38,6 +38,15 @@ namespace Einsatzueberwachung.Domain.Services
             "Gefahr im Gelände"
         };
 
+        /// <summary>
+        /// „Alarmiert durch“ ohne den Platzhalter aus der Start-Schnittstelle (dort steht ohne Melder die Uhrzeit,
+        /// EinsatzController) – sonst stünde im Bericht eine Uhrzeit als Melder.
+        /// </summary>
+        public static string Melder(string? alarmiert) =>
+            string.IsNullOrWhiteSpace(alarmiert) || System.Text.RegularExpressions.Regex.IsMatch(alarmiert.Trim(), @"^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$")
+                ? string.Empty
+                : alarmiert.Trim();
+
         public static IReadOnlyList<string> Abbruchgruende(AppSettings? einstellungen) =>
             einstellungen?.Abbruchgruende is { Count: > 0 } liste ? liste : StandardAbbruchgruende;
 
@@ -68,7 +77,7 @@ namespace Einsatzueberwachung.Domain.Services
             var liste = teams.ToList();
             var fehlend = new List<string>();
             if (string.IsNullOrWhiteSpace(einsatz.Vorgangsnummer)) fehlend.Add("vorgangsnummer");
-            if (string.IsNullOrWhiteSpace(einsatz.Alarmiert)) fehlend.Add("melder");
+            if (Melder(einsatz.Alarmiert).Length == 0) fehlend.Add("melder");
             if (string.IsNullOrWhiteSpace(einsatz.PolizeiKontaktName)) fehlend.Add("polizei");
             if (Hundeteams(liste).Any(t => t.Einsatzart is null)) fehlend.Add("teams");
             if (Trails(einsatz, liste).Any(s => string.IsNullOrWhiteSpace(s.Abbruchgrund) || string.IsNullOrWhiteSpace(s.Geruchsartikel)))

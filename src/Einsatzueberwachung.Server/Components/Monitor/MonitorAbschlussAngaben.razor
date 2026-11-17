@@ -1,0 +1,156 @@
+@* Angaben für den Einsatzbericht im Beenden-Dialog (Karte „polizeibericht“, APP_API EL Abschnitt 10) *@
+
+<div class="border rounded p-2 mb-3">
+    <div class="small fw-semibold mb-2">Angaben für den Bericht</div>
+    <div class="row g-2">
+        <div class="col-12 col-md-6">
+            <label class="form-label" for="abschluss-vorgang">Vorgangsnummer Polizei</label>
+            <input id="abschluss-vorgang" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.Vorgangsnummer" placeholder="z. B. PP DO 2026/118742" />
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label" for="abschluss-melder">Alarmiert durch</label>
+            <input id="abschluss-melder" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.Melder" placeholder="z. B. Polizei Dortmund" />
+        </div>
+        <div class="col-12 col-md-5">
+            <label class="form-label" for="abschluss-polizei">Polizeikontakt</label>
+            <input id="abschluss-polizei" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.PolizeiName" placeholder="Name, Dienstgrad" />
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="abschluss-dienstnummer">Dienstnummer</label>
+            <input id="abschluss-dienstnummer" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.PolizeiDienstnummer" />
+        </div>
+        <div class="col-6 col-md-4">
+            <label class="form-label" for="abschluss-telefon">Telefon</label>
+            <input id="abschluss-telefon" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.PolizeiTelefon" />
+        </div>
+    </div>
+
+    @if (ErgebnisText.IstFund(Ergebnis))
+    {
+        <div class="small fw-semibold mt-3 mb-2">Fund</div>
+        <div class="row g-2">
+            <div class="col-6 col-md-3">
+                <label class="form-label" for="abschluss-fundzeit">Fundzeit</label>
+                <input id="abschluss-fundzeit" type="time" class="form-control" @bind="Model.FundZeit" />
+            </div>
+            <div class="col-6 col-md-4">
+                <label class="form-label" for="abschluss-finder">Gefunden durch</label>
+                <select id="abschluss-finder" class="form-select" @bind="Model.FundTeamId">
+                    <option value="">nicht angegeben</option>
+                    @foreach (var team in Teams)
+                    {
+                        <option value="@team.TeamId">@team.TeamName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-5">
+                <label class="form-label" for="abschluss-fundort">Fundort</label>
+                <input id="abschluss-fundort" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.FundOrt" placeholder="Beschreibung, z. B. Stadtgarten" />
+            </div>
+            <div class="col-12 col-md-7">
+                <span class="form-label d-block">Koordinate</span>
+                @if (Model.FundLat is { } lat && Model.FundLng is { } lng)
+                {
+                    <span>@Einsatzueberwachung.Server.Services.Navigationspunkte.Koordinate(lat, lng)</span>
+                }
+                else
+                {
+                    <span class="monitor-text-caption">keine</span>
+                }
+                @if (Model.FundVorschlag is { } vorschlag)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @onclick="Model.VorschlagUebernehmen">
+                        Fund-Punkt übernehmen (@vorschlag.CreatedAt.ToString("HH:mm"))
+                    </button>
+                }
+            </div>
+            <div class="col-12 col-md-5">
+                <label class="form-label" for="abschluss-uebergabe">Übergabe an</label>
+                <input id="abschluss-uebergabe" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.UebergabeAn" placeholder="z. B. Rettungsdienst" />
+            </div>
+        </div>
+    }
+
+    @if (Model.Teams.Count > 0)
+    {
+        <div class="small fw-semibold mt-3 mb-2">Eingesetzt als</div>
+        <div class="row g-2">
+            @foreach (var zeile in Model.Teams)
+            {
+                <div class="col-12 col-md-6 d-flex align-items-center gap-2">
+                    <label class="flex-grow-1 text-truncate" for="abschluss-art-@zeile.TeamId">@zeile.TeamName</label>
+                    <select id="abschluss-art-@zeile.TeamId" class="form-select form-select-sm w-auto" @bind="zeile.Einsatzart">
+                        <option value="">nicht festgelegt</option>
+                        @foreach (var art in zeile.Erlaubt)
+                        {
+                            <option value="@art">@art.Anzeige()</option>
+                        }
+                    </select>
+                </div>
+            }
+        </div>
+    }
+
+    @if (Model.Trails.Count > 0)
+    {
+        <div class="small fw-semibold mt-3 mb-2">Trails</div>
+        @foreach (var trail in Model.Trails)
+        {
+            <div class="row g-2 align-items-center mb-1">
+                <div class="col-12 col-md-4">@trail.Text</div>
+                <div class="col-6 col-md-4">
+                    <select class="form-select form-select-sm" aria-label="Abbruchgrund @trail.Text" @bind="trail.Abbruchgrund">
+                        <option value="">Abbruchgrund wählen</option>
+                        @foreach (var grund in Model.Abbruchgruende.Append(trail.Abbruchgrund).Where(g => g.Length > 0).Distinct())
+                        {
+                            <option value="@grund">@grund</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6 col-md-4">
+                    <input class="form-control form-control-sm" maxlength="@AbschlussAngaben.MaxTextLaenge" aria-label="Geruchsartikel @trail.Text"
+                           @bind="trail.Geruchsartikel" placeholder="Geruchsartikel" />
+                </div>
+            </div>
+        }
+    }
+
+    <div class="small fw-semibold mt-3 mb-1">Abschnitte im Bericht</div>
+    <div class="d-flex flex-wrap gap-3">
+        @foreach (var (wert, anzeige) in MonitorAbschlussModel.AbschnittOptionen)
+        {
+            <label class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" checked="@Model.Abschnitte.Contains(wert)"
+                       @onchange="args => Umschalten(wert, args)" />
+                <span class="form-check-label">@anzeige</span>
+            </label>
+        }
+    </div>
+    <div class="monitor-text-caption mt-1">Kopf, Ergebnis und Polizei stehen immer im Bericht. Flächenabdeckung kommt nicht in den Bericht.</div>
+
+    @{ var fehlend = Model.Fehlend(Ergebnis); }
+    @if (fehlend.Count > 0)
+    {
+        <div class="alert alert-warning py-2 mt-3 mb-0">
+            <div>Es fehlen noch: @string.Join(", ", fehlend). Nach dem Beenden ist nichts mehr änderbar.</div>
+            <label class="form-check mt-1 mb-0">
+                <input class="form-check-input" type="checkbox" @bind="Model.UnvollstaendigBestaetigt" />
+                <span class="form-check-label">Trotzdem ohne diese Angaben beenden</span>
+            </label>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public MonitorAbschlussModel Model { get; set; } = default!;
+    [Parameter] public string? Ergebnis { get; set; }
+    [Parameter] public IEnumerable<Team> Teams { get; set; } = Array.Empty<Team>();
+
+    private void Umschalten(string wert, ChangeEventArgs args)
+    {
+        if (args.Value is true || args.Value is string s && (s == "true" || s == "on"))
+            Model.Abschnitte.Add(wert);
+        else
+            Model.Abschnitte.Remove(wert);
+    }
+}
