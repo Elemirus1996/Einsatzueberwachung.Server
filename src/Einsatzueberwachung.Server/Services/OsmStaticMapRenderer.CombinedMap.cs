@@ -259,6 +259,7 @@ public sealed partial class OsmStaticMapRenderer
                     DrawMarker(canvas, new SKPoint(ToX(elwPosition.Value.Longitude), ToY(elwPosition.Value.Latitude)), new SKColor(220, 20, 60), "ELW");
 
                 DrawNorthArrow(canvas, width, height);
+                DrawScaleBar(canvas, width, height, ToX, (minLat + maxLat) / 2, minLon, maxLon);
                 DrawAttribution(canvas, width, height, tileConfig.Attribution);
 
                 using var image = SKImage.FromBitmap(outputBitmap);
@@ -570,6 +571,7 @@ public sealed partial class OsmStaticMapRenderer
                     DrawGrid(canvas, ToX, ToY, minLat, maxLat, minLon, maxLon, width, height, options.GridType);
 
                 DrawNorthArrow(canvas, width, height);
+                DrawScaleBar(canvas, width, height, ToX, (minLat + maxLat) / 2, minLon, maxLon);
                 DrawAttribution(canvas, width, height, tileConfig.Attribution);
 
                 using var image = SKImage.FromBitmap(outputBitmap);

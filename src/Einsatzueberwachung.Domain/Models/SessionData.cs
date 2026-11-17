@@ -121,6 +121,9 @@ namespace Einsatzueberwachung.Domain.Models
         public string? AppPacklisteVersion { get; set; }
         public DateTime? AppPacklisteStandUtc { get; set; }
 
+        /// <summary>Abbruchgründe für Trails beim Einsatzende (APP_API EL Abschnitt 10); leer = Vorgabe (AbschlussAngaben.StandardAbbruchgruende)</summary>
+        public List<string>? Abbruchgruende { get; set; }
+
         // Loeschfristen im Archiv in Tagen ab Einsatzende (#151); null = nicht automatisch loeschen (ab Werk)
         public int? LoeschfristLaufwegeTage { get; set; }
         public int? LoeschfristNotizenTage { get; set; }

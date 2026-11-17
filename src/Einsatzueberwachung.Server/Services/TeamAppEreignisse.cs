@@ -226,7 +226,8 @@ public static class AppLage
                 teamName = team.TeamName,
                 dogName = team.DogName ?? "",
                 hundefuehrerName = team.HundefuehrerName ?? "",
-                helfer = team.HelferNames.Where(h => !string.IsNullOrWhiteSpace(h)).ToList()
+                helfer = team.HelferNames.Where(h => !string.IsNullOrWhiteSpace(h)).ToList(),
+                einsatzart = team.Einsatzart?.ToString()
             },
             suche = Suche(team, darfSteuern),
             datenschutz,
@@ -276,6 +277,7 @@ public static class AppLage
                 .Select(s => new
                 {
                     sucheId = s.Id,
+                    einsatzart = s.Einsatzart?.ToString(),
                     beginn = AppZeit.Utc(s.SearchStart),
                     ende = AppZeit.Utc(s.SearchEnd),
                     tracks = s.Tracks.Select(t => new

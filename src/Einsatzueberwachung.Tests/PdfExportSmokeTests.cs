@@ -165,10 +165,41 @@ public class PdfExportSmokeTests
         Assert.Equal(1, mapRenderer.MarkerAnzahl);
     }
 
+    [Fact]
+    public async Task ArchivBericht_MitTrail_RendertUebersichtUndTrailKarte_OhneKartenAbschnittKeineKarten()
+    {
+        var archiviert = ArchivedEinsatz.FromEinsatzData(MinimalEinsatz());
+        var trail = new CompletedSearch
+        {
+            TeamId = "t1", TeamName = "Team 1", SearchStart = DateTime.UtcNow.AddMinutes(-30), SearchEnd = DateTime.UtcNow.AddMinutes(-5),
+            Einsatzart = Einsatzueberwachung.Domain.Models.Enums.Einsatzart.Mantrailer, Abbruchgrund = "Spur verloren", Geruchsartikel = "Mütze"
+        };
+        trail.Tracks.Add(new TeamTrackSnapshot
+        {
+            TeamId = "t1", TeamName = "Team 1", Color = "#2e7d4f",
+            Points = [new TrackPoint { Latitude = 49.30, Longitude = 8.40 }, new TrackPoint { Latitude = 49.31, Longitude = 8.41 }]
+        });
+        archiviert.CompletedSearches = [trail];
+
+        var mitKarten = new RecordingMapRenderer();
+        var bytes = await new PdfExportService(mapRenderer: mitKarten).ExportArchivedEinsatzToPdfBytesAsync(archiviert, new PdfBerichtOptionen());
+        Assert.Equal("%PDF-", Encoding.ASCII.GetString(bytes, 0, 5));
+        Assert.Equal(1, mitKarten.TrackAnzahl);
+        Assert.Equal("#2e7d4f", mitKarten.TrackColor);
+
+        var ohneKarten = new RecordingMapRenderer();
+        bytes = await new PdfExportService(mapRenderer: ohneKarten).ExportArchivedEinsatzToPdfBytesAsync(archiviert,
+            new PdfBerichtOptionen(Abschnitte: ["funk"]));
+        Assert.Equal("%PDF-", Encoding.ASCII.GetString(bytes, 0, 5));
+        Assert.Null(ohneKarten.TrackAnzahl);
+        Assert.Null(ohneKarten.TrackColor);
+    }
+
     private sealed class RecordingMapRenderer : IStaticMapRenderer
     {
         public string? TrackColor { get; private set; }
         public int? MarkerAnzahl { get; private set; }
+        public int? TrackAnzahl { get; private set; }
 
         public Task<byte[]?> RenderTrackMapAsync(List<TrackPoint> trackPoints,
             List<(double Latitude, double Longitude)>? searchAreaCoords, string trackColor,
@@ -194,6 +225,7 @@ public class PdfExportSmokeTests
             List<Team>? teams = null, int width = 1500, int height = 1060)
         {
             MarkerAnzahl = options.ShowPointMarkers ? markers?.Count : null;
+            TrackAnzahl = options.ShowGpsTracks ? gpsTracks?.Count : null;
             return Task.FromResult<byte[]?>(null);
         }
 

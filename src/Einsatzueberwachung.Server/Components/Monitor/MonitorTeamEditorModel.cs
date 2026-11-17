@@ -5,6 +5,8 @@ public class MonitorTeamEditorModel
     public string TeamType { get; set; } = "dog";
     public string TeamName { get; set; } = string.Empty;
     public string DogId { get; set; } = string.Empty;
+    /// <summary>„Eingesetzt als“: Name der Einsatzart oder leer (nicht festgelegt)</summary>
+    public string Einsatzart { get; set; } = string.Empty;
     public string DroneId { get; set; } = string.Empty;
     public string HundefuehrerId { get; set; } = string.Empty;
     public string HelferId { get; set; } = string.Empty;

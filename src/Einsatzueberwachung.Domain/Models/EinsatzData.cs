@@ -27,6 +27,13 @@ namespace Einsatzueberwachung.Domain.Models
         public DateTime? EinsatzEnde { get; set; }
 
         public string EinsatzNummer { get; set; }
+        /// <summary>Vorgangs- bzw. Einsatznummer der Polizei (ab 1.17.0).</summary>
+        public string Vorgangsnummer { get; set; } = string.Empty;
+        public EinsatzFund Fund { get; set; } = new();
+        /// <summary>Wer alarmiert hat (Pflicht beim Anlegen ab 1.17.0); Stelle/Name steht in Alarmiert</summary>
+        public AlarmiertDurch? AlarmiertDurch { get; set; }
+        /// <summary>Beim Abschluss bestätigt: keine Polizei beteiligt (Polizeiangaben entfallen)</summary>
+        public bool KeinePolizei { get; set; }
         public bool EinsatzkontakteMigriert { get; set; }
         public string PolizeiKontaktName { get; set; } = string.Empty;
         public string PolizeiDienstnummer { get; set; } = string.Empty;
@@ -117,6 +124,10 @@ namespace Einsatzueberwachung.Domain.Models
             EinsatzDatum = Ortszeit.Jetzt;
             EinsatzEnde = null;
             EinsatzNummer = string.Empty;
+            Vorgangsnummer = string.Empty;
+            Fund = new EinsatzFund();
+            AlarmiertDurch = null;
+            KeinePolizei = false;
             StaffelName = string.Empty;
             StaffelAdresse = string.Empty;
             StaffelTelefon = string.Empty;

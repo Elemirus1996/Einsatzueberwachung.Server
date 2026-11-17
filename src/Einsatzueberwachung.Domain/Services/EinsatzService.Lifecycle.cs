@@ -54,6 +54,9 @@ namespace Einsatzueberwachung.Domain.Services
             _currentEinsatz.Einsatzort = einsatzData.Einsatzort;
             _currentEinsatz.MapAddress = einsatzData.MapAddress;
             _currentEinsatz.Alarmiert = einsatzData.Alarmiert;
+            // Bearbeiten-Dialoge ohne Auswahl lassen die beim Start gewählte Art stehen
+            if (einsatzData.AlarmiertDurch is not null)
+                _currentEinsatz.AlarmiertDurch = einsatzData.AlarmiertDurch;
             _currentEinsatz.AlarmierungsZeit = einsatzData.AlarmierungsZeit;
             _currentEinsatz.AnzahlTeams = einsatzData.AnzahlTeams;
             _currentEinsatz.ExportPfad = einsatzData.ExportPfad;

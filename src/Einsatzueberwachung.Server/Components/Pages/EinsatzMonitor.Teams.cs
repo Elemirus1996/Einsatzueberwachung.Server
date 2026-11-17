@@ -213,8 +213,10 @@ public partial class EinsatzMonitor
         return EinsatzService.CurrentEinsatz.EinsatzDatum.ToString("dd.MM.yyyy HH:mm");
     }
 
-    private void OpenCloseMissionModal()
+    private async Task OpenCloseMissionModalAsync()
     {
+        var gruende = AbschlussAngaben.Abbruchgruende(await SettingsService.GetAppSettingsAsync());
+        _abschluss.Laden(EinsatzService.CurrentEinsatz, EinsatzService.Teams, ActiveDogs, gruende);
         _showCloseMissionModal = true;
         _closeMissionModalError = string.Empty;
         _closeMissionChecklistConfirmed = false;
@@ -280,6 +282,13 @@ public partial class EinsatzMonitor
             return;
         }
 
+        var fehlend = _abschluss.Fehlend(_closeMissionResult);
+        if (fehlend.Count > 0 && !_abschluss.UnvollstaendigBestaetigt)
+        {
+            _closeMissionModalError = $"Es fehlen noch: {string.Join(", ", fehlend)}. Bitte eintragen oder „Trotzdem ohne diese Angaben beenden“ ankreuzen.";
+            return;
+        }
+
         _closingMission = true;
 
         try
@@ -293,7 +302,10 @@ public partial class EinsatzMonitor
                 SelectedPersonnelNames,
                 SelectedDogNames,
                 _closeMissionKartenart,
-                PunkteImBericht: _closeMissionIncludePunkte));
+                PunkteImBericht: _closeMissionIncludePunkte,
+                Angaben: _abschluss.ZuEingabe(TimeService.Now, _closeMissionResult),
+                UnvollstaendigBestaetigt: true,
+                Abschnitte: _abschluss.GewaehlteAbschnitte(_closeMissionIncludeTracks)));
 
             _showCloseMissionModal = false;
 
@@ -485,6 +497,7 @@ public partial class EinsatzMonitor
         _teamForm.TeamName = team.TeamName;
         _teamForm.TeamType = team.IsDroneTeam ? "drone" : team.IsSupportTeam ? "support" : "dog";
         _teamForm.DogId = team.DogId;
+        _teamForm.Einsatzart = team.Einsatzart?.ToString() ?? string.Empty;
         _teamForm.DroneId = team.DroneId;
         _teamForm.HundefuehrerId = team.HundefuehrerId;
         _teamForm.HelferId = team.HelferIds.ElementAtOrDefault(0) ?? string.Empty;
@@ -670,6 +683,7 @@ public partial class EinsatzMonitor
         team.DogId = string.Empty;
         team.DogName = string.Empty;
         team.DogSpecialization = DogSpecialization.None;
+        team.Einsatzart = null;
         team.DroneId = string.Empty;
         team.DroneType = string.Empty;
         team.IsDroneTeam = _teamForm.TeamType == "drone";
@@ -687,6 +701,7 @@ public partial class EinsatzMonitor
             team.DogId = dog?.Id ?? string.Empty;
             team.DogName = dog?.Name ?? string.Empty;
             team.DogSpecialization = dog?.Specializations ?? DogSpecialization.None;
+            team.Einsatzart = EinsatzartExtensions.AusApiWert(_teamForm.Einsatzart);
         }
         else if (_teamForm.TeamType == "drone")
         {
@@ -715,6 +730,7 @@ public partial class EinsatzMonitor
     private async Task OnTeamTypeChangedAsync()
     {
         _teamForm.DogId = string.Empty;
+        _teamForm.Einsatzart = string.Empty;
         _teamForm.DroneId = string.Empty;
         _teamForm.HelferId = string.Empty;
         _teamForm.HelferId2 = string.Empty;
@@ -740,6 +756,10 @@ public partial class EinsatzMonitor
     {
         form.DogId = dogId ?? string.Empty;
         var dog = dogs.FirstOrDefault(entry => entry.Id == form.DogId);
+        // Neuer Hund: Einsatzart vorauswählen, wenn er genau eine passende Spezialisierung hat
+        var erlaubt = EinsatzartExtensions.AusSpezialisierungen(dog?.Specializations ?? DogSpecialization.None);
+        if (EinsatzartExtensions.AusApiWert(form.Einsatzart) is not { } art || erlaubt.Count > 0 && !erlaubt.Contains(art))
+            form.Einsatzart = EinsatzartExtensions.Vorauswahl(dog?.Specializations ?? DogSpecialization.None)?.ToString() ?? string.Empty;
         if (dog != null)
         {
             if (string.IsNullOrWhiteSpace(form.HundefuehrerId)

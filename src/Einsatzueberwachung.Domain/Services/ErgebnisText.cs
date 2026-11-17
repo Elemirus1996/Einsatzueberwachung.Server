@@ -8,5 +8,9 @@ namespace Einsatzueberwachung.Domain.Services
     {
         public static string Anzeige(string? ergebnis) =>
             string.IsNullOrEmpty(ergebnis) ? ergebnis ?? string.Empty : ergebnis.Replace("Uebung", "Übung").Replace(" - ", " – ");
+
+        /// <summary>Ergebnis mit Fund der Person: Beim Einsatzende werden Fundzeit, Fundort und Übergabe abgefragt.</summary>
+        public static bool IstFund(string? ergebnis) =>
+            ergebnis?.Contains("gefunden", StringComparison.OrdinalIgnoreCase) == true;
     }
 }

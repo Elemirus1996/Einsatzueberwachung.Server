@@ -39,6 +39,7 @@ public partial class EinsatzMonitor
         _teamForm.TeamType = "dog";
         _teamForm.TeamName = string.Empty;
         _teamForm.DogId = string.Empty;
+        _teamForm.Einsatzart = string.Empty;
         _teamForm.DroneId = string.Empty;
         _teamForm.HundefuehrerId = string.Empty;
         _teamForm.HelferId = string.Empty;

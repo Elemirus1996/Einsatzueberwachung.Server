@@ -145,6 +145,28 @@ public sealed class NavigationspunkteTests : IDisposable
     }
 
     [Fact]
+    public async Task Punkt_TypFund_EigeneFarbeUndVorschlag_UnbekannterTyp400()
+    {
+        await StartAsync();
+
+        var fund = Punkt("Person liegt am Bach");
+        fund.Typ = "fund";
+        Assert.Equal(200, Code(await TeamController().PostPunkt(fund)));
+        var unbekannt = Punkt();
+        unbekannt.Typ = "ziel";
+        Assert.Equal(400, Code(await TeamController().PostPunkt(unbekannt)));
+        var hinweis = Punkt("Spur am Weg");
+        hinweis.Typ = "hinweis";
+        Assert.Equal(200, Code(await TeamController().PostPunkt(hinweis)));
+
+        var punkt = Assert.Single(_einsatz.CurrentEinsatz.MapMarkers, m => m.IstFund);
+        Assert.Equal(Navigationspunkte.FarbeFund, punkt.Color);
+        Assert.Equal(2, _einsatz.CurrentEinsatz.MapMarkers.Count);
+        Assert.Contains(_einsatz.GlobalNotes, n => n.Text.StartsWith("[Team Rex] Fund gemeldet: Person liegt am Bach"));
+        Assert.Same(punkt, AbschlussAngaben.FundVorschlag(_einsatz.CurrentEinsatz));
+    }
+
+    [Fact]
     public async Task Punkt_ZuLangerTextOderZeitNichtUtc_400()
     {
         await StartAsync();

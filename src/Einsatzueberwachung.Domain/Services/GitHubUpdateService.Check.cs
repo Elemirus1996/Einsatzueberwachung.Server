@@ -92,6 +92,8 @@ namespace Einsatzueberwachung.Domain.Services
                     status.LatestVersion = result.LatestVersion;
                     status.LastCheckedAt = result.CheckedAt;
                     status.UpdateAvailable = result.UpdateAvailable;
+                    status.LatestReleaseNotes = result.ReleaseNotes;
+                    status.LatestReleaseUrl = result.ReleaseUrl;
                     status.LastError = null;
                     status.LastMessage = result.UpdateAvailable
                         ? (result.IsInstallable

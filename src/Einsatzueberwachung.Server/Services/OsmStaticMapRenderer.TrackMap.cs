@@ -88,6 +88,8 @@ public sealed partial class OsmStaticMapRenderer
                     DrawMarker(canvas, trackPts[^1], new SKColor(220, 53, 69), "Ende");
                 }
 
+                DrawNorthArrow(canvas, width, height);
+                DrawScaleBar(canvas, width, height, ToX, (minLat + maxLat) / 2, minLon, maxLon);
                 DrawAttribution(canvas, width, height, kacheln.Attribution);
 
                 return EncodeAsPng(outputBitmap);

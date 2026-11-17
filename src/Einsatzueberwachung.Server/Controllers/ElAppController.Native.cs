@@ -215,6 +215,7 @@ public static class ElLage
                 stichwort = e.Stichwort ?? "",
                 ort = e.Einsatzort ?? "",
                 szenario = e.Szenario.ToString(),
+                alarmiertDurch = e.AlarmiertDurch?.ToString(),
                 uebung = !e.IstEinsatz,
                 beginn = aktiv ? AppZeit.Utc(e.AlarmierungsZeit ?? e.EinsatzDatum) : (DateTime?)null,
                 einsatzleiter = e.Einsatzleiter ?? "",
@@ -241,6 +242,7 @@ public static class ElLage
             dogName = t.DogName ?? "",
             hundefuehrerName = t.HundefuehrerName ?? "",
             helfer = t.HelferNames.Where(h => !string.IsNullOrWhiteSpace(h)).ToList(),
+            einsatzart = t.Einsatzart?.ToString(),
             suche = new { status, seit = status == "bereit" ? (DateTime?)null : AppZeit.Utc(t.StartTime), dauerSec = (long)t.ElapsedTime.TotalSeconds },
             warnstufe = t.SecondWarningMinutes > 0 && minuten >= t.SecondWarningMinutes ? 2
                 : t.FirstWarningMinutes > 0 && minuten >= t.FirstWarningMinutes ? 1 : 0,

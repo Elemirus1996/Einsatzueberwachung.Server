@@ -18,6 +18,9 @@ namespace Einsatzueberwachung.Domain.Models
 
         /// <summary>Team, das den Punkt per App gesetzt hat (docs/APP_API.md Team-Rolle Abschnitt 13); null = Einsatzleitung</summary>
         public string? TeamId { get; set; }
+
+        /// <summary>Fund statt Hinweis (APP_API Team-Rolle Abschnitt 13, ab 1.17.0): eigenes Symbol, Vorschlag für den Fundort beim Einsatzende.</summary>
+        public bool IstFund { get; set; }
         
         /// <summary>
         /// UTM-Zone (z.B. "32U"), wird aus Lat/Long berechnet

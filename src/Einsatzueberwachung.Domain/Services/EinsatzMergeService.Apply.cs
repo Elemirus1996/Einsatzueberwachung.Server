@@ -472,6 +472,7 @@ namespace Einsatzueberwachung.Domain.Services
                 DogName = src.DogName,
                 DogId = src.DogId,
                 DogSpecialization = src.DogSpecialization,
+                Einsatzart = src.Einsatzart,
                 HundefuehrerName = src.HundefuehrerName,
                 HundefuehrerId = src.HundefuehrerId,
                 HelferIds = new List<string>(src.HelferIds),

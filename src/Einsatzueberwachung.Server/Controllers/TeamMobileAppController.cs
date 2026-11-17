@@ -166,9 +166,10 @@ public sealed class TeamMobileAppController : ControllerBase
         if (!TryTeam(out var teamId, out _) || _punkte is null) return Gone();
         if (_einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return Gone();
         if (request is null) return BadRequest(new { error = "Körper fehlt." });
+        if (request.Typ is not (null or "hinweis" or "fund")) return BadRequest(new { error = "typ muss hinweis oder fund sein." });
 
         var ergebnis = await _punkte.PunktSetzenAsync(team, request.Id ?? "", request.Text, request.Lat, request.Lng,
-            request.Genauigkeit, request.Zeit, DateTime.UtcNow);
+            request.Genauigkeit, request.Zeit, DateTime.UtcNow, istFund: request.Typ == "fund");
         // 409 statt 429: 429 bedeutet in der App „kurz warten“ (nginx), die Grenze gilt aber fuer den ganzen Einsatz
         if (ergebnis.GrenzeErreicht) return Conflict(new { error = ergebnis.Fehler });
         if (ergebnis.Fehler is not null) return BadRequest(new { error = ergebnis.Fehler });
@@ -431,6 +432,8 @@ public sealed class TeamMobileAppController : ControllerBase
         public double? Genauigkeit { get; set; }
         /// <summary>Zeitpunkt der Ortung (UTC)</summary>
         public DateTime? Zeit { get; set; }
+        /// <summary>hinweis (Standard) oder fund (ab 1.17.0)</summary>
+        public string? Typ { get; set; }
     }
 
     public sealed class AppLoginRequest
