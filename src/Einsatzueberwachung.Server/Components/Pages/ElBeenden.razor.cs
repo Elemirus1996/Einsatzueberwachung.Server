@@ -1,12 +1,15 @@
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
+using Einsatzueberwachung.Domain.Services;
+using Einsatzueberwachung.Server.Components.Monitor;
 using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Components;
 
 namespace Einsatzueberwachung.Server.Components.Pages;
 
 /// <summary>
-/// Einsatz beenden auf Tablet/Handy (EL-Ansicht, 1.11): Ergebnis, Ende, Bemerkungen, Vor-Ort-Liste, Bestaetigung.
+/// Einsatz beenden auf Tablet/Handy (EL-Ansicht, 1.11): Ergebnis, Ende, Bemerkungen, Angaben fuer den Bericht
+/// (wie im Monitor, APP_API EL Abschnitt 10), Vor-Ort-Liste, Bestaetigung.
 /// Archivieren und PDF uebernimmt der gemeinsame <see cref="EinsatzAbschlussService"/> – wie im Monitor.
 /// </summary>
 public partial class ElBeenden : IDisposable
@@ -15,6 +18,7 @@ public partial class ElBeenden : IDisposable
     [Inject] private IMasterDataService MasterDataService { get; set; } = default!;
     [Inject] private ITimeService TimeService { get; set; } = default!;
     [Inject] private EinsatzAbschlussService EinsatzAbschluss { get; set; } = default!;
+    [Inject] private ISettingsService SettingsService { get; set; } = default!;
 
     private List<PersonalEntry> _personal = [];
     private List<DogEntry> _hunde = [];
@@ -36,6 +40,7 @@ public partial class ElBeenden : IDisposable
     private bool _punkteImPdf;
     private Einsatzueberwachung.Domain.Models.Enums.MapTileType _kartenart = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets;
     private bool _ressourcenGeprueft;
+    private readonly MonitorAbschlussModel _abschluss = new();
 
     private bool _ergebnisFehlt;
     private bool _pruefungFehlt;
@@ -66,6 +71,8 @@ public partial class ElBeenden : IDisposable
         _personal = await MasterDataService.GetPersonalListAsync();
         _hunde = await MasterDataService.GetDogListAsync();
         (_personalIds, _hundeIds) = EinsatzAbschlussService.PreselectVorOrt(EinsatzService.Teams, ActivePersonnel, ActiveDogs);
+        var gruende = AbschlussAngaben.Abbruchgruende(await SettingsService.GetAppSettingsAsync());
+        _abschluss.Laden(einsatz, EinsatzService.Teams, _hunde, gruende);
 
         _clockTimer = new Timer(_ => InvokeAsync(() => { _now = TimeService.Now; StateHasChanged(); }), null,
             TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
@@ -101,6 +108,13 @@ public partial class ElBeenden : IDisposable
         _pruefungFehlt = !_ergebnisFehlt && !_ressourcenGeprueft;
         if (_status.Length > 0) return;
 
+        var fehlend = _abschluss.Fehlend(_ergebnisWahl);
+        if (fehlend.Count > 0 && !_abschluss.UnvollstaendigBestaetigt)
+        {
+            _status = $"Es fehlen noch: {string.Join(", ", fehlend)}. Bitte eintragen oder „Trotzdem ohne diese Angaben beenden“ ankreuzen.";
+            return;
+        }
+
         _busy = true;
         try
         {
@@ -113,7 +127,10 @@ public partial class ElBeenden : IDisposable
                 SelectedNames(ActivePersonnel, _personalIds, p => p.Id, p => p.FullName),
                 SelectedNames(ActiveDogs, _hundeIds, d => d.Id, d => d.Name),
                 _kartenart,
-                PunkteImBericht: _punkteImPdf));
+                PunkteImBericht: _punkteImPdf,
+                Angaben: _abschluss.ZuEingabe(TimeService.Now, _ergebnisWahl),
+                UnvollstaendigBestaetigt: true,
+                Abschnitte: _abschluss.GewaehlteAbschnitte(_tracksImPdf)));
         }
         catch (Exception ex)
         {

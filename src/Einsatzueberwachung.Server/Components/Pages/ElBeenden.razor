@@ -2,6 +2,7 @@
 @layout Layout.ElLayout
 @rendermode InteractiveServer
 @using Einsatzueberwachung.Server.Services
+@using Einsatzueberwachung.Server.Components.Monitor
 
 <PageTitle>Einsatz beenden</PageTitle>
 
@@ -72,6 +73,10 @@
                 <label class="els-label" for="elb-bem">Bemerkungen</label>
                 <textarea id="elb-bem" class="els-input els-textarea" rows="3" @bind="_bemerkungen"
                           placeholder="Zusatzinformationen zum Abschluss…"></textarea>
+            </section>
+
+            <section class="els-section">
+                <MonitorAbschlussAngaben Model="_abschluss" Ergebnis="@_ergebnisWahl" Teams="EinsatzService.Teams" />
             </section>
 
             <section class="els-section">
