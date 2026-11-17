@@ -71,15 +71,14 @@ public static class HilfeContent
                 "Backup herunterladen: Einsatz öffnen -> 'Backup herunterladen'"
             }),
 
-        ["/einsatz-leitung"] = new(
-            "Einsatzleitung",
-            "Detailansicht des laufenden Einsatzes mit erweiterter Steuerung. Hier können Vermisste verwaltet, Checklisten bearbeitet und EL-Notizen erfasst werden. Auch der Einsatz kann von hier aus beendet werden.",
+        ["/el"] = new(
+            "Einsatzleitung im Browser (ohne App)",
+            "Für Einsatzleiter, die über das VPN angemeldet sind, die EL-App aber nicht installieren können. Die Seite /el zeigt im Browser auf Tablet oder Handy die Lage des laufenden Einsatzes; dort lassen sich Vermisste und Notizen erfassen und der Einsatz starten oder beenden. Beim Beenden werden dieselben Angaben für den Bericht abgefragt wie im Monitor. Die Seite ist bewusst nicht in der Seitenleiste verlinkt.",
             new[]
             {
-                "Navigation -> Monitor -> 'Zur Einsatzleitung'",
-                "Vermisste hinzufügen: Abschnitt 'Vermisste' -> '+ Vermisster'",
-                "Checkliste öffnen: Vermissten-Karte -> Checklisten-Icon",
-                "Einsatz beenden: 'Einsatz beenden'-Button"
+                "Im Browser des Geräts die Adresse des Servers mit /el am Ende öffnen, z. B. https://<server>/el",
+                "Einsatz starten: /el/start",
+                "Einsatz beenden: 'Einsatz beenden'-Button bzw. /el/beenden"
             }),
 
         ["/wetter"] = new(
