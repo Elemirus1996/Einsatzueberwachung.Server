@@ -28,6 +28,7 @@
 - Daraus folgt die Rolle im laufenden Einsatz: Der **Einsatzleiter** steuert und sendet seinen Standort, der **Führungsassistent** steuert ohne Standort, **alle anderen lesen nur** (Lage, Karte, Funk, Vermisste) und senden keinen Standort. So kommen sich mehrere EL-Handys im ELW nicht in die Quere.
 - Wechselt im Monitor der Einsatzleiter, gilt die neue Rolle sofort. Einen Einsatz anlegen darf jeder mit EL-Zugang.
 - Dafür braucht es die neue App-Version. Ältere Apps arbeiten wie bisher mit vollen Rechten.
+- Die **Einsatzleitung im Browser** (`/el`, für Geräte ohne App) ist nicht mehr in der Seitenleiste verlinkt. Wie man sie erreicht, steht in der Hilfe.
 
 ### Einstellungen
 - Datenschutzerklärung für die App, Packliste und Löschfristen stehen jetzt unter Einstellungen → **Staffel**.
