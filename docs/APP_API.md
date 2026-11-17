@@ -107,7 +107,7 @@ Alles, was die Ansicht beim Öffnen braucht (Grundlage: heutige Team-Seite).
   "mode": "track",
   "serverZeit": "2026-10-28T09:15:00Z",
   "einsatz": { "text": "Vermisste Person · Testwald", "uebung": false, "staffel": "RHS Musterstadt" },
-  "team": { "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"] },
+  "team": { "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"], "einsatzart": "Flaeche" },
   "suche": { "status": "laeuft", "seit": "2026-10-28T08:40:00Z", "dauerSec": 2100, "darfSteuern": true },
   "suchgebiet": { "id": "…", "name": "Gebiet A", "farbe": "#2f6fd6", "punkte": [ { "lat": 49.31, "lng": 8.43 } ] },
   "halsband": { "id": "HB-7", "name": "Halsband 7", "lat": 49.312, "lng": 8.431, "zeit": "2026-10-28T09:14:48Z", "akku": 3 },
@@ -143,7 +143,7 @@ Alles, was die Ansicht beim Öffnen braucht (Grundlage: heutige Team-Seite).
 ```
 
 - `laufend`: Halsband-Track (`hund`) und Handy-Laufweg (`mensch`) der **laufenden** Suche dieses Teams, nach Zeit sortiert. Leer, wenn keine Suche läuft.
-- `abgeschlossen`: frühere Suchen dieses Teams im Einsatz. `art` ist `hund` oder `mensch`.
+- `abgeschlossen`: frühere Suchen dieses Teams im Einsatz. `art` ist `hund` oder `mensch`. Ab Server 1.17.0 je Suche `einsatzart` (EL-Rolle Abschnitt 10).
 - Mit `seit`: nur Punkte der laufenden Suche mit `t > seit`, `abgeschlossen` entfällt.
   Hinweis: Positionen, die erst nach einem Funkloch mit älterer Zeit eintreffen, liefert `seit` nicht nach.
   Deshalb lädt die App bei jedem `lage`-Ereignis und spätestens alle 5 Minuten einmal **ohne** `seit`.
@@ -320,6 +320,9 @@ Das Team setzt an seinem Standort einen **Punkt** (Fund, Hinweis), der bei der E
 { "id": "6f1c…-uuid-der-app", "text": "Fund: Jacke", "lat": 49.312345, "lng": 8.431234, "genauigkeit": 8, "zeit": "2026-10-31T09:12:03Z" }
 ```
 
+- `typ` (ab Server 1.17.0, optional): `hinweis` (Standard) oder `fund`. Ein Fund erscheint auf der Karte mit eigenem Symbol und
+  wird beim Einsatzende als Fundort vorgeschlagen (EL-Rolle Abschnitt 10). Unbekannter `typ` → `400`; ältere Server ignorieren das Feld.
+  Die App bietet beim Punkt „Fund“ und „Hinweis“ zur Auswahl an.
 - `text` Pflicht, höchstens 200 Zeichen. `lat`/`lng` Pflicht, gültiger Bereich. `genauigkeit` (Meter, optional) und `zeit`
   (Zeitpunkt der Ortung, UTC mit `Z`, optional; ohne Angabe = Eingang beim Server) aus der Ortung des Handys.
 - Die App nimmt die **aktuelle** Position (nicht älter als 60 s, sonst neu orten). Ohne Ortungsfreigabe gibt es den Knopf nicht.
@@ -502,7 +505,7 @@ Staffel-Passwort ab (`POST /login`). Ein Team-Code (`/team/login/…`) bleibt ei
   "einsatz": { "aktiv": true, "text": "Vermisste Person · Testwald", "stichwort": "…", "ort": "…", "szenario": "Flaeche",
                "uebung": false, "beginn": "…Z", "einsatzleiter": "…", "fuehrungsassistent": "…" },
   "teams": [ {
-      "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"],
+      "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"], "einsatzart": "Flaeche",
       "suche": { "status": "laeuft", "seit": "…Z", "dauerSec": 2100 },
       "warnstufe": 0, "warnung1Min": 45, "warnung2Min": 60,
       "suchgebiet": { "id": "…", "name": "Gebiet A", "farbe": "#2f6fd6" },
@@ -527,9 +530,9 @@ Staffel-Passwort ab (`POST /login`). Ein Team-Code (`/team/login/…`) bleibt ei
 | `GET /tracks?seit=<unix-ms>` | wie Abschnitt 7 der Team-Rolle, aber `laufend` als Liste je Team: `[ { "teamId", "hund": […], "mensch": […] } ]`, `abgeschlossen` mit `teamId` |
 | `GET /notizen?vor=<id>&anzahl=50` | `{ "notizen": […], "weitere": true }` – Notizen und Funk wie in `/el`, **neueste zuerst**: `id`, `art` (`notiz` · `funk` · `status` · `system`), `text`, `zeit`, `von`, `teamId`, `loeschbar`, `antworten` `[ { "id", "text", "zeit", "von" } ]`. Blättern mit `vor` = älteste geladene `id`; `anzahl` höchstens 200 |
 | `GET /halsbaender` | `{ "frei": [ { "id", "name", "zeit", "akku" } ], "zuletzt": [ { "teamId", "halsbandId" } ] }` – freie Halsbänder für die Rückfrage beim Teamstart, dazu je Team das zuletzt benutzte (nur Teams, die schon eins hatten) |
-| `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen" } ]` |
+| `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen", "fund": false } ]` – `fund` ab Server 1.17.0 (Abschnitt 10) |
 | `GET /einsatz/vorort` | Anwesenheit für das Einsatzende wie in `/el/beenden`: `{ "personal": [ { "id", "name", "vorausgewaehlt" } ], "hunde": [ { "id", "name", "vorausgewaehlt" } ] }` – nur aktive Einträge der Stammdaten, Personal nach Vorname, Hunde nach Name; `vorausgewaehlt` = in einem Team eingeteilt. Ab Server 1.14.1, ältere Server antworten `404` |
-| `GET /einsatz/bericht/{archivId}` | Einsatzbericht eines beendeten Einsatzes als PDF (`application/pdf`, Dateiname `einsatzbericht-<Einsatznummer>.pdf`), Inhalt wie der Download im Archiv. Optional `?karte=Streets` (`Streets` · `Topographic` · `Satellite`, Unbekanntes = `Streets`), `teams=<teamId>,<teamId>` (ohne = alle), `tracks=0` (ohne Tracks). `archivId` aus der Antwort von `/einsatz/beenden`. Unbekannt → `404` + `{ "error" }`, Fehler beim Erstellen `500` + `{ "error" }`. Abruf steht im Audit-Log. Ab Server 1.15.0, ältere Server antworten `404` |
+| `GET /einsatz/bericht/{archivId}` | Einsatzbericht eines beendeten Einsatzes als PDF (`application/pdf`, Dateiname `einsatzbericht-<Einsatznummer>.pdf`), Inhalt wie der Download im Archiv. Optional `?karte=Streets` (`Streets` · `Topographic` · `Satellite`, Unbekanntes = `Streets`), `teams=<teamId>,<teamId>` (ohne = alle), `tracks=0` (ohne Tracks), ab Server 1.17.0 `abschnitte=` (Abschnitt 10). `archivId` aus der Antwort von `/einsatz/beenden`. Unbekannt → `404` + `{ "error" }`, Fehler beim Erstellen `500` + `{ "error" }`. Abruf steht im Audit-Log. Ab Server 1.15.0, ältere Server antworten `404` |
 | `GET /einsatz/vorlage` | Auswahllisten wie in `/el/start`: `{ "aktiv", "szenarien": ["Mantrailer", …], "divera": [ { "id", "titel", "ort", "lat", "lng", "zeit" } ], "einsatzleiter": ["Anna Berg"], "fuehrungsassistenten": […], "ergebnisse": […], "kartenarten": [ { "wert": "Streets", "anzeige": "Straßenkarte" } ] }` – `divera` leer, wenn Divera nicht eingerichtet oder nicht erreichbar ist |
 
 ### 7. Aktionen
@@ -552,7 +555,7 @@ und wiederholen.
 | `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` (bei `typ = jaNein`) bzw. `wert` (bei `auswahl` und `text`) | Checklistenpunkt setzen, ohne `version` |
 | `/szenario` | `szenario` | Szenario des Einsatzes |
 | `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional) | wie `/el/start`; läuft schon ein Einsatz → `409` |
-| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null, "punkte": false }` – `kartenart`: `Streets` · `Topographic` · `Satellite`, sonst `400`; optional `personalIds`, `hundeIds` (IDs aus `/einsatz/vorort`) | wie `/el/beenden` |
+| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null, "punkte": false }` – `kartenart`: `Streets` · `Topographic` · `Satellite`, sonst `400`; optional `personalIds`, `hundeIds` (IDs aus `/einsatz/vorort`); ab Server 1.17.0 `abschluss`, `unvollstaendigBestaetigt`, `pdf.abschnitte` (Abschnitt 10) | wie `/el/beenden` |
 
 Antwort jeder Aktion: `200` + `{ "doppelt": false, … }`, beim Anlegen mit der neuen Kennung des Objekts (z. B. `notizId`).
 
@@ -698,3 +701,61 @@ Die Grenze von 10 Verbindungen gilt **je Token**, nicht je Team. Bei Einsatzende
 
 1. diese Beschreibung, 2. `/login`, `/logout`, `/lage`, `/ereignisse`, 3. Team-Aktionen, Notizen, Funk, Mitteilung,
 4. Vermisste, Karte, Tracks, Halsbänder, 5. Einsatz starten und beenden. Bis ein Teil umgesetzt ist, antwortet sein Endpunkt `404`.
+
+### 10. Einsatzbericht: Einsatzart und Abschlussangaben (ab Server 1.17.0)
+
+Grundlage für den neuen Einsatzbericht. Ältere Server liefern die Felder nicht bzw. antworten `404`; die Apps blenden dann alles
+dazu aus und beenden wie bisher.
+
+**Einsatzart.** `einsatzart` steht am Team in `/lage` (beide Rollen) und je Suche in `/tracks` → `abgeschlossen[]`:
+`Flaeche` · `Truemmer` · `Mantrailer` · `Wasser` · `Lawine` oder `null` (nicht festgelegt).
+
+- Festgelegt wird sie im Monitor-Teamdialog („Eingesetzt als“), Auswahl aus den Spezialisierungen des Hundes laut Stammdaten.
+  Hat der Hund genau eine davon, ist sie vorausgewählt. In den Apps nur Anzeige auf der Teamkarte; ändern nur im Abschluss (unten).
+- Beim Start jeder Suche speichert der Server die dann gültige Einsatzart an der Suche. Spätere Änderungen am Team ändern
+  abgeschlossene Suchen nicht – außer im Abschluss: dort füllt die Einsatzart des Teams alle Suchen des Teams ohne Einsatzart.
+- Änderung → `team` (EL-Rolle) bzw. `lage` (Team-Rolle).
+
+**Trail** = Suche mit `einsatzart = Mantrailer`. Für Trails kennt der Bericht Start, Ende der Spur (letzter Punkt), Länge und Dauer
+aus dem Track; Abbruchgrund und Geruchsartikel kommen aus dem Abschluss.
+
+**`GET /einsatz/abschluss`** (EL-Rolle) – alles, was der Beenden-Dialog abfragt, mit den aktuellen Werten:
+
+```json
+{
+  "vorgangsnummer": "",
+  "melder": "ILS Rhein-Neckar",
+  "polizei": { "name": "PHK Meier", "dienstnummer": "", "telefon": "0621 …" },
+  "fund": { "zeit": null, "lat": null, "lng": null, "ort": "", "uebergabeAn": "",
+            "vorschlag": { "lat": 49.312, "lng": 8.431, "zeit": "…Z", "teamId": "…" } },
+  "teams": [ { "teamId": "…", "teamName": "Team Rex", "einsatzart": null, "erlaubt": ["Flaeche", "Mantrailer"] } ],
+  "trails": [ { "sucheId": "…", "teamId": "…", "teamName": "Team Rex", "beginn": "…Z", "ende": "…Z",
+                "abbruchgrund": "", "geruchsartikel": "" } ],
+  "abbruchgruende": ["Person gefunden", "Spur verloren", "Hund erschöpft", "Abbruch durch Einsatzleitung", "Gefahr im Gelände"],
+  "fehlend": ["vorgangsnummer", "teams", "trails"]
+}
+```
+
+- `melder` = „Alarmiert durch“ des Einsatzes, `polizei` = Polizeikontakt wie in `/vermisste`.
+- `fund.vorschlag`: jüngster Kartenpunkt mit `typ = fund` (Team-Rolle Abschnitt 13, im Monitor ebenso setzbar), sonst `null`. Die App übernimmt ihn nur auf Wunsch.
+- `abbruchgruende`: feste Liste für `trails[].abbruchgrund`, in den Server-Einstellungen anpassbar (oben die Vorgabe).
+  Ein gespeicherter Grund bleibt, auch wenn er später aus der Liste entfernt wird.
+- `teams[].erlaubt`: Spezialisierungen des Hundes, die als Einsatzart in Frage kommen; leer = alle fünf.
+- `fehlend`: Angaben, die noch leer sind – `vorgangsnummer`, `melder`, `polizei` (Name leer), `teams` (ein Team ohne Einsatzart),
+  `trails` (ein Trail ohne Abbruchgrund oder Geruchsartikel). `fund` steht nie darin, weil es vom Ergebnis abhängt: Die App fragt
+  den Fund ab, wenn das gewählte Ergebnis `fund: true` hat (neu in `/einsatz/ergebnisse`).
+- Kein laufender Einsatz → `409`.
+
+**`POST /einsatz/beenden`** bekommt zusätzlich, alles optional:
+
+- `abschluss`: `{ "vorgangsnummer", "melder", "polizei": { "name", "dienstnummer", "telefon" }, "fund": { "zeit", "lat", "lng", "ort", "uebergabeAn" },
+  "teams": [ { "teamId", "einsatzart" } ], "trails": [ { "sucheId", "abbruchgrund", "geruchsartikel" } ] }`.
+  Fehlende Felder bleiben, wie sie sind; Texte höchstens 200 Zeichen. `abbruchgrund` muss aus `abbruchgruende` sein. `fund.zeit` in UTC wie `endzeit`. Unbekannte `teamId`/`sucheId`
+  oder eine `einsatzart` außerhalb der Liste → `400`. Der Server speichert die Angaben vor dem Beenden.
+- `unvollstaendigBestaetigt`: Fehlt danach noch etwas (wie `fehlend`, dazu `fund` bei einem Ergebnis mit `fund: true`), antwortet
+  der Server ohne `true` mit `409` + `{ "error", "fehlend": [ … ] }` und beendet nicht. So bestätigt die Einsatzleitung ausdrücklich.
+- `pdf.abschnitte`: Abschnitte des Berichts, `null` = alle: `vermisste` · `zeitleiste` · `teams` · `karten` · `tracks` · `funk` · `vorort`.
+  Seite 1 (Kopf, Ergebnis, Polizei) ist immer dabei. `pdf.tracks = false` entspricht `tracks` nicht in der Liste (bleibt für ältere Apps).
+  `GET /einsatz/bericht/{archivId}` nimmt dieselbe Liste als `?abschnitte=vermisste,teams,…`.
+
+Nach dem Beenden ist der Einsatz nicht mehr änderbar, auch nicht diese Angaben. Flächenabdeckung steht in keinem Bericht.
