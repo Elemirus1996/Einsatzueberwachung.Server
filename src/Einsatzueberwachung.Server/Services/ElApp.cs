@@ -18,6 +18,7 @@ namespace Einsatzueberwachung.Server.Services;
 /// </summary>
 public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitung, string? sperrDatei = null)
 {
+    private const string VersionMitPerson = "e4";
     private const string Version = "e3";
     private const string VersionMitKennung = "e2";
     private const string VersionAlt = "e1";
@@ -68,23 +69,34 @@ public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitun
 
     /// <param name="ablaufUtc">Ablauf des Tokens</param>
     /// <param name="anmeldungUtc">Anmeldung mit Passwort; ohne Angabe jetzt (beim Verlaengern die des alten Tokens)</param>
-    public string Ausstellen(DateTime ablaufUtc, DateTime? anmeldungUtc = null)
+    /// <param name="personId">Wer die App bedient (APP_API EL Abschnitt 4a); null = nicht gewählt (Token e3)</param>
+    public string Ausstellen(DateTime ablaufUtc, DateTime? anmeldungUtc = null, string? personId = null)
     {
         static long Unix(DateTime zeit) => new DateTimeOffset(DateTime.SpecifyKind(zeit, DateTimeKind.Utc)).ToUnixTimeSeconds();
         var kennung = Convert.ToBase64String(RandomNumberGenerator.GetBytes(16)).Replace('+', '-').Replace('/', '_').TrimEnd('=');
-        var payload = $"{Version}.{leitung.Generation}.{Unix(ablaufUtc)}.{Unix(anmeldungUtc ?? DateTime.UtcNow)}.{kennung}";
+        var basis = $"{leitung.Generation}.{Unix(ablaufUtc)}.{Unix(anmeldungUtc ?? DateTime.UtcNow)}.{kennung}";
+        var payload = string.IsNullOrEmpty(personId)
+            ? $"{Version}.{basis}"
+            : $"{VersionMitPerson}.{basis}.{Base64Url(Encoding.UTF8.GetBytes(personId))}";
         return $"{payload}.{Signatur(payload)}";
     }
 
-    public bool TryPruefen(string? token, DateTime nowUtc, out DateTime ablaufUtc) => TryPruefen(token, nowUtc, out ablaufUtc, out _);
+    private static string Base64Url(byte[] daten) => Convert.ToBase64String(daten).Replace('+', '-').Replace('/', '_').TrimEnd('=');
 
-    public bool TryPruefen(string? token, DateTime nowUtc, out DateTime ablaufUtc, out DateTime anmeldungUtc)
+    public bool TryPruefen(string? token, DateTime nowUtc, out DateTime ablaufUtc) => TryPruefen(token, nowUtc, out ablaufUtc, out _, out _);
+
+    public bool TryPruefen(string? token, DateTime nowUtc, out DateTime ablaufUtc, out DateTime anmeldungUtc) =>
+        TryPruefen(token, nowUtc, out ablaufUtc, out anmeldungUtc, out _);
+
+    public bool TryPruefen(string? token, DateTime nowUtc, out DateTime ablaufUtc, out DateTime anmeldungUtc, out string? personId)
     {
         ablaufUtc = default;
         anmeldungUtc = default;
-        if (string.IsNullOrWhiteSpace(token) || token.Length > 256) return false;
+        personId = null;
+        if (string.IsNullOrWhiteSpace(token) || token.Length > 512) return false;
         var teile = token.Split('.');
-        var e3 = teile.Length == 6 && teile[0] == Version;
+        var e4 = teile.Length == 7 && teile[0] == VersionMitPerson;
+        var e3 = e4 || teile.Length == 6 && teile[0] == Version;
         var e2 = teile.Length == 5 && teile[0] == VersionMitKennung;
         var e1 = teile.Length == 4 && teile[0] == VersionAlt;
         if (!e3 && !e2 && !e1) return false;
@@ -96,6 +108,16 @@ public sealed class ElAppTokenService(byte[] hmacSecret, LeitungAuthStore leitun
         var payload = string.Join('.', teile[..^1]);
         if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(teile[^1]), Encoding.ASCII.GetBytes(Signatur(payload))))
             return false;
+
+        if (e4)
+        {
+            try
+            {
+                var b64 = teile[5].Replace('-', '+').Replace('_', '/');
+                personId = Encoding.UTF8.GetString(Convert.FromBase64String(b64.PadRight(b64.Length + (4 - b64.Length % 4) % 4, '=')));
+            }
+            catch (FormatException) { return false; }
+        }
 
         ablaufUtc = DateTimeOffset.FromUnixTimeSeconds(ablauf).UtcDateTime;
         anmeldungUtc = e3 ? DateTimeOffset.FromUnixTimeSeconds(anmeldung).UtcDateTime : ablaufUtc - Laufzeit;

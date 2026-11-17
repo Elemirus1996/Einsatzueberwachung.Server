@@ -199,7 +199,11 @@ public sealed partial class ElAppController
     private async Task<IActionResult> Aktion(string? id, Func<Task<IActionResult>> ausfuehren, bool laufenderEinsatzNoetig = true)
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
-        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _) || einsatz is null || aktionen is null) return Gone();
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _, out _, out var personId) || einsatz is null || aktionen is null) return Gone();
+        // Nur lesen (APP_API EL Abschnitt 4a); einen Einsatz anlegen darf jeder mit EL-Zugang
+        if (laufenderEinsatzNoetig && !ElRolle.DarfSteuern((await IchAsync(personId)).Rolle))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { error = "Nur Lesen: Steuern darf die Einsatzleitung (Einsatzleiter oder Führungsassistent dieses Einsatzes)." });
         if (string.IsNullOrWhiteSpace(id) || id.Length > 64)
             return BadRequest(new { error = "id fehlt oder ist zu lang (höchstens 64 Zeichen)." });
         if (ElPositionService.Laeuft(einsatz.CurrentEinsatz) != laufenderEinsatzNoetig)

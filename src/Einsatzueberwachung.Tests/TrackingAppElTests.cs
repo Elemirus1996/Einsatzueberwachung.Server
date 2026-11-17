@@ -82,7 +82,7 @@ public sealed class TrackingAppElTests : IDisposable
         var token = _tokens.Ausstellen(DateTime.UtcNow.AddHours(24));
         var t0 = DateTimeOffset.UtcNow.AddMinutes(-2).ToUnixTimeMilliseconds();
 
-        var antwort = Controller(positionen, token).PostPositions(Punkte((49.31, 8.43, t0 + 30_000), (49.30, 8.42, t0)));
+        var antwort = await Controller(positionen, token).PostPositions(Punkte((49.31, 8.43, t0 + 30_000), (49.30, 8.42, t0)));
 
         Assert.Equal("track", Modus(antwort));
         Assert.Equal("Tablet EL", gemeldet!.Geraet);
@@ -92,7 +92,7 @@ public sealed class TrackingAppElTests : IDisposable
 
         await einsatz.EndEinsatzAsync();
         Assert.Empty(positionen.Aktuell);
-        Assert.Equal("pause", Modus(Controller(positionen, token).GetStatus())); // angemeldet bleiben, GPS aus
+        Assert.Equal("pause", Modus(await Controller(positionen, token).GetStatus())); // angemeldet bleiben, GPS aus
     }
 
     [Fact]
@@ -101,10 +101,10 @@ public sealed class TrackingAppElTests : IDisposable
         var positionen = new ElPositionService(await LaufenderEinsatzAsync());
         var token = _tokens.Ausstellen(DateTime.UtcNow.AddHours(24));
 
-        Assert.IsType<NotFoundResult>(Controller(positionen, token, OeffentlicherPort).GetStatus());
+        Assert.IsType<NotFoundResult>(await Controller(positionen, token, OeffentlicherPort).GetStatus());
         Assert.False(PublicAccess.IsPublicPath(new PathString("/api/el/app/v1/positions")));
 
-        var ohne = Controller(positionen, null).PostPositions(Punkte((49.3, 8.4, 0)));
+        var ohne = await Controller(positionen, null).PostPositions(Punkte((49.3, 8.4, 0)));
         Assert.Equal(StatusCodes.Status410Gone, ((ObjectResult)ohne).StatusCode);
         Assert.Empty(positionen.Aktuell);
     }
