@@ -30,6 +30,7 @@ public sealed class ElAppEinsatzTests : IDisposable
     private readonly EinsatzAbschlussService _abschluss;
     private DateTime? _archiviertesEnde;
     private ArchivedEinsatz? _archiviert;
+    private VpnDeviceStore _vpn = null!;
     private List<string>? _archiviertesPersonal;
     private List<string>? _archivierteHunde;
     private readonly PersonalEntry _anna = new() { Vorname = "Anna", Nachname = "Berg", IsActive = true, Skills = PersonalSkills.Einsatzleiter };
@@ -48,6 +49,7 @@ public sealed class ElAppEinsatzTests : IDisposable
     public ElAppEinsatzTests()
     {
         Directory.CreateDirectory(_dir);
+        _vpn = new VpnDeviceStore(_dir);
         _leitung = new LeitungAuthStore(_dir);
         Assert.Null(_leitung.Setup(_leitung.SetupCode!, "Rettungshund2026", "Rettungshund2026"));
         _tokens = new ElAppTokenService(RandomNumberGenerator.GetBytes(64), _leitung);
@@ -92,7 +94,7 @@ public sealed class ElAppEinsatzTests : IDisposable
             nameof(IDiveraService.GetAlarmByIdAsync) => Task.FromResult((int)args![0]! == 7 ? Alarm() : null),
             _ => null
         });
-        var c = new ElAppController(_tokens, new ElPositionService(_einsatz), new LeitungsGeraetNamen(new VpnDeviceStore(_dir)),
+        var c = new ElAppController(_tokens, new ElPositionService(_einsatz), new LeitungsGeraetNamen(_vpn),
             new PublicAccess(5002), NullLogger<ElAppController>.Instance, null,
             _leitung, new LoginLockout(), null, _einsatz, null, settings.Proxy, null, null, _aktionen,
             abschluss: _abschluss, stammdaten: stammdaten.Proxy, divera: divera.Proxy, zeit: new Uhr(),
@@ -327,6 +329,33 @@ public sealed class ElAppEinsatzTests : IDisposable
         Assert.True(_tokens.TryPruefen(token, DateTime.UtcNow, out _, out _, out var personId));
         Assert.Equal(_anna.Id, personId);
         Assert.False(_tokens.TryPruefen(_token, DateTime.UtcNow, out _)); // altes Token gesperrt
+
+        // Kein Wechsel: mit Person im Token 409, Wechsel nur über Abmelden und neue Anmeldung
+        Assert.IsType<ConflictObjectResult>(await Controller(token: token).Ich(new ElAppController.ElIchRequest(_ben.Id)));
+    }
+
+    [Fact]
+    public async Task VpnGeraetMitPerson_AnmeldungMitFesterPerson_KeinWechsel_GeraetVorToken()
+    {
+        // Das Testgerät hat die VPN-Adresse 10.10.0.9 (Controller)
+        _vpn.Add(new VpnDevice { Name = "Handy Carla", PublicKey = "pk1", Ip = "10.10.0.9/32" });
+        _vpn.SetPerson("pk1", _carla.Id);
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzStarten(Start() with { Einsatzleiter = "Carla Diehl", AlarmiertDurch = "Polizei" }));
+
+        var anmeldung = Json(await Controller().Login(new ElAppController.ElLoginRequest("Rettungshund2026", null)));
+        var token = anmeldung.GetProperty("token").GetString()!;
+        Assert.True(_tokens.TryPruefen(token, DateTime.UtcNow, out _, out _, out var person));
+        Assert.Equal(_carla.Id, person);
+        Assert.True(anmeldung.GetProperty("ich").GetProperty("fest").GetBoolean());
+        Assert.Equal("einsatzleiter", anmeldung.GetProperty("ich").GetProperty("rolle").GetString());
+
+        // Auch ein Token ohne Person (ältere App) oder mit anderer Person gilt auf diesem Gerät als Carla
+        Assert.IsType<ConflictObjectResult>(await Controller().Ich(new ElAppController.ElIchRequest(_anna.Id)));
+        var fremd = _tokens.Ausstellen(DateTime.UtcNow.AddHours(1), DateTime.UtcNow, _anna.Id);
+        Assert.Equal("Carla Diehl", Json(await Controller(token: fremd).GetLage()).GetProperty("ich").GetProperty("name").GetString());
+
+        _vpn.SetPerson("pk1", null);
+        Assert.Equal("Anna Berg", Json(await Controller(token: fremd).GetLage()).GetProperty("ich").GetProperty("name").GetString());
     }
 
     [Fact]

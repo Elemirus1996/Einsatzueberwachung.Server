@@ -35,7 +35,15 @@ public sealed partial class ElAppController
 
         var ablaufUtc = jetzt + ElAppTokenService.Laufzeit;
         audit?.Log("Anmeldung Einsatzleitung (App)", Geraet(anfrage.Geraet));
-        return Ok(await AnmeldeAntwortAsync(tokens.Ausstellen(ablaufUtc, jetzt), ablaufUtc, jetzt));
+        // Feste Person des VPN-Geraets gleich ins Token; die App fragt dann nicht nach (APP_API EL Abschnitt 4a)
+        var personId = geraete.PersonFuer(HttpContext.Connection.RemoteIpAddress);
+        object? ich = null;
+        if (personId is not null)
+        {
+            var i = await IchAsync(personId);
+            ich = new { personId = i.PersonId, name = i.Name, rolle = i.Rolle, fest = true };
+        }
+        return Ok(await AnmeldeAntwortAsync(tokens.Ausstellen(ablaufUtc, jetzt, personId), ablaufUtc, jetzt, ich: ich));
     }
 
     public sealed record ElVerlaengernRequest(string? Geraet);
@@ -62,7 +70,8 @@ public sealed partial class ElAppController
         return Ok(await AnmeldeAntwortAsync(neu, neuAblauf, anmeldung, mitAnmeldung: true));
     }
 
-    private async Task<object> AnmeldeAntwortAsync(string token, DateTime ablaufUtc, DateTime anmeldungUtc, bool mitAnmeldung = false)
+    private async Task<object> AnmeldeAntwortAsync(string token, DateTime ablaufUtc, DateTime anmeldungUtc, bool mitAnmeldung = false,
+        object? ich = null)
     {
         var staffel = einstellungen is null ? "" : (await einstellungen.GetStaffelSettingsAsync())?.StaffelName ?? "";
         var server = new
@@ -74,7 +83,7 @@ public sealed partial class ElAppController
         };
         var datenschutz = await AppDatenschutzAntwort.GanzAsync(einstellungen); // #148: die EL-App fragt beim ersten Login
         if (!mitAnmeldung)
-            return new { apiVersion = TeamMobileAppController.ApiVersion, rolle = "el", token, expiresAt = ablaufUtc, server, datenschutz };
+            return new { apiVersion = TeamMobileAppController.ApiVersion, rolle = "el", token, expiresAt = ablaufUtc, server, datenschutz, ich };
         return new
         {
             apiVersion = TeamMobileAppController.ApiVersion,
@@ -189,12 +198,13 @@ public sealed partial class ElAppController
     public TimeSpan PingIntervall { get; set; } = TimeSpan.FromSeconds(20);
 
     /// <summary>Name fuer das Audit-Log: VPN-Geraet, sonst Angabe der App, sonst „Einsatzleitung“</summary>
+    /// <summary>Gerätename fürs Audit-Log, mit Person, sobald sie bekannt ist („Handy Paul (Paul Richter)“)</summary>
     private string Geraet(string? angabe)
     {
         var vpn = geraete.NameFuer(HttpContext.Connection.RemoteIpAddress);
-        if (vpn is not null) return vpn;
         var eigen = (angabe ?? "").Trim();
-        return eigen.Length is > 0 and <= 40 ? eigen : LeitungsGeraetNamen.Einsatzleitung;
+        var name = vpn ?? (eigen.Length is > 0 and <= 40 ? eigen : LeitungsGeraetNamen.Einsatzleitung);
+        return HttpContext.Items[PersonImProtokoll] is string person ? $"{name} ({person})" : name;
     }
 }
 

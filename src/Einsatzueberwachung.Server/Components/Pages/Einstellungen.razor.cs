@@ -878,11 +878,14 @@ private async Task SetDesignModeAsync(bool darkMode)
     [Inject] private LeitungAuthStore LeitungAuthStore { get; set; } = default!;
     [Inject] private VpnDeviceService VpnDevices { get; set; } = default!;
     [Inject] private VpnDeviceStore VpnDeviceStore { get; set; } = default!;
+    [Inject] private Einsatzueberwachung.Domain.Interfaces.IAuditLogService AuditLog { get; set; } = default!;
 
     private sealed record VpnDeviceRow(VpnDevice Device, DateTime? LastHandshakeUtc);
 
     private VpnServerInfo? _vpnServer;
     private List<VpnDeviceRow> _vpnDevices = [];
+    /// <summary>Aktives Personal fuer die feste Person je VPN-Geraet (EL-App, APP_API EL Abschnitt 4a)</summary>
+    private List<PersonalEntry> _vpnPersonen = [];
     private string _vpnEndpoint = string.Empty;
     private string _vpnName = string.Empty;
     private int _vpnValidityDays;
@@ -914,12 +917,23 @@ private async Task SetDesignModeAsync(bool darkMode)
                 .Select(d => new VpnDeviceRow(d, status.GetValueOrDefault(d.PublicKey)))
                 .OrderBy(d => d.Device.Name)
                 .ToList();
+            _vpnPersonen = SelectionListOrdering.OrderPersonnelByFirstName(
+                (await MasterDataService.GetPersonalListAsync()).Where(p => p.IsActive)).ToList();
         }
         catch (Exception ex)
         {
             SetVpnMessage($"VPN-Status nicht lesbar: {ex.Message}", true);
         }
         await InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Feste Person des Geraets: die EL-App fragt dort nicht mehr, wer sie bedient, und ein Wechsel ist nicht moeglich</summary>
+    private void VpnPersonSetzen(VpnDevice geraet, string? personId)
+    {
+        VpnDeviceStore.SetPerson(geraet.PublicKey, personId);
+        var name = _vpnPersonen.FirstOrDefault(p => p.Id == personId)?.FullName;
+        AuditLog.Log("VPN-Gerät Person zugeordnet", $"{geraet.Name}: {name ?? "bei Anmeldung wählen"}");
+        SetVpnMessage(name is null ? $"{geraet.Name}: Person wird bei der Anmeldung gewählt." : $"{geraet.Name} gehört jetzt {name}.", false);
     }
 
     private void SaveVpnEndpoint()

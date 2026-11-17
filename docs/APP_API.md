@@ -507,9 +507,16 @@ EL-Handys im ELW sich nicht in die Quere kommen: nur die Einsatzleitung steuert 
 `{ "personen": [ { "personId": "…", "name": "Anna Berg", "einsatzleiter": true, "fuehrungsassistent": false } ] }`
 (`einsatzleiter`/`fuehrungsassistent` = Qualifikation laut Stammdaten, nur als Hinweis bei der Auswahl).
 
-**`POST /ich`** `{ "personId": "…" }`: neues Token mit dieser Person (gleicher Ablauf, gleiche Anmeldung, also keine Verlängerung);
-das alte ist danach gesperrt wie bei `/verlaengern`. Antwort wie `/verlaengern`, zusätzlich `ich` (siehe unten). Unbekannte oder
-inaktive Person → `400`. Darf jederzeit erneut aufgerufen werden (Person wechseln). Eintrag im Audit-Log.
+**Feste Person am VPN-Gerät** (Einstellungen → System → VPN-Geräte, Spalte „Person (EL-App)“): Ist dem Gerät eine Person
+zugeordnet, gilt sie immer – `POST /login` stellt das Token gleich mit dieser Person aus und antwortet zusätzlich mit
+`"ich": { "personId", "name", "rolle", "fest": true }`; die App fragt dann nicht. Die Person des Geräts geht auch vor einer Person
+im Token (z. B. Token einer älteren App).
+
+**`POST /ich`** `{ "personId": "…" }` (nur ohne feste Person am Gerät): Person **einmal** wählen. Neues Token mit dieser Person
+(gleicher Ablauf, gleiche Anmeldung, also keine Verlängerung); das alte ist danach gesperrt wie bei `/verlaengern`. Antwort
+`{ "anmeldung": <wie /verlaengern>, "ich": { "personId", "name", "rolle" } }`. Unbekannte oder inaktive Person → `400`.
+**Kein Wechsel** (Entscheidung Paul 17.11.2026): Steht schon eine Person im Token oder am Gerät → `409`. Eine andere Person geht
+nur über Abmelden und neue Anmeldung mit dem Staffel-Passwort. Das Audit-Log nennt bei jeder Aktion Gerät und Person.
 `/verlaengern` behält die Person.
 
 **Rolle** (`ich.rolle`), bei jeder Anfrage neu aus dem laufenden Einsatz bestimmt (Vergleich mit dem Namen in den Einsatzdaten):
@@ -526,8 +533,10 @@ inaktive Person → `400`. Darf jederzeit erneut aufgerufen werden (Person wechs
   verwirft die Punkte dann (`accepted = 0`). Die App sendet in diesen Rollen nichts.
 - `GET /lage` enthält `"ich": { "personId": "…", "name": "Anna Berg", "rolle": "einsatzleiter" }`. Ändert sich der Einsatzleiter im
   Monitor, gilt die neue Rolle ab der nächsten Anfrage; die App lädt `/lage` bei jedem Ereignis ohnehin neu.
-- **Ohne gewählte Person** (Apps vor 1.17.0, Token ohne Person): Rolle `einsatzleiter` wie bisher, `ich.personId = null`. Die App
-  ab 1.17.0 fragt nach der Anmeldung immer nach der Person, bevor sie die Lage zeigt.
+- **Ohne gewählte Person** (Apps vor 1.17.0, Token ohne Person, Gerät ohne feste Person): Rolle `einsatzleiter` wie bisher,
+  `ich.personId = null`. Die App ab 1.17.0 fragt nach der Anmeldung nach der Person, bevor sie die Lage zeigt – außer `/login`
+  brachte schon `ich` mit.
+- Mit Rolle `lesen` blendet die App Steuerknöpfe aus (Start, Aktionen, Beenden, Funk schreiben, Vermisste ändern), statt sie nur zu sperren.
 - Token-Format `e4.…` (mit Person); `e3` gilt weiter (ohne Person).
 
 **Ein Handy, zwei Rollen:** Ist auf dem Handy zusätzlich ein Team angemeldet, sendet es seinen Standort nur als Team (die Ortung der
