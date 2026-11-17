@@ -36,6 +36,8 @@ namespace Einsatzueberwachung.Domain.Models
         public string EinsatzNummer { get; set; } = string.Empty;
         public string Vorgangsnummer { get; set; } = string.Empty;
         public EinsatzFund Fund { get; set; } = new();
+        public AlarmiertDurch? AlarmiertDurch { get; set; }
+        public bool KeinePolizei { get; set; }
         public bool EinsatzkontakteMigriert { get; set; }
         public string PolizeiKontaktName { get; set; } = string.Empty;
         public string PolizeiDienstnummer { get; set; } = string.Empty;
@@ -140,6 +142,8 @@ namespace Einsatzueberwachung.Domain.Models
                 EinsatzNummer = data.EinsatzNummer,
                 Vorgangsnummer = data.Vorgangsnummer ?? string.Empty,
                 Fund = data.Fund ?? new(),
+                AlarmiertDurch = data.AlarmiertDurch,
+                KeinePolizei = data.KeinePolizei,
                 EinsatzkontakteMigriert = data.EinsatzkontakteMigriert,
                 PolizeiKontaktName = data.PolizeiKontaktName,
                 PolizeiDienstnummer = data.PolizeiDienstnummer,

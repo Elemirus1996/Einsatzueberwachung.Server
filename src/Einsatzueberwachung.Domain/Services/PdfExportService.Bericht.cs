@@ -109,7 +109,7 @@ namespace Einsatzueberwachung.Domain.Services
             var felder = new (string Titel, string Wert)[]
             {
                 ("Einsatznummer", Leer(einsatz.EinsatzNummer)),
-                ("Vorgangsnummer Polizei", Leer(einsatz.Vorgangsnummer)),
+                ("Vorgangsnummer Polizei", einsatz.KeinePolizei && string.IsNullOrWhiteSpace(einsatz.Vorgangsnummer) ? "keine Polizei" : Leer(einsatz.Vorgangsnummer)),
                 ("Datum", (einsatz.AlarmierungsZeit ?? einsatz.EinsatzDatum).ToString("dd.MM.yyyy")),
                 ("Art", art)
             };
@@ -179,16 +179,20 @@ namespace Einsatzueberwachung.Domain.Services
         private static void ComposeBerichtPolizei(IContainer container, ArchivedEinsatz einsatz)
         {
             var kontakte = EinsatzKontaktDaten.From(einsatz);
+            var keinePolizei = einsatz.KeinePolizei && string.IsNullOrWhiteSpace(kontakte.PolizeiKontaktName);
             container.Column(col =>
             {
                 BerichtUeberschrift(col, "Polizei");
-                col.Item().Element(c => BerichtFelder(c, new List<(string, string)>
-                {
-                    ("Ansprechpartner", Leer(kontakte.PolizeiKontaktName)),
-                    ("Dienstnummer", Leer(kontakte.PolizeiDienstnummer)),
-                    ("Telefon", Leer(kontakte.PolizeiTelefon)),
-                    ("Alarmiert durch", Leer(AbschlussAngaben.Melder(einsatz.Alarmiert)))
-                }, 0.42f));
+                var felder = keinePolizei
+                    ? new List<(string, string)> { ("Polizei", "keine Polizei beteiligt") }
+                    : new List<(string, string)>
+                    {
+                        ("Ansprechpartner", Leer(kontakte.PolizeiKontaktName)),
+                        ("Dienstnummer", Leer(kontakte.PolizeiDienstnummer)),
+                        ("Telefon", Leer(kontakte.PolizeiTelefon))
+                    };
+                felder.Add(("Alarmiert durch", Leer(AlarmiertText(einsatz))));
+                col.Item().Element(c => BerichtFelder(c, felder, 0.42f));
             });
         }
 
@@ -226,7 +230,7 @@ namespace Einsatzueberwachung.Domain.Services
         {
             var eintraege = new List<(DateTime Zeit, string Text)>();
             if (einsatz.AlarmierungsZeit is { } alarm)
-                eintraege.Add((alarm, AbschlussAngaben.Melder(einsatz.Alarmiert) is { Length: > 0 } melder ? $"Alarmierung durch {melder}" : "Alarmierung"));
+                eintraege.Add((alarm, AlarmiertText(einsatz) is { Length: > 0 } melder ? $"Alarmierung durch {melder}" : "Alarmierung"));
             var ort = string.IsNullOrWhiteSpace(einsatz.Einsatzort) ? "" : $", Einsatzort {einsatz.Einsatzort}";
             eintraege.Add((einsatz.EinsatzDatum, $"Einsatz eröffnet{ort}"));
 
@@ -439,6 +443,16 @@ namespace Einsatzueberwachung.Domain.Services
         {
             foreach (var w in werte)
                 t.Cell().BorderBottom(1).BorderColor(BerichtLinie).PaddingVertical(2.5f).PaddingRight(4).Text(w).FontSize(9.5f);
+        }
+
+        /// <summary>„Polizei · PI Dortmund-Nord“; Art allein oder Stelle allein, wenn nur eins bekannt ist</summary>
+        private static string AlarmiertText(ArchivedEinsatz einsatz)
+        {
+            var art = einsatz.AlarmiertDurch?.Anzeige() ?? "";
+            var stelle = AbschlussAngaben.Melder(einsatz.Alarmiert);
+            if (art.Length == 0) return stelle;
+            if (stelle.Length == 0 || string.Equals(stelle, art, StringComparison.OrdinalIgnoreCase)) return art;
+            return $"{art} · {stelle}";
         }
 
         private static string Leer(string? wert) => string.IsNullOrWhiteSpace(wert) ? "–" : wert.Trim();

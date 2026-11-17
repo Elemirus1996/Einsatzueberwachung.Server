@@ -533,7 +533,7 @@ Staffel-Passwort ab (`POST /login`). Ein Team-Code (`/team/login/…`) bleibt ei
 | `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen", "fund": false } ]` – `fund` ab Server 1.17.0 (Abschnitt 10) |
 | `GET /einsatz/vorort` | Anwesenheit für das Einsatzende wie in `/el/beenden`: `{ "personal": [ { "id", "name", "vorausgewaehlt" } ], "hunde": [ { "id", "name", "vorausgewaehlt" } ] }` – nur aktive Einträge der Stammdaten, Personal nach Vorname, Hunde nach Name; `vorausgewaehlt` = in einem Team eingeteilt. Ab Server 1.14.1, ältere Server antworten `404` |
 | `GET /einsatz/bericht/{archivId}` | Einsatzbericht eines beendeten Einsatzes als PDF (`application/pdf`, Dateiname `einsatzbericht-<Einsatznummer>.pdf`), Inhalt wie der Download im Archiv. Optional `?karte=Streets` (`Streets` · `Topographic` · `Satellite`, Unbekanntes = `Streets`), `teams=<teamId>,<teamId>` (ohne = alle), `tracks=0` (ohne Tracks), ab Server 1.17.0 `abschnitte=` (Abschnitt 10). `archivId` aus der Antwort von `/einsatz/beenden`. Unbekannt → `404` + `{ "error" }`, Fehler beim Erstellen `500` + `{ "error" }`. Abruf steht im Audit-Log. Ab Server 1.15.0, ältere Server antworten `404` |
-| `GET /einsatz/vorlage` | Auswahllisten wie in `/el/start`: `{ "aktiv", "szenarien": ["Mantrailer", …], "divera": [ { "id", "titel", "ort", "lat", "lng", "zeit" } ], "einsatzleiter": ["Anna Berg"], "fuehrungsassistenten": […], "ergebnisse": […], "kartenarten": [ { "wert": "Streets", "anzeige": "Straßenkarte" } ] }` – `divera` leer, wenn Divera nicht eingerichtet oder nicht erreichbar ist |
+| `GET /einsatz/vorlage` | Auswahllisten wie in `/el/start`: `{ "aktiv", "szenarien": ["Mantrailer", …], "divera": [ { "id", "titel", "ort", "lat", "lng", "zeit" } ], "einsatzleiter": ["Anna Berg"], "fuehrungsassistenten": […], "ergebnisse": […], "kartenarten": [ { "wert": "Streets", "anzeige": "Straßenkarte" } ], "alarmiertDurch": [ { "wert": "Polizei", "anzeige": "Polizei" } ] }` – `alarmiertDurch` ab Server 1.17.0 – `divera` leer, wenn Divera nicht eingerichtet oder nicht erreichbar ist |
 
 ### 7. Aktionen
 
@@ -554,7 +554,7 @@ und wiederholen.
 | `/vermisste/{profilId}/entfernen` | – | entfernen |
 | `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` (bei `typ = jaNein`) bzw. `wert` (bei `auswahl` und `text`) | Checklistenpunkt setzen, ohne `version` |
 | `/szenario` | `szenario` | Szenario des Einsatzes |
-| `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional) | wie `/el/start`; läuft schon ein Einsatz → `409` |
+| `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional); ab Server 1.17.0 `alarmiertDurch` und `melder` (Abschnitt 10) | wie `/el/start`; läuft schon ein Einsatz → `409` |
 | `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null, "punkte": false }` – `kartenart`: `Streets` · `Topographic` · `Satellite`, sonst `400`; optional `personalIds`, `hundeIds` (IDs aus `/einsatz/vorort`); ab Server 1.17.0 `abschluss`, `unvollstaendigBestaetigt`, `pdf.abschnitte` (Abschnitt 10) | wie `/el/beenden` |
 
 Antwort jeder Aktion: `200` + `{ "doppelt": false, … }`, beim Anlegen mit der neuen Kennung des Objekts (z. B. `notizId`).
@@ -707,6 +707,18 @@ Die Grenze von 10 Verbindungen gilt **je Token**, nicht je Team. Bei Einsatzende
 Grundlage für den neuen Einsatzbericht. Ältere Server liefern die Felder nicht bzw. antworten `404`; die Apps blenden dann alles
 dazu aus und beenden wie bisher.
 
+**Alarmiert durch.** Pflichtfrage beim Anlegen (Monitor, `/el/start`, EL-App): `alarmiertDurch` = `Polizei` · `Feuerwehr` ·
+`Rettungsdienst` · `AndereStaffel`, dazu optional `melder` als Freitext (Stelle oder Name, höchstens 200 Zeichen).
+
+- `POST /einsatz/start` nimmt beide Felder. Die App fragt die Art immer ab, auch beim Start aus Divera: Der Divera-Melder wird
+  nur als Freitext übernommen, die Art wählt die Einsatzleitung. Unbekannter Wert → `400`. Ohne Feld (Apps vor 1.17.0) startet
+  der Server trotzdem; die Art fehlt dann und wird beim Einsatzende abgefragt.
+- `/lage` (EL-Rolle) zeigt `einsatz.alarmiertDurch` (`null` = noch nicht gewählt), `/einsatz/vorlage` die Liste `alarmiertDurch`.
+
+**Polizeiangaben** (Vorgangsnummer, Polizeikontakt) sind nur gefragt, wenn der Einsatz von der Polizei alarmiert wurde – bei
+Übungen nie. Im Beenden-Dialog gibt es dazu „Keine Polizei beteiligt“ (`keinePolizei`): Dann gelten die Polizeiangaben als
+erledigt, und der Bericht zeigt „keine Polizei beteiligt“ statt leerer Felder.
+
 **Einsatzart.** `einsatzart` steht am Team in `/lage` (beide Rollen) und je Suche in `/tracks` → `abgeschlossen[]`:
 `Flaeche` · `Truemmer` · `Mantrailer` · `Wasser` · `Lawine` oder `null` (nicht festgelegt).
 
@@ -723,8 +735,12 @@ aus dem Track; Abbruchgrund und Geruchsartikel kommen aus dem Abschluss.
 
 ```json
 {
+  "uebung": false,
+  "alarmiertDurch": "Polizei",
+  "keinePolizei": false,
+  "polizeiGefragt": true,
   "vorgangsnummer": "",
-  "melder": "ILS Rhein-Neckar",
+  "melder": "PI Dortmund-Nord",
   "polizei": { "name": "PHK Meier", "dienstnummer": "", "telefon": "0621 …" },
   "fund": { "zeit": null, "lat": null, "lng": null, "ort": "", "uebergabeAn": "", "teamId": null,
             "vorschlag": { "lat": 49.312, "lng": 8.431, "zeit": "…Z", "teamId": "…" } },
@@ -736,20 +752,22 @@ aus dem Track; Abbruchgrund und Geruchsartikel kommen aus dem Abschluss.
 }
 ```
 
-- `melder` = „Alarmiert durch“ des Einsatzes, `polizei` = Polizeikontakt wie in `/vermisste`.
+- `melder` = Stelle oder Name zu „Alarmiert durch“ (Freitext, optional), `polizei` = Polizeikontakt wie in `/vermisste`.
+- `polizeiGefragt`: `true`, wenn Vorgangsnummer und Polizeikontakt abgefragt werden (Einsatz, `alarmiertDurch = Polizei`,
+  nicht `keinePolizei`). Die App blendet die Polizeifelder sonst aus oder zeigt sie als freiwillig.
 - `fund.teamId`: Team, das gefunden hat („Gefunden durch“ im Bericht); der Vorschlag bringt es mit.
 - `fund.vorschlag`: jüngster Kartenpunkt mit `typ = fund` (Team-Rolle Abschnitt 13, im Monitor ebenso setzbar), sonst `null`. Die App übernimmt ihn nur auf Wunsch.
 - `abbruchgruende`: feste Liste für `trails[].abbruchgrund`, in den Server-Einstellungen anpassbar (oben die Vorgabe).
   Ein gespeicherter Grund bleibt, auch wenn er später aus der Liste entfernt wird.
 - `teams[].erlaubt`: Spezialisierungen des Hundes, die als Einsatzart in Frage kommen; leer = alle fünf.
-- `fehlend`: Angaben, die noch leer sind – `vorgangsnummer`, `melder`, `polizei` (Name leer), `teams` (ein Team ohne Einsatzart),
-  `trails` (ein Trail ohne Abbruchgrund oder Geruchsartikel). `fund` steht nie darin, weil es vom Ergebnis abhängt: Die App fragt
+- `fehlend`: Angaben, die noch leer sind – `alarmiertDurch` (nur Einsätze), `vorgangsnummer` und `polizei` (Name leer; beide nur
+  bei `polizeiGefragt`), `teams` (ein Team ohne Einsatzart), `trails` (ein Trail ohne Abbruchgrund oder Geruchsartikel). `fund` steht nie darin, weil es vom Ergebnis abhängt: Die App fragt
   den Fund ab, wenn das gewählte Ergebnis `fund: true` hat (neu in `/einsatz/ergebnisse`).
 - Kein laufender Einsatz → `409`.
 
 **`POST /einsatz/beenden`** bekommt zusätzlich, alles optional:
 
-- `abschluss`: `{ "vorgangsnummer", "melder", "polizei": { "name", "dienstnummer", "telefon" }, "fund": { "zeit", "lat", "lng", "ort", "uebergabeAn", "teamId" },
+- `abschluss`: `{ "alarmiertDurch", "keinePolizei", "vorgangsnummer", "melder", "polizei": { "name", "dienstnummer", "telefon" }, "fund": { "zeit", "lat", "lng", "ort", "uebergabeAn", "teamId" },
   "teams": [ { "teamId", "einsatzart" } ], "trails": [ { "sucheId", "abbruchgrund", "geruchsartikel" } ] }`.
   Fehlende Felder bleiben, wie sie sind; Texte höchstens 200 Zeichen. `abbruchgrund` muss aus `abbruchgruende` sein. `fund.zeit` in UTC wie `endzeit`. Unbekannte `teamId`/`sucheId`
   oder eine `einsatzart` außerhalb der Liste → `400`. Der Server speichert die Angaben vor dem Beenden.

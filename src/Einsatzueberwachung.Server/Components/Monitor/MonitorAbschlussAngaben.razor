@@ -4,12 +4,36 @@
     <div class="small fw-semibold mb-2">Angaben für den Bericht</div>
     <div class="row g-2">
         <div class="col-12 col-md-6">
-            <label class="form-label" for="abschluss-vorgang">Vorgangsnummer Polizei</label>
-            <input id="abschluss-vorgang" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.Vorgangsnummer" placeholder="z. B. PP DO 2026/118742" />
+            <label class="form-label" for="abschluss-art">Alarmiert durch</label>
+            <select id="abschluss-art" class="form-select" @bind="Model.AlarmiertDurch">
+                <option value="">Bitte wählen</option>
+                @foreach (var art in AlarmiertDurchExtensions.Alle)
+                {
+                    <option value="@art">@art.Anzeige()</option>
+                }
+            </select>
         </div>
         <div class="col-12 col-md-6">
-            <label class="form-label" for="abschluss-melder">Alarmiert durch</label>
-            <input id="abschluss-melder" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.Melder" placeholder="z. B. Polizei Dortmund" />
+            <label class="form-label" for="abschluss-melder">Stelle oder Name</label>
+            <input id="abschluss-melder" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.Melder" placeholder="z. B. PI Dortmund-Nord (optional)" />
+        </div>
+        @if (Model.IstEinsatz)
+        {
+            <div class="col-12">
+                <label class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" @bind="Model.KeinePolizei" />
+                    <span class="form-check-label">Keine Polizei beteiligt</span>
+                </label>
+            </div>
+        }
+    </div>
+
+    @if (!Model.KeinePolizei)
+    {
+    <div class="row g-2 mt-1">
+        <div class="col-12 col-md-6">
+            <label class="form-label" for="abschluss-vorgang">Vorgangsnummer Polizei</label>
+            <input id="abschluss-vorgang" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.Vorgangsnummer" placeholder="z. B. PP DO 2026/118742" />
         </div>
         <div class="col-12 col-md-5">
             <label class="form-label" for="abschluss-polizei">Polizeikontakt</label>
@@ -24,6 +48,7 @@
             <input id="abschluss-telefon" class="form-control" maxlength="@AbschlussAngaben.MaxTextLaenge" @bind="Model.PolizeiTelefon" />
         </div>
     </div>
+    }
 
     @if (ErgebnisText.IstFund(Ergebnis))
     {

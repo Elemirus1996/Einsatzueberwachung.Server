@@ -215,6 +215,7 @@ public static class ElLage
                 stichwort = e.Stichwort ?? "",
                 ort = e.Einsatzort ?? "",
                 szenario = e.Szenario.ToString(),
+                alarmiertDurch = e.AlarmiertDurch?.ToString(),
                 uebung = !e.IstEinsatz,
                 beginn = aktiv ? AppZeit.Utc(e.AlarmierungsZeit ?? e.EinsatzDatum) : (DateTime?)null,
                 einsatzleiter = e.Einsatzleiter ?? "",

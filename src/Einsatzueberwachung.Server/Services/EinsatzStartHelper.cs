@@ -61,11 +61,13 @@ public static class EinsatzStartHelper
         model.ElwPosition = (lat, lng);
     }
 
-    /// <summary>Pflichtangaben pruefen; null = in Ordnung.</summary>
-    public static string? Validate(EinsatzData model)
+    /// <summary>Pflichtangaben pruefen; null = in Ordnung. artPflicht: „Alarmiert durch“ muss gewählt sein (Seiten; die
+    /// EL-App-Schnittstelle laesst sie fuer aeltere Apps offen, dann fragt der Abschluss nach).</summary>
+    public static string? Validate(EinsatzData model, bool artPflicht = true)
     {
         if (string.IsNullOrWhiteSpace(model.Einsatzort)) return "Bitte Einsatzort ausfüllen.";
         if (model.Szenario == EinsatzSzenarioType.Unbestimmt) return "Bitte ein Szenario auswählen.";
+        if (artPflicht && model.AlarmiertDurch is null) return "Bitte auswählen, wer alarmiert hat.";
         return null;
     }
 }

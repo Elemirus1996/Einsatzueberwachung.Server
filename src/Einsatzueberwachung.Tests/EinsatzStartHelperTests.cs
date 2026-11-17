@@ -59,7 +59,7 @@ public class EinsatzStartHelperTests
     }
 
     [Fact]
-    public void Pflichtangaben_OrtUndSzenario()
+    public void Pflichtangaben_OrtSzenarioUndAlarmiertDurch()
     {
         var model = new EinsatzData { Einsatzort = "", Szenario = EinsatzSzenarioType.Flaeche };
         Assert.Equal("Bitte Einsatzort ausfüllen.", EinsatzStartHelper.Validate(model));
@@ -69,6 +69,10 @@ public class EinsatzStartHelperTests
         Assert.Equal("Bitte ein Szenario auswählen.", EinsatzStartHelper.Validate(model));
 
         model.Szenario = EinsatzSzenarioType.Mantrailer;
+        Assert.Equal("Bitte auswählen, wer alarmiert hat.", EinsatzStartHelper.Validate(model));
+        Assert.Null(EinsatzStartHelper.Validate(model, artPflicht: false)); // EL-App vor 1.17.0
+
+        model.AlarmiertDurch = AlarmiertDurch.Feuerwehr;
         Assert.Null(EinsatzStartHelper.Validate(model));
     }
 

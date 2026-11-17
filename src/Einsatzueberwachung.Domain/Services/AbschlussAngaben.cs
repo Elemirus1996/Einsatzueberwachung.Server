@@ -19,7 +19,9 @@ namespace Einsatzueberwachung.Domain.Services
         AbschlussPolizei? Polizei = null,
         AbschlussFund? Fund = null,
         IReadOnlyList<AbschlussTeam>? Teams = null,
-        IReadOnlyList<AbschlussTrail>? Trails = null);
+        IReadOnlyList<AbschlussTrail>? Trails = null,
+        string? AlarmiertDurch = null,
+        bool? KeinePolizei = null);
 
     /// <summary>
     /// Was der Beenden-Dialog abfragt: fehlende Angaben ermitteln und Eingaben prüfen und übernehmen.
@@ -69,16 +71,23 @@ namespace Einsatzueberwachung.Domain.Services
             einsatz.MapMarkers?.Where(m => m.IstFund).OrderByDescending(m => m.CreatedAt).FirstOrDefault();
 
         /// <summary>
-        /// Noch leere Angaben: vorgangsnummer, melder, polizei, teams, trails – mit Ergebnis zusätzlich fund,
-        /// wenn das Ergebnis ein Fund ist.
+        /// Polizeiangaben sind gefragt bei einem Einsatz (keine Übung), den die Polizei alarmiert hat, solange nicht
+        /// „Keine Polizei beteiligt“ bestätigt ist (Entscheidung Paul 17.11.2026).
+        /// </summary>
+        public static bool PolizeiGefragt(EinsatzData einsatz) =>
+            einsatz.IstEinsatz && einsatz.AlarmiertDurch == Models.Enums.AlarmiertDurch.Polizei && !einsatz.KeinePolizei;
+
+        /// <summary>
+        /// Noch leere Angaben: alarmiertDurch (nur Einsätze), vorgangsnummer und polizei (nur wenn PolizeiGefragt),
+        /// teams, trails – mit Ergebnis zusätzlich fund, wenn das Ergebnis ein Fund ist.
         /// </summary>
         public static List<string> Fehlend(EinsatzData einsatz, IEnumerable<Team> teams, string? ergebnis = null)
         {
             var liste = teams.ToList();
             var fehlend = new List<string>();
-            if (string.IsNullOrWhiteSpace(einsatz.Vorgangsnummer)) fehlend.Add("vorgangsnummer");
-            if (Melder(einsatz.Alarmiert).Length == 0) fehlend.Add("melder");
-            if (string.IsNullOrWhiteSpace(einsatz.PolizeiKontaktName)) fehlend.Add("polizei");
+            if (einsatz.IstEinsatz && einsatz.AlarmiertDurch is null) fehlend.Add("alarmiertDurch");
+            if (PolizeiGefragt(einsatz) && string.IsNullOrWhiteSpace(einsatz.Vorgangsnummer)) fehlend.Add("vorgangsnummer");
+            if (PolizeiGefragt(einsatz) && string.IsNullOrWhiteSpace(einsatz.PolizeiKontaktName)) fehlend.Add("polizei");
             if (Hundeteams(liste).Any(t => t.Einsatzart is null)) fehlend.Add("teams");
             if (Trails(einsatz, liste).Any(s => string.IsNullOrWhiteSpace(s.Abbruchgrund) || string.IsNullOrWhiteSpace(s.Geruchsartikel)))
                 fehlend.Add("trails");
@@ -97,6 +106,8 @@ namespace Einsatzueberwachung.Domain.Services
             if (Pruefen(einsatz, teams, eingabe, abbruchgruende, nowUtc) is { } fehler)
                 return fehler;
 
+            if (Models.Enums.AlarmiertDurchExtensions.AusApiWert(eingabe.AlarmiertDurch) is { } alarmiert) einsatz.AlarmiertDurch = alarmiert;
+            if (eingabe.KeinePolizei is { } keine) einsatz.KeinePolizei = keine;
             if (eingabe.Vorgangsnummer is not null) einsatz.Vorgangsnummer = eingabe.Vorgangsnummer.Trim();
             if (eingabe.Melder is not null) einsatz.Alarmiert = eingabe.Melder.Trim();
             if (eingabe.Polizei is { } p)
@@ -144,6 +155,8 @@ namespace Einsatzueberwachung.Domain.Services
                 .Concat((e.Trails ?? Array.Empty<AbschlussTrail>()).Select(t => t.Geruchsartikel));
             if (texte.Any(t => t is { Length: > MaxTextLaenge }))
                 return $"Texte höchstens {MaxTextLaenge} Zeichen.";
+            if (!string.IsNullOrEmpty(e.AlarmiertDurch) && Models.Enums.AlarmiertDurchExtensions.AusApiWert(e.AlarmiertDurch) is null)
+                return "alarmiertDurch muss Polizei, Feuerwehr, Rettungsdienst oder AndereStaffel sein.";
 
             if (e.Fund is { } f)
             {

@@ -83,6 +83,18 @@
             </section>
 
             <section class="els-section">
+                <label class="els-label" for="els-alarmiert">Alarmiert durch</label>
+                <select id="els-alarmiert" class="els-input" @bind="AlarmiertDurchWahl">
+                    <option value="">Bitte wählen</option>
+                    @foreach (var art in AlarmiertDurchExtensions.Alle)
+                    {
+                        <option value="@art">@art.Anzeige()</option>
+                    }
+                </select>
+                <input class="els-input mt-2" @bind="_model.Alarmiert" aria-label="Alarmierende Stelle oder Name" placeholder="Stelle oder Name, z. B. PI Dortmund-Nord (optional)" />
+            </section>
+
+            <section class="els-section">
                 <label class="els-label" for="els-stichwort">Stichwort</label>
                 <input id="els-stichwort" class="els-input" @bind="_model.Stichwort" placeholder="z. B. Vermisstensuche" enterkeyhint="next" />
             </section>
@@ -112,8 +124,6 @@
                     <label class="els-label" for="els-nr">Einsatznummer</label>
                     <input id="els-nr" class="els-input" @bind="_model.EinsatzNummer" placeholder="optional" />
 
-                    <label class="els-label" for="els-melder">Alarmiert durch</label>
-                    <input id="els-melder" class="els-input" @bind="_model.Alarmiert" placeholder="Polizei, Leitstelle, …" />
 
                     <label class="els-label" for="els-fa">Führungsassistent</label>
                     <input id="els-fa" class="els-input" @bind="_model.Fuehrungsassistent" list="els-fa-list" placeholder="optional" />

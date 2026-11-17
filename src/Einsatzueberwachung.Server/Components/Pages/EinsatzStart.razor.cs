@@ -42,6 +42,18 @@ public partial class EinsatzStart
     private bool _busy;
     private bool _einsatzBereitsAktiv;
     private bool _szenarioMissing;
+    private bool _alarmiertMissing;
+
+    /// <summary>„Alarmiert durch“ als Auswahl (Pflicht); bei Divera wird nur die Stelle übernommen</summary>
+    private string AlarmiertDurchWahl
+    {
+        get => _model.AlarmiertDurch?.ToString() ?? string.Empty;
+        set
+        {
+            _model.AlarmiertDurch = AlarmiertDurchExtensions.AusApiWert(value);
+            _alarmiertMissing = false;
+        }
+    }
     private bool _einsatzortMissing;
     private bool _mapAddressUserDirty;
     private bool _diveraDrawerOpen;
@@ -199,6 +211,14 @@ public partial class EinsatzStart
             return;
         }
         _szenarioMissing = false;
+
+        if (_model.AlarmiertDurch is null)
+        {
+            _alarmiertMissing = true;
+            _status = "Bitte auswählen, wer alarmiert hat.";
+            _error = true;
+            return;
+        }
 
         if (!TryPrepareAlarmTime())
         {

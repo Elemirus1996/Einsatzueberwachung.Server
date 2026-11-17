@@ -154,6 +154,13 @@ public partial class ElStart : IDisposable
         }
     }
 
+    /// <summary>„Alarmiert durch“ als Auswahl (Pflicht); leer = noch nicht gewählt</summary>
+    private string AlarmiertDurchWahl
+    {
+        get => _model.AlarmiertDurch?.ToString() ?? string.Empty;
+        set => _model.AlarmiertDurch = AlarmiertDurchExtensions.AusApiWert(value);
+    }
+
     private async Task StartAsync()
     {
         _einsatzortMissing = string.IsNullOrWhiteSpace(_model.Einsatzort);

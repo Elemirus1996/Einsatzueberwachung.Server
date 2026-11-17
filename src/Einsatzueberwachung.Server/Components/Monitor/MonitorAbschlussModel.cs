@@ -37,6 +37,14 @@ public sealed class MonitorAbschlussModel
         ("vorort", "Vor Ort (Personal und Hunde)")
     ];
 
+    public bool IstEinsatz { get; private set; } = true;
+    /// <summary>Name der Art („Polizei“ …) oder leer</summary>
+    public string AlarmiertDurch { get; set; } = "";
+    public bool KeinePolizei { get; set; }
+
+    /// <summary>Polizeiangaben gefragt: Einsatz, von der Polizei alarmiert, nicht „Keine Polizei beteiligt“</summary>
+    public bool PolizeiGefragt => IstEinsatz && AlarmiertDurch == nameof(Einsatzueberwachung.Domain.Models.Enums.AlarmiertDurch.Polizei) && !KeinePolizei;
+
     public string Vorgangsnummer { get; set; } = "";
     public string Melder { get; set; } = "";
     public string PolizeiName { get; set; } = "";
@@ -59,6 +67,9 @@ public sealed class MonitorAbschlussModel
 
     public void Laden(EinsatzData einsatz, IReadOnlyList<Team> teams, IEnumerable<DogEntry> hunde, IReadOnlyList<string> abbruchgruende)
     {
+        IstEinsatz = einsatz.IstEinsatz;
+        AlarmiertDurch = einsatz.AlarmiertDurch?.ToString() ?? "";
+        KeinePolizei = einsatz.KeinePolizei;
         Vorgangsnummer = einsatz.Vorgangsnummer ?? "";
         Melder = AbschlussAngaben.Melder(einsatz.Alarmiert);
         PolizeiName = einsatz.PolizeiKontaktName ?? "";
@@ -114,9 +125,9 @@ public sealed class MonitorAbschlussModel
     public List<string> Fehlend(string? ergebnis)
     {
         var fehlend = new List<string>();
-        if (string.IsNullOrWhiteSpace(Vorgangsnummer)) fehlend.Add("Vorgangsnummer der Polizei");
-        if (string.IsNullOrWhiteSpace(Melder)) fehlend.Add("Alarmiert durch");
-        if (string.IsNullOrWhiteSpace(PolizeiName)) fehlend.Add("Polizeikontakt");
+        if (IstEinsatz && AlarmiertDurch.Length == 0) fehlend.Add("Alarmiert durch");
+        if (PolizeiGefragt && string.IsNullOrWhiteSpace(Vorgangsnummer)) fehlend.Add("Vorgangsnummer der Polizei");
+        if (PolizeiGefragt && string.IsNullOrWhiteSpace(PolizeiName)) fehlend.Add("Polizeikontakt");
         if (ErgebnisText.IstFund(ergebnis) && (FundZeit is null || FundLat is null && string.IsNullOrWhiteSpace(FundOrt)))
             fehlend.Add("Fundzeit und Fundort");
         if (Teams.Any(t => t.Einsatzart.Length == 0)) fehlend.Add("„Eingesetzt als“ je Team");
@@ -144,7 +155,9 @@ public sealed class MonitorAbschlussModel
         return new AbschlussEingabe(
             Vorgangsnummer, Melder, new AbschlussPolizei(PolizeiName, PolizeiDienstnummer, PolizeiTelefon), fund,
             Teams.Select(t => new AbschlussTeam(t.TeamId, t.Einsatzart.Length == 0 ? null : t.Einsatzart)).ToList(),
-            Trails.Select(t => new AbschlussTrail(t.SucheId, t.Abbruchgrund, t.Geruchsartikel)).ToList());
+            Trails.Select(t => new AbschlussTrail(t.SucheId, t.Abbruchgrund, t.Geruchsartikel)).ToList(),
+            AlarmiertDurch.Length == 0 ? null : AlarmiertDurch,
+            KeinePolizei);
     }
 
     public List<string> GewaehlteAbschnitte(bool tracks)

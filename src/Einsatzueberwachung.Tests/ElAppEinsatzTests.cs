@@ -183,9 +183,9 @@ public sealed class ElAppEinsatzTests : IDisposable
     }
 
     /// <summary>Einsatz mit Mantrailer-Team (Hund kann Fläche und Mantrailer), einem Trail und einem Fund-Punkt</summary>
-    private async Task<(Team Team, CompletedSearch Trail)> AbschlussEinsatzAsync()
+    private async Task<(Team Team, CompletedSearch Trail)> AbschlussEinsatzAsync(string? alarmiertDurch = "Polizei")
     {
-        Assert.IsType<OkObjectResult>(await Controller().EinsatzStarten(Start()));
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzStarten(Start() with { AlarmiertDurch = alarmiertDurch, Melder = "PI Nord" }));
         _rex.Specializations = DogSpecialization.Flaechensuche | DogSpecialization.Mantrailing;
         var team = await _einsatz.AddTeamAsync(new Team { TeamName = "Team Rex", DogId = _rex.Id, DogName = "Rex" });
         var trail = await _einsatz.CreateCompletedSearchAsync(team.TeamId, DateTime.UtcNow.AddMinutes(-40), DateTime.UtcNow.AddMinutes(-10));
@@ -203,7 +203,9 @@ public sealed class ElAppEinsatzTests : IDisposable
 
         var json = Json(await Controller().GetAbschluss());
 
-        Assert.Equal(["vorgangsnummer", "melder", "polizei", "teams", "trails"], json.GetProperty("fehlend").EnumerateArray().Select(x => x.GetString()));
+        Assert.Equal(["vorgangsnummer", "polizei", "teams", "trails"], json.GetProperty("fehlend").EnumerateArray().Select(x => x.GetString()));
+        Assert.Equal("Polizei", json.GetProperty("alarmiertDurch").GetString());
+        Assert.True(json.GetProperty("polizeiGefragt").GetBoolean());
         var t = Assert.Single(json.GetProperty("teams").EnumerateArray());
         Assert.Equal(team.TeamId, t.GetProperty("teamId").GetString());
         Assert.Equal(JsonValueKind.Null, t.GetProperty("einsatzart").ValueKind);
@@ -213,7 +215,7 @@ public sealed class ElAppEinsatzTests : IDisposable
         Assert.Equal(49.3, vorschlag.GetProperty("lat").GetDouble());
         Assert.Equal(team.TeamId, vorschlag.GetProperty("teamId").GetString());
         Assert.Equal(AbschlussAngaben.StandardAbbruchgruende, json.GetProperty("abbruchgruende").EnumerateArray().Select(x => x.GetString()));
-        Assert.Equal(_einsatz.CurrentEinsatz.Alarmiert ?? "", json.GetProperty("melder").GetString());
+        Assert.Equal("PI Nord", json.GetProperty("melder").GetString());
     }
 
     [Fact]
@@ -270,6 +272,38 @@ public sealed class ElAppEinsatzTests : IDisposable
         await AbschlussEinsatzAsync();
         Assert.IsType<OkObjectResult>(await Controller().EinsatzBeenden(
             new ElAppController.ElEinsatzEnde(NeueId(), "Suche erfolglos abgeschlossen", true))); // App vor 1.17.0
+    }
+
+    [Fact]
+    public async Task Abschluss_PolizeiangabenNurBeiPolizei_KeinePolizeiZaehltAlsErledigt_UebungNie()
+    {
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzStarten(Start() with { AlarmiertDurch = "Bundeswehr" }));
+
+        // Feuerwehr: keine Polizeiangaben gefragt
+        await AbschlussEinsatzAsync("Feuerwehr");
+        Assert.Equal(["teams", "trails"], Json(await Controller().GetAbschluss()).GetProperty("fehlend").EnumerateArray().Select(x => x.GetString()));
+        Assert.Equal(AlarmiertDurch.Feuerwehr, _einsatz.CurrentEinsatz.AlarmiertDurch);
+        Assert.Equal("PI Nord", _einsatz.CurrentEinsatz.Alarmiert);
+        _einsatz.ResetEinsatz();
+
+        // Aeltere App ohne Art: Art wird beim Abschluss gefragt und dort gesetzt
+        await AbschlussEinsatzAsync(null);
+        Assert.Contains("alarmiertDurch", Json(await Controller().GetAbschluss()).GetProperty("fehlend").EnumerateArray().Select(x => x.GetString()));
+        var leer = new ElAppController.ElAbschluss(null, null, null, null, null, null);
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(
+            new ElAppController.ElEinsatzEnde(NeueId(), "Suche erfolglos abgeschlossen", true, Abschluss: leer with { AlarmiertDurch = "Bundeswehr" }, UnvollstaendigBestaetigt: false)));
+
+        // Polizei, aber „Keine Polizei beteiligt“: Vorgangsnummer und Kontakt entfallen
+        var ende = await Controller().EinsatzBeenden(new ElAppController.ElEinsatzEnde(NeueId(), "Suche erfolglos abgeschlossen", true,
+            Abschluss: leer with { AlarmiertDurch = "Polizei", KeinePolizei = true }, UnvollstaendigBestaetigt: false));
+        var fehlend = Json(ende).GetProperty("fehlend").EnumerateArray().Select(x => x.GetString()).ToList();
+        Assert.Equal(["teams", "trails"], fehlend);
+        Assert.True(_einsatz.CurrentEinsatz.KeinePolizei);
+        _einsatz.ResetEinsatz();
+
+        // Uebung: nie Polizeiangaben, auch keine Art
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzStarten(Start(uebung: true) with { AlarmiertDurch = "Polizei" }));
+        Assert.Empty(Json(await Controller().GetAbschluss()).GetProperty("fehlend").EnumerateArray());
     }
 
     [Fact]

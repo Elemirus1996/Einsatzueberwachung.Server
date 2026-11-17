@@ -649,3 +649,9 @@
         grid-template-columns: 1fr 1fr;
     }
 }
+
+/* Pflichtfeld „Alarmiert durch“ nicht gewählt */
+::deep .es-input.is-missing {
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger-color) 25%, transparent);
+}

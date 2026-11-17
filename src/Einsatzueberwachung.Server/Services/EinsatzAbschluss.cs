@@ -210,6 +210,8 @@ public sealed class EinsatzAbschlussService
             EinsatzNummer = current.EinsatzNummer,
             Vorgangsnummer = current.Vorgangsnummer,
             Fund = current.Fund,
+            AlarmiertDurch = current.AlarmiertDurch,
+            KeinePolizei = current.KeinePolizei,
             StaffelName = current.StaffelName,
             StaffelAdresse = current.StaffelAdresse,
             StaffelTelefon = current.StaffelTelefon,
