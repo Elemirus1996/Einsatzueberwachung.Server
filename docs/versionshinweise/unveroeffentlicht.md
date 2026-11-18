@@ -21,6 +21,7 @@
 ### Karten nach den Regeln von OpenStreetMap und OpenTopoMap
 - Kacheln von OpenStreetMap kommen nur noch von `tile.openstreetmap.org` (die alten Adressen a/b/c.tile… können wegfallen).
 - Quellenvermerke wie von OpenStreetMap und OpenTopoMap verlangt, mit Link; auch die kleine Übersichtskarte zeigt ihn jetzt.
+- Der Knopf **„Für Funkloch sichern“** auf der Karte entfällt. OpenStreetMap verbietet inzwischen das Vorabladen von Kartenkacheln. Bereits angesehene Kartenausschnitte bleiben weiter auf dem Gerät verfügbar.
 
 ## Datenschutz
 

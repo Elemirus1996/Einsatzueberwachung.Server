@@ -2,7 +2,7 @@
 // eine eigene Seite statt der Fehlerseite des Browsers. Inhalte der App werden bewusst NICHT zwischengespeichert –
 // Einsatzdaten kommen immer frisch vom Server (Blazor), angemeldete Inhalte bleiben aus dem Speicher des Geraets.
 // Ausnahme: Kartenkacheln (oeffentliche Karten, keine Einsatzdaten) – damit die Karte bei schwachem Netz/Funkloch
-// fuer bereits angesehene oder vorab gesicherte Gebiete weiter angezeigt wird.
+// fuer bereits angesehene Gebiete weiter angezeigt wird. Vorabladen gibt es nicht (OSM-Nutzungsregeln, Issue 210).
 const CACHE = 'einsatz-offline-v2';
 const TILE_CACHE = 'einsatz-kacheln-v1';
 const OFFLINE_FILES = ['/offline.html', '/icons/icon-192.png', '/js/el-outbox.js'];
