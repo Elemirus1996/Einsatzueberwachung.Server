@@ -102,10 +102,15 @@ jobs:
         run: |
           cd artifacts/release/linux-x64/server-${{ steps.version.outputs.version }}
           zip -r ../linux-x64-server-${{ steps.version.outputs.version }}.zip .
+          # Pruefsumme fuer die Server (Issue 211). Die Signatur (.sig) erstellt der Release-Rechner, nicht GitHub.
+          cd ..
+          sha256sum linux-x64-server-${{ steps.version.outputs.version }}.zip > linux-x64-server-${{ steps.version.outputs.version }}.zip.sha256
 
       - name: Upload asset to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          files: artifacts/release/linux-x64/linux-x64-server-${{ steps.version.outputs.version }}.zip
+          files: |
+            artifacts/release/linux-x64/linux-x64-server-${{ steps.version.outputs.version }}.zip
+            artifacts/release/linux-x64/linux-x64-server-${{ steps.version.outputs.version }}.zip.sha256
           overwrite_files: true

@@ -32,3 +32,9 @@
 ### Google-Karten entfernt
 - Die Ebenen **„Satellit (Google)“** und **„Hybrid (Google)“** gibt es nicht mehr, weder auf der Karte noch im Kartendruck. Die Kacheln wurden ohne Vertrag direkt von Google geladen, das erlauben die Nutzungsbedingungen von Google nicht.
 - Wer eine dieser Ebenen gewählt hatte, sieht stattdessen „Luftbild (Länder)“.
+
+## Sicherheit
+
+### Updates werden vor der Installation geprüft
+- Ab dieser Version installiert der Server ein Update nur, wenn das Paket die **digitale Signatur der Entwickler** trägt und die Prüfsumme stimmt. Ein verändertes oder untergeschobenes Paket wird abgelehnt; das steht dann unter Einstellungen → System → Updates und im Audit-Log.
+- Das Update auf diese Version selbst wird noch nicht so geprüft, erst die folgenden.
