@@ -940,7 +940,7 @@ private async Task SetDesignModeAsync(bool darkMode)
     {
         if (!System.Text.RegularExpressions.Regex.IsMatch(_vpnEndpoint.Trim(), @"^[A-Za-z0-9.\-]+:\d{1,5}$"))
         {
-            SetVpnMessage("Bitte als Name:Port angeben, z. B. dein-einsatz.mywire.org:51820.", true);
+            SetVpnMessage("Bitte als Name:Port angeben, z. B. staffel-musterstadt.mywire.org:51820.", true);
             return;
         }
         VpnDeviceStore.SetEndpoint(_vpnEndpoint);

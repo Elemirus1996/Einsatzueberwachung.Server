@@ -179,7 +179,7 @@ namespace Einsatzueberwachung.Domain.Models
         public DateTime? LastBackupAt { get; set; }
 
         /// <summary>
-        /// Öffentliche Basis-URL für den Team-Mobile QR-Code (z.B. https://dein-einsatz.mywire.org).
+        /// Öffentliche Basis-URL für den Team-Mobile QR-Code (z.B. https://staffel-musterstadt.mywire.org).
         /// Wenn leer, wird die URL aus dem Request abgeleitet.
         /// </summary>
         public string MobileBaseUrl { get; set; } = string.Empty;
