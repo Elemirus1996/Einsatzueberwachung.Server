@@ -63,6 +63,16 @@ namespace Einsatzueberwachung.Domain.Services
                     return new UpdateInstallResult { Success = false, Message = message };
                 }
 
+                SetStatus(status => status.LastMessage = "Prüfe Signatur des Update-Pakets...");
+                var pruefung = await PruefePaketAsync(packageBytes, check);
+                if (pruefung is not null)
+                {
+                    _logger.LogWarning("Update {Version} abgelehnt: {Grund}", check.LatestVersion, pruefung);
+                    _audit?.Log("Update abgelehnt", $"Version {check.LatestVersion}: {pruefung}");
+                    SetStatus(status => { status.LastError = pruefung; status.LastMessage = "Update abgelehnt"; });
+                    return new UpdateInstallResult { Success = false, Message = pruefung };
+                }
+
                 var extension = ResolveExtensionFromUrl(check.InstallerUrl);
                 var packagePath = Path.Combine(downloadsPath, $"{check.LatestVersion}{extension}");
                 await File.WriteAllBytesAsync(packagePath, packageBytes, cancellationToken);
@@ -106,6 +116,29 @@ namespace Einsatzueberwachung.Domain.Services
                 SetStatus(status => status.IsInstalling = false);
                 _updateGate.Release();
             }
+        }
+
+        /// <summary>
+        /// Prüfsumme und Signatur des heruntergeladenen Pakets (Issue 211). Rückgabe: Grund der Ablehnung, null = in Ordnung.
+        /// Ohne gültige Signatur wird nie installiert.
+        /// </summary>
+        private async Task<string?> PruefePaketAsync(byte[] paket, UpdateCheckResult check)
+        {
+            if (!string.IsNullOrWhiteSpace(check.PruefsummeUrl))
+            {
+                var summe = await DownloadInstallerAsync(check.PruefsummeUrl);
+                if (summe is null || !UpdatePaketPruefung.PruefsummeGueltig(paket, summe))
+                    return "Die Prüfsumme des Update-Pakets stimmt nicht. Das Paket ist beschädigt oder verändert – Installation abgebrochen.";
+            }
+
+            if (string.IsNullOrWhiteSpace(check.SignaturUrl))
+                return "Das Update-Paket ist nicht signiert – Installation abgebrochen. Bitte die Entwickler informieren.";
+
+            var signatur = await DownloadInstallerAsync(check.SignaturUrl);
+            if (signatur is null || !UpdatePaketPruefung.SignaturGueltig(paket, signatur))
+                return "Die Signatur des Update-Pakets ist ungültig. Das Paket stammt nicht von den Entwicklern oder wurde verändert – Installation abgebrochen.";
+
+            return null;
         }
 
         /// <summary>

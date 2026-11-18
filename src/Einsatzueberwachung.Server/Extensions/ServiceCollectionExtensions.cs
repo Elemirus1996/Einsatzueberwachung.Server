@@ -324,7 +324,8 @@ internal static class ServiceCollectionExtensions
             var factory = sp.GetRequiredService<IHttpClientFactory>();
             var logger = sp.GetRequiredService<ILogger<GitHubUpdateService>>();
             var settingsService = sp.GetRequiredService<ISettingsService>();
-            return new GitHubUpdateService(factory.CreateClient(nameof(GitHubUpdateService)), logger, settingsService);
+            return new GitHubUpdateService(factory.CreateClient(nameof(GitHubUpdateService)), logger, settingsService,
+                sp.GetRequiredService<IAuditLogService>());
         });
 
         services.AddHttpClient<IWeatherService, DwdWeatherService>();
