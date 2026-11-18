@@ -61,7 +61,7 @@ getSearchAreaId: function(layer) {
     
 // Kartenausschnitt fuer Funkloch sichern (1.11). Nur Strassen- und Topokarte und hoechstens Zoomstufe 16 – die
 // Nutzungsregeln von OpenStreetMap verbieten das Vorabladen groesserer Gebiete ab Stufe 17. Satellitenkacheln werden
-// nur gespeichert, wenn sie angesehen wurden (Service Worker), Google-Kacheln gar nicht.
+// nur gespeichert, wenn sie angesehen wurden (Service Worker).
 OFFLINE_MAX_ZOOM: 16,
 OFFLINE_MAX_TILES: 800,
 
@@ -164,18 +164,6 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             crossOrigin: 'anonymous'
         });
 
-        // Google Satellite (kein CORS – Kacheln erscheinen im Screenshot als grauer Hintergrund)
-        const googleSatellite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-            attribution: 'Map data (c) Google',
-            maxZoom: 20
-        });
-
-        // Hybrid: Satellit mit Strassennamen (kein CORS)
-        const hybridLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-            attribution: 'Map data (c) Google',
-            maxZoom: 20
-        });
-
         // OpenTopoMap: Topografische Karte mit Hoehenlinien (CORS-kompatibel)
         const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             maxZoom: 17,
@@ -192,8 +180,6 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         const baseMaps = {
             "Strassenkarte": osmLayer,
             "Satellit (Esri)": satelliteLayer,
-            "Satellit (Google)": googleSatellite,
-            "Hybrid (Google)": hybridLayer,
             "Topografisch": topoLayer
         };
         
@@ -353,8 +339,6 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             layers: {
                 streets: osmLayer,
                 satellite: satelliteLayer,
-                satelliteGoogle: googleSatellite,
-                hybrid: hybridLayer,
                 topo: topoLayer
             },
             currentLayer: osmLayer
@@ -761,11 +745,9 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                 case 'satellite':
                     newLayer = mapData.layers.satellite;
                     break;
-                case 'satelliteGoogle':
-                    newLayer = mapData.layers.satelliteGoogle;
-                    break;
+                case 'satelliteGoogle': // Google-Kacheln entfernt (#210), alte Auswahl faellt auf Esri zurueck
                 case 'hybrid':
-                    newLayer = mapData.layers.hybrid;
+                    newLayer = mapData.layers.satellite;
                     break;
                 case 'topo':
                     newLayer = mapData.layers.topo;
@@ -1039,7 +1021,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                     ctx.drawImage(tile,
                         Math.round(r.left - cr.left), Math.round(r.top - cr.top),
                         Math.round(r.width),          Math.round(r.height));
-                } catch (e) { /* CORS-gesperrt (Google-Tiles) → überspringen */ }
+                } catch (e) { /* CORS-gesperrte Kachel → überspringen */ }
             }
         }
 

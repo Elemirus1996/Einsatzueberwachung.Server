@@ -77,7 +77,7 @@ public class BerichtUndAbdeckungTests
         Assert.Equal(2, new PdfBerichtOptionen().WaehleTracks(tracks)!.Count);
         Assert.Equal(["a"], new PdfBerichtOptionen(TeamIds: ["a"]).WaehleTracks(tracks)!.Select(t => t.TeamId));
         Assert.Null(PdfBerichtOptionen.OhneTracks.WaehleTracks(tracks));
-        Assert.DoesNotContain(PdfBerichtOptionen.Kartenarten, k => k.Art is MapTileType.SatelliteGoogle or MapTileType.Hybrid);
+        Assert.DoesNotContain(Enum.GetNames<MapTileType>(), n => n.Contains("Google") || n == "Hybrid");
     }
 
     [Fact]

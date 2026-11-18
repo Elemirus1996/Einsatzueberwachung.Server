@@ -48,8 +48,8 @@ public static class DownloadEndpoints
             var tileType = mapType switch
             {
                 "satellite" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Satellite,
-                "satelliteGoogle" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.SatelliteGoogle,
-                "hybrid" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Hybrid,
+                // Google-Kacheln entfernt (#210): alte Links fallen auf Esri zurück
+                "satelliteGoogle" or "hybrid" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Satellite,
                 "topo" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Topographic,
                 _ => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets
             };

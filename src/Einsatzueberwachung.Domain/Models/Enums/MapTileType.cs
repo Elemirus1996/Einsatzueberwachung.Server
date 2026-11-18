@@ -4,7 +4,6 @@ public enum MapTileType
 {
     Streets,
     Satellite,
-    Topographic,
-    SatelliteGoogle,
-    Hybrid
+    Topographic
+    // SatelliteGoogle und Hybrid entfernt (#210): Google-Kacheln ohne Vertrag nicht erlaubt
 }
