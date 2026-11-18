@@ -31,16 +31,18 @@ Dieses Dokument listet alle Drittanbieter-Abhängigkeiten von Einsatzueberwachun
 | coverlet.collector | 6.0.2 | MIT | Nur Test-Projekt |
 | Microsoft.NET.Test.Sdk | 17.12.0 | MIT | Nur Test-Projekt |
 
-## JavaScript / CSS (CDN & lokal)
+## JavaScript / CSS / Schriften (alle lokal, keine CDN)
 
 | Bibliothek | Version | Lizenz | Einbindung |
 |---|---|---|---|
-| Leaflet | 1.9.4 | BSD-2-Clause | CDN (unpkg.com) |
-| Leaflet.Draw | 1.0.4 | MIT | CDN (cdnjs.cloudflare.com) |
+| Leaflet | 1.9.4 | BSD-2-Clause | lokal (wwwroot/lib/leaflet) |
+| Leaflet.Draw | 1.0.4 | MIT | lokal (wwwroot/lib/leaflet-draw) |
 | Bootstrap | 5.3.3 | MIT | lokal (wwwroot/lib/) |
-| Bootstrap Icons | 1.11.3 | MIT | CDN (cdn.jsdelivr.net) |
-| Proj4js | 2.9.2 | MIT | CDN (cdnjs.cloudflare.com) |
-| JetBrains Mono (Google Fonts) | — | OFL-1.1 | CDN (fonts.googleapis.com) |
+| Bootstrap Icons | 1.11.3 | MIT | lokal (wwwroot/lib/bootstrap-icons) |
+| Font Awesome Free | 6.7.2 | Icons CC BY 4.0, Schriften OFL-1.1, Code MIT | lokal (wwwroot/lib/fontawesome) |
+| Proj4js | 2.9.2 | MIT | lokal (wwwroot/lib/proj4) |
+| hls.js | 1.5.13 | Apache-2.0 | lokal (wwwroot/lib/hls), nur Drohnen-Stream |
+| JetBrains Mono | @fontsource 5.1.1 | OFL-1.1 | lokal (wwwroot/lib/jetbrains-mono) |
 
 ## Framework / Runtime
 
