@@ -1,7 +1,7 @@
 // Bindet HLS-Streams (.m3u8) an <video>-Elemente. Nutzt natives HLS in Safari,
-// sonst dynamisch nachgeladenes hls.js von jsdelivr.
+// sonst dynamisch nachgeladenes hls.js (lokal, wwwroot/lib/hls).
 (function () {
-    const HLS_CDN = "https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js";
+    const HLS_CDN = "/lib/hls/hls.min.js";
     let hlsLoader = null;
 
     function loadHlsLib() {
