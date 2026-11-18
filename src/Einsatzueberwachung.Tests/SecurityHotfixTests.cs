@@ -155,12 +155,13 @@ public class SettingsSecretsTests
     [Fact]
     public void Download_EnthaeltKeineZugangsdaten()
     {
-        var settings = new AppSettings { GitHubToken = "ghp_geheim", DiveraAccessKey = "divera-geheim", DiveraBaseUrl = "https://app.divera247.com" };
+        var settings = new AppSettings { GitHubToken = "ghp_geheim", DiveraAccessKey = "divera-geheim", EsriApiKey = "esri-geheim", DiveraBaseUrl = "https://app.divera247.com" };
 
         var json = Encoding.UTF8.GetString(SettingsSecrets.SerializeWithoutSecrets(settings));
 
         Assert.DoesNotContain("ghp_geheim", json);
         Assert.DoesNotContain("divera-geheim", json);
+        Assert.DoesNotContain("esri-geheim", json);
         Assert.Contains("https://app.divera247.com", json);
     }
 
@@ -180,13 +181,14 @@ public class SettingsSecretsTests
     [Fact]
     public void Import_OhneZugangsdaten_BehaeltVorhandene()
     {
-        var current = new AppSettings { GitHubToken = "alt-token", DiveraAccessKey = "alt-key" };
+        var current = new AppSettings { GitHubToken = "alt-token", DiveraAccessKey = "alt-key", EsriApiKey = "alt-esri" };
         var imported = new AppSettings { GitHubToken = "", DiveraAccessKey = "neu-key" };
 
         SettingsSecrets.KeepExistingSecrets(imported, current);
 
         Assert.Equal("alt-token", imported.GitHubToken);
         Assert.Equal("neu-key", imported.DiveraAccessKey);
+        Assert.Equal("alt-esri", imported.EsriApiKey);
     }
 
     [Theory]
