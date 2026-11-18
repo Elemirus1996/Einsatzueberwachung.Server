@@ -23,7 +23,7 @@ public sealed partial class OsmStaticMapRenderer
                 "https://c.tile.opentopomap.org/{z}/{x}/{y}.png"
             ],
             256,
-            "© OpenStreetMap contributors | © OpenTopoMap (CC-BY-SA)"),
+            "Kartendaten: © OpenStreetMap-Mitwirkende, SRTM | Kartendarstellung: © OpenTopoMap (CC-BY-SA)"),
 
         _ => new(
             ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],

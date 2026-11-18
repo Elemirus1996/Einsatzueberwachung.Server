@@ -151,8 +151,8 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             
         // Layer definieren
         // crossOrigin: 'anonymous' erlaubt Canvas-Export für CORS-kompatible Tile-Server
-        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '(c) OpenStreetMap contributors',
+        const osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
             maxZoom: 19,
             crossOrigin: 'anonymous'
         });
@@ -166,7 +166,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         // OpenTopoMap: Topografische Karte mit Hoehenlinien (CORS-kompatibel)
         const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             maxZoom: 17,
-            attribution: 'Kartendaten: (c) OpenStreetMap | Kartenstil: (c) <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
+            attribution: 'Kartendaten: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, SRTM | Kartendarstellung: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
             crossOrigin: 'anonymous'
         });
         

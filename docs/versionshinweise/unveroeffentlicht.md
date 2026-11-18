@@ -18,6 +18,10 @@
 - Bisher wurden die Esri-Bilder ohne Konto geladen; ob das erlaubt ist, ist nicht geklärt.
 - Ohne Schlüssel bekommt, wer bisher „Satellit (Esri)“ gewählt hatte, die Luftbilder der Länder. Die Esri-Beschriftungsebene („Hybrid“ in der mobilen Karte) entfällt.
 
+### Karten nach den Regeln von OpenStreetMap und OpenTopoMap
+- Kacheln von OpenStreetMap kommen nur noch von `tile.openstreetmap.org` (die alten Adressen a/b/c.tile… können wegfallen).
+- Quellenvermerke wie von OpenStreetMap und OpenTopoMap verlangt, mit Link; auch die kleine Übersichtskarte zeigt ihn jetzt.
+
 ## Datenschutz
 
 ### Keine Schriften und Bibliotheken mehr von fremden Servern

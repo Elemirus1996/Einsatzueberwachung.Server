@@ -104,8 +104,8 @@ window.teamMobileMap = (function () {
         }
         const center = [fallbackLat || 51.1657, fallbackLng || 10.4515];
         map = L.map(containerId, { zoomControl: true }).setView(center, 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap',
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
             maxZoom: 19
         }).addTo(map);
         // Falls der Container danach noch wachst (z.B. Header rendert), Leaflet neu vermessen.

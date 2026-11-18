@@ -11,15 +11,16 @@ window.minimapInterop = (function () {
 
         const map = L.map(containerId, {
             zoomControl: true,
-            attributionControl: false,
+            attributionControl: true, // OSM-Nutzungsregeln: Quellenvermerk immer sichtbar
             scrollWheelZoom: true,
             doubleClickZoom: true,
             dragging: true
         }).setView([51.5, 10.3], 7);
+        map.attributionControl.setPrefix(false);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende'
         }).addTo(map);
 
         _instances[containerId] = {
