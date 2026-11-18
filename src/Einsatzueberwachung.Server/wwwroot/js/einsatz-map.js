@@ -37,6 +37,9 @@ window.einsatzMap = (function () {
 
         const hybridLayer = L.layerGroup([satelliteLayer, labelsLayer]);
 
+        // Amtliche Luftbilder der Laender (DOP20), alle Laender als eine Ebene
+        const luftbildLayer = window.LuftbildLaender.ebene();
+
         const topoLayer = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
             maxZoom: 17,
             attribution: 'Kartendaten: &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> | Kartenstil: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
@@ -48,6 +51,7 @@ window.einsatzMap = (function () {
             streets: streetLayer,
             satellite: satelliteLayer,
             hybrid: hybridLayer,
+            luftbild: luftbildLayer,
             topo: topoLayer
         };
         baseLayerControl = L.control.layers(
@@ -55,6 +59,7 @@ window.einsatzMap = (function () {
                 "Strassenkarte": streetLayer,
                 "Satellit": satelliteLayer,
                 "Hybrid": hybridLayer,
+                "Luftbild (Länder)": luftbildLayer,
                 "Topografisch": topoLayer
             },
             null,

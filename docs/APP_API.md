@@ -600,7 +600,7 @@ und wiederholen.
 | `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` (bei `typ = jaNein`) bzw. `wert` (bei `auswahl` und `text`) | Checklistenpunkt setzen, ohne `version` |
 | `/szenario` | `szenario` | Szenario des Einsatzes |
 | `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional); ab Server 1.17.0 `alarmiertDurch` und `melder` (Abschnitt 10) | wie `/el/start`; läuft schon ein Einsatz → `409` |
-| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null, "punkte": false }` – `kartenart`: `Streets` · `Topographic` · `Satellite`, sonst `400`; optional `personalIds`, `hundeIds` (IDs aus `/einsatz/vorort`); ab Server 1.17.0 `abschluss`, `unvollstaendigBestaetigt`, `pdf.abschnitte` (Abschnitt 10) | wie `/el/beenden` |
+| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null, "punkte": false }` – `kartenart`: `Streets` · `Topographic` · `Satellite` · ab Server 1.18.0 `Luftbild` (amtliche Luftbilder der Länder), sonst `400`; die Auswahl kommt aus `kartenarten` von `/einsatz/vorlage`; optional `personalIds`, `hundeIds` (IDs aus `/einsatz/vorort`); ab Server 1.17.0 `abschluss`, `unvollstaendigBestaetigt`, `pdf.abschnitte` (Abschnitt 10) | wie `/el/beenden` |
 
 Antwort jeder Aktion: `200` + `{ "doppelt": false, … }`, beim Anlegen mit der neuen Kennung des Objekts (z. B. `notizId`).
 

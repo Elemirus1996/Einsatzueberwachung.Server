@@ -164,6 +164,9 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             crossOrigin: 'anonymous'
         });
 
+        // Amtliche Luftbilder der Länder (DOP20), alle Länder als eine Ebene
+        const luftbildLayer = window.LuftbildLaender.ebene();
+
         // OpenTopoMap: Topografische Karte mit Hoehenlinien (CORS-kompatibel)
         const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             maxZoom: 17,
@@ -179,6 +182,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         // Layer Control mit besserer Konfiguration
         const baseMaps = {
             "Strassenkarte": osmLayer,
+            "Luftbild (Länder)": luftbildLayer,
             "Satellit (Esri)": satelliteLayer,
             "Topografisch": topoLayer
         };
@@ -339,6 +343,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             layers: {
                 streets: osmLayer,
                 satellite: satelliteLayer,
+                luftbild: luftbildLayer,
                 topo: topoLayer
             },
             currentLayer: osmLayer
@@ -745,9 +750,10 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                 case 'satellite':
                     newLayer = mapData.layers.satellite;
                     break;
-                case 'satelliteGoogle': // Google-Kacheln entfernt (#210), alte Auswahl faellt auf Esri zurueck
+                case 'luftbild':
+                case 'satelliteGoogle': // Google-Kacheln entfernt (#210), alte Auswahl bekommt die Luftbilder der Laender
                 case 'hybrid':
-                    newLayer = mapData.layers.satellite;
+                    newLayer = mapData.layers.luftbild;
                     break;
                 case 'topo':
                     newLayer = mapData.layers.topo;
