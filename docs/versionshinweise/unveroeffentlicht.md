@@ -25,6 +25,7 @@
 
 ### Mitteilungen aufs gesperrte Handy ohne Push
 - Der Server sagt der Team-App bei jeder Positionsmeldung, ob es Neues gibt (Mitteilung, Ziel, Suchgebiet, Suche). Nur dann lädt die App die Lage nach und zeigt eine Mitteilung auf dem Sperrbildschirm. Das spart Akku und braucht keinen Push-Dienst. Dafür braucht es die neue App-Version.
+- Auch die Einsatzleitung bekommt Warnungen aufs gesperrte Handy, solange ein Einsatz läuft und sie in der App als Einsatzleiter angemeldet ist: Zeitwarnung, Funkstille von Handy oder Halsband, Hund außerhalb des Suchgebiets, Fund, auf Wunsch auch Funk, Statusmeldungen, Akku und Einsatzende. Jede Art lässt sich in der App einzeln abschalten. Die Texte nennen nur das Team, nie Vermisste, Orte oder Funkinhalte. Dafür braucht es die neue App-Version.
 
 ## Datenschutz
 

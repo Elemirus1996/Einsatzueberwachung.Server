@@ -431,6 +431,10 @@ Der Server zeigt die jeweils neueste Position je Gerät; der Gerätename kommt a
 
 Die Position der Einsatzleitung wird nicht gespeichert und erscheint nicht im Bericht.
 
+Ab Server 1.18.0 (#79) tragen beide Antworten zusätzlich `mitteilungStand` (Zeichenkette, für die App undurchsichtig). Er ändert
+sich bei jeder neuen Mitteilung für die Einsatzleitung (Abschnitt 11 der nativen App). `uploadEverySec` ist dann 30 statt 60,
+damit Warnungen spätestens nach einer halben Minute ankommen.
+
 ### 3. `GET /logo`
 
 Wie in der Team-Rolle (Abschnitt 10), mit EL-Token, nur intern. Kennung und `logoVersion` liefert die native EL-Anmeldung (Phase 1b)
@@ -830,3 +834,44 @@ aus dem Track; Abbruchgrund und Geruchsartikel kommen aus dem Abschluss.
   `GET /einsatz/bericht/{archivId}` nimmt dieselbe Liste als `?abschnitte=vermisste,teams,…`.
 
 Nach dem Beenden ist der Einsatz nicht mehr änderbar, auch nicht diese Angaben. Flächenabdeckung steht in keinem Bericht.
+
+### 11. Mitteilungen im Hintergrund (ab Server 1.18.0, #79)
+
+Ohne Push: Solange ein Einsatz läuft und die Person **Einsatzleiter** ist (`mode = track` in `/status` bzw. `/positions`), hält die
+Hintergrund-Ortung die App wach. Bei jeder Antwort vergleicht die App `mitteilungStand` mit dem gemerkten Wert; nur wenn er sich
+ändert, holt sie die neuen Mitteilungen und zeigt sie als **lokale Mitteilung** (auch bei gesperrtem Handy). Führungsassistent und
+Nur lesen bekommen `mode = pause` und damit keinen Hintergrundmodus; im Vordergrund sehen sie alles über `/ereignisse`.
+
+`GET /mitteilungen?seit=<mitteilungStand>`
+
+```json
+{ "stand": "a1-17", "mitteilungen": [
+  { "id": "a1-16", "art": "zeitwarnung", "stufe": 2, "teamId": "…", "text": "Team Rex: 60 min Suchzeit erreicht", "zeit": "…Z" },
+  { "id": "a1-17", "art": "gebiet", "stufe": 2, "teamId": "…", "text": "Team Rex: Hund hat das Suchgebiet verlassen", "zeit": "…Z" }
+] }
+```
+
+| `art` | Anlass | `stufe` |
+|---|---|---|
+| `zeitwarnung` | Team erreicht die erste bzw. zweite Warnzeit | 1 oder 2 |
+| `funkstille` | Handy oder Halsband eines Teams sendet nicht mehr | 2 |
+| `gebiet` | Hund (Halsband) hat das zugewiesene Suchgebiet verlassen | 2 |
+| `fund` | Team meldet über die App einen Fund | 2 |
+| `funk` | neuer Funkspruch eines Teams (ohne Inhalt) | 1 |
+| `status` | Statusmeldung eines Teams bzw. Suche gestartet, Kurzpause, beendet | 1 |
+| `akku` | Akku von Handy oder Halsband eines Teams niedrig | 1 |
+| `einsatzende` | Einsatz beendet (`teamId = null`) | 1 |
+
+- Neueste zuletzt, höchstens 50 je Antwort; `stand` ist der neue Wert zum Merken. Der Server hält die Mitteilungen nur im
+  Arbeitsspeicher (die letzten 200) und leert sie beim Einsatzstart.
+- Unbekannter oder fehlender `seit` (erste Abfrage, Server neu gestartet): leere Liste und aktueller `stand`. So kommt keine Flut alter Mitteilungen.
+- `text` ist knapp und enthält nur den Teamnamen: **keine** Namen von Vermissten, keine Ortsangaben, keinen Funk- oder Fundinhalt.
+  Die App darf ihn so auf dem Sperrbildschirm zeigen.
+- Gleiche Rolle wie Abschnitt 4a: abrufbar mit jedem gültigen EL-Token; ohne laufenden Einsatz leere Liste.
+- Die App stellt **je Art** ein, ob sie eine Mitteilung zeigt. Standard an: `zeitwarnung` nur Stufe 2, `funkstille`, `gebiet`, `fund`;
+  aus: `zeitwarnung` Stufe 1, `funk`, `status`, `akku`, `einsatzende`. Dazu ein Hauptschalter „Mitteilungen im Hintergrund“ (Standard an).
+- Wechselt `mode` von `track` auf `pause` (Einsatzende, Rolle gewechselt), holt die App noch einmal `/mitteilungen` und beendet dann
+  die Ortung. Abmelden beendet sie sofort.
+- Ist auf dem Handy auch ein Team angemeldet, ruht die EL-Ortung (Abschnitt 4a); die App fragt dann im Takt der Team-Ortung
+  `GET /status` der EL ab und zeigt die EL-Mitteilungen trotzdem.
+- Ältere Server liefern kein `mitteilungStand`: die App bleibt beim bisherigen Verhalten (keine EL-Mitteilungen im Hintergrund).
