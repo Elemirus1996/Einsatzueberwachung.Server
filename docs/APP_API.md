@@ -72,14 +72,20 @@ Gesammelte Positionen aus dem lokalen Puffer, höchstens 500 je Anfrage, höchst
 
 Antwort:
 ```json
-{ "mode": "track", "intervalSec": 20, "uploadEverySec": 60, "pauseCheckSec": 120, "expiresAt": "…", "accepted": 2 }
+{ "mode": "track", "intervalSec": 20, "uploadEverySec": 60, "pauseCheckSec": 120, "expiresAt": "…", "accepted": 2, "lageStand": "3f9a1c07b2e4d815" }
 ```
+
+- `lageStand` (ab Server 1.18.0, #79): kurze Kennung des aktuellen Stands von `/lage` für dieses Team. Sie ändert sich,
+  sobald eine neue Mitteilung oder ein Navigationsziel kommt oder sich Suche, Suchgebiet, Team oder Halsband-Zuordnung ändern.
+  Die App merkt sich den letzten Wert; nur wenn er sich ändert, lädt sie im Hintergrund `/lage` und zeigt neue Mitteilungen,
+  Ziele und Gebiete als **lokale Mitteilung** (auch bei gesperrtem Handy). So entfällt die regelmäßige Abfrage von `/lage`
+  im Hintergrund, und es braucht keinen Push. Fehlt das Feld (älterer Server), bleibt die App beim bisherigen Verhalten.
 
 Nach erfolgreicher Antwort (200) löscht die App die gesendeten Positionen aus dem Puffer. Bei Netzfehler oder 5xx bleiben sie und werden beim nächsten Takt erneut gesendet.
 
 ### 4. `GET /status`
 
-Leichte Abfrage ohne GPS, im Modus `pause` alle `pauseCheckSec` Sekunden und beim App-Start. Antwort wie bei `/positions` (ohne `accepted`).
+Leichte Abfrage ohne GPS, im Modus `pause` alle `pauseCheckSec` Sekunden und beim App-Start. Antwort wie bei `/positions` (ohne `accepted`), also auch mit `lageStand`.
 
 ### 5. `mode` – was die App tun muss
 

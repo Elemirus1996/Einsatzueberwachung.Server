@@ -148,6 +148,19 @@ public sealed class TeamAppEreignisse : IDisposable
         Senden(teamId, "lage", new { });
     }
 
+    /// <summary>
+    /// Kennung des aktuellen Stands von /lage fuer die Antwort auf /positions und /status (#79): aendert sich bei neuer
+    /// Mitteilung oder neuem Ziel und bei allem, was auch „lage“ ausloest. Damit holt die App /lage im Hintergrund nur bei
+    /// Aenderungen und zeigt lokale Mitteilungen – ohne Push und ohne regelmaessige Abfrage.
+    /// </summary>
+    public string LageStand(string teamId)
+    {
+        var mitteilungen = _einsatz.TeamMitteilungen(teamId);
+        var letzte = mitteilungen.Count == 0 ? "" : mitteilungen[^1].Id;
+        var roh = $"{Signatur(teamId)}|{mitteilungen.Count}|{letzte}";
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(roh)))[..16].ToLowerInvariant();
+    }
+
     /// <summary>Alles, was die Anzeige in /lage aendert – ohne laufende Suchzeit</summary>
     private string Signatur(string teamId)
     {
