@@ -12,7 +12,7 @@
 # vpn_port (Standard 51820), dns_anbieter (dynu oder andere, Standard dynu).
 # Abgeleitet: vpn_server_ip (erste Adresse im VPN-Netz), intern_adresse (el.<domain>).
 #
-# Vorlagen enthalten die Beispielwerte dein-einsatz.mywire.org, 10.10.0.0/24 und 10.10.0.1; sie bleiben so gueltige
+# Vorlagen enthalten die Beispielwerte staffel-musterstadt.mywire.org, 10.10.0.0/24 und 10.10.0.1; sie bleiben so gueltige
 # nginx-Dateien (CI, bestehende Server) und werden hier ersetzt.
 set -euo pipefail
 
@@ -124,10 +124,10 @@ vorlage() {
 	domain="$(gelesen domain)"
 	netz="$(gelesen vpn_netz)"
 	ip="$(wert vpn_server_ip)"
-	if [[ -z "$domain" ]] && grep -q 'dein-einsatz\.mywire\.org' "$datei"; then
+	if [[ -z "$domain" ]] && grep -q 'staffel-musterstadt\.mywire\.org' "$datei"; then
 		fehler "domain fehlt, Vorlage $datei braucht sie (einsatz-staffel setzen domain <name>)"
 	fi
-	sed -E -e "s#dein-einsatz\.mywire\.org#${domain:-dein-einsatz.mywire.org}#g" \
+	sed -E -e "s#staffel-musterstadt\.mywire\.org#${domain:-staffel-musterstadt.mywire.org}#g" \
 		-e "s#10\.10\.0\.0/24#$netz#g" \
 		-e "s#10\.10\.0\.1([^0-9]|\$)#$ip\1#g" "$datei"
 }

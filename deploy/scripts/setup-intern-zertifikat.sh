@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Einmalige Einrichtung: gueltiges Let's-Encrypt-Zertifikat fuer die interne Adresse (nur im VPN erreichbar),
-# z. B. el.dein-einsatz.mywire.org → VPN-IP des Servers (Standard 10.10.0.1). Ersetzt das selbst ausgestellte Zertifikat, dem die EL-App nicht vertraut.
+# z. B. el.staffel-musterstadt.mywire.org → VPN-IP des Servers (Standard 10.10.0.1). Ersetzt das selbst ausgestellte Zertifikat, dem die EL-App nicht vertraut.
 # Die Pruefung laeuft ueber einen TXT-Eintrag bei Dynu (DNS-01), der Server muss dafuer nicht von aussen erreichbar sein.
 #
 #   sudo bash deploy/scripts/setup-intern-zertifikat.sh                       el.<domain> aus staffel.conf
-#   sudo bash deploy/scripts/setup-intern-zertifikat.sh <interne-adresse>     z. B. el.dein-einsatz.mywire.org
+#   sudo bash deploy/scripts/setup-intern-zertifikat.sh <interne-adresse>     z. B. el.staffel-musterstadt.mywire.org
 #
 # Voraussetzung: certbot, curl und python3 sind installiert; bei Dynu zeigt der A-Eintrag der internen Adresse auf die
 # VPN-IP des Servers; der API-Key steht in Dynu unter „API Credentials“. Kann mehrfach ausgefuehrt werden.

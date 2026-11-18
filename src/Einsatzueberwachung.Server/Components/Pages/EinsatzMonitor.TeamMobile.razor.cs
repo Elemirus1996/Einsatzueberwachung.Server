@@ -14,6 +14,7 @@ public partial class EinsatzMonitor
     private bool _showTeamMobileModal;
     private string _teamMobileQrDataUrl = string.Empty;
     private string _teamMobileFullUrl = string.Empty;
+    private bool _teamMobileAdresseFehlt;
 
     private bool _showTeamMessageModal;
     private string _teamMessageTargetId = string.Empty;
@@ -49,6 +50,7 @@ public partial class EinsatzMonitor
     private async Task OpenTeamMobileModalAsync()
     {
         var token = TeamMobileTokenService.CurrentMasterToken;
+        _teamMobileAdresseFehlt = false;
         if (string.IsNullOrEmpty(token))
         {
             _teamMobileFullUrl = string.Empty;
@@ -57,18 +59,25 @@ public partial class EinsatzMonitor
         else
         {
             var baseUrl = await ResolveTeamMobileBaseUrlAsync();
-            _teamMobileFullUrl = string.IsNullOrEmpty(baseUrl)
-                ? $"/team/login/{token}"
-                : $"{baseUrl}/team/login/{token}";
-
-            _teamMobileQrDataUrl = QrBild.DataUrl(_teamMobileFullUrl, 8);
+            if (string.IsNullOrEmpty(baseUrl))
+            {
+                // Ohne eigene öffentliche Adresse kein QR-Code: Er würde sonst ins Leere oder auf einen fremden Server zeigen
+                _teamMobileAdresseFehlt = true;
+                _teamMobileFullUrl = string.Empty;
+                _teamMobileQrDataUrl = string.Empty;
+            }
+            else
+            {
+                _teamMobileFullUrl = $"{baseUrl}/team/login/{token}";
+                _teamMobileQrDataUrl = QrBild.DataUrl(_teamMobileFullUrl, 8);
+            }
         }
         _showTeamMobileModal = true;
     }
 
     /// <summary>
     /// Gibt die effektive Basis-URL für den Team-Mobile QR-Code zurück.
-    /// Priorität: AppSettings.MobileBaseUrl > TeamMobileOptions.PublicBaseUrl > leer (= relativ).
+    /// Priorität: AppSettings.MobileBaseUrl > TeamMobileOptions.PublicBaseUrl > leer (= kein QR-Code).
     /// </summary>
     private async Task<string> ResolveTeamMobileBaseUrlAsync()
     {

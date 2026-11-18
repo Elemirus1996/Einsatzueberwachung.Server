@@ -81,8 +81,8 @@ Neuinstallation für eine Staffel: [`INSTALLATION.md`](INSTALLATION.md). Updates
 
 ```bash
 sudo bash deploy/setup.sh                                          # .NET-Laufzeit, nginx, systemd, Firewall, Backups
-sudo bash deploy/scripts/setup-vpn.sh dein-einsatz.mywire.org      # VPN-Geräte per QR-Code (ab 1.10)
-sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.mywire.org   # Zertifikat + Knopf „Jetzt erneuern“ (ab 1.11.6)
+sudo bash deploy/scripts/setup-vpn.sh staffel-musterstadt.mywire.org      # VPN-Geräte per QR-Code (ab 1.10)
+sudo bash deploy/scripts/setup-zertifikat.sh staffel-musterstadt.mywire.org   # Zertifikat + Knopf „Jetzt erneuern“ (ab 1.11.6)
 ```
 
 Das Setup richtet ein:

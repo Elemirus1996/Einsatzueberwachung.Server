@@ -8,7 +8,7 @@ public sealed class ElAppQrTests
     [Theory]
     [InlineData("https://einsatz.intern/", "https://einsatz.intern/el")]
     [InlineData("https://Einsatz.Intern/einstellungen?tab=system", "https://einsatz.intern/el")]
-    [InlineData("https://el.dein-einsatz.mywire.org:8443/", "https://el.dein-einsatz.mywire.org:8443/el")]
+    [InlineData("https://el.einsatz.example.org:8443/", "https://el.einsatz.example.org:8443/el")]
     public void Inhalt_HttpsAdresseMitEl(string basis, string erwartet) => Assert.Equal(erwartet, ElAppQr.Inhalt(basis));
 
     [Theory]

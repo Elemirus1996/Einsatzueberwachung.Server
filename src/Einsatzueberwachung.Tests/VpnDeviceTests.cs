@@ -17,7 +17,7 @@ public sealed class VpnDeviceTests : IDisposable
 
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
-    private (VpnDeviceService Service, VpnDeviceStore Store) Create(string endpoint = "dein-einsatz.mywire.org:51820")
+    private (VpnDeviceService Service, VpnDeviceStore Store) Create(string endpoint = "einsatz.example.org:51820")
     {
         var store = new VpnDeviceStore(_dir);
         if (endpoint.Length > 0) store.SetEndpoint(endpoint);
@@ -42,7 +42,7 @@ public sealed class VpnDeviceTests : IDisposable
 
             [Peer]
             PublicKey = SERVERKEY=
-            Endpoint = dein-einsatz.mywire.org:51820
+            Endpoint = einsatz.example.org:51820
             AllowedIPs = 10.10.0.0/24
             PersistentKeepalive = 25
 
