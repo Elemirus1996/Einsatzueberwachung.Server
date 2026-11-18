@@ -350,8 +350,60 @@
                                     break;
 
                                 case KnownPanels.Ressourcen:
-                                    var resourceRows = GetMonitorResources();
-                                    @if (resourceRows.Count == 0)
+                                    var resourceGroups = GetMonitorResourceGroups();
+                                    RenderFragment<ResourceRosterItem> renderMonitorResourceEntry = item => @<text>
+                                        @{
+                                            var itemNote = item.GetMonitorNote();
+                                        }
+                                        <div class="resource-monitor-row">
+                                            <div class="resource-monitor-identity">
+                                                <i class="bi @(item.EntityType == ResourceEntityType.Person ? "bi-person" : "bi-shield")"
+                                                   title="@item.TypeLabel"
+                                                   aria-hidden="true"></i>
+                                                <strong>@item.Name</strong>
+                                            </div>
+                                            <select class="resource-monitor-status-chip @ResourceStatusPresentation.CssClass(item.Status)"
+                                                    aria-label="@($"Status für {item.TypeLabel} {item.Name} ändern")"
+                                                    value="@item.Status"
+                                                    disabled="@_isUpdatingResourceStatus"
+                                                    @onchange="args => OnResourceStatusSelectedAsync(item, args.Value?.ToString())">
+                                                @foreach (var status in ResourceStatusPresentation.Options(item.EntityType))
+                                                {
+                                                    <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(itemNote))
+                                        {
+                                            <small class="resource-monitor-note">@itemNote</small>
+                                        }
+                                        @if (_pendingSpecialResourceKey == item.UiKey)
+                                        {
+                                            <div class="resource-monitor-special-editor">
+                                                <label>
+                                                    <span>Auftrag / Zweck (Pflichtfeld)</span>
+                                                    <input class="form-control form-control-sm"
+                                                           value="@_pendingSpecialResourceNote"
+                                                           @oninput="args => SetPendingSpecialResourceNote(args.Value?.ToString())" />
+                                                </label>
+                                                <div class="resource-monitor-special-actions">
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-primary"
+                                                            disabled="@(_isUpdatingResourceStatus || string.IsNullOrWhiteSpace(_pendingSpecialResourceNote))"
+                                                            @onclick="() => ConfirmSpecialResourceAssignmentAsync(item)">
+                                                        Bestätigen
+                                                    </button>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-secondary"
+                                                            disabled="@_isUpdatingResourceStatus"
+                                                            @onclick="CancelSpecialResourceAssignment">
+                                                        Abbrechen
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    </text>;
+                                    @if (resourceGroups.Count == 0)
                                     {
                                         <div class="resource-monitor-empty">
                                             <span>Noch keine Ressourcen eingecheckt.</span>
@@ -365,55 +417,20 @@
                                             <div class="resource-monitor-error" role="alert">@_resourceStatusError</div>
                                         }
                                         <ul class="resource-monitor-list" aria-label="Eingecheckte Ressourcen">
-                                            @foreach (var row in resourceRows)
+                                            @foreach (var group in resourceGroups)
                                             {
-                                                <li class="resource-monitor-item" @key="row.Key">
-                                                    <div class="resource-monitor-row">
-                                                        <div class="resource-monitor-identity">
-                                                            <i class="bi @(row.EntityType == ResourceEntityType.Person ? "bi-person" : "bi-shield")"
-                                                               title="@row.TypeLabel"
-                                                               aria-hidden="true"></i>
-                                                            <strong>@row.Name</strong>
-                                                        </div>
-                                                        <select class="resource-monitor-status-chip @ResourceStatusPresentation.CssClass(row.Status)"
-                                                                aria-label="@($"Status für {row.TypeLabel} {row.Name} ändern")"
-                                                                value="@row.Status"
-                                                                disabled="@_isUpdatingResourceStatus"
-                                                                @onchange="args => OnResourceStatusSelectedAsync(row, args.Value?.ToString())">
-                                                            @foreach (var status in ResourceStatusPresentation.Options(row.EntityType))
+                                                <li class="resource-monitor-item" @key="group.Primary.UiKey">
+                                                    @renderMonitorResourceEntry(group.Primary)
+                                                    @if (group.CheckedInDogs.Count > 0)
+                                                    {
+                                                        <ul class="resource-monitor-sublist" aria-label="@($"Hunde von {group.Primary.Name}")">
+                                                            @foreach (var dogItem in group.CheckedInDogs)
                                                             {
-                                                                <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                                                                <li class="resource-monitor-subitem" @key="dogItem.UiKey">
+                                                                    @renderMonitorResourceEntry(dogItem)
+                                                                </li>
                                                             }
-                                                        </select>
-                                                    </div>
-                                                    @if (!string.IsNullOrWhiteSpace(row.Note))
-                                                    {
-                                                        <small class="resource-monitor-note">@row.Note</small>
-                                                    }
-                                                    @if (_pendingSpecialResourceKey == row.Key)
-                                                    {
-                                                        <div class="resource-monitor-special-editor">
-                                                            <label>
-                                                                <span>Auftrag / Zweck (Pflichtfeld)</span>
-                                                                <input class="form-control form-control-sm"
-                                                                       value="@_pendingSpecialResourceNote"
-                                                                       @oninput="args => SetPendingSpecialResourceNote(args.Value?.ToString())" />
-                                                            </label>
-                                                            <div class="resource-monitor-special-actions">
-                                                                <button type="button"
-                                                                        class="btn btn-sm btn-primary"
-                                                                        disabled="@(_isUpdatingResourceStatus || string.IsNullOrWhiteSpace(_pendingSpecialResourceNote))"
-                                                                        @onclick="() => ConfirmSpecialResourceAssignmentAsync(row)">
-                                                                    Bestätigen
-                                                                </button>
-                                                                <button type="button"
-                                                                        class="btn btn-sm btn-outline-secondary"
-                                                                        disabled="@_isUpdatingResourceStatus"
-                                                                        @onclick="CancelSpecialResourceAssignment">
-                                                                    Abbrechen
-                                                                </button>
-                                                            </div>
-                                                        </div>
+                                                        </ul>
                                                     }
                                                 </li>
                                             }

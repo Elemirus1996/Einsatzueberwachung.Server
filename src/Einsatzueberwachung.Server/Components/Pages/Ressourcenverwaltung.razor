@@ -50,9 +50,9 @@
                     <p class="resource-eyebrow">AUFNAHME</p>
                     <h2 id="checkin-heading">Check-in</h2>
                     <p class="resource-search-hint">
-                        @SortedResources.Count eingecheckt
+                        @TotalResourceCount eingecheckt
                         <span aria-hidden="true">·</span>
-                        @CheckInCandidates.Count @(_searchType == ResourceEntityType.Person ? "Personen" : "Hunde") in der Liste
+                        @CheckInCandidates.Count Personen in der Liste
                     </p>
                 </div>
                 <button type="button"
@@ -61,7 +61,7 @@
                         aria-controls="checkin-controls"
                         @onclick="ToggleCheckIn">
                     <i class="bi @(_checkInExpanded ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></i>
-                    @(_checkInExpanded ? "Check-in schließen" : "Weitere Ressourcen einchecken")
+                    @(_checkInExpanded ? "Check-in schließen" : "Weitere Personen einchecken")
                 </button>
             </div>
 
@@ -69,22 +69,6 @@
             {
                 <div id="checkin-controls" class="resource-checkin-controls">
                     <div class="resource-checkin-toolbar">
-                        <div class="resource-type-switch" role="group" aria-label="Ressourcenart auswählen">
-                            <button type="button"
-                                    class="btn @(_searchType == ResourceEntityType.Person ? "btn-primary" : "btn-outline-secondary")"
-                                    aria-pressed="@(_searchType == ResourceEntityType.Person)"
-                                    @onclick="() => SelectSearchType(ResourceEntityType.Person)">
-                                <i class="bi bi-person" aria-hidden="true"></i>
-                                Personen
-                            </button>
-                            <button type="button"
-                                    class="btn @(_searchType == ResourceEntityType.Dog ? "btn-primary" : "btn-outline-secondary")"
-                                    aria-pressed="@(_searchType == ResourceEntityType.Dog)"
-                                    @onclick="() => SelectSearchType(ResourceEntityType.Dog)">
-                                <i class="bi bi-shield" aria-hidden="true"></i>
-                                Hunde
-                            </button>
-                        </div>
                         <label class="resource-initial-status">
                             <span>Startstatus</span>
                             <select class="form-select" @bind="_initialStatus">
@@ -93,12 +77,12 @@
                             </select>
                         </label>
                         <label class="resource-search-field">
-                            <span>Liste filtern</span>
+                            <span>Personen filtern</span>
                             <span class="resource-search-input-wrap">
                                 <i class="bi bi-search" aria-hidden="true"></i>
                                 <input type="search"
                                        class="form-control"
-                                       placeholder="@(_searchType == ResourceEntityType.Person ? "Name oder Organisation" : "Hundename oder Rasse")"
+                                       placeholder="Name, Organisation oder Hund"
                                        autocomplete="off"
                                        @bind="_searchText"
                                        @bind:event="oninput" />
@@ -111,30 +95,30 @@
                         <p class="resource-search-hint" role="status">
                             @if (string.IsNullOrWhiteSpace(_searchText))
                             {
-                                @if (ActiveMasterDataCount == 0)
+                                @if (ActivePersonnelCount == 0)
                                 {
-                                    <span>Keine aktiven Stammdaten dieser Art vorhanden.</span>
+                                    <span>Keine aktiven Personen in den Stammdaten vorhanden.</span>
                                 }
                                 else
                                 {
-                                    <span>Alle aktiven Stammdaten dieser Art sind bereits eingecheckt.</span>
+                                    <span>Alle aktiven Personen sind bereits eingecheckt.</span>
                                 }
                             }
                             else
                             {
-                                <span>Keine passenden, noch nicht eingecheckten Stammdaten gefunden.</span>
+                                <span>Keine passenden, noch nicht eingecheckten Personen gefunden.</span>
                             }
                         </p>
                     }
                     else
                     {
-                        <div class="resource-suggestions" role="list" aria-label="@(_searchType == ResourceEntityType.Person ? "Eincheckbare Personen" : "Eincheckbare Hunde")">
+                        <div class="resource-suggestions" role="list" aria-label="Eincheckbare Personen">
                             @foreach (var suggestion in CheckInCandidates)
                             {
                                 <div class="resource-suggestion" role="listitem" @key="suggestion.Id">
                                     <div class="resource-suggestion-identity">
                                         <span class="resource-kind-icon" aria-hidden="true">
-                                            <i class="bi @(suggestion.EntityType == ResourceEntityType.Person ? "bi-person" : "bi-shield")"></i>
+                                            <i class="bi bi-person"></i>
                                         </span>
                                         <span>
                                             <strong>@suggestion.Name</strong>
@@ -145,11 +129,11 @@
                                         </span>
                                     </div>
                                     <button type="button"
-                                    class="btn btn-sm btn-primary"
+                                            class="btn btn-sm btn-primary"
                                             aria-label="@($"{suggestion.Name} einchecken")"
                                             title="@($"Mit Status „{ResourceStatusPresentation.Label(_initialStatus)}“ einchecken")"
                                             disabled="@_isSaving"
-                                            @onclick="() => CheckInAsync(suggestion.EntityType, suggestion.Id)">
+                                            @onclick="() => CheckInPersonAsync(suggestion.Id)">
                                         <i class="bi bi-person-check" aria-hidden="true"></i>
                                         Einchecken
                                     </button>
@@ -159,10 +143,10 @@
                     }
 
                     <div class="resource-quick-create-prompt">
-                        <span>@(_searchType == ResourceEntityType.Person ? "Person fehlt in der Liste?" : "Hund fehlt in der Liste?")</span>
+                        <span>Person fehlt in der Liste?</span>
                         <button type="button"
                                 class="btn btn-outline-secondary resource-quick-create-button"
-                                @onclick="() => OpenQuickCreate(_searchType)">
+                                @onclick="OpenQuickCreate">
                             <i class="bi bi-person-plus" aria-hidden="true"></i>
                             Schnell erfassen
                         </button>
@@ -186,9 +170,7 @@
                         <div class="modal-modern-header">
                             <div>
                                 <p class="resource-eyebrow">STAMMDATEN UND EINSATZ</p>
-                                <h3 id="quick-create-heading">
-                                    @(_quickCreateType == ResourceEntityType.Person ? "Person erfassen und einchecken" : "Hund erfassen und einchecken")
-                                </h3>
+                                <h3 id="quick-create-heading">Person erfassen und einchecken</h3>
                             </div>
                             <button type="button"
                                     class="btn btn-outline-secondary"
@@ -202,48 +184,24 @@
                             <p class="resource-quick-create-explainer">
                                 Der Datensatz wird dauerhaft in den Stammdaten gespeichert und anschließend diesem Einsatz zugewiesen.
                             </p>
-                            @if (_quickCreateType == ResourceEntityType.Person)
-                            {
-                                <div class="resource-quick-create-grid">
-                                    <label>
-                                        <span>Vorname</span>
-                                        <input class="form-control" autocomplete="given-name" @bind="_newPerson.Vorname" />
-                                    </label>
-                                    <label>
-                                        <span>Nachname</span>
-                                        <input class="form-control" autocomplete="family-name" @bind="_newPerson.Nachname" />
-                                    </label>
-                                    <label>
-                                        <span>Organisation (optional)</span>
-                                        <input class="form-control" @bind="_newPerson.Organisation" />
-                                    </label>
-                                    <label>
-                                        <span>Divera-Benutzer-ID (optional)</span>
-                                        <input class="form-control" inputmode="numeric" @bind="_newDiveraUserId" />
-                                    </label>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="resource-quick-create-grid">
-                                    <label>
-                                        <span>Name</span>
-                                        <input class="form-control" @bind="_newDog.Name" />
-                                    </label>
-                                    <label>
-                                        <span>Rasse (optional)</span>
-                                        <input class="form-control" @bind="_newDog.Rasse" />
-                                    </label>
-                                    <label>
-                                        <span>Organisation (optional)</span>
-                                        <input class="form-control" @bind="_newDog.Organisation" />
-                                    </label>
-                                    <label>
-                                        <span>Alter in Jahren (optional)</span>
-                                        <input class="form-control" type="number" min="0" @bind="_newDog.Alter" />
-                                    </label>
-                                </div>
-                            }
+                            <div class="resource-quick-create-grid">
+                                <label>
+                                    <span>Vorname</span>
+                                    <input class="form-control" autocomplete="given-name" @bind="_newPerson.Vorname" />
+                                </label>
+                                <label>
+                                    <span>Nachname</span>
+                                    <input class="form-control" autocomplete="family-name" @bind="_newPerson.Nachname" />
+                                </label>
+                                <label>
+                                    <span>Organisation (optional)</span>
+                                    <input class="form-control" @bind="_newPerson.Organisation" />
+                                </label>
+                                <label>
+                                    <span>Divera-Benutzer-ID (optional)</span>
+                                    <input class="form-control" inputmode="numeric" @bind="_newDiveraUserId" />
+                                </label>
+                            </div>
                         </div>
                         <div class="modal-modern-footer">
                             <button type="button"
@@ -266,18 +224,80 @@
         </section>
 
         <section class="resource-roster-section" aria-labelledby="roster-heading">
+            @{
+                var rosterGroups = RosterGroups;
+                RenderFragment<ResourceRosterItem> renderNotesAndSpecialInput = item => @<text>
+                    @if (item.Status == ResourceStatus.Sonderauftrag && !string.IsNullOrWhiteSpace(item.Resource.SonderauftragNotiz))
+                    {
+                        <small class="resource-assignment-note">@item.Resource.SonderauftragNotiz</small>
+                    }
+                    else if (item.Status == ResourceStatus.AufAnfahrt && !string.IsNullOrWhiteSpace(item.Resource.DiveraRueckmeldung))
+                    {
+                        <small class="resource-assignment-note">Divera: @item.Resource.DiveraRueckmeldung</small>
+                    }
+                    @if (IsSpecialAssignmentPending(item))
+                    {
+                        <label class="resource-assignment-note-input">
+                            <span>Auftrag / Zweck (Pflichtfeld)</span>
+                            <input class="form-control form-control-sm"
+                                   value="@PendingNote(item)"
+                                   @oninput="args => SetPendingNote(item, args.Value?.ToString())" />
+                        </label>
+                    }
+                </text>;
+
+                RenderFragment<ResourceRosterItem> renderStatusAndDispositionCells = item => @<text>
+                    <td>
+                        <span class="resource-status @ResourceStatusPresentation.CssClass(item.Status)">
+                            <i class="bi @ResourceStatusPresentation.Icon(item.Status)" aria-hidden="true"></i>
+                            @ResourceStatusPresentation.Label(item.Status)
+                        </span>
+                    </td>
+                    <td>
+                        @if (IsSpecialAssignmentPending(item))
+                        {
+                            <div class="resource-row-actions">
+                                <button type="button"
+                                        class="btn btn-sm btn-primary"
+                                        disabled="@_isSaving"
+                                        @onclick="() => ConfirmSpecialAssignmentAsync(item)">
+                                    Bestätigen
+                                </button>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary"
+                                        @onclick="() => CancelSpecialAssignment(item)">
+                                    Abbrechen
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <select class="form-select resource-status-select"
+                                    aria-label="@($"Status für {item.TypeLabel} {item.Name} ändern")"
+                                    value="@item.Status"
+                                    disabled="@_isSaving"
+                                    @onchange="args => OnStatusSelectedAsync(item, args.Value?.ToString())">
+                                @foreach (var status in StatusOptions(item.EntityType))
+                                {
+                                    <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                                }
+                            </select>
+                        }
+                    </td>
+                </text>;
+            }
             <div class="resource-section-heading">
                 <div>
                     <p class="resource-eyebrow">AKTUELLER EINSATZ</p>
                     <h2 id="roster-heading">Eingecheckte Ressourcen</h2>
                 </div>
-                <div class="resource-counts" aria-label="@($"{InVerfuegungsraumCount} Ressourcen im Verfügungsraum, {SortedResources.Count} insgesamt")">
+                <div class="resource-counts" aria-label="@($"{InVerfuegungsraumCount} Ressourcen im Verfügungsraum, {TotalResourceCount} insgesamt")">
                     <strong>@InVerfuegungsraumCount</strong>
-                    <span>im Verfügungsraum · @SortedResources.Count gesamt</span>
+                    <span>im Verfügungsraum · @TotalResourceCount gesamt</span>
                 </div>
             </div>
 
-            @if (SortedResources.Count == 0)
+            @if (rosterGroups.Count == 0)
             {
                 <div class="resource-roster-empty">
                     <i class="bi bi-person-check" aria-hidden="true"></i>
@@ -291,72 +311,70 @@
                         <thead>
                             <tr>
                                 <th scope="col">Ressource</th>
-                                <th scope="col">Art</th>
                                 <th scope="col">Status</th>
                                 <th scope="col">Disposition</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var resource in SortedResources)
+                            @foreach (var group in rosterGroups)
                             {
-                                <tr @key="ResourceKey(resource)">
+                                var primary = group.Primary;
+                                var hasCheckedInDogs = group.CheckedInDogs.Count > 0;
+                                <tr class="resource-primary-row @(hasCheckedInDogs ? "resource-primary-row--has-dogs" : string.Empty)" @key="primary.UiKey">
                                     <td>
-                                        <strong>@ResourceName(resource)</strong>
-                                        @if (resource.Status == ResourceStatus.Sonderauftrag && !string.IsNullOrWhiteSpace(resource.SonderauftragNotiz))
+                                        <div class="resource-row-identity">
+                                            <i class="bi @(primary.EntityType == ResourceEntityType.Person ? "bi-person" : "bi-shield")"
+                                               title="@primary.TypeLabel"
+                                               aria-hidden="true"></i>
+                                            <strong>@primary.Name</strong>
+                                            @if (primary.EntityType == ResourceEntityType.Dog)
+                                            {
+                                                <span class="resource-standalone-hint">Ohne eingecheckten Hundeführer</span>
+                                            }
+                                        </div>
+                                        @renderNotesAndSpecialInput(primary)
+                                        @if (group.UncheckedActiveDogs.Count > 0)
                                         {
-                                            <small class="resource-assignment-note">@resource.SonderauftragNotiz</small>
-                                        }
-                                        else if (resource.Status == ResourceStatus.AufAnfahrt && !string.IsNullOrWhiteSpace(resource.DiveraRueckmeldung))
-                                        {
-                                            <small class="resource-assignment-note">Divera: @resource.DiveraRueckmeldung</small>
-                                        }
-                                        @if (IsSpecialAssignmentPending(resource))
-                                        {
-                                            <label class="resource-assignment-note-input">
-                                                <span>Auftrag / Zweck (Pflichtfeld)</span>
-                                                <input class="form-control form-control-sm"
-                                                       value="@PendingNote(resource)"
-                                                       @oninput="args => SetPendingNote(resource, args.Value?.ToString())" />
-                                            </label>
-                                        }
-                                    </td>
-                                    <td>@(resource.EntityType == ResourceEntityType.Person ? "Person" : "Hund")</td>
-                                    <td>
-                                        <span class="resource-status @ResourceStatusPresentation.CssClass(resource.Status)">
-                                            <i class="bi @ResourceStatusPresentation.Icon(resource.Status)" aria-hidden="true"></i>
-                                            @ResourceStatusPresentation.Label(resource.Status)
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if (IsSpecialAssignmentPending(resource))
-                                        {
-                                            <div class="resource-row-actions">
-                                                <button type="button" class="btn btn-sm btn-primary"
-                                                        disabled="@_isSaving"
-                                                        @onclick="() => ConfirmSpecialAssignmentAsync(resource)">
-                                                    Bestätigen
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                        @onclick="() => CancelSpecialAssignment(resource)">
-                                                    Abbrechen
-                                                </button>
+                                            <div class="resource-dog-checkin-actions"
+                                                 role="group"
+                                                 aria-label="@($"Hunde von {primary.Name} hinzufügen")">
+                                                @foreach (var dog in group.UncheckedActiveDogs)
+                                                {
+                                                    var derivedStatus = ResourceRosterBuilder.DeriveDogCheckInStatus(primary.Status);
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-secondary resource-dog-add-btn"
+                                                            disabled="@_isSaving"
+                                                            aria-label="@($"Hund {dog.Name} als {ResourceStatusPresentation.Label(derivedStatus)} hinzufügen")"
+                                                            title="@($"Hund {dog.Name} als „{ResourceStatusPresentation.Label(derivedStatus)}“ einchecken")"
+                                                            @onclick="() => CheckInHandlerDogAsync(primary, dog)">
+                                                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                                        <i class="bi bi-shield" aria-hidden="true"></i>
+                                                        <span>@dog.Name</span>
+                                                    </button>
+                                                }
                                             </div>
                                         }
-                                        else
-                                        {
-                                            <select class="form-select resource-status-select"
-                                                    aria-label="@($"Status für {ResourceName(resource)} ändern")"
-                                                    value="@resource.Status"
-                                                    disabled="@_isSaving"
-                                                    @onchange="args => OnStatusSelectedAsync(resource, args.Value?.ToString())">
-                                                @foreach (var status in StatusOptions(resource.EntityType))
-                                                {
-                                                <option value="@status">@ResourceStatusPresentation.Label(status)</option>
-                                                }
-                                            </select>
-                                        }
                                     </td>
+                                    @renderStatusAndDispositionCells(primary)
                                 </tr>
+                                @for (var dogIndex = 0; dogIndex < group.CheckedInDogs.Count; dogIndex++)
+                                {
+                                    var dogItem = group.CheckedInDogs[dogIndex];
+                                    var isLastDog = dogIndex == group.CheckedInDogs.Count - 1;
+                                    <tr class="resource-dog-subrow @(isLastDog ? "resource-dog-subrow--last" : string.Empty)" @key="dogItem.UiKey">
+                                        <td>
+                                            <div class="resource-row-identity resource-row-identity--dog">
+                                                <span class="resource-dog-connector" aria-hidden="true"></span>
+                                                <i class="bi bi-shield" title="Hund" aria-hidden="true"></i>
+                                                <strong>@dogItem.Name</strong>
+                                            </div>
+                                            <div class="resource-dog-subrow-details">
+                                                @renderNotesAndSpecialInput(dogItem)
+                                            </div>
+                                        </td>
+                                        @renderStatusAndDispositionCells(dogItem)
+                                    </tr>
+                                }
                             }
                         </tbody>
                     </table>

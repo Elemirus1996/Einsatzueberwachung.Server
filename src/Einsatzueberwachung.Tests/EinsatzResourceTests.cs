@@ -287,6 +287,206 @@ public sealed class EinsatzResourceTests
             Assert.Single(einsatz.GetEinsatzResources()).Status);
     }
 
+    [Theory]
+    [InlineData(ResourceStatus.AufAnfahrt, ResourceStatus.AufAnfahrt)]
+    [InlineData(ResourceStatus.Verfuegbar, ResourceStatus.Verfuegbar)]
+    [InlineData(ResourceStatus.VoruebergehendAbwesend, ResourceStatus.Verfuegbar)]
+    [InlineData(ResourceStatus.InSuche, ResourceStatus.Verfuegbar)]
+    [InlineData(ResourceStatus.Sonderauftrag, ResourceStatus.Verfuegbar)]
+    [InlineData(ResourceStatus.Drohneneinsatz, ResourceStatus.Verfuegbar)]
+    [InlineData(ResourceStatus.Abgemeldet, ResourceStatus.Verfuegbar)]
+    public void DeriveDogCheckInStatus_DerivesFromHandlerStatus(
+        ResourceStatus handlerStatus,
+        ResourceStatus expectedDogStatus)
+    {
+        Assert.Equal(expectedDogStatus, ResourceRosterBuilder.DeriveDogCheckInStatus(handlerStatus));
+    }
+
+    [Fact]
+    public void ResourceRosterBuilder_GroupsMultipleDogsUnderHandlerWithOwnStateAndUncheckedCandidates()
+    {
+        var handler = new PersonalEntry { Id = "hf-1", Vorname = "Eric", Nachname = "Giemsa", IsActive = true };
+        var dogAvailable = new DogEntry
+        {
+            Id = "dog-1",
+            Name = "Karla",
+            IsActive = true,
+            HundefuehrerIds = new List<string> { "hf-1" }
+        };
+        var dogResting = new DogEntry
+        {
+            Id = "dog-2",
+            Name = "Atlas",
+            IsActive = true,
+            HundefuehrerIds = new List<string> { "hf-1" }
+        };
+        var dogUnchecked = new DogEntry
+        {
+            Id = "dog-3",
+            Name = "Bello",
+            IsActive = true,
+            HundefuehrerIds = new List<string> { "hf-1" }
+        };
+        var dogInactive = new DogEntry
+        {
+            Id = "dog-4",
+            Name = "Inaktiv",
+            IsActive = false,
+            HundefuehrerIds = new List<string> { "hf-1" }
+        };
+
+        var resources = new[]
+        {
+            new EinsatzResource { EntityType = ResourceEntityType.Person, EntityId = "hf-1", Status = ResourceStatus.Verfuegbar },
+            new EinsatzResource { EntityType = ResourceEntityType.Dog, EntityId = "dog-2", Status = ResourceStatus.Pause },
+            new EinsatzResource { EntityType = ResourceEntityType.Dog, EntityId = "dog-1", Status = ResourceStatus.Verfuegbar }
+        };
+
+        var group = Assert.Single(ResourceRosterBuilder.Build(
+            resources,
+            new[] { handler },
+            new[] { dogAvailable, dogResting, dogUnchecked, dogInactive }));
+
+        Assert.Equal("Eric Giemsa", group.Primary.Name);
+        Assert.Equal(ResourceStatus.Verfuegbar, group.Primary.Status);
+        Assert.Collection(
+            group.CheckedInDogs,
+            first =>
+            {
+                Assert.Equal("Karla", first.Name);
+                Assert.Equal(ResourceStatus.Verfuegbar, first.Status);
+            },
+            second =>
+            {
+                Assert.Equal("Atlas", second.Name);
+                Assert.Equal(ResourceStatus.Pause, second.Status);
+            });
+        var candidate = Assert.Single(group.UncheckedActiveDogs);
+        Assert.Equal("dog-3", candidate.DogId);
+        Assert.Equal("Bello", candidate.Name);
+    }
+
+    [Fact]
+    public async Task ResourceRosterBuilder_DisplaysSharedDogUnderEachCheckedInHandlerWithSharedState()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        var hf1 = new PersonalEntry { Id = "hf-1", Vorname = "Eric", Nachname = "Giemsa", IsActive = true };
+        var hf2 = new PersonalEntry { Id = "hf-2", Vorname = "Lina", Nachname = "Giemsa", IsActive = true };
+        var sharedDog = new DogEntry
+        {
+            Id = "dog-1",
+            Name = "Karla",
+            IsActive = true,
+            HundefuehrerIds = new List<string> { "hf-1", "hf-2" }
+        };
+
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "hf-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "hf-2",
+            Status = ResourceStatus.AufAnfahrt
+        });
+
+        var beforeDogCheckIn = ResourceRosterBuilder.Build(
+            einsatz.GetEinsatzResources(),
+            new[] { hf1, hf2 },
+            new[] { sharedDog });
+
+        Assert.Equal(2, beforeDogCheckIn.Count);
+        Assert.All(beforeDogCheckIn, group =>
+        {
+            Assert.Empty(group.CheckedInDogs);
+            Assert.Equal("dog-1", Assert.Single(group.UncheckedActiveDogs).DogId);
+        });
+
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Dog,
+            EntityId = "dog-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        await einsatz.SetResourceStatusAsync(ResourceEntityType.Dog, "dog-1", ResourceStatus.Pause);
+
+        var afterDogCheckIn = ResourceRosterBuilder.Build(
+            einsatz.GetEinsatzResources(),
+            new[] { hf1, hf2 },
+            new[] { sharedDog });
+
+        Assert.Equal(3, einsatz.GetEinsatzResources().Count);
+        Assert.Collection(
+            afterDogCheckIn,
+            firstHandler =>
+            {
+                Assert.Equal("Eric Giemsa", firstHandler.Primary.Name);
+                Assert.Empty(firstHandler.UncheckedActiveDogs);
+                var dog = Assert.Single(firstHandler.CheckedInDogs);
+                Assert.Equal("Person:hf-1/Dog:dog-1", dog.UiKey);
+                Assert.Equal(ResourceStatus.Pause, dog.Status);
+            },
+            secondHandler =>
+            {
+                Assert.Equal("Lina Giemsa", secondHandler.Primary.Name);
+                Assert.Empty(secondHandler.UncheckedActiveDogs);
+                var dog = Assert.Single(secondHandler.CheckedInDogs);
+                Assert.Equal("Person:hf-2/Dog:dog-1", dog.UiKey);
+                Assert.Equal(ResourceStatus.Pause, dog.Status);
+            });
+    }
+
+    [Fact]
+    public void ResourceRosterBuilder_SortsByPersonStatusAndKeepsStandaloneCheckedInDogVisible()
+    {
+        var personEnRoute = new PersonalEntry { Id = "hf-1", Vorname = "Anna", Nachname = "Alpha", IsActive = true };
+        var personAvailable = new PersonalEntry { Id = "hf-2", Vorname = "Bernd", Nachname = "Beta", IsActive = true };
+        var handlerDog = new DogEntry
+        {
+            Id = "dog-1",
+            Name = "Karla",
+            IsActive = true,
+            HundefuehrerIds = new List<string> { "hf-1" }
+        };
+        var orphanDog = new DogEntry
+        {
+            Id = "dog-2",
+            Name = "Gast-Rex",
+            IsActive = true,
+            HundefuehrerIds = new List<string> { "hf-not-checked-in" }
+        };
+
+        var resources = new[]
+        {
+            new EinsatzResource { EntityType = ResourceEntityType.Person, EntityId = "hf-1", Status = ResourceStatus.AufAnfahrt },
+            new EinsatzResource { EntityType = ResourceEntityType.Dog, EntityId = "dog-1", Status = ResourceStatus.Verfuegbar },
+            new EinsatzResource { EntityType = ResourceEntityType.Person, EntityId = "hf-2", Status = ResourceStatus.Verfuegbar },
+            new EinsatzResource { EntityType = ResourceEntityType.Dog, EntityId = "dog-2", Status = ResourceStatus.VoruebergehendAbwesend }
+        };
+
+        var groups = ResourceRosterBuilder.Build(
+            resources,
+            new[] { personEnRoute, personAvailable },
+            new[] { handlerDog, orphanDog });
+
+        Assert.Collection(
+            groups,
+            first => Assert.Equal("Bernd Beta", first.Primary.Name),
+            second =>
+            {
+                Assert.Equal("Gast-Rex", second.Primary.Name);
+                Assert.Equal(ResourceEntityType.Dog, second.Primary.EntityType);
+            },
+            third =>
+            {
+                Assert.Equal("Anna Alpha", third.Primary.Name);
+                Assert.Equal("Karla", Assert.Single(third.CheckedInDogs).Name);
+            });
+    }
+
     private static async Task<EinsatzService> CreateActiveEinsatzAsync()
     {
         var einsatz = new EinsatzService();

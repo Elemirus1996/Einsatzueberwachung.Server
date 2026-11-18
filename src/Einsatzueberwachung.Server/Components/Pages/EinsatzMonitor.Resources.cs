@@ -16,10 +16,10 @@ public partial class EinsatzMonitor
     private int GetAvailableResourceCount() =>
         EinsatzService.GetEinsatzResources().Count(resource => resource.Status == ResourceStatus.Verfuegbar);
 
-    private async Task OnResourceStatusSelectedAsync(ResourcePanelItem row, string? value)
+    private async Task OnResourceStatusSelectedAsync(ResourceRosterItem item, string? value)
     {
         if (!Enum.TryParse<ResourceStatus>(value, out var status)
-            || !ResourceStatusPresentation.Options(row.EntityType).Contains(status))
+            || !ResourceStatusPresentation.Options(item.EntityType).Contains(status))
         {
             _resourceStatusError = "Der ausgewählte Ressourcenstatus ist ungültig.";
             return;
@@ -28,13 +28,13 @@ public partial class EinsatzMonitor
         _resourceStatusError = string.Empty;
         if (status == ResourceStatus.Sonderauftrag)
         {
-            _pendingSpecialResourceKey = row.Key;
+            _pendingSpecialResourceKey = item.UiKey;
             _pendingSpecialResourceNote = string.Empty;
             return;
         }
 
         CancelSpecialResourceAssignment();
-        await SetResourceStatusAsync(row, status);
+        await SetResourceStatusAsync(item, status);
     }
 
     private void SetPendingSpecialResourceNote(string? note)
@@ -43,7 +43,7 @@ public partial class EinsatzMonitor
         _resourceStatusError = string.Empty;
     }
 
-    private async Task ConfirmSpecialResourceAssignmentAsync(ResourcePanelItem row)
+    private async Task ConfirmSpecialResourceAssignmentAsync(ResourceRosterItem item)
     {
         if (string.IsNullOrWhiteSpace(_pendingSpecialResourceNote))
         {
@@ -51,7 +51,7 @@ public partial class EinsatzMonitor
             return;
         }
 
-        await SetResourceStatusAsync(row, ResourceStatus.Sonderauftrag, _pendingSpecialResourceNote);
+        await SetResourceStatusAsync(item, ResourceStatus.Sonderauftrag, _pendingSpecialResourceNote);
     }
 
     private void CancelSpecialResourceAssignment()
@@ -62,7 +62,7 @@ public partial class EinsatzMonitor
     }
 
     private async Task SetResourceStatusAsync(
-        ResourcePanelItem row,
+        ResourceRosterItem item,
         ResourceStatus status,
         string? note = null)
     {
@@ -73,12 +73,12 @@ public partial class EinsatzMonitor
         _resourceStatusError = string.Empty;
         try
         {
-            await EinsatzService.SetResourceStatusAsync(row.EntityType, row.EntityId, status, note);
+            await EinsatzService.SetResourceStatusAsync(item.EntityType, item.EntityId, status, note);
             CancelSpecialResourceAssignment();
         }
         catch (Exception ex)
         {
-            _resourceStatusError = $"Status für {row.Name} konnte nicht geändert werden: {ex.Message}";
+            _resourceStatusError = $"Status für {item.Name} konnte nicht geändert werden: {ex.Message}";
         }
         finally
         {
@@ -86,35 +86,6 @@ public partial class EinsatzMonitor
         }
     }
 
-    private List<ResourcePanelItem> GetMonitorResources()
-    {
-        var resources = EinsatzService.GetEinsatzResources();
-        return resources
-            .Select(resource => new ResourcePanelItem(
-                $"{resource.EntityType}:{resource.EntityId}",
-                resource.EntityType,
-                resource.EntityId,
-                resource.EntityType == ResourceEntityType.Person
-                    ? _personalList.FirstOrDefault(person => person.Id == resource.EntityId)?.FullName ?? $"Unbekannte Person ({resource.EntityId})"
-                    : _dogList.FirstOrDefault(dog => dog.Id == resource.EntityId)?.Name ?? $"Unbekannter Hund ({resource.EntityId})",
-                resource.EntityType == ResourceEntityType.Person ? "Person" : "Hund",
-                resource.Status,
-                resource.Status == ResourceStatus.Sonderauftrag
-                    ? resource.SonderauftragNotiz
-                    : resource.Status == ResourceStatus.AufAnfahrt
-                        ? resource.DiveraRueckmeldung
-                        : string.Empty))
-            .OrderBy(row => ResourceStatusPresentation.Priority(row.Status))
-            .ThenBy(row => row.Name, StringComparer.CurrentCultureIgnoreCase)
-            .ToList();
-    }
-
-    private sealed record ResourcePanelItem(
-        string Key,
-        ResourceEntityType EntityType,
-        string EntityId,
-        string Name,
-        string TypeLabel,
-        ResourceStatus Status,
-        string Note);
+    private IReadOnlyList<ResourceRosterGroup> GetMonitorResourceGroups() =>
+        ResourceRosterBuilder.Build(EinsatzService.GetEinsatzResources(), _personalList, _dogList);
 }

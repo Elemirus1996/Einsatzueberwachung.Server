@@ -105,12 +105,12 @@ public static class HilfeContent
 
         ["/ressourcenverwaltung"] = new(
             "Ressourcenverwaltung",
-            "Hier werden Personen und Hunde für den laufenden Einsatz eingecheckt und disponiert. Die Liste zeigt aktive, noch nicht eingecheckte Stammdaten; Einträge lassen sich direkt übernehmen. Neue Einträge werden per Schnellaufnahme dauerhaft in den Stammdaten gespeichert und eingecheckt. „In Suche“ kann automatisch durch eine Sektorzuweisung oder manuell gesetzt werden. Eine manuelle Statusänderung erzeugt keine Sektorzuweisung; nur Ressourcen eines Suchauftrags werden nach dessen Abschluss automatisch zurückgesetzt. Für einen Sonderauftrag ist ein Zweck erforderlich. Nur Ressourcen mit Status „Im Verfügungsraum“ sind für neue Suchsektoren auswählbar.",
+            "Hier werden Personen und ihre Hunde für den laufenden Einsatz eingecheckt und disponiert. Im Check-in werden aktive, noch nicht eingecheckte Personen angeboten; zugeordnete Hunde lassen sich direkt am Eintrag der eingecheckten Person hinzufügen und behalten ihren eigenständigen Status. Fehlende Personen werden per Schnellaufnahme dauerhaft in den Stammdaten gespeichert und eingecheckt. „In Suche“ kann automatisch durch einen gestarteten Suchauftrag oder manuell gesetzt werden. Eine manuelle Statusänderung erzeugt keine Sektorzuweisung; nur Ressourcen eines Suchauftrags werden nach dessen Abschluss automatisch zurückgesetzt. Für einen Sonderauftrag ist ein Zweck erforderlich. Nur Ressourcen mit Status „Im Verfügungsraum“ sind für neue Suchsektoren auswählbar.",
             new[]
             {
                 "Navigation -> Ressourcenverwaltung",
-                "Personen oder Hunde wählen -> Ressource mit 'Einchecken' übernehmen",
-                "Fehlende Ressource: 'Schnell erfassen' -> in Stammdaten speichern und einchecken",
+                "Check-in: Person mit 'Einchecken' übernehmen -> zugeordnete Hunde direkt an der Person hinzufügen",
+                "Fehlende Person: 'Schnell erfassen' -> in Stammdaten speichern und einchecken",
                 "Sonderauftrag: Status wählen -> Zweck eintragen -> bestätigen",
                 "DIVERA-Zuordnung für Personen: Stammdaten -> Personal -> Divera Benutzer-ID"
             }),

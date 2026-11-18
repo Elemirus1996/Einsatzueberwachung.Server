@@ -45,7 +45,6 @@
 }
 
 .resource-monitor-link,
-.resource-type-switch .btn,
 .resource-checkin-toggle,
 .resource-quick-create-button,
 .resource-row-actions .btn {
@@ -109,7 +108,6 @@
     font-weight: 650;
 }
 
-.resource-type-switch,
 .resource-row-actions {
     display: flex;
     align-items: end;
@@ -119,7 +117,7 @@
 
 .resource-checkin-toolbar {
     display: grid;
-    grid-template-columns: auto minmax(170px, 210px) minmax(220px, 1fr);
+    grid-template-columns: minmax(170px, 220px) minmax(220px, 1fr);
     align-items: end;
     gap: 0.75rem;
 }
@@ -326,7 +324,78 @@
 }
 
 .resource-table td:first-child {
-    min-width: 230px;
+    min-width: 240px;
+}
+
+.resource-primary-row--has-dogs td {
+    border-bottom-color: color-mix(in srgb, var(--ui-border) 40%, transparent);
+    padding-bottom: 0.55rem;
+}
+
+.resource-dog-subrow td {
+    background-color: color-mix(in srgb, var(--ui-surface-2) 45%, var(--ui-surface));
+    border-bottom-color: color-mix(in srgb, var(--ui-border) 40%, transparent);
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+}
+
+.resource-dog-subrow--last td {
+    border-bottom-color: var(--ui-border);
+}
+
+.resource-row-identity {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.resource-row-identity > i {
+    color: var(--ui-muted);
+}
+
+.resource-row-identity--dog {
+    padding-left: 1.25rem;
+}
+
+.resource-dog-connector {
+    display: inline-block;
+    width: 0.65rem;
+    height: 0.55rem;
+    margin-right: 0.1rem;
+    border-left: 1px solid var(--ui-border);
+    border-bottom: 1px solid var(--ui-border);
+    transform: translateY(-0.15rem);
+}
+
+.resource-dog-subrow-details {
+    padding-left: 2.05rem;
+}
+
+.resource-standalone-hint {
+    color: var(--ui-muted);
+    font-size: 0.78rem;
+}
+
+.resource-dog-checkin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.5rem;
+    padding-left: 1.4rem;
+}
+
+.resource-dog-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 36px;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .resource-dog-add-btn {
+        min-height: 44px;
+    }
 }
 
 .resource-assignment-note {
@@ -418,14 +487,6 @@
         flex-direction: column;
     }
 
-    .resource-type-switch {
-        width: 100%;
-    }
-
-    .resource-type-switch .btn {
-        flex: 1;
-    }
-
     .resource-checkin-summary {
         flex-direction: column;
     }
@@ -484,6 +545,6 @@
     }
 
     .resource-table {
-        min-width: 650px;
+        min-width: 540px;
     }
 }
