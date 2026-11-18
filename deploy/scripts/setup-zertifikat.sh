@@ -3,7 +3,7 @@
 # „Jetzt erneuern“ (Einstellungen → System, Hinweis auf Startseite/EL) freischalten (Einsatzueberwachung ab 1.11.6).
 #
 #   sudo bash deploy/scripts/setup-zertifikat.sh              Domain aus staffel.conf (einsatz-staffel)
-#   sudo bash deploy/scripts/setup-zertifikat.sh <domain>     z. B. dein-einsatz.mywire.org
+#   sudo bash deploy/scripts/setup-zertifikat.sh <domain>     z. B. staffel-musterstadt.mywire.org
 #
 # Voraussetzung: certbot ist installiert, die neue einsatzueberwachung-public.conf (Port-80-Block mit
 # /.well-known/acme-challenge/ aus /var/www/certbot) ist aktiv. Kann mehrfach ausgefuehrt werden.

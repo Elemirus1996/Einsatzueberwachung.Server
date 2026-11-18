@@ -25,8 +25,8 @@ done
 echo "$methode $url $koerper" >>"$(dirname "$0")/aufrufe"
 grep -q '^API-Key: geheim=123$' <<<"$header" || { echo "Header ohne API-Key" >&2; exit 22; }
 case "$methode $url" in
-	"GET https://api.dynu.com/v2/dns/getroot/el.dein-einsatz.mywire.org")
-		echo '{"statusCode":200,"id":4711,"domainName":"dein-einsatz.mywire.org","hostname":"el.dein-einsatz.mywire.org","node":"el"}' ;;
+	"GET https://api.dynu.com/v2/dns/getroot/el.staffel-musterstadt.mywire.org")
+		echo '{"statusCode":200,"id":4711,"domainName":"staffel-musterstadt.mywire.org","hostname":"el.staffel-musterstadt.mywire.org","node":"el"}' ;;
 	"POST https://api.dynu.com/v2/dns/4711/record") echo '{"statusCode":200,"id":99}' ;;
 	"GET https://api.dynu.com/v2/dns/4711/record")
 		echo '{"statusCode":200,"dnsRecords":[
@@ -39,7 +39,7 @@ esac
 SH
 chmod +x "$T/curl"
 export EINSATZ_DYNU_CONF="$T/dynu.conf" EINSATZ_DYNU_CURL="$T/curl" EINSATZ_DYNU_WARTEN=0
-export CERTBOT_DOMAIN="el.dein-einsatz.mywire.org" CERTBOT_VALIDATION="pruefwert"
+export CERTBOT_DOMAIN="el.staffel-musterstadt.mywire.org" CERTBOT_VALIDATION="pruefwert"
 TOOL="$HERE/einsatz-dynu-dns"
 fail=0
 pruefe() { # $1 Beschreibung, $2 erwartetes Muster, $3 Text
@@ -47,7 +47,7 @@ pruefe() { # $1 Beschreibung, $2 erwartetes Muster, $3 Text
 }
 
 AUSGABE="$(bash "$TOOL" auth)"
-pruefe "auth meldet Eintrag" "TXT _acme-challenge.el.dein-einsatz.mywire.org gesetzt" "$AUSGABE"
+pruefe "auth meldet Eintrag" "TXT _acme-challenge.el.staffel-musterstadt.mywire.org gesetzt" "$AUSGABE"
 pruefe "auth legt TXT an" 'POST https://api.dynu.com/v2/dns/4711/record {"nodeName": "_acme-challenge.el", "recordType": "TXT", "textData": "pruefwert", "state": true, "ttl": 90}' "$(cat "$T/aufrufe")"
 if grep -q geheim <<<"$AUSGABE$(cat "$T/aufrufe")"; then echo "FEHLER Key in Ausgabe oder Befehlszeile"; fail=1; else echo "OK   Key weder in Ausgabe noch Befehlszeile"; fi
 

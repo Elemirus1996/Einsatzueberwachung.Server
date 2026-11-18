@@ -2,7 +2,7 @@
 # Einmalige Einrichtung fuer VPN-Geraete per QR-Code und DNS im VPN (Einsatzueberwachung ab 1.10).
 #
 #   sudo bash deploy/scripts/setup-vpn.sh              Domain aus staffel.conf (einsatz-staffel)
-#   sudo bash deploy/scripts/setup-vpn.sh <domain>     z. B. dein-einsatz.mywire.org
+#   sudo bash deploy/scripts/setup-vpn.sh <domain>     z. B. staffel-musterstadt.mywire.org
 #   sudo bash deploy/scripts/setup-vpn.sh -            nur VPN-Geraete, ohne DNS
 #
 # Voraussetzung: WireGuard laeuft auf diesem Server als wg0 (deploy/wireguard/wg0.conf.example).

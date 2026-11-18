@@ -133,14 +133,14 @@ Das VPN-Netz ist standardmäßig `10.10.0.0/24` und steht in `/etc/einsatzueberw
 Einmalig auf dem Server (WireGuard läuft als `wg0` auf demselben Rechner):
 
 ```bash
-sudo bash deploy/scripts/setup-vpn.sh dein-einsatz.mywire.org
+sudo bash deploy/scripts/setup-vpn.sh staffel-musterstadt.mywire.org
 ```
 
 Das Skript
 - installiert das Hilfsprogramm `/usr/local/sbin/einsatz-wg-peer` (gehört root, für den Dienst nicht beschreibbar) und
   erlaubt dem Dienstbenutzer per sudoers genau dieses Programm,
 - richtet mit `dnsmasq` einen DNS-Dienst **nur im VPN** ein: Die Domain zeigt dort auf `10.10.0.1`. Geräte im VPN rufen
-  so `https://dein-einsatz.mywire.org` mit gültigem Let's-Encrypt-Zertifikat auf – der öffentliche Nginx-Block erkennt sie
+  so `https://staffel-musterstadt.mywire.org` mit gültigem Let's-Encrypt-Zertifikat auf – der öffentliche Nginx-Block erkennt sie
   am Absender aus dem VPN-Netz und zeigt ihnen die volle Oberfläche, allen anderen nur die Team-Ansicht. Dafür die neue
   `einsatzueberwachung-public.conf` übernehmen (`geo`/`map` am Anfang, `$einsatz_upstream`) und `nginx -t && systemctl reload nginx`.
 
@@ -203,7 +203,7 @@ Einmalig auf den Webroot-Weg umstellen und den Knopf **„Jetzt erneuern“** fr
 ```bash
 # neue einsatzueberwachung-public.conf übernehmen, dann:
 sudo nginx -t && sudo systemctl reload nginx
-sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.mywire.org
+sudo bash deploy/scripts/setup-zertifikat.sh staffel-musterstadt.mywire.org
 sudo certbot renew --dry-run           # muss „Congratulations, all simulated renewals succeeded“ melden
 systemctl list-timers | grep certbot   # automatische Verlängerung aktiv?
 ```
@@ -223,7 +223,7 @@ Prüfen, bis wann das Zertifikat gilt: `sudo certbot certificates`.
 
 Die interne nginx-Konfiguration nutzte bisher ein selbst ausgestelltes Zertifikat. Im Browser lässt sich die Warnung
 wegklicken, **die EL-App (iOS und Android) lehnt es ab** und meldet beim Anmelden einen Fehler. Abhilfe ist eine eigene
-interne Adresse mit gültigem Let's-Encrypt-Zertifikat, z. B. `el.dein-einsatz.mywire.org`:
+interne Adresse mit gültigem Let's-Encrypt-Zertifikat, z. B. `el.staffel-musterstadt.mywire.org`:
 
 1. Bei Dynu (DDNS → Hostname → DNS Records) einen A-Eintrag anlegen: Node Name `el`, IPv4 = VPN-IP des Servers
    (`10.10.0.1`). Der Name ist öffentlich auflösbar, erreichbar ist der Server darunter aber nur im VPN.
@@ -231,8 +231,8 @@ interne Adresse mit gültigem Let's-Encrypt-Zertifikat, z. B. `el.dein-einsatz.m
 3. Auf dem Server:
 
 ```bash
-sudo bash deploy/scripts/setup-intern-zertifikat.sh el.dein-einsatz.mywire.org   # fragt einmal nach dem API-Key
-sudo certbot renew --dry-run --cert-name el.dein-einsatz.mywire.org              # automatische Verlängerung prüfen
+sudo bash deploy/scripts/setup-intern-zertifikat.sh el.staffel-musterstadt.mywire.org   # fragt einmal nach dem API-Key
+sudo certbot renew --dry-run --cert-name el.staffel-musterstadt.mywire.org              # automatische Verlängerung prüfen
 ```
 
 Das Skript speichert den API-Key root-eigen in `/etc/einsatzueberwachung/dynu.conf` (nur root lesbar), installiert den
@@ -241,7 +241,7 @@ stellt das Zertifikat über die DNS-Prüfung aus und verweist `/etc/ssl/certs/ei
 auf das neue Zertifikat. Das alte selbst ausgestellte bleibt als `*.selbst-<datum>` liegen. Die interne nginx-Konfiguration
 bleibt unverändert. Verlängert wird mit dem vorhandenen certbot-Timer, ohne dass der Server von außen erreichbar sein muss.
 
-In der EL-App und im Browser (bei eingeschaltetem WireGuard) dann `el.dein-einsatz.mywire.org` als Adresse verwenden.
+In der EL-App und im Browser (bei eingeschaltetem WireGuard) dann `el.staffel-musterstadt.mywire.org` als Adresse verwenden.
 Nicht die WireGuard-Adresse (`…:51820`) und nicht die öffentliche Adresse der Teams.
 
 ### Anmeldung der Einsatzleitung (ab 1.10)

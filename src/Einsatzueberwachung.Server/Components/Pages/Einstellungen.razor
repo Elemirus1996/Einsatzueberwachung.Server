@@ -1198,13 +1198,13 @@
                     <h3 class="cfg-sub-header"><i class="bi bi-phone me-1"></i>Team-Mobile</h3>
                     <p class="cfg-help">
                         Der QR-Code für die Team-Smartphone-Anmeldung enthält die Basis-URL des Servers.
-                        Wenn das Feld leer ist, wird die URL automatisch aus dem Request abgeleitet (Standard für VPN-Betrieb).
-                        Für lokale Tests oder eine abweichende öffentliche Adresse kann hier eine eigene URL eingetragen werden.
+                        Tragt hier die öffentliche Adresse eures Servers ein, unter der die Teams ihn erreichen.
+                        Ohne Adresse zeigt der Monitor keinen QR-Code.
                     </p>
                     <div class="cfg-field">
                         <label class="cfg-label">Basis-URL (für QR-Code)</label>
-                        <InputText class="cfg-input" @bind-Value="_appSettings.MobileBaseUrl" placeholder="https://dein-einsatz.mywire.org" />
-                        <span class="cfg-help">Leer lassen = automatisch aus Request ableiten. URL-Schema optional – fehlt es, wird <code>https://</code> ergänzt. Beispiel: <code>192.168.1.100:5000</code></span>
+                        <InputText class="cfg-input" @bind-Value="_appSettings.MobileBaseUrl" placeholder="https://staffel-musterstadt.mywire.org" />
+                        <span class="cfg-help">URL-Schema optional – fehlt es, wird <code>https://</code> ergänzt. Beispiel: <code>192.168.1.100:5000</code></span>
                     </div>
                 </div>
             }
@@ -1353,7 +1353,7 @@
                         <div class="cfg-field">
                             <label class="cfg-label" for="vpn-endpoint">Adresse des VPN-Servers (Domain:Port)</label>
                             <div class="cfg-copy-row">
-                                <input id="vpn-endpoint" class="cfg-input" @bind="_vpnEndpoint" placeholder="dein-einsatz.mywire.org:51820" />
+                                <input id="vpn-endpoint" class="cfg-input" @bind="_vpnEndpoint" placeholder="staffel-musterstadt.mywire.org:51820" />
                                 <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="SaveVpnEndpoint">
                                     <i class="bi bi-check2"></i> Speichern
                                 </button>
