@@ -7,8 +7,9 @@ const CACHE = 'einsatz-offline-v2';
 const TILE_CACHE = 'einsatz-kacheln-v1';
 const OFFLINE_FILES = ['/offline.html', '/icons/icon-192.png', '/js/el-outbox.js'];
 
-// Nur Kartenanbieter mit CORS (Antworten lassen sich normal speichern). Google-Kacheln werden nicht gespeichert.
-const TILE_HOSTS = /^([abc]\.)?tile\.openstreetmap\.org$|^([abc]\.)?tile\.opentopomap\.org$|^server\.arcgisonline\.com$/;
+// Nur Kartenanbieter mit CORS (Antworten lassen sich normal speichern), dazu die Luftbild-Dienste der Laender mit CORS
+// (wwwroot/data/luftbild-laender.json, "cors": true).
+const TILE_HOSTS = /^([abc]\.)?tile\.openstreetmap\.org$|^([abc]\.)?tile\.opentopomap\.org$|^server\.arcgisonline\.com$|^(owsproxy\.lgl-bw\.de|geoservices\.bayern\.de|isk\.geobasis-bb\.de|gdi\.berlin\.de|geodienste\.bremen\.de|www\.gds-srv\.hessen\.de|www\.geodaten-mv\.de|opendata\.lgln\.niedersachsen\.de|geo4\.service24\.rlp\.de|geoportal\.saarland\.de|www\.geoproxy\.geoportal-th\.de)$/;
 const TILE_TIMEOUT_MS = 4000;
 const MAX_TILES = 5000;
 

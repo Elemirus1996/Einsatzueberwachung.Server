@@ -138,6 +138,7 @@ public partial class EinsatzKarte
     private string SelectedMapLayerLabel => _mapBaseLayerType switch
     {
         "satellite" => "Satellit (Esri)",
+        "luftbild" => "Luftbild (Länder)",
         "topo" => "Topografisch",
         _ => "Straßenkarte"
     };

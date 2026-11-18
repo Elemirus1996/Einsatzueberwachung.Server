@@ -5,6 +5,14 @@
 - Tragt unter **Einstellungen → Team-Mobile → Basis-URL** die Adresse ein, unter der eure Teams euren Server erreichen (z. B. `https://staffel-musterstadt.mywire.org`). Wer dort schon eine Adresse hat, muss nichts tun.
 - Ohne Adresse zeigt der Monitor statt des QR-Codes einen Hinweis.
 
+## Neu
+
+### Amtliche Luftbilder der Länder
+- Neue Kartenebene **„Luftbild (Länder)“** auf der Karte, im Kartendruck und im Einsatzbericht: die amtlichen Luftbilder (20 cm Auflösung) der Landesvermessungen von **14 Bundesländern** – alle außer Hamburg und Sachsen-Anhalt, deren Dienste noch nicht passen.
+- Alle Länder bilden **eine** Ebene. An Landesgrenzen erscheinen die Bilder der Nachbarländer automatisch mit, ihr könnt also im Ernstfall länderübergreifend arbeiten. Geladen werden nur die Länder im sichtbaren Ausschnitt.
+- Die Luftbilder sind Open Data der Länder, ohne Konto und ohne Kosten. Der vorgeschriebene Quellenvermerk steht unten in der Karte und im Bericht, jeweils nur für die Länder im Ausschnitt.
+- An Landesgrenzen können Bilder aus verschiedenen Jahren und Jahreszeiten aneinanderstoßen.
+
 ## Datenschutz
 
 ### Keine Schriften und Bibliotheken mehr von fremden Servern
@@ -13,4 +21,4 @@
 
 ### Google-Karten entfernt
 - Die Ebenen **„Satellit (Google)“** und **„Hybrid (Google)“** gibt es nicht mehr, weder auf der Karte noch im Kartendruck. Die Kacheln wurden ohne Vertrag direkt von Google geladen, das erlauben die Nutzungsbedingungen von Google nicht.
-- Wer eine dieser Ebenen gewählt hatte, sieht stattdessen „Satellit (Esri)“.
+- Wer eine dieser Ebenen gewählt hatte, sieht stattdessen „Luftbild (Länder)“.

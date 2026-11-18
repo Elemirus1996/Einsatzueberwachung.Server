@@ -9,6 +9,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Luftbild-Dienste der Länder: gleiche Liste für Karte (Browser) und PDF-Bericht -->
+    <EmbeddedResource Include="wwwroot\data\luftbild-laender.json" LogicalName="luftbild-laender.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0" />

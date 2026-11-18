@@ -27,6 +27,7 @@ namespace Einsatzueberwachung.Domain.Models
         [
             (MapTileType.Streets, "Straßenkarte"),
             (MapTileType.Topographic, "Topografisch"),
+            (MapTileType.Luftbild, "Luftbild (Länder)"),
             (MapTileType.Satellite, "Satellit (Esri)")
         ];
 

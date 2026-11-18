@@ -6,7 +6,7 @@ namespace Einsatzueberwachung.Server.Services;
 
 public sealed partial class OsmStaticMapRenderer
 {
-    private record SearchAreaTileConfig(string[] UrlTemplates, int PixelSize, string Attribution);
+    private record SearchAreaTileConfig(string[] UrlTemplates, int PixelSize, string Attribution, bool Luftbild = false);
 
     private static SearchAreaTileConfig GetSearchAreaTileConfig(MapTileType tileType) => tileType switch
     {
@@ -14,6 +14,9 @@ public sealed partial class OsmStaticMapRenderer
             ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
             256,
             "© Esri, Maxar, Earthstar Geographics"),
+
+        // Amtliche Luftbilder der Länder: je Kachel alle Länder, die sie berühren, übereinander (Issue 210)
+        MapTileType.Luftbild => new([], 256, "", Luftbild: true),
 
         MapTileType.Topographic => new(
             [
@@ -91,7 +94,7 @@ public sealed partial class OsmStaticMapRenderer
     }
 
     private async Task<Dictionary<(int x, int y), byte[]?>> DownloadTilesWithConfigAsync(
-        int minX, int maxX, int minY, int maxY, int zoom, string[] urlTemplates, CancellationToken cancellationToken)
+        int minX, int maxX, int minY, int maxY, int zoom, SearchAreaTileConfig config, CancellationToken cancellationToken)
     {
         using var semaphore = new SemaphoreSlim(2);
         var tasks = new List<(int x, int y, Task<byte[]?> task)>();
@@ -100,7 +103,7 @@ public sealed partial class OsmStaticMapRenderer
             for (int y = minY; y <= maxY; y++)
             {
                 var cx = x; var cy = y;
-                tasks.Add((cx, cy, ThrottledDownloadWithConfigAsync(semaphore, cx, cy, zoom, urlTemplates, cancellationToken)));
+                tasks.Add((cx, cy, ThrottledDownloadWithConfigAsync(semaphore, cx, cy, zoom, config, cancellationToken)));
             }
 
         await Task.WhenAll(tasks.Select(t => t.task));
@@ -108,11 +111,68 @@ public sealed partial class OsmStaticMapRenderer
         return tasks.ToDictionary(t => (t.x, t.y), t => t.task.Result);
     }
 
-    private async Task<byte[]?> ThrottledDownloadWithConfigAsync(SemaphoreSlim semaphore, int x, int y, int zoom, string[] urlTemplates, CancellationToken cancellationToken)
+    private async Task<byte[]?> ThrottledDownloadWithConfigAsync(SemaphoreSlim semaphore, int x, int y, int zoom, SearchAreaTileConfig config, CancellationToken cancellationToken)
     {
         await semaphore.WaitAsync(cancellationToken);
-        try { return await DownloadTileAsync(x, y, zoom, urlTemplates, cancellationToken); }
+        try
+        {
+            return config.Luftbild
+                ? await DownloadLuftbildKachelAsync(x, y, zoom, cancellationToken)
+                : await DownloadTileAsync(x, y, zoom, config.UrlTemplates, cancellationToken);
+        }
         finally { semaphore.Release(); }
+    }
+
+    /// <summary>Eine Kachel aus den Luftbildern aller Länder, die sie berühren (an Grenzen mehrere übereinander).</summary>
+    private async Task<byte[]?> DownloadLuftbildKachelAsync(int x, int y, int zoom, CancellationToken cancellationToken)
+    {
+        var (west, sued, ost, nord) = KachelGrad(x, y, zoom);
+        var quellen = LuftbildLaender.Fuer(west, sued, ost, nord);
+        if (quellen.Count == 0) return null;
+
+        var (minX, minY, maxX, maxY) = KachelMercator(x, y, zoom);
+        var bilder = new List<byte[]>();
+        foreach (var quelle in quellen)
+        {
+            var bild = await DownloadTileAsync(x, y, zoom, [quelle.KachelUrl(minX, minY, maxX, maxY, TileSize)], cancellationToken);
+            if (bild != null) bilder.Add(bild);
+        }
+        if (bilder.Count <= 1) return bilder.FirstOrDefault();
+
+        using var bitmap = new SKBitmap(TileSize, TileSize);
+        using (var canvas = new SKCanvas(bitmap))
+        {
+            canvas.Clear(SKColors.Transparent);
+            foreach (var bild in bilder)
+            {
+                using var teil = SKBitmap.Decode(bild);
+                if (teil != null) canvas.DrawBitmap(teil, new SKRect(0, 0, TileSize, TileSize));
+            }
+        }
+        return EncodeAsPng(bitmap);
+    }
+
+    /// <summary>Quellenvermerk passend zum Ausschnitt: bei Luftbildern nur die Länder, die darin vorkommen.</summary>
+    private static string KartenQuelle(SearchAreaTileConfig config, int minTileX, int maxTileX, int minTileY, int maxTileY, int zoom)
+    {
+        if (!config.Luftbild) return config.Attribution;
+        var (west, _, _, nord) = KachelGrad(minTileX, minTileY, zoom);
+        var (_, sued, ost, _) = KachelGrad(maxTileX, maxTileY, zoom);
+        return LuftbildLaender.Quellenvermerk(LuftbildLaender.Fuer(west, sued, ost, nord), DateTime.UtcNow.Year);
+    }
+
+    internal static (double West, double Sued, double Ost, double Nord) KachelGrad(int x, int y, int zoom)
+    {
+        double n = Math.Pow(2, zoom);
+        static double Breite(double yy, double nn) => Math.Atan(Math.Sinh(Math.PI * (1 - 2 * yy / nn))) * 180 / Math.PI;
+        return (x / n * 360 - 180, Breite(y + 1, n), (x + 1) / n * 360 - 180, Breite(y, n));
+    }
+
+    internal static (double MinX, double MinY, double MaxX, double MaxY) KachelMercator(int x, int y, int zoom)
+    {
+        const double halb = 20037508.342789244;
+        var groesse = 2 * halb / Math.Pow(2, zoom);
+        return (-halb + x * groesse, halb - (y + 1) * groesse, -halb + (x + 1) * groesse, halb - y * groesse);
     }
 
     private static (SKBitmap bitmap, int w, int h) AssembleTileMosaic(

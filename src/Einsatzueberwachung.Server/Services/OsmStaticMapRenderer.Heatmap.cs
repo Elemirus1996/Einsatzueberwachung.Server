@@ -76,7 +76,7 @@ public sealed partial class OsmStaticMapRenderer
             var minTileY = (int)Math.Floor(absCropTop / TileSize);
             var maxTileY = (int)Math.Floor(absCropBottom / TileSize);
 
-            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, kacheln.UrlTemplates, ct);
+            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, kacheln, ct);
             var (fullBitmap, _, _) = AssembleTileMosaic(tiles, minTileX, minTileY, maxTileX, maxTileY, TileSize);
 
             using (fullBitmap)
@@ -131,7 +131,7 @@ public sealed partial class OsmStaticMapRenderer
                 if (elwPosition.HasValue)
                     DrawMarker(canvas, new SKPoint(ToX(elwPosition.Value.Longitude), ToY(elwPosition.Value.Latitude)), new SKColor(220, 20, 60), "ELW");
 
-                DrawAttribution(canvas, width, height, kacheln.Attribution);
+                DrawAttribution(canvas, width, height, KartenQuelle(kacheln, minTileX, maxTileX, minTileY, maxTileY, zoom));
                 return EncodeAsPng(outputBitmap);
             }
         }

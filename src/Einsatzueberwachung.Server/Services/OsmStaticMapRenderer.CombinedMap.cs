@@ -205,7 +205,7 @@ public sealed partial class OsmStaticMapRenderer
             var minTileY = (int)Math.Floor(absCropTop / tilePixelSize);
             var maxTileY = (int)Math.Floor(absCropBottom / tilePixelSize);
 
-            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, tileConfig.UrlTemplates, ct);
+            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, tileConfig, ct);
             var (fullBitmap, _, _) = AssembleTileMosaic(tiles, minTileX, minTileY, maxTileX, maxTileY, tilePixelSize);
 
             using (fullBitmap)
@@ -260,7 +260,7 @@ public sealed partial class OsmStaticMapRenderer
 
                 DrawNorthArrow(canvas, width, height);
                 DrawScaleBar(canvas, width, height, ToX, (minLat + maxLat) / 2, minLon, maxLon);
-                DrawAttribution(canvas, width, height, tileConfig.Attribution);
+                DrawAttribution(canvas, width, height, KartenQuelle(tileConfig, minTileX, maxTileX, minTileY, maxTileY, zoom));
 
                 using var image = SKImage.FromBitmap(outputBitmap);
                 using var data = image.Encode(SKEncodedImageFormat.Png, 92);
@@ -452,7 +452,7 @@ public sealed partial class OsmStaticMapRenderer
             var minTileY = (int)Math.Floor(absCropTop / tilePixelSize);
             var maxTileY = (int)Math.Floor(absCropBottom / tilePixelSize);
 
-            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, tileConfig.UrlTemplates, ct);
+            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, tileConfig, ct);
             var (fullBitmap, _, _) = AssembleTileMosaic(tiles, minTileX, minTileY, maxTileX, maxTileY, tilePixelSize);
 
             using (fullBitmap)
@@ -572,7 +572,7 @@ public sealed partial class OsmStaticMapRenderer
 
                 DrawNorthArrow(canvas, width, height);
                 DrawScaleBar(canvas, width, height, ToX, (minLat + maxLat) / 2, minLon, maxLon);
-                DrawAttribution(canvas, width, height, tileConfig.Attribution);
+                DrawAttribution(canvas, width, height, KartenQuelle(tileConfig, minTileX, maxTileX, minTileY, maxTileY, zoom));
 
                 using var image = SKImage.FromBitmap(outputBitmap);
                 using var data = image.Encode(SKEncodedImageFormat.Png, 92);
