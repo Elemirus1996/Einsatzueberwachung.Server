@@ -350,7 +350,7 @@ public sealed class TeamMobileAppController : ControllerBase
         }
 
         var antwort = await Anweisung(teamId, ablaufUtc);
-        return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = gespeichert });
+        return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = gespeichert, antwort.lageStand });
     }
 
     // Wie /team/login: nur mit gueltigem Anmelde-Code und waehrend eines laufenden Einsatzes oder einer Uebung
@@ -388,7 +388,7 @@ public sealed class TeamMobileAppController : ControllerBase
         var team = _einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
         var (intervall, upload) = await AppEinstellungen();
         return new AppAnweisung(OrtungsSteuerung.AlsText(OrtungsSteuerung.FuerTeam(_einsatzService.CurrentEinsatz, team)),
-            intervall, upload, 120, ablaufUtc);
+            intervall, upload, 120, ablaufUtc, _ereignisse?.LageStand(teamId));
     }
 
     private async Task<(int intervall, int upload)> AppEinstellungen()
@@ -404,7 +404,7 @@ public sealed class TeamMobileAppController : ControllerBase
         return StatusCode(StatusCodes.Status410Gone, new { mode = "stop" });
     }
 
-    private sealed record AppAnweisung(string mode, int intervalSec, int uploadEverySec, int pauseCheckSec, DateTime expiresAt);
+    private sealed record AppAnweisung(string mode, int intervalSec, int uploadEverySec, int pauseCheckSec, DateTime expiresAt, string? lageStand);
 
     public sealed class AppStatusmeldungRequest
     {

@@ -23,6 +23,9 @@
 - Quellenvermerke wie von OpenStreetMap und OpenTopoMap verlangt, mit Link; auch die kleine Übersichtskarte zeigt ihn jetzt.
 - Der Knopf **„Für Funkloch sichern“** auf der Karte entfällt. OpenStreetMap verbietet inzwischen das Vorabladen von Kartenkacheln. Bereits angesehene Kartenausschnitte bleiben weiter auf dem Gerät verfügbar.
 
+### Mitteilungen aufs gesperrte Handy ohne Push
+- Der Server sagt der Team-App bei jeder Positionsmeldung, ob es Neues gibt (Mitteilung, Ziel, Suchgebiet, Suche). Nur dann lädt die App die Lage nach und zeigt eine Mitteilung auf dem Sperrbildschirm. Das spart Akku und braucht keinen Push-Dienst. Dafür braucht es die neue App-Version.
+
 ## Datenschutz
 
 ### Keine Schriften und Bibliotheken mehr von fremden Servern
