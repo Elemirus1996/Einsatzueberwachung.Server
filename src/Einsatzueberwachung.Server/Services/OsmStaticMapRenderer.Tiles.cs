@@ -6,14 +6,12 @@ namespace Einsatzueberwachung.Server.Services;
 
 public sealed partial class OsmStaticMapRenderer
 {
-    private record SearchAreaTileConfig(string[] UrlTemplates, int PixelSize, string Attribution, bool Luftbild = false);
+    internal record SearchAreaTileConfig(string[] UrlTemplates, int PixelSize, string Attribution, bool Luftbild = false);
 
     private static SearchAreaTileConfig GetSearchAreaTileConfig(MapTileType tileType) => tileType switch
     {
-        MapTileType.Satellite => new(
-            ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-            256,
-            "© Esri, Maxar, Earthstar Geographics"),
+        // Esri nur mit Schlüssel der Staffel: Platzhalter {token} setzt KachelConfigAsync ein
+        MapTileType.Satellite => new([EsriKacheln.Vorlage], 256, EsriKacheln.Quelle),
 
         // Amtliche Luftbilder der Länder: je Kachel alle Länder, die sie berühren, übereinander (Issue 210)
         MapTileType.Luftbild => new([], 256, "", Luftbild: true),
@@ -32,6 +30,20 @@ public sealed partial class OsmStaticMapRenderer
             256,
             OsmAttribution)
     };
+
+    /// <summary>
+    /// Kachelquelle für eine Kartenart. Esri nur mit Schlüssel der Staffel; ohne Schlüssel die Luftbilder der Länder.
+    /// </summary>
+    internal async Task<SearchAreaTileConfig> KachelConfigAsync(MapTileType tileType)
+    {
+        var config = GetSearchAreaTileConfig(tileType);
+        if (tileType != MapTileType.Satellite) return config;
+
+        var schluessel = _einstellungen is null ? null : (await _einstellungen.GetAppSettingsAsync())?.EsriApiKey;
+        return EsriKacheln.Vorhanden(schluessel)
+            ? config with { UrlTemplates = [EsriKacheln.Adresse(schluessel!)] }
+            : GetSearchAreaTileConfig(MapTileType.Luftbild);
+    }
 
     // OpenStreetMap: Nutzungsregeln eingehalten (eigener User-Agent, hoechstens 2 Downloads gleichzeitig,
     // nur die Kacheln des Berichtsausschnitts)

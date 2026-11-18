@@ -27,7 +27,7 @@ public sealed partial class OsmStaticMapRenderer
         int height = 780,
         Einsatzueberwachung.Domain.Models.Enums.MapTileType tileType = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets)
     {
-        var kacheln = GetSearchAreaTileConfig(tileType);
+        var kacheln = await KachelConfigAsync(tileType);
         var validResults = coverageResults.Where(r => r.Cells.Count > 0).ToList();
         if (validResults.Count == 0)
             return null;

@@ -201,10 +201,13 @@
                                 <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "streets")" />
                                 <span>Straßenkarte</span>
                             </label>
+                            @if (EsriVorhanden)
+                            {
                             <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("satellite")' >
                                 <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "satellite")" />
                                 <span>Satellit (Esri)</span>
                             </label>
+                            }
                             <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("luftbild")' >
                                 <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "luftbild")" />
                                 <span>Luftbild (Länder)</span>
@@ -261,10 +264,13 @@
                         @onclick='() => SetEmbedTileType("streets")' title="Straßenkarte">
                     <i class="bi bi-map"></i>
                 </button>
+                @if (EsriVorhanden)
+                {
                 <button class="map-embed-btn @(_mapBaseLayerType == "satellite" ? "map-embed-btn-on" : "")"
                         @onclick='() => SetEmbedTileType("satellite")' title="Satellit">
                     <i class="bi bi-globe-europe-africa"></i>
                 </button>
+                }
                 <button class="map-embed-btn @(_mapBaseLayerType == "luftbild" ? "map-embed-btn-on" : "")"
                         @onclick='() => SetEmbedTileType("luftbild")' title="Luftbild (Länder)">
                     <i class="bi bi-image"></i>
@@ -457,12 +463,15 @@
                                                @onchange='() => _karteTileType = "streets"' />
                                         <span class="print-option-label"><i class="bi bi-map me-2 text-muted"></i>Straßenkarte</span>
                                     </label>
+                                    @if (EsriVorhanden)
+                                    {
                                     <label class="print-option print-option-inline">
                                         <input class="form-check-input" type="radio" name="karteMapType" value="satellite"
                                                checked="@(_karteTileType == "satellite")"
                                                @onchange='() => _karteTileType = "satellite"' />
                                         <span class="print-option-label"><i class="bi bi-globe me-2 text-muted"></i>Satellit (Esri)</span>
                                     </label>
+                                    }
                                     <label class="print-option print-option-inline">
                                         <input class="form-check-input" type="radio" name="karteMapType" value="luftbild"
                                                checked="@(_karteTileType == "luftbild")"

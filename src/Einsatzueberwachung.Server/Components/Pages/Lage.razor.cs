@@ -11,6 +11,7 @@ public partial class Lage : IAsyncDisposable
     [Inject] IEinsatzService EinsatzService { get; set; } = default!;
     [Inject] ICollarTrackingService CollarTrackingService { get; set; } = default!;
     [Inject] ISettingsService SettingsService { get; set; } = default!;
+    private string _esriSchluessel = string.Empty;
     [Inject] IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] ILogger<Lage> Logger { get; set; } = default!;
 
@@ -53,6 +54,7 @@ public partial class Lage : IAsyncDisposable
         _mapCenterLat = settings.MapDefaultLat;
         _mapCenterLng = settings.MapDefaultLng;
         _mapZoom = settings.MapDefaultZoom;
+        _esriSchluessel = settings.EsriApiKey;
         _collarMarkerIcon = settings.CollarMarkerIconOrDefault;
         _humanMarkerIcon = settings.HumanMarkerIconOrDefault;
         _collarTrackColorMode = settings.CollarTrackColorModeOrDefault;
@@ -91,6 +93,7 @@ public partial class Lage : IAsyncDisposable
 
         try
         {
+            await JSRuntime.InvokeVoidAsync("EsriKacheln.setze", _esriSchluessel);
             await JSRuntime.InvokeVoidAsync("LeafletMap.initialize",
                 "lageMap", _mapCenterLat, _mapCenterLng, _mapZoom, _dotNetReference);
 

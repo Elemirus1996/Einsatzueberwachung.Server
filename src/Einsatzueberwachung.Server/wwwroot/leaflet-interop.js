@@ -157,12 +157,8 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             crossOrigin: 'anonymous'
         });
 
-        // Esri Satellite Layer (CORS-kompatibel)
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles (c) Esri',
-            maxZoom: 18,
-            crossOrigin: 'anonymous'
-        });
+        // Esri-Satellit nur mit Schluessel der Staffel (CORS-kompatibel); ohne Schluessel null
+        const satelliteLayer = window.EsriKacheln.vorhanden() ? window.EsriKacheln.ebene({ crossOrigin: 'anonymous' }) : null;
 
         // Amtliche Luftbilder der Länder (DOP20), alle Länder als eine Ebene
         const luftbildLayer = window.LuftbildLaender.ebene();
@@ -183,11 +179,11 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         const baseMaps = {
             "Strassenkarte": osmLayer,
             "Luftbild (Länder)": luftbildLayer,
-            "Satellit (Esri)": satelliteLayer,
             "Topografisch": topoLayer
         };
         
         log('Layer Control wird hinzugefuegt');
+        if (satelliteLayer) baseMaps["Satellit (Esri)"] = satelliteLayer;
         const layerControl = L.control.layers(baseMaps, null, {
             position: 'topright',
             collapsed: false  // Immer ausgeklappt fuer bessere Sichtbarkeit
@@ -342,7 +338,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             coordinateMarkersVisible: true,
             layers: {
                 streets: osmLayer,
-                satellite: satelliteLayer,
+                satellite: satelliteLayer || luftbildLayer, // ohne Esri-Schluessel die Luftbilder der Laender
                 luftbild: luftbildLayer,
                 topo: topoLayer
             },

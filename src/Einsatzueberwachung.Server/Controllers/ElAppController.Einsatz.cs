@@ -41,7 +41,8 @@ public sealed partial class ElAppController
             fuehrungsassistenten = personal.Where(p => p.Skills.HasFlag(PersonalSkills.Fuehrungsassistent)).Select(p => p.FullName),
             ergebnisse = Ergebnisse(),
             alarmiertDurch = AlarmiertDurchExtensions.Alle.Select(x => new { wert = x.ToString(), anzeige = x.Anzeige() }),
-            kartenarten = PdfBerichtOptionen.Kartenarten.Select(k => new { wert = k.Art.ToString(), anzeige = k.Name })
+            kartenarten = PdfBerichtOptionen.KartenartenFuer(EsriKacheln.Vorhanden(einstellungen is null ? null : (await einstellungen.GetAppSettingsAsync())?.EsriApiKey))
+                .Select(k => new { wert = k.Art.ToString(), anzeige = k.Name })
         });
     }
 

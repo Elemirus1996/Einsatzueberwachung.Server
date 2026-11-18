@@ -31,6 +31,10 @@ namespace Einsatzueberwachung.Domain.Models
             (MapTileType.Satellite, "Satellit (Esri)")
         ];
 
+        /// <summary>Kartenarten zur Auswahl: Esri nur, wenn die Staffel einen Esri-Schlüssel eingetragen hat</summary>
+        public static IReadOnlyList<(MapTileType Art, string Name)> KartenartenFuer(bool esriSchluessel) =>
+            esriSchluessel ? Kartenarten : Kartenarten.Where(k => k.Art != MapTileType.Satellite).ToList();
+
         public List<TeamTrackSnapshot>? WaehleTracks(IEnumerable<TeamTrackSnapshot>? alle)
         {
             if (!Tracks || !Zeigt("tracks") || alle is null) return null;

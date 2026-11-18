@@ -297,7 +297,7 @@
                             <div class="col-12 col-md-4">
                                 <label class="form-label small mb-1">Karte</label>
                                 <select class="form-select form-select-sm" @bind="_pdfKartenart">
-                                    @foreach (var (art, name) in PdfBerichtOptionen.Kartenarten)
+                                    @foreach (var (art, name) in PdfBerichtOptionen.KartenartenFuer(_esri))
                                     {
                                         <option value="@art">@name</option>
                                     }
