@@ -7,6 +7,7 @@ public sealed partial class OsmStaticMapRenderer : IStaticMapRenderer, IDisposab
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<OsmStaticMapRenderer> _logger;
+    private readonly Einsatzueberwachung.Domain.Interfaces.ISettingsService? _einstellungen;
 
     // OpenStreetMap-Kacheln sind 256×256px (CARTO verlangt seit 2026 einen API-Schluessel – dort kam nur
     // „API KEY REQUIRED“ statt der Karte, im Bericht standen die Tracks dann ohne Hintergrund)
@@ -24,10 +25,12 @@ public sealed partial class OsmStaticMapRenderer : IStaticMapRenderer, IDisposab
     // stapelt Renderings nicht mehr und verhindert ThreadPool-/Speicher-Druck.
     private static readonly SemaphoreSlim _globalRenderLock = new(1, 1);
 
-    public OsmStaticMapRenderer(IHttpClientFactory httpClientFactory, ILogger<OsmStaticMapRenderer> logger)
+    public OsmStaticMapRenderer(IHttpClientFactory httpClientFactory, ILogger<OsmStaticMapRenderer> logger,
+        Einsatzueberwachung.Domain.Interfaces.ISettingsService? einstellungen = null)
     {
         _httpClient = httpClientFactory.CreateClient("OsmTiles");
         _logger = logger;
+        _einstellungen = einstellungen;
     }
 
     public void Dispose()

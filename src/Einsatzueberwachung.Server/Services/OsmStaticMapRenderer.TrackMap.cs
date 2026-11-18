@@ -14,7 +14,7 @@ public sealed partial class OsmStaticMapRenderer
         int height = 450,
         Einsatzueberwachung.Domain.Models.Enums.MapTileType tileType = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets)
     {
-        var kacheln = GetSearchAreaTileConfig(tileType);
+        var kacheln = await KachelConfigAsync(tileType);
         if (trackPoints.Count < 2) return null;
 
         using var renderCts = new CancellationTokenSource(RenderTimeout);

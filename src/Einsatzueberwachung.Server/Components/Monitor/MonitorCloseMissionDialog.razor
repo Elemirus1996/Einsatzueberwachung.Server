@@ -78,7 +78,7 @@
                         <div class="col-12 col-md-6">
                             <label class="form-label" for="close-mission-map-type">Karte im Bericht</label>
                             <select id="close-mission-map-type" class="form-select" @bind="Form.MapTileType">
-                                @foreach (var (art, name) in PdfBerichtOptionen.Kartenarten)
+                                @foreach (var (art, name) in PdfBerichtOptionen.KartenartenFuer(_esri))
                                 {
                                     <option value="@art">@name</option>
                                 }
@@ -164,6 +164,12 @@
 }
 
 @code {
+    [Inject] private Einsatzueberwachung.Domain.Interfaces.ISettingsService Einstellungen { get; set; } = default!;
+    private bool _esri;
+
+    protected override async Task OnInitializedAsync() =>
+        _esri = Einsatzueberwachung.Server.Services.EsriKacheln.Vorhanden((await Einstellungen.GetAppSettingsAsync())?.EsriApiKey);
+
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public MonitorAbschlussModel? Abschluss { get; set; }
     [Parameter] public IEnumerable<Team> Teams { get; set; } = Array.Empty<Team>();

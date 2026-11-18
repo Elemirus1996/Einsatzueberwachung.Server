@@ -184,6 +184,12 @@ namespace Einsatzueberwachung.Domain.Models
         /// </summary>
         public string MobileBaseUrl { get; set; } = string.Empty;
 
+        /// <summary>
+        /// API-Schlüssel der Staffel für die Esri-Satellitenbilder (ArcGIS Location Platform, Issue 210).
+        /// Leer = keine Esri-Ebene; Karte und Bericht nutzen dann die Luftbilder der Länder.
+        /// </summary>
+        public string EsriApiKey { get; set; } = string.Empty;
+
         public AppSettings()
         {
             Theme = "Light";

@@ -314,7 +314,9 @@ internal static class ServiceCollectionExtensions
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Einsatzueberwachung/1.2 (+https://github.com/Elemirus1996/Einsatzueberwachung.Server)");
             client.DefaultRequestHeaders.Referrer = new Uri("https://github.com/Elemirus1996/Einsatzueberwachung.Server");
             client.Timeout = TimeSpan.FromSeconds(15);
-        });
+        })
+            // Keine Protokollierung der Kachel-Adressen: die Esri-Adresse enthaelt den API-Schluessel der Staffel
+            .RemoveAllLoggers();
         services.AddSingleton<IStaticMapRenderer, OsmStaticMapRenderer>();
 
         services.AddSingleton<GitHubUpdateService>(sp =>

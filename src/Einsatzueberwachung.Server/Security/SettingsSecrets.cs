@@ -5,12 +5,12 @@ using Einsatzueberwachung.Domain.Models;
 namespace Einsatzueberwachung.Server.Security;
 
 /// <summary>
-/// Zugangsdaten (GitHub-Token, Divera-Accesskey) verlassen den Server nicht ueber Downloads (Audit 2026-10-24).
+/// Zugangsdaten (GitHub-Token, Divera-Accesskey, Esri-Schluessel) verlassen den Server nicht ueber Downloads (Audit 2026-10-24).
 /// Beim Einspielen einer Datei ohne Zugangsdaten bleiben die vorhandenen erhalten.
 /// </summary>
 public static class SettingsSecrets
 {
-    private static readonly string[] SecretProperties = [nameof(AppSettings.GitHubToken), nameof(AppSettings.DiveraAccessKey)];
+    private static readonly string[] SecretProperties = [nameof(AppSettings.GitHubToken), nameof(AppSettings.DiveraAccessKey), nameof(AppSettings.EsriApiKey)];
 
     // Dateien im Datenverzeichnis, die nie ins Daten-Backup kommen (HMAC-Schluessel der Team-Cookies,
     // Passwort-Hash und Einrichtungscode der Einsatzleitung – auf einem neuen Server wird neu eingerichtet)
@@ -41,6 +41,7 @@ public static class SettingsSecrets
     {
         if (string.IsNullOrWhiteSpace(imported.GitHubToken)) imported.GitHubToken = current.GitHubToken;
         if (string.IsNullOrWhiteSpace(imported.DiveraAccessKey)) imported.DiveraAccessKey = current.DiveraAccessKey;
+        if (string.IsNullOrWhiteSpace(imported.EsriApiKey)) imported.EsriApiKey = current.EsriApiKey;
     }
 
     public static bool IsExcludedFromBackup(string relativePath) =>

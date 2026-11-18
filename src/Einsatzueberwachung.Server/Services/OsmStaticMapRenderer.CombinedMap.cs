@@ -163,7 +163,7 @@ public sealed partial class OsmStaticMapRenderer
         if (validAreas.Count == 0 && !elwPosition.HasValue)
             return null;
 
-        var tileConfig = GetSearchAreaTileConfig(tileType);
+        var tileConfig = await KachelConfigAsync(tileType);
         var tilePixelSize = tileConfig.PixelSize;
 
         using var renderCts = new CancellationTokenSource(RenderTimeout);
@@ -372,7 +372,7 @@ public sealed partial class OsmStaticMapRenderer
             }
         }
 
-        var tileConfig = GetSearchAreaTileConfig(options.TileType);
+        var tileConfig = await KachelConfigAsync(options.TileType);
         var tilePixelSize = tileConfig.PixelSize;
 
         using var renderCts = new CancellationTokenSource(RenderTimeout);

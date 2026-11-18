@@ -453,6 +453,45 @@
                 </div>
 
                 <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-globe-europe-africa me-1"></i>Satellitenbilder (Esri)</h3>
+                    <p class="cfg-help">
+                        Die amtlichen Luftbilder der Länder (Ebene „Luftbild (Länder)“) gibt es ohne Anmeldung.
+                        Zusätzlich könnt ihr die weltweiten Satellitenbilder von Esri nutzen, zum Beispiel jenseits der Bundesgrenze.
+                        Dafür braucht eure Staffel einen <strong>eigenen, kostenlosen Schlüssel</strong> von Esri. Ohne Schlüssel gibt es die Ebene „Satellit (Esri)“ nicht.
+                    </p>
+                    <details class="cfg-help mb-2">
+                        <summary><strong>So bekommt ihr den Schlüssel</strong></summary>
+                        <ol class="mt-2 mb-1">
+                            <li>Auf <a href="https://location.arcgis.com/sign-up/" target="_blank" rel="noopener">location.arcgis.com/sign-up</a> ein kostenloses Konto für die <strong>ArcGIS Location Platform</strong> anlegen (am besten mit einer Staffel-Mailadresse, nicht privat).</li>
+                            <li>Angemeldet auf <a href="https://developers.arcgis.com" target="_blank" rel="noopener">developers.arcgis.com</a> unter <strong>Developer credentials</strong> → <strong>New developer credential</strong> → <strong>API key credentials</strong> wählen.</li>
+                            <li>Bei den Berechtigungen (<em>Privileges</em>) unter <strong>Location services</strong> den Punkt <strong>Basemaps</strong> anhaken. Ein Ablaufdatum setzen (Esri erlaubt höchstens ein Jahr). Bei „Referrers“ nichts eintragen – der Server lädt die Karten für den Bericht selbst.</li>
+                            <li>Den angezeigten <strong>API key</strong> kopieren (er wird nur einmal angezeigt), hier eintragen, „Prüfen“ drücken und speichern.</li>
+                            <li>Das Ablaufdatum im Kalender notieren und vorher auf derselben Seite einen neuen Schlüssel erzeugen.</li>
+                        </ol>
+                        <p class="mb-1">Esri berechnet die Kacheln über euer Konto: Laut Preisliste sind <strong>2 Millionen Kacheln im Monat frei</strong>, das reicht für den Staffelbetrieb. Ob Esri eine Zahlungsart verlangt, seht ihr beim Anlegen des Kontos.
+                            Die Bezeichnungen auf den Esri-Seiten können sich ändern.</p>
+                    </details>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="esri-schluessel">Esri API-Schlüssel</label>
+                        <div class="cfg-input-with-action">
+                            <input id="esri-schluessel" type="@(_showEsriKey ? "text" : "password")" class="cfg-input" autocomplete="off"
+                                   placeholder="leer = keine Esri-Ebene" @bind="_appSettings.EsriApiKey" />
+                            <button type="button" class="cfg-icon-btn" @onclick="() => _showEsriKey = !_showEsriKey" title="Zeigen/Verbergen">
+                                <i class="bi @(_showEsriKey ? "bi-eye-slash" : "bi-eye")"></i>
+                            </button>
+                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="PruefeEsriAsync" disabled="@_esriPruefungLaeuft">
+                                <i class="bi bi-check2-circle"></i> Prüfen
+                            </button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_esriPruefung))
+                        {
+                            <span class="cfg-help">@_esriPruefung</span>
+                        }
+                        <span class="cfg-help">Der Schlüssel ist für alle sichtbar, die die Karte im Browser öffnen dürfen. Er gehört eurer Staffel, nicht den Entwicklern.</span>
+                    </div>
+                </div>
+
+                <div class="cfg-section">
                     <h3 class="cfg-sub-header"><i class="bi bi-volume-up me-1"></i>Akustik</h3>
                     <div class="cfg-grid cfg-grid-2">
                         <div class="cfg-field">

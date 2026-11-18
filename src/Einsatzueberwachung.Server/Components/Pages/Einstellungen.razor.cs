@@ -73,6 +73,36 @@ public partial class Einstellungen
 
     // Divera 24/7 Felder
     private bool _showDiveraKey;
+    private bool _showEsriKey;
+    private bool _esriPruefungLaeuft;
+    private string _esriPruefung = string.Empty;
+    [Inject] private IHttpClientFactory HttpClients { get; set; } = default!;
+
+    /// <summary>Lädt eine Kachel mit dem eingetragenen Esri-Schlüssel, um ihn vor dem Speichern zu prüfen.</summary>
+    private async Task PruefeEsriAsync()
+    {
+        if (!EsriKacheln.Vorhanden(_appSettings.EsriApiKey))
+        {
+            _esriPruefung = "Kein Schlüssel eingetragen.";
+            return;
+        }
+        _esriPruefungLaeuft = true;
+        _esriPruefung = "Prüfe …";
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var antwort = await HttpClients.CreateClient("OsmTiles").GetAsync(EsriKacheln.PruefAdresse(_appSettings.EsriApiKey), cts.Token);
+            var text = await antwort.Content.ReadAsStringAsync(cts.Token);
+            _esriPruefung = antwort.IsSuccessStatusCode && !text.Contains("\"error\"")
+                ? "Schlüssel funktioniert. Bitte noch speichern."
+                : "Esri lehnt den Schlüssel ab (falsch kopiert, abgelaufen oder ohne Berechtigung „Basemaps“?).";
+        }
+        catch (Exception)
+        {
+            _esriPruefung = "Esri ist nicht erreichbar. Internetverbindung des Servers prüfen.";
+        }
+        finally { _esriPruefungLaeuft = false; }
+    }
     private bool _diveraTestBusy;
     private string _diveraTestStatus = string.Empty;
     private bool _diveraTestError;

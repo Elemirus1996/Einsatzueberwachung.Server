@@ -19,6 +19,7 @@ public partial class ElBeenden : IDisposable
     [Inject] private ITimeService TimeService { get; set; } = default!;
     [Inject] private EinsatzAbschlussService EinsatzAbschluss { get; set; } = default!;
     [Inject] private ISettingsService SettingsService { get; set; } = default!;
+    private bool _esri;
 
     private List<PersonalEntry> _personal = [];
     private List<DogEntry> _hunde = [];
@@ -58,6 +59,7 @@ public partial class ElBeenden : IDisposable
     protected override async Task OnInitializedAsync()
     {
         _now = TimeService.Now;
+        _esri = Einsatzueberwachung.Server.Services.EsriKacheln.Vorhanden((await SettingsService.GetAppSettingsAsync())?.EsriApiKey);
         var einsatz = EinsatzService.CurrentEinsatz;
         _einsatzAktiv = !string.IsNullOrWhiteSpace(einsatz.Einsatzort) && einsatz.EinsatzEnde is null;
         if (!_einsatzAktiv) return;

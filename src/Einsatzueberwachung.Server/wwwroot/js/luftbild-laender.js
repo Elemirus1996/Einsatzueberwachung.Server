@@ -51,3 +51,16 @@ window.LuftbildLaender = (function () {
 
     return { ebene: () => new Ebene() };
 })();
+
+// Esri-Satellitenbilder nur mit dem API-Schluessel der Staffel (Einstellungen → Einsatzbetrieb). Blazor setzt ihn vor
+// dem Anlegen der Karte; ohne Schluessel gibt es keine Esri-Ebene.
+window.EsriKacheln = (function () {
+    let schluessel = '';
+    return {
+        setze: (s) => { schluessel = (s || '').trim(); },
+        vorhanden: () => schluessel.length > 0,
+        ebene: (optionen) => L.tileLayer(
+            'https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=' + encodeURIComponent(schluessel),
+            Object.assign({ maxZoom: 19, attribution: 'Powered by <a href="https://www.esri.com">Esri</a> | Esri, Maxar, Earthstar Geographics, and the GIS User Community' }, optionen || {}))
+    };
+})();

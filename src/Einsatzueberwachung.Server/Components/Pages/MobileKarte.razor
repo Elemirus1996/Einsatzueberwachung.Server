@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject IEinsatzService EinsatzService
 @inject IJSRuntime JS
+@inject Einsatzueberwachung.Domain.Interfaces.ISettingsService SettingsService
 @implements IDisposable
 
 <PageTitle>Mobile Karte</PageTitle>
@@ -37,6 +38,7 @@
         if (firstRender)
         {
             var areas = EinsatzService.CurrentEinsatz.SearchAreas ?? new();
+            await JS.InvokeVoidAsync("EsriKacheln.setze", (await SettingsService.GetAppSettingsAsync())?.EsriApiKey ?? "");
             await JS.InvokeVoidAsync("einsatzMap.initMap", "mobile-map", 51.1657, 10.4515, 10);
             await RenderAreasAsync(areas);
             _mapInit = true;

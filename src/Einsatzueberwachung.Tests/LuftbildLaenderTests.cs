@@ -1,5 +1,6 @@
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
+using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Server.Services;
 
 namespace Einsatzueberwachung.Tests;
@@ -82,5 +83,51 @@ public class LuftbildLaenderTests
     public void Bericht_BietetLuftbildAn()
     {
         Assert.Contains(PdfBerichtOptionen.Kartenarten, k => k.Art == MapTileType.Luftbild);
+    }
+}
+
+public class EsriSchluesselTests
+{
+    private static ISettingsService Einstellungen(string schluessel) =>
+        EinsatzAbschlussTests.Recorder<ISettingsService>.Create((m, _) => m.Name switch
+        {
+            nameof(ISettingsService.GetAppSettingsAsync) => Task.FromResult(new AppSettings { EsriApiKey = schluessel }),
+            _ => null
+        }).Proxy;
+
+    private sealed class KeinNetz : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new();
+    }
+
+    [Fact]
+    public void Kartenarten_EsriNurMitSchluessel()
+    {
+        Assert.DoesNotContain(PdfBerichtOptionen.KartenartenFuer(false), k => k.Art == MapTileType.Satellite);
+        Assert.Contains(PdfBerichtOptionen.KartenartenFuer(true), k => k.Art == MapTileType.Satellite);
+        Assert.Contains(PdfBerichtOptionen.KartenartenFuer(false), k => k.Art == MapTileType.Luftbild);
+    }
+
+    [Fact]
+    public void Adresse_SetztSchluesselKodiertEin()
+    {
+        Assert.False(EsriKacheln.Vorhanden("  "));
+        var url = EsriKacheln.Adresse(" ab+c/d ");
+        Assert.StartsWith("https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=", url);
+        Assert.EndsWith("token=ab%2Bc%2Fd", url);
+    }
+
+    [Fact]
+    public async Task Renderer_NutztEsriNurMitSchluessel_SonstLuftbild()
+    {
+        var mit = new OsmStaticMapRenderer(new KeinNetz(), Microsoft.Extensions.Logging.Abstractions.NullLogger<OsmStaticMapRenderer>.Instance, Einstellungen("geheim"));
+        var config = await mit.KachelConfigAsync(MapTileType.Satellite);
+        Assert.False(config.Luftbild);
+        Assert.Equal(EsriKacheln.Quelle, config.Attribution);
+        Assert.EndsWith("token=geheim", Assert.Single(config.UrlTemplates));
+
+        var ohne = new OsmStaticMapRenderer(new KeinNetz(), Microsoft.Extensions.Logging.Abstractions.NullLogger<OsmStaticMapRenderer>.Instance, Einstellungen(""));
+        Assert.True((await ohne.KachelConfigAsync(MapTileType.Satellite)).Luftbild);
+        Assert.False((await ohne.KachelConfigAsync(MapTileType.Streets)).Luftbild);
     }
 }

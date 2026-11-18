@@ -13,6 +13,11 @@
 - Die Luftbilder sind Open Data der Länder, ohne Konto und ohne Kosten. Der vorgeschriebene Quellenvermerk steht unten in der Karte und im Bericht, jeweils nur für die Länder im Ausschnitt.
 - An Landesgrenzen können Bilder aus verschiedenen Jahren und Jahreszeiten aneinanderstoßen.
 
+### Esri-Satellitenbilder nur noch mit eigenem Schlüssel
+- „Satellit (Esri)“ gibt es nur noch, wenn eure Staffel einen **eigenen, kostenlosen Esri-Schlüssel** einträgt: **Einstellungen → Einsatzbetrieb → Satellitenbilder (Esri)**. Dort steht Schritt für Schritt, wie ihr ihn bei Esri bekommt, und ein Knopf „Prüfen“ testet ihn.
+- Bisher wurden die Esri-Bilder ohne Konto geladen; ob das erlaubt ist, ist nicht geklärt.
+- Ohne Schlüssel bekommt, wer bisher „Satellit (Esri)“ gewählt hatte, die Luftbilder der Länder. Die Esri-Beschriftungsebene („Hybrid“ in der mobilen Karte) entfällt.
+
 ## Datenschutz
 
 ### Keine Schriften und Bibliotheken mehr von fremden Servern

@@ -133,7 +133,7 @@
                 {
                     <label class="els-label" for="elb-karte">Karte im Bericht</label>
                     <select id="elb-karte" class="els-input" @bind="_kartenart">
-                        @foreach (var (art, name) in Einsatzueberwachung.Domain.Models.PdfBerichtOptionen.Kartenarten)
+                        @foreach (var (art, name) in Einsatzueberwachung.Domain.Models.PdfBerichtOptionen.KartenartenFuer(_esri))
                         {
                             <option value="@art">@name</option>
                         }
