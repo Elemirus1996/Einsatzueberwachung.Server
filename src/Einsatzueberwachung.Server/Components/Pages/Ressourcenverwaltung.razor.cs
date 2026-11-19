@@ -2,6 +2,7 @@ using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Server.Components.Shared;
+using Einsatzueberwachung.Server.Services;
 using Microsoft.AspNetCore.Components;
 
 namespace Einsatzueberwachung.Server.Components.Pages;
@@ -11,6 +12,7 @@ public partial class Ressourcenverwaltung
     [Inject] private IEinsatzService EinsatzService { get; set; } = default!;
     [Inject] private IMasterDataService MasterDataService { get; set; } = default!;
     [Inject] private ISettingsService SettingsService { get; set; } = default!;
+    [Inject] private DiveraResourceSyncService DiveraResourceSyncService { get; set; } = default!;
 
     private AppSettings _appSettings = new();
     private List<PersonalEntry> _personnel = new();
@@ -43,18 +45,47 @@ public partial class Ressourcenverwaltung
 
     private int ActivePersonnelCount => _personnel.Count(person => person.IsActive);
 
-    private List<ResourceSuggestion> CheckInCandidates
+    private IReadOnlyDictionary<string, string> PositiveDiveraResponses =>
+        DiveraResourceSyncService.GetPositiveResponsesByPersonId();
+
+    private int PendingDiveraCheckInCount
     {
         get
         {
-            var query = _searchText.Trim();
+            var responses = PositiveDiveraResponses;
+            if (responses.Count == 0)
+                return 0;
+
             var checkedInPersonIds = CheckedInResources
                 .Where(resource => resource.EntityType == ResourceEntityType.Person)
                 .Select(resource => resource.EntityId)
                 .ToHashSet(StringComparer.Ordinal);
 
-            return SelectionListOrdering
-                .OrderPersonnelByFirstName(_personnel.Where(person => person.IsActive && !checkedInPersonIds.Contains(person.Id)))
+            return _personnel.Count(person =>
+                person.IsActive
+                && !checkedInPersonIds.Contains(person.Id)
+                && responses.ContainsKey(person.Id));
+        }
+    }
+
+    private List<ResourceSuggestion> CheckInCandidates
+    {
+        get
+        {
+            var query = _searchText.Trim();
+            var diveraResponses = PositiveDiveraResponses;
+            var checkedInPersonIds = CheckedInResources
+                .Where(resource => resource.EntityType == ResourceEntityType.Person)
+                .Select(resource => resource.EntityId)
+                .ToHashSet(StringComparer.Ordinal);
+            var availablePersonnel = _personnel
+                .Where(person => person.IsActive && !checkedInPersonIds.Contains(person.Id))
+                .ToList();
+            var orderedPersonnel = SelectionListOrdering
+                .OrderPersonnelByFirstName(availablePersonnel.Where(person => diveraResponses.ContainsKey(person.Id)))
+                .Concat(SelectionListOrdering.OrderPersonnelByFirstName(availablePersonnel.Where(person => !diveraResponses.ContainsKey(person.Id))));
+
+            return orderedPersonnel
                 .Select(person =>
                 {
                     var dogNames = ResourceRosterBuilder.GetActiveDogNamesForHandler(person.Id, _dogs);
@@ -67,15 +98,18 @@ public partial class Ressourcenverwaltung
                     var detail = string.Join(
                         " · ",
                         new[] { person.Organisation, dogSummary }.Where(value => !string.IsNullOrWhiteSpace(value)));
+                    diveraResponses.TryGetValue(person.Id, out var diveraResponse);
 
                     return new ResourceSuggestion(
                         person.Id,
                         person.FullName,
-                        string.IsNullOrWhiteSpace(detail) ? null : detail);
+                        string.IsNullOrWhiteSpace(detail) ? null : detail,
+                        string.IsNullOrWhiteSpace(diveraResponse) ? null : diveraResponse);
                 })
                 .Where(suggestion => string.IsNullOrWhiteSpace(query)
                     || ContainsSearchTerm(suggestion.Name, query)
-                    || ContainsSearchTerm(suggestion.Detail, query))
+                    || ContainsSearchTerm(suggestion.Detail, query)
+                    || ContainsSearchTerm(suggestion.DiveraResponseText, query))
                 .ToList();
         }
     }
@@ -88,17 +122,21 @@ public partial class Ressourcenverwaltung
         _checkInExpanded = EinsatzService.GetEinsatzResources().Count == 0;
         EinsatzService.ResourcesChanged += OnResourcesChanged;
         EinsatzService.EinsatzChanged += OnEinsatzChanged;
+        DiveraResourceSyncService.ResponsesChanged += OnDiveraResponsesChanged;
+        DiveraResourceSyncService.RequestSync();
     }
 
     public ValueTask DisposeAsync()
     {
         EinsatzService.ResourcesChanged -= OnResourcesChanged;
         EinsatzService.EinsatzChanged -= OnEinsatzChanged;
+        DiveraResourceSyncService.ResponsesChanged -= OnDiveraResponsesChanged;
         return ValueTask.CompletedTask;
     }
 
     private void OnResourcesChanged() => _ = InvokeAsync(StateHasChanged);
     private void OnEinsatzChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnDiveraResponsesChanged() => _ = InvokeAsync(StateHasChanged);
 
     private void ToggleCheckIn() => _checkInExpanded = !_checkInExpanded;
 
@@ -117,14 +155,36 @@ public partial class Ressourcenverwaltung
         await RunResourceOperationAsync(async () =>
         {
             var name = _personnel.FirstOrDefault(person => person.Id == personId)?.FullName ?? personId;
+            var diveraResponse = _initialStatus == ResourceStatus.AufAnfahrt
+                && PositiveDiveraResponses.TryGetValue(personId, out var responseText)
+                    ? responseText
+                    : string.Empty;
             await EinsatzService.CheckInResourceAsync(new EinsatzResource
             {
                 EntityType = ResourceEntityType.Person,
                 EntityId = personId,
-                Status = _initialStatus
+                Status = _initialStatus,
+                DiveraRueckmeldung = diveraResponse
             });
             _searchText = string.Empty;
             SetMessage($"{name} wurde mit Status „{ResourceStatusPresentation.Label(_initialStatus)}“ eingecheckt.");
+        });
+    }
+
+    private async Task CheckInAllDiveraAsync()
+    {
+        await RunResourceOperationAsync(async () =>
+        {
+            var checkedInCount = await DiveraResourceSyncService.CheckInPendingPositiveResponsesAsync();
+            if (checkedInCount == 0)
+            {
+                SetMessage("Keine offenen DIVERA-Zusagen zum Einchecken vorhanden.");
+                return;
+            }
+
+            SetMessage(checkedInCount == 1
+                ? "1 Person aus DIVERA wurde mit Status „Auf Anfahrt“ eingecheckt."
+                : $"{checkedInCount} Personen aus DIVERA wurden mit Status „Auf Anfahrt“ eingecheckt.");
         });
     }
 
@@ -172,6 +232,8 @@ public partial class Ressourcenverwaltung
                 EntityId = _newPerson.Id,
                 Status = _initialStatus
             });
+            if (_newPerson.DiveraUserId.HasValue)
+                DiveraResourceSyncService.RequestSync();
             SetMessage($"{_newPerson.FullName} wurde gespeichert und eingecheckt.");
 
             _showQuickCreate = false;
@@ -306,5 +368,9 @@ public partial class Ressourcenverwaltung
     private sealed record ResourceSuggestion(
         string Id,
         string Name,
-        string? Detail);
+        string? Detail,
+        string? DiveraResponseText)
+    {
+        public bool HasDiveraResponse => !string.IsNullOrWhiteSpace(DiveraResponseText);
+    }
 }

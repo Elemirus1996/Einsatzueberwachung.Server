@@ -345,7 +345,8 @@ internal static class ServiceCollectionExtensions
         services.AddHostedService<TeamTimerTickService>();
         services.AddHostedService<UpdateAutoCheckService>();
         services.AddHostedService<RuntimeStatePersistenceService>();
-        services.AddHostedService<DiveraResourceSyncService>();
+        services.AddSingleton<DiveraResourceSyncService>();
+        services.AddHostedService(sp => sp.GetRequiredService<DiveraResourceSyncService>());
         return services;
     }
 }

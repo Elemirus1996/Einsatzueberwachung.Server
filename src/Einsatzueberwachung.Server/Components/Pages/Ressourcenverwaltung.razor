@@ -45,6 +45,9 @@
         }
 
         <section class="resource-checkin-section" aria-labelledby="checkin-heading">
+            @{
+                var pendingDiveraCount = PendingDiveraCheckInCount;
+            }
             <div class="resource-checkin-summary">
                 <div>
                     <p class="resource-eyebrow">AUFNAHME</p>
@@ -53,16 +56,36 @@
                         @TotalResourceCount eingecheckt
                         <span aria-hidden="true">·</span>
                         @CheckInCandidates.Count Personen in der Liste
+                        @if (pendingDiveraCount > 0)
+                        {
+                            <span aria-hidden="true">·</span>
+                            <span class="resource-divera-summary-hint">
+                                @pendingDiveraCount @(pendingDiveraCount == 1 ? "DIVERA-Zusage offen" : "DIVERA-Zusagen offen")
+                            </span>
+                        }
                     </p>
                 </div>
-                <button type="button"
-                        class="btn btn-outline-secondary resource-checkin-toggle"
-                        aria-expanded="@_checkInExpanded"
-                        aria-controls="checkin-controls"
-                        @onclick="ToggleCheckIn">
-                    <i class="bi @(_checkInExpanded ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></i>
-                    @(_checkInExpanded ? "Check-in schließen" : "Weitere Personen einchecken")
-                </button>
+                <div class="resource-checkin-summary-actions">
+                    @if (pendingDiveraCount > 0)
+                    {
+                        <button type="button"
+                                class="btn btn-primary resource-divera-bulk-btn"
+                                disabled="@_isSaving"
+                                title="Alle offenen positiven DIVERA-Rückmeldungen mit Status „Auf Anfahrt“ einchecken"
+                                @onclick="CheckInAllDiveraAsync">
+                            <i class="bi bi-broadcast-pin" aria-hidden="true"></i>
+                            <span>Alle aus DIVERA einchecken (@pendingDiveraCount)</span>
+                        </button>
+                    }
+                    <button type="button"
+                            class="btn btn-outline-secondary resource-checkin-toggle"
+                            aria-expanded="@_checkInExpanded"
+                            aria-controls="checkin-controls"
+                            @onclick="ToggleCheckIn">
+                        <i class="bi @(_checkInExpanded ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></i>
+                        @(_checkInExpanded ? "Check-in schließen" : "Weitere Personen einchecken")
+                    </button>
+                </div>
             </div>
 
             @if (_checkInExpanded)
@@ -82,7 +105,7 @@
                                 <i class="bi bi-search" aria-hidden="true"></i>
                                 <input type="search"
                                        class="form-control"
-                                       placeholder="Name, Organisation oder Hund"
+                                       placeholder="Name, Organisation, Hund oder DIVERA-Meldung"
                                        autocomplete="off"
                                        @bind="_searchText"
                                        @bind:event="oninput" />
@@ -115,13 +138,22 @@
                         <div class="resource-suggestions" role="list" aria-label="Eincheckbare Personen">
                             @foreach (var suggestion in CheckInCandidates)
                             {
-                                <div class="resource-suggestion" role="listitem" @key="suggestion.Id">
+                                <div class="resource-suggestion @(suggestion.HasDiveraResponse ? "resource-suggestion--divera" : string.Empty)" role="listitem" @key="suggestion.Id">
                                     <div class="resource-suggestion-identity">
                                         <span class="resource-kind-icon" aria-hidden="true">
-                                            <i class="bi bi-person"></i>
+                                            <i class="bi @(suggestion.HasDiveraResponse ? "bi-broadcast-pin" : "bi-person")"></i>
                                         </span>
-                                        <span>
-                                            <strong>@suggestion.Name</strong>
+                                        <span class="resource-suggestion-meta">
+                                            <span class="resource-suggestion-title-row">
+                                                <strong>@suggestion.Name</strong>
+                                                @if (suggestion.HasDiveraResponse)
+                                                {
+                                                    <span class="resource-divera-badge">
+                                                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                                                        <span>DIVERA: @suggestion.DiveraResponseText</span>
+                                                    </span>
+                                                }
+                                            </span>
                                             @if (!string.IsNullOrWhiteSpace(suggestion.Detail))
                                             {
                                                 <small>@suggestion.Detail</small>
@@ -129,7 +161,7 @@
                                         </span>
                                     </div>
                                     <button type="button"
-                                            class="btn btn-sm btn-primary"
+                                            class="btn btn-sm btn-primary resource-suggestion-checkin-btn"
                                             aria-label="@($"{suggestion.Name} einchecken")"
                                             title="@($"Mit Status „{ResourceStatusPresentation.Label(_initialStatus)}“ einchecken")"
                                             disabled="@_isSaving"

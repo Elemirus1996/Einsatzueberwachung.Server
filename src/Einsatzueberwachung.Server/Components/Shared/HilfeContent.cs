@@ -94,22 +94,22 @@ public static class HilfeContent
 
         ["/divera"] = new(
             "Divera 24/7",
-            "Integration mit dem Alarmierungssystem Divera 24/7. Zeigt aktuelle Alarmierungen, Mitgliederstatus und UCR-Rückmeldungen. Positive Rückmeldungen zum aktiven DIVERA-Alarm checken die eindeutig zugeordnete Person automatisch mit Status „Auf Anfahrt“ ein; Hunde werden nicht automatisch eingecheckt. Dafür muss die Divera Benutzer-ID bei der Person in den Stammdaten hinterlegt sein.",
+            "Integration mit dem Alarmierungssystem Divera 24/7. Zeigt aktuelle Alarmierungen, Mitgliederstatus und UCR-Rückmeldungen. Positive Rückmeldungen zum aktiven DIVERA-Alarm heben die eindeutig zugeordneten Personen im Check-in der Ressourcenverwaltung hervor; dort können sie einzeln oder gesammelt mit Status „Auf Anfahrt“ übernommen werden. Hunde werden nicht automatisch eingecheckt. Dafür muss die Divera Benutzer-ID bei der Person in den Stammdaten hinterlegt sein.",
             new[]
             {
                 "Navigation -> Divera 24/7",
                 "API-Key konfigurieren: Einstellungen -> Divera",
                 "Divera Benutzer-ID pflegen: Stammdaten -> Personal",
-                "Ressourcenstatus verwalten: Navigation -> Ressourcenverwaltung"
+                "DIVERA-Zusagen übernehmen: Navigation -> Ressourcenverwaltung -> 'Alle aus DIVERA einchecken'"
             }),
 
         ["/ressourcenverwaltung"] = new(
             "Ressourcenverwaltung",
-            "Hier werden Personen und ihre Hunde für den laufenden Einsatz eingecheckt und disponiert. Im Check-in werden aktive, noch nicht eingecheckte Personen angeboten; zugeordnete Hunde lassen sich direkt am Eintrag der eingecheckten Person hinzufügen und behalten ihren eigenständigen Status. Fehlende Personen werden per Schnellaufnahme dauerhaft in den Stammdaten gespeichert und eingecheckt. „In Suche“ kann automatisch durch einen gestarteten Suchauftrag oder manuell gesetzt werden. Eine manuelle Statusänderung erzeugt keine Sektorzuweisung; nur Ressourcen eines Suchauftrags werden nach dessen Abschluss automatisch zurückgesetzt. Für einen Sonderauftrag ist ein Zweck erforderlich. Nur Ressourcen mit Status „Im Verfügungsraum“ sind für neue Suchsektoren auswählbar.",
+            "Hier werden Personen und ihre Hunde für den laufenden Einsatz eingecheckt und disponiert. Im Check-in werden aktive, noch nicht eingecheckte Personen angeboten; positive Rückmeldungen aus dem verknüpften DIVERA-Alarm werden oben hervorgehoben und können einzeln oder über „Alle aus DIVERA einchecken“ gesammelt als „Auf Anfahrt“ übernommen werden. Zugeordnete Hunde lassen sich direkt am Eintrag der eingecheckten Person hinzufügen und behalten ihren eigenständigen Status. Fehlende Personen werden per Schnellaufnahme dauerhaft in den Stammdaten gespeichert und eingecheckt. „In Suche“ kann automatisch durch einen gestarteten Suchauftrag oder manuell gesetzt werden. Eine manuelle Statusänderung erzeugt keine Sektorzuweisung; nur Ressourcen eines Suchauftrags werden nach dessen Abschluss automatisch zurückgesetzt. Für einen Sonderauftrag ist ein Zweck erforderlich. Nur Ressourcen mit Status „Im Verfügungsraum“ sind für neue Suchsektoren auswählbar.",
             new[]
             {
                 "Navigation -> Ressourcenverwaltung",
-                "Check-in: Person mit 'Einchecken' übernehmen -> zugeordnete Hunde direkt an der Person hinzufügen",
+                "Check-in: Person mit 'Einchecken' übernehmen oder 'Alle aus DIVERA einchecken' nutzen -> zugeordnete Hunde direkt an der Person hinzufügen",
                 "Fehlende Person: 'Schnell erfassen' -> in Stammdaten speichern und einchecken",
                 "Sonderauftrag: Status wählen -> Zweck eintragen -> bestätigen",
                 "DIVERA-Zuordnung für Personen: Stammdaten -> Personal -> Divera Benutzer-ID"

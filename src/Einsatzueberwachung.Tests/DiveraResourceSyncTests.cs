@@ -39,7 +39,7 @@ public sealed class DiveraResourceSyncTests
     }
 
     [Fact]
-    public async Task Sync_ChecksInOnlyMappedPeopleWithPositiveResponses()
+    public async Task Sync_ExposesPositiveResponsesWithoutAutoCheckingIn()
     {
         var einsatz = new EinsatzService();
         await einsatz.StartEinsatzAsync(new EinsatzData
@@ -84,18 +84,152 @@ public sealed class DiveraResourceSyncTests
             divera.Proxy,
             masterData.Proxy,
             Microsoft.Extensions.Logging.Abstractions.NullLogger<DiveraResourceSyncService>.Instance);
+        var responsesChangedCount = 0;
+        sync.ResponsesChanged += () => responsesChangedCount++;
+
         await sync.StartAsync(CancellationToken.None);
         try
         {
-            var resource = Assert.Single(einsatz.GetEinsatzResources());
-            Assert.Equal(ResourceEntityType.Person, resource.EntityType);
-            Assert.Equal(mappedPerson.Id, resource.EntityId);
-            Assert.Equal(ResourceStatus.AufAnfahrt, resource.Status);
-            Assert.Equal("Kommt", resource.DiveraRueckmeldung);
+            Assert.Empty(einsatz.GetEinsatzResources());
+            Assert.Equal(1, responsesChangedCount);
+
+            var responses = sync.GetPositiveResponsesByPersonId();
+            var singleResponse = Assert.Single(responses);
+            Assert.Equal(mappedPerson.Id, singleResponse.Key);
+            Assert.Equal("Kommt", singleResponse.Value);
         }
         finally
         {
             await sync.StopAsync(CancellationToken.None);
         }
+    }
+
+    [Fact]
+    public async Task BulkCheckIn_ChecksInOnlyPendingPositiveResponsesAndPreservesExistingResources()
+    {
+        var einsatz = new EinsatzService();
+        await einsatz.StartEinsatzAsync(new EinsatzData
+        {
+            Einsatzort = "Testort",
+            DiveraAlarmId = 1234,
+            IstEinsatz = true
+        });
+
+        var pendingPerson = new PersonalEntry { Id = "person-pending", DiveraUserId = 42 };
+        var alreadyAvailablePerson = new PersonalEntry { Id = "person-available", DiveraUserId = 43 };
+        var negativePerson = new PersonalEntry { Id = "person-negative", DiveraUserId = 44 };
+
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = alreadyAvailablePerson.Id,
+            Status = ResourceStatus.Verfuegbar
+        });
+
+        var alarm = new DiveraAlarm
+        {
+            Id = 1234,
+            UcrDetails =
+            [
+                new DiveraUcrEntry { MemberId = 42, Status = 56296 },
+                new DiveraUcrEntry { MemberId = 43, Status = 1 },
+                new DiveraUcrEntry { MemberId = 44, Status = 56298 }
+            ]
+        };
+        var divera = EinsatzAbschlussTests.Recorder<IDiveraService>.Create((method, _) => method.Name switch
+        {
+            nameof(IDiveraService.GetActiveAlarmsAsync) => Task.FromResult(new List<DiveraAlarm> { alarm }),
+            _ => throw new NotSupportedException(method.Name)
+        });
+        var masterData = EinsatzAbschlussTests.Recorder<IMasterDataService>.Create((method, _) => method.Name switch
+        {
+            nameof(IMasterDataService.GetPersonalListAsync) => Task.FromResult(new List<PersonalEntry>
+            {
+                pendingPerson,
+                alreadyAvailablePerson,
+                negativePerson
+            }),
+            _ => throw new NotSupportedException(method.Name)
+        });
+
+        var sync = new DiveraResourceSyncService(
+            einsatz,
+            divera.Proxy,
+            masterData.Proxy,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<DiveraResourceSyncService>.Instance);
+
+        var checkedInCount = await sync.CheckInPendingPositiveResponsesAsync();
+
+        Assert.Equal(1, checkedInCount);
+        var resources = einsatz.GetEinsatzResources();
+        Assert.Equal(2, resources.Count);
+
+        var existingResource = Assert.Single(resources, r => r.EntityId == alreadyAvailablePerson.Id);
+        Assert.Equal(ResourceStatus.Verfuegbar, existingResource.Status);
+
+        var addedResource = Assert.Single(resources, r => r.EntityId == pendingPerson.Id);
+        Assert.Equal(ResourceStatus.AufAnfahrt, addedResource.Status);
+        Assert.Equal("30 Minuten", addedResource.DiveraRueckmeldung);
+    }
+
+    [Fact]
+    public async Task Sync_UpdatesDiveraRueckmeldungForAlreadyCheckedInEnRoutePersonOnly()
+    {
+        var einsatz = new EinsatzService();
+        await einsatz.StartEinsatzAsync(new EinsatzData
+        {
+            Einsatzort = "Testort",
+            DiveraAlarmId = 1234,
+            IstEinsatz = true
+        });
+
+        var checkedInEnRoute = new PersonalEntry { Id = "person-enroute", DiveraUserId = 42 };
+        var uncheckedPositive = new PersonalEntry { Id = "person-unchecked", DiveraUserId = 43 };
+
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = checkedInEnRoute.Id,
+            Status = ResourceStatus.AufAnfahrt,
+            DiveraRueckmeldung = "1 Stunde"
+        });
+
+        var alarm = new DiveraAlarm
+        {
+            Id = 1234,
+            UcrDetails =
+            [
+                new DiveraUcrEntry { MemberId = 42, Status = 56296 },
+                new DiveraUcrEntry { MemberId = 43, Status = 1 }
+            ]
+        };
+        var divera = EinsatzAbschlussTests.Recorder<IDiveraService>.Create((method, _) => method.Name switch
+        {
+            nameof(IDiveraService.GetActiveAlarmsAsync) => Task.FromResult(new List<DiveraAlarm> { alarm }),
+            _ => throw new NotSupportedException(method.Name)
+        });
+        var masterData = EinsatzAbschlussTests.Recorder<IMasterDataService>.Create((method, _) => method.Name switch
+        {
+            nameof(IMasterDataService.GetPersonalListAsync) => Task.FromResult(new List<PersonalEntry>
+            {
+                checkedInEnRoute,
+                uncheckedPositive
+            }),
+            _ => throw new NotSupportedException(method.Name)
+        });
+
+        var sync = new DiveraResourceSyncService(
+            einsatz,
+            divera.Proxy,
+            masterData.Proxy,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<DiveraResourceSyncService>.Instance);
+
+        await sync.SyncActiveAlarmResponsesAsync();
+
+        var singleResource = Assert.Single(einsatz.GetEinsatzResources());
+        Assert.Equal(checkedInEnRoute.Id, singleResource.EntityId);
+        Assert.Equal(ResourceStatus.AufAnfahrt, singleResource.Status);
+        Assert.Equal("30 Minuten", singleResource.DiveraRueckmeldung);
+        Assert.Equal(2, sync.GetPositiveResponsesByPersonId().Count);
     }
 }
