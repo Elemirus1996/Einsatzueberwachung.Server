@@ -92,13 +92,17 @@ public sealed partial class ElAppController
     public sealed record ElEinsatzEnde(string? Id, string? Ergebnis, bool RessourcenGeprueft, string? Bemerkungen = null,
         string? Endzeit = null, ElPdfWahl? Pdf = null, IReadOnlyList<string>? PersonalIds = null, IReadOnlyList<string>? HundeIds = null);
 
-    /// <summary>Aktives Personal und aktive Hunde wie in /el/beenden, sortiert, mit der Vorauswahl aus den eingeteilten Teams</summary>
+    /// <summary>Aktives Personal und aktive Hunde wie in /el/beenden, sortiert, mit Vorauswahl aus Teams und Einsatz-Check-in</summary>
     private async Task<(List<PersonalEntry> Personal, List<DogEntry> Hunde, HashSet<string> PersonalIds, HashSet<string> HundeIds)> VorOrtListen()
     {
         var personal = stammdaten is null ? [] : Components.Pages.SelectionListOrdering
             .OrderPersonnelByFirstName((await stammdaten.GetPersonalListAsync()).Where(p => p.IsActive)).ToList();
         var hunde = stammdaten is null ? [] : (await stammdaten.GetDogListAsync()).Where(d => d.IsActive).OrderBy(d => d.Name).ToList();
-        var (personalIds, hundeIds) = EinsatzAbschlussService.PreselectVorOrt(einsatz!.Teams, personal, hunde);
+        var (personalIds, hundeIds) = EinsatzAbschlussService.PreselectVorOrt(
+            einsatz!.Teams,
+            personal,
+            hunde,
+            einsatz.GetEinsatzResources());
         return (personal, hunde, personalIds, hundeIds);
     }
 

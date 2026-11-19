@@ -279,6 +279,17 @@
                     }
                 </text>;
 
+                RenderFragment<ResourceRosterItem> renderResourceRemoveButton = item => @<text>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger resource-remove-button"
+                            aria-label="@($"{item.TypeLabel} {item.Name} aus Einsatz entfernen")"
+                            title="@(IsResourceRemovalBlocked(item) ? "Zuerst Teamzuordnung lösen" : "Aus diesem Einsatz entfernen")"
+                            disabled="@_isSaving"
+                            @onclick="() => RequestResourceRemoval(item)">
+                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                    </button>
+                </text>;
+
                 RenderFragment<ResourceRosterItem> renderStatusAndDispositionCells = item => @<text>
                     <td>
                         <span class="resource-status @ResourceStatusPresentation.CssClass(item.Status)">
@@ -287,35 +298,38 @@
                         </span>
                     </td>
                     <td>
-                        @if (IsSpecialAssignmentPending(item))
-                        {
-                            <div class="resource-row-actions">
-                                <button type="button"
-                                        class="btn btn-sm btn-primary"
+                        <div class="resource-disposition-controls">
+                            @if (IsSpecialAssignmentPending(item))
+                            {
+                                <div class="resource-row-actions">
+                                    <button type="button"
+                                            class="btn btn-sm btn-primary"
+                                            disabled="@_isSaving"
+                                            @onclick="() => ConfirmSpecialAssignmentAsync(item)">
+                                        Bestätigen
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            @onclick="() => CancelSpecialAssignment(item)">
+                                        Abbrechen
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <select class="form-select resource-status-select"
+                                        aria-label="@($"Status für {item.TypeLabel} {item.Name} ändern")"
+                                        value="@item.Status"
                                         disabled="@_isSaving"
-                                        @onclick="() => ConfirmSpecialAssignmentAsync(item)">
-                                    Bestätigen
-                                </button>
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-secondary"
-                                        @onclick="() => CancelSpecialAssignment(item)">
-                                    Abbrechen
-                                </button>
-                            </div>
-                        }
-                        else
-                        {
-                            <select class="form-select resource-status-select"
-                                    aria-label="@($"Status für {item.TypeLabel} {item.Name} ändern")"
-                                    value="@item.Status"
-                                    disabled="@_isSaving"
-                                    @onchange="args => OnStatusSelectedAsync(item, args.Value?.ToString())">
-                                @foreach (var status in StatusOptions(item.EntityType))
-                                {
-                                    <option value="@status">@ResourceStatusPresentation.Label(status)</option>
-                                }
-                            </select>
-                        }
+                                        @onchange="args => OnStatusSelectedAsync(item, args.Value?.ToString())">
+                                    @foreach (var status in StatusOptions(item.EntityType))
+                                    {
+                                        <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                                    }
+                                </select>
+                            }
+                            @renderResourceRemoveButton(item)
+                        </div>
                     </td>
                 </text>;
             }
@@ -430,7 +444,12 @@
                                                 <small>Hundeführer · nur als Zuordnung</small>
                                             </div>
                                         </td>
-                                        <td colspan="2"></td>
+                                        <td></td>
+                                        <td>
+                                            <div class="resource-disposition-controls resource-disposition-controls--context">
+                                                @renderResourceRemoveButton(primary)
+                                            </div>
+                                        </td>
                                     </tr>
                                 }
                                 else
@@ -497,5 +516,63 @@
                 </div>
             }
         </section>
+
+        @if (_resourceRemovalCandidate is { } removalCandidate)
+        {
+            <div class="modal-overlay">
+                <button type="button"
+                        class="modal-overlay-dismiss"
+                        disabled="@_isSaving"
+                        @onclick="CancelResourceRemoval"
+                        aria-label="Entfernen abbrechen"></button>
+                <section class="modal-modern modal-modern--480 resource-removal-dialog"
+                         role="dialog"
+                         aria-modal="true"
+                         aria-labelledby="resource-removal-heading"
+                         @onclick:stopPropagation="true">
+                    <div class="modal-modern-header">
+                        <div>
+                            <p class="resource-eyebrow">AKTUELLER EINSATZ</p>
+                            <h3 id="resource-removal-heading">Ressource entfernen?</h3>
+                        </div>
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled="@_isSaving"
+                                @onclick="CancelResourceRemoval"
+                                aria-label="Dialog schließen">
+                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="modal-modern-body">
+                        <p><strong>@removalCandidate.TypeLabel @removalCandidate.Name</strong> aus diesem Einsatz entfernen?</p>
+                        <p class="resource-removal-explainer">Nur der Check-in wird entfernt. Der Stammdatensatz bleibt erhalten.</p>
+                        @if (IsResourceRemovalBlocked(removalCandidate))
+                        {
+                            <div class="alert alert-warning mb-0" role="alert">
+                                Diese Ressource ist einem Team oder Suchsektor zugeordnet. Löse zuerst die Teamzuordnung.
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_resourceRemovalError))
+                        {
+                            <div class="alert alert-warning mb-0" role="alert">@_resourceRemovalError</div>
+                        }
+                    </div>
+                    <div class="modal-modern-footer">
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled="@_isSaving"
+                                @onclick="CancelResourceRemoval">
+                            Abbrechen
+                        </button>
+                        <button type="button"
+                                class="btn btn-danger"
+                                disabled="@(_isSaving || IsResourceRemovalBlocked(removalCandidate))"
+                                @onclick="ConfirmResourceRemovalAsync">
+                            Aus Einsatz entfernen
+                        </button>
+                    </div>
+                </section>
+            </div>
+        }
     }
 </main>

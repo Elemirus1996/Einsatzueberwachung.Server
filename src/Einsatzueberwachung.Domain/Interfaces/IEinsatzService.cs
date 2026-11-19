@@ -48,6 +48,8 @@ namespace Einsatzueberwachung.Domain.Interfaces
 
         IReadOnlyList<EinsatzResource> GetEinsatzResources();
         Task CheckInResourceAsync(EinsatzResource resource);
+        bool IsResourceInActiveTeam(ResourceEntityType entityType, string entityId);
+        Task RemoveResourceAsync(ResourceEntityType entityType, string entityId);
         Task SetResourceStatusAsync(ResourceEntityType entityType, string entityId, ResourceStatus status, string? note = null);
         bool CanAssignResourceToSearch(ResourceEntityType entityType, string entityId);
         IReadOnlyList<TeamResourceAvailabilityIssue> GetTeamStartResourceIssues(string teamId);

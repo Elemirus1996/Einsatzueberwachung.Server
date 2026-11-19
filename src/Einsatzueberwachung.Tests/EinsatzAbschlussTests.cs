@@ -93,6 +93,33 @@ public class EinsatzAbschlussTests
     }
 
     [Fact]
+    public void PreselectVorOrt_WaehltEingechecktePersonenUndHundeAnhandDerEntitaetsIds()
+    {
+        var personal = new List<PersonalEntry>
+        {
+            new() { Id = "p1", Vorname = "Anna", Nachname = "Berg" },
+            new() { Id = "p2", Vorname = "Ben", Nachname = "Coll" }
+        };
+        var hunde = new List<DogEntry>
+        {
+            new() { Id = "d1", Name = "Rex" },
+            new() { Id = "d2", Name = "Luna" }
+        };
+        var resources = new[]
+        {
+            new EinsatzResource { EntityType = ResourceEntityType.Person, EntityId = "p2" },
+            new EinsatzResource { EntityType = ResourceEntityType.Dog, EntityId = "d2" },
+            new EinsatzResource { EntityType = ResourceEntityType.Person, EntityId = "unbekannt" },
+            new EinsatzResource { EntityType = ResourceEntityType.Dog, EntityId = "p1" }
+        };
+
+        var (personalIds, hundeIds) = EinsatzAbschlussService.PreselectVorOrt([], personal, hunde, resources);
+
+        Assert.Equal(["p2"], personalIds);
+        Assert.Equal(["d2"], hundeIds);
+    }
+
+    [Fact]
     public async Task Abschliessen_ArchiviertSzenarioSuchenUndVermissteUndSetztZurueck()
     {
         var einsatz = new EinsatzService();

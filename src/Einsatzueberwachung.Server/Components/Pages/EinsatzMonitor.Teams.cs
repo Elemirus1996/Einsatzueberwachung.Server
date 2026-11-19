@@ -267,7 +267,11 @@ public partial class EinsatzMonitor
 
     private void PreselectVorOrtChecklists()
     {
-        var (personalIds, hundeIds) = EinsatzAbschlussService.PreselectVorOrt(EinsatzService.Teams, ActivePersonnel, ActiveDogs);
+        var (personalIds, hundeIds) = EinsatzAbschlussService.PreselectVorOrt(
+            EinsatzService.Teams,
+            ActivePersonnel,
+            ActiveDogs,
+            EinsatzService.GetEinsatzResources());
         _selectedPersonnelIds.UnionWith(personalIds);
         _selectedDogIds.UnionWith(hundeIds);
     }

@@ -31,6 +31,8 @@ public partial class Ressourcenverwaltung
     private bool _isSaving;
     private string _rosterStateFilter = ResourceRosterFilter.AllResourceStates;
     private string _rosterHandlerAssignmentFilter = ResourceRosterFilter.AllHandlerAssignments;
+    private ResourceRosterItem? _resourceRemovalCandidate;
+    private string _resourceRemovalError = string.Empty;
     private PersonalEntry _newPerson = new();
 
     private bool HasActiveEinsatz =>
@@ -322,6 +324,51 @@ public partial class Ressourcenverwaltung
         ClearMessage();
     }
 
+    private void RequestResourceRemoval(ResourceRosterItem item)
+    {
+        _resourceRemovalCandidate = item;
+        _resourceRemovalError = string.Empty;
+        ClearMessage();
+    }
+
+    private void CancelResourceRemoval()
+    {
+        _resourceRemovalCandidate = null;
+        _resourceRemovalError = string.Empty;
+    }
+
+    private async Task ConfirmResourceRemovalAsync()
+    {
+        var candidate = _resourceRemovalCandidate;
+        if (candidate is null || _isSaving)
+            return;
+
+        _resourceRemovalError = string.Empty;
+        if (IsResourceRemovalBlocked(candidate))
+        {
+            _resourceRemovalError =
+                "Diese Ressource ist einem Team oder Suchsektor zugeordnet. Löse zuerst die Teamzuordnung.";
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            await EinsatzService.RemoveResourceAsync(candidate.EntityType, candidate.EntityId);
+            ClearPendingForEntity(candidate);
+            _resourceRemovalCandidate = null;
+            SetMessage($"{candidate.TypeLabel} {candidate.Name} wurde aus dem Einsatz entfernt. Die Stammdaten bleiben erhalten.");
+        }
+        catch (Exception ex)
+        {
+            _resourceRemovalError = $"Entfernen fehlgeschlagen: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
     private void ClearPendingForEntity(ResourceRosterItem item)
     {
         var suffix = item.EntityType == ResourceEntityType.Dog
@@ -366,6 +413,9 @@ public partial class Ressourcenverwaltung
 
     private bool IsSpecialAssignmentPending(ResourceRosterItem item) =>
         _pendingStatuses.ContainsKey(item.UiKey);
+
+    private bool IsResourceRemovalBlocked(ResourceRosterItem item) =>
+        EinsatzService.IsResourceInActiveTeam(item.EntityType, item.EntityId);
 
     private string PendingNote(ResourceRosterItem item) =>
         _pendingNotes.GetValueOrDefault(item.UiKey, string.Empty);

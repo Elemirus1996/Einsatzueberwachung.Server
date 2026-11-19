@@ -70,6 +70,48 @@ public partial class EinsatzService
         return Task.CompletedTask;
     }
 
+    public bool IsResourceInActiveTeam(ResourceEntityType entityType, string entityId)
+    {
+        if (string.IsNullOrWhiteSpace(entityId))
+            return false;
+
+        return _teams.Any(team =>
+            (team.IsRunning
+                || team.IsManuallyPaused
+                || team.IsPausing
+                || !string.IsNullOrWhiteSpace(team.SearchAreaId))
+            && (entityType switch
+            {
+                ResourceEntityType.Person => GetTeamPersonIds(team).Contains(entityId, StringComparer.Ordinal),
+                ResourceEntityType.Dog => string.Equals(team.DogId, entityId, StringComparison.Ordinal),
+                _ => false
+            }));
+    }
+
+    public Task RemoveResourceAsync(ResourceEntityType entityType, string entityId)
+    {
+        if (!CurrentEinsatz.IstEinsatz)
+            throw new InvalidOperationException("Ressourcen können nur aus einem laufenden Einsatz entfernt werden.");
+        if (string.IsNullOrWhiteSpace(entityId))
+            throw new ArgumentException("Die Ressourcen-ID darf nicht leer sein.", nameof(entityId));
+
+        var resources = CurrentEinsatz.Resources ??= new List<EinsatzResource>();
+        var resource = resources.FirstOrDefault(entry =>
+            entry.EntityType == entityType
+            && string.Equals(entry.EntityId, entityId, StringComparison.Ordinal));
+        if (resource is null)
+            throw new InvalidOperationException("Die Ressource ist nicht in den Einsatz eingecheckt.");
+        if (IsResourceInActiveTeam(entityType, entityId))
+            throw new InvalidOperationException(
+                "Die Ressource ist einem Team oder Suchsektor zugeordnet und kann erst nach dem Lösen der Zuordnung entfernt werden.");
+
+        resources.Remove(resource);
+        if (entityType == ResourceEntityType.Dog)
+            _dogPauses.Remove(entityId);
+        ResourcesChanged?.Invoke();
+        return Task.CompletedTask;
+    }
+
     public Task SetResourceStatusAsync(
         ResourceEntityType entityType,
         string entityId,

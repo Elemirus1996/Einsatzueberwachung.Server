@@ -171,6 +171,62 @@ public sealed class EinsatzResourceTests
     }
 
     [Fact]
+    public async Task RemoveResource_RemovesOnlyTheRequestedPersonOrDogAndNotifiesListeners()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "resource-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Dog,
+            EntityId = "dog-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        var resourcesChangedCount = 0;
+        einsatz.ResourcesChanged += () => resourcesChangedCount++;
+
+        await einsatz.RemoveResourceAsync(ResourceEntityType.Person, "resource-1");
+
+        var remaining = Assert.Single(einsatz.GetEinsatzResources());
+        Assert.Equal(ResourceEntityType.Dog, remaining.EntityType);
+        Assert.Equal("dog-1", remaining.EntityId);
+        Assert.Equal(1, resourcesChangedCount);
+
+        await einsatz.RemoveResourceAsync(ResourceEntityType.Dog, "dog-1");
+
+        Assert.Empty(einsatz.GetEinsatzResources());
+        Assert.Equal(2, resourcesChangedCount);
+    }
+
+    [Fact]
+    public async Task RemoveResource_RejectsResourcesAssignedToASearchArea()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "person-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        var team = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Suchteam",
+            HundefuehrerId = "person-1"
+        });
+        var area = await einsatz.AddSearchAreaAsync(new SearchArea { Name = "Sektor A" });
+        await einsatz.AssignTeamToSearchAreaAsync(area.Id, team.TeamId);
+
+        Assert.True(einsatz.IsResourceInActiveTeam(ResourceEntityType.Person, "person-1"));
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            einsatz.RemoveResourceAsync(ResourceEntityType.Person, "person-1"));
+        Assert.Single(einsatz.GetEinsatzResources());
+    }
+
+    [Fact]
     public async Task TeamAssignmentAndTimerWorkWhenNoResourcesAreCheckedIn()
     {
         var einsatz = await CreateActiveEinsatzAsync();

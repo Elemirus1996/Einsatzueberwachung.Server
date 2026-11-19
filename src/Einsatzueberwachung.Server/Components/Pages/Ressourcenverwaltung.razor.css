@@ -340,6 +340,38 @@
     flex: 1 1 8rem;
 }
 
+.resource-removal-dialog .modal-modern-header {
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.resource-removal-dialog .modal-modern-header h3 {
+    font-size: 1.25rem;
+}
+
+.resource-removal-dialog .modal-modern-body {
+    padding: 1.5rem;
+}
+
+.resource-removal-explainer {
+    margin-bottom: 0;
+    color: var(--ui-muted);
+}
+
+.resource-removal-dialog .modal-modern-body .alert {
+    margin-top: 1rem;
+}
+
+.resource-removal-dialog .modal-modern-footer {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+}
+
+.resource-removal-dialog .modal-modern-footer .btn {
+    min-height: 44px;
+}
+
 .resource-counts {
     display: grid;
     justify-items: end;
@@ -603,6 +635,36 @@
     min-width: 190px;
 }
 
+.resource-disposition-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 240px;
+}
+
+.resource-disposition-controls .resource-row-actions {
+    flex: 1 1 auto;
+}
+
+.resource-disposition-controls .resource-status-select {
+    flex: 1 1 190px;
+    width: 100%;
+}
+
+.resource-disposition-controls--context {
+    justify-content: flex-end;
+    min-width: 0;
+}
+
+.resource-remove-button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+}
+
 .resource-roster-empty,
 .resource-empty-state {
     display: flex;
@@ -713,6 +775,21 @@
     .resource-quick-create-dialog .modal-modern-footer .btn {
         width: 100%;
         flex-basis: auto;
+    }
+
+    .resource-removal-dialog .modal-modern-header,
+    .resource-removal-dialog .modal-modern-body,
+    .resource-removal-dialog .modal-modern-footer {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .resource-removal-dialog .modal-modern-footer {
+        flex-direction: column;
+    }
+
+    .resource-removal-dialog .modal-modern-footer .btn {
+        width: 100%;
     }
 
     .resource-table {
