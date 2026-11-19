@@ -307,10 +307,19 @@
                         }
                         else if (panel.PanelId == KnownPanels.Ressourcen)
                         {
-                            <div class="resource-monitor-count ms-auto" aria-label="@($"{GetAvailableResourceCount()} Ressourcen im Verfügungsraum")">
-                                <strong>@GetAvailableResourceCount()</strong>
-                                <span>im Verfügungsraum</span>
-                            </div>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary resource-monitor-filter-trigger ms-auto @(GetActiveResourceFilterCount() > 0 ? "is-filtered" : string.Empty)"
+                                    aria-label="Ressourcenfilter @(GetActiveResourceFilterCount() > 0 ? $"ändern, {GetActiveResourceFilterCount()} aktiv" : "öffnen")"
+                                    aria-expanded="@_resourceFiltersExpanded"
+                                    aria-controls="resource-filter-controls"
+                                    title="Ressourcen filtern"
+                                    @onclick="ToggleResourceFilters">
+                                <i class="bi bi-funnel" aria-hidden="true"></i>
+                                @if (GetActiveResourceFilterCount() > 0)
+                                {
+                                    <span class="resource-monitor-filter-count">@GetActiveResourceFilterCount()</span>
+                                }
+                            </button>
                         }
                         else if (panel.PanelId == KnownPanels.Notizen)
                         {
@@ -323,6 +332,52 @@
                     </div>
 
                     <div class="dashboard-panel-body">
+                        @if (panel.PanelId == KnownPanels.Ressourcen)
+                        {
+                            <div id="resource-filter-controls"
+                                 class="resource-monitor-filter-controls"
+                                 role="group"
+                                 aria-label="Ressourcenfilter"
+                                 hidden="@(!_resourceFiltersExpanded)">
+                                <label>
+                                    <span>Status</span>
+                                    <select class="form-select form-select-sm"
+                                            aria-label="Ressourcenstatus filtern"
+                                            @bind="_resourceStateFilter">
+                                        <option value="all">Alle Status</option>
+                                        <option value="not-available">Nicht im Verfügungsraum</option>
+                                        @foreach (var status in Enum.GetValues<ResourceStatus>())
+                                        {
+                                            <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                                        }
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>Personen</span>
+                                    <select class="form-select form-select-sm"
+                                            aria-label="Nach Hundeführern filtern"
+                                            @bind="_handlerAssignmentFilter">
+                                        <option value="all">Alle Personen</option>
+                                        <option value="handlers">Hundeführer</option>
+                                        <option value="no-dog">Ohne Hund</option>
+                                    </select>
+                                </label>
+                                <label class="resource-monitor-filter-checkbox">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           @bind="_hideDogs" />
+                                    <span>Hunde ausblenden</span>
+                                </label>
+                                @if (GetActiveResourceFilterCount() > 0)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary resource-monitor-filter-reset"
+                                            @onclick="ClearResourceFilters">
+                                        Filter zurücksetzen
+                                    </button>
+                                }
+                            </div>
+                        }
                         @switch (panel.PanelId)
                         {
                                 case KnownPanels.EinsatzInfo:
@@ -350,14 +405,14 @@
                                     break;
 
                                 case KnownPanels.Ressourcen:
-                                    var resourceGroups = GetMonitorResourceGroups();
+                                    var resourceGroups = GetFilteredMonitorResourceGroups();
                                     RenderFragment<ResourceRosterItem> renderMonitorResourceEntry = item => @<text>
                                         @{
                                             var itemNote = item.GetMonitorNote();
                                         }
                                         <div class="resource-monitor-row">
                                             <div class="resource-monitor-identity">
-                                                <i class="bi @(item.EntityType == ResourceEntityType.Person ? "bi-person" : "bi-shield")"
+                                                <i class="@GetResourceIconClass(item)"
                                                    title="@item.TypeLabel"
                                                    aria-hidden="true"></i>
                                                 <strong>@item.Name</strong>
@@ -406,8 +461,20 @@
                                     @if (resourceGroups.Count == 0)
                                     {
                                         <div class="resource-monitor-empty">
-                                            <span>Noch keine Ressourcen eingecheckt.</span>
-                                            <a href="/ressourcenverwaltung">Zum Check-in</a>
+                                            @if (GetActiveResourceFilterCount() > 0)
+                                            {
+                                                <span>Keine Ressourcen entsprechen den Filtern.</span>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-link p-0"
+                                                        @onclick="ClearResourceFilters">
+                                                    Filter zurücksetzen
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span>Noch keine Ressourcen eingecheckt.</span>
+                                                <a href="/ressourcenverwaltung">Zum Check-in</a>
+                                            }
                                         </div>
                                     }
                                     else
@@ -420,11 +487,22 @@
                                             @foreach (var group in resourceGroups)
                                             {
                                                 <li class="resource-monitor-item" @key="group.Primary.UiKey">
-                                                    @renderMonitorResourceEntry(group.Primary)
-                                                    @if (group.CheckedInDogs.Count > 0)
+                                                    @if (group.ShowPrimaryStatus)
                                                     {
-                                                        <ul class="resource-monitor-sublist" aria-label="@($"Hunde von {group.Primary.Name}")">
-                                                            @foreach (var dogItem in group.CheckedInDogs)
+                                                        @renderMonitorResourceEntry(group.Primary)
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="resource-monitor-context">
+                                                            <i class="bi bi-person" aria-hidden="true"></i>
+                                                            <strong>@group.Primary.Name</strong>
+                                                            <small>Hundeführer · nur als Zuordnung</small>
+                                                        </div>
+                                                    }
+                                                    @if (group.Dogs.Count > 0)
+                                                    {
+                                                        <ul class="resource-monitor-sublist" aria-label="@($"Passende Hunde von {group.Primary.Name}")">
+                                                            @foreach (var dogItem in group.Dogs)
                                                             {
                                                                 <li class="resource-monitor-subitem" @key="dogItem.UiKey">
                                                                     @renderMonitorResourceEntry(dogItem)

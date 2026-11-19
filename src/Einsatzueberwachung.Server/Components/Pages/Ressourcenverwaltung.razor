@@ -323,7 +323,7 @@
                                 <tr class="resource-primary-row @(hasCheckedInDogs ? "resource-primary-row--has-dogs" : string.Empty)" @key="primary.UiKey">
                                     <td>
                                         <div class="resource-row-identity">
-                                            <i class="bi @(primary.EntityType == ResourceEntityType.Person ? "bi-person" : "bi-shield")"
+                                            <i class="@GetResourceIconClass(primary.EntityType)"
                                                title="@primary.TypeLabel"
                                                aria-hidden="true"></i>
                                             <strong>@primary.Name</strong>
@@ -348,7 +348,7 @@
                                                             title="@($"Hund {dog.Name} als „{ResourceStatusPresentation.Label(derivedStatus)}“ einchecken")"
                                                             @onclick="() => CheckInHandlerDogAsync(primary, dog)">
                                                         <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                                                        <i class="bi bi-shield" aria-hidden="true"></i>
+                                                        <i class="@GetResourceIconClass(ResourceEntityType.Dog)" aria-hidden="true"></i>
                                                         <span>@dog.Name</span>
                                                     </button>
                                                 }
@@ -365,7 +365,7 @@
                                         <td>
                                             <div class="resource-row-identity resource-row-identity--dog">
                                                 <span class="resource-dog-connector" aria-hidden="true"></span>
-                                                <i class="bi bi-shield" title="Hund" aria-hidden="true"></i>
+                                                <i class="@GetResourceIconClass(ResourceEntityType.Dog)" title="Hund" aria-hidden="true"></i>
                                                 <strong>@dogItem.Name</strong>
                                             </div>
                                             <div class="resource-dog-subrow-details">

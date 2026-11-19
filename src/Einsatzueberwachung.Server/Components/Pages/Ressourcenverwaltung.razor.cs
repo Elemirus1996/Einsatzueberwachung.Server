@@ -10,7 +10,9 @@ public partial class Ressourcenverwaltung
 {
     [Inject] private IEinsatzService EinsatzService { get; set; } = default!;
     [Inject] private IMasterDataService MasterDataService { get; set; } = default!;
+    [Inject] private ISettingsService SettingsService { get; set; } = default!;
 
+    private AppSettings _appSettings = new();
     private List<PersonalEntry> _personnel = new();
     private List<DogEntry> _dogs = new();
     private Dictionary<string, ResourceStatus> _pendingStatuses = new(StringComparer.Ordinal);
@@ -80,6 +82,7 @@ public partial class Ressourcenverwaltung
 
     protected override async Task OnInitializedAsync()
     {
+        _appSettings = await SettingsService.GetAppSettingsAsync();
         _personnel = await MasterDataService.GetPersonalListAsync();
         _dogs = await MasterDataService.GetDogListAsync();
         _checkInExpanded = EinsatzService.GetEinsatzResources().Count == 0;
@@ -271,6 +274,9 @@ public partial class Ressourcenverwaltung
 
     private IEnumerable<ResourceStatus> StatusOptions(ResourceEntityType type) =>
         ResourceStatusPresentation.Options(type);
+
+    private string GetResourceIconClass(ResourceEntityType type) =>
+        ResourceIconPresentation.CssClass(type, _appSettings.CollarMarkerIconOrDefault);
 
     private bool IsSpecialAssignmentPending(ResourceRosterItem item) =>
         _pendingStatuses.ContainsKey(item.UiKey);

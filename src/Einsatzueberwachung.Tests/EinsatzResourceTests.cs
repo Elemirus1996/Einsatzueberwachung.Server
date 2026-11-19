@@ -36,6 +36,25 @@ public sealed class EinsatzResourceTests
     }
 
     [Theory]
+    [InlineData("paw", "fa-solid fa-paw")]
+    [InlineData("dog", "fa-solid fa-dog")]
+    [InlineData("bone", "fa-solid fa-bone")]
+    [InlineData("dot", "fa-solid fa-location-dot")]
+    [InlineData("crosshairs", "fa-solid fa-crosshairs")]
+    [InlineData("location-arrow", "fa-solid fa-location-arrow")]
+    [InlineData("unknown", "fa-solid fa-paw")]
+    public void DogIcon_UsesConfiguredCollarMarkerIcon(string setting, string expectedClass)
+    {
+        Assert.Equal(expectedClass, ResourceIconPresentation.CssClass(ResourceEntityType.Dog, setting));
+    }
+
+    [Fact]
+    public void PersonIcon_DoesNotUseDogMarkerSetting()
+    {
+        Assert.Equal("bi bi-person", ResourceIconPresentation.CssClass(ResourceEntityType.Person, "dog"));
+    }
+
+    [Theory]
     [InlineData(ResourceEntityType.Person, "person-1")]
     [InlineData(ResourceEntityType.Dog, "dog-1")]
     public async Task CanAssignResourceToSearch_FallsBackToMasterDataWhenNoResourcesAreCheckedIn(
