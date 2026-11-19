@@ -280,6 +280,20 @@
     color: var(--ui-muted);
 }
 
+.resource-quick-create-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.resource-quick-create-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
 .resource-quick-create-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
@@ -744,6 +758,10 @@
 
     .resource-quick-create-prompt {
         align-items: stretch;
+        flex-direction: column;
+    }
+
+    .resource-quick-create-actions {
         flex-direction: column;
     }
 

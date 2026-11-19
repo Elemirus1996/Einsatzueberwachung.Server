@@ -218,7 +218,7 @@ namespace Einsatzueberwachung.Domain.Services
             if (!string.IsNullOrWhiteSpace(dogId))
             {
                 _dogPauses.Remove(dogId);
-                SetResourceStatusFromSearch(ResourceEntityType.Dog, dogId, ResourceStatus.Verfuegbar);
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, dogId, ResourceStatus.Verfuegbar, team.TeamId);
                 foreach (var sibling in _teams.Where(t => t.TeamId != teamId && t.DogId == dogId && t.IsPausing).ToList())
                 {
                     sibling.SilentReset();
@@ -275,9 +275,9 @@ namespace Einsatzueberwachung.Domain.Services
         private void Team_TimerStopped(Team team)
         {
             foreach (var personId in GetTeamPersonIds(team))
-                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, ResourceStatus.Verfuegbar);
+                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, ResourceStatus.Verfuegbar, team.TeamId);
             if (!string.IsNullOrWhiteSpace(team.DogId) && !team.IsPausing)
-                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.Verfuegbar);
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.Verfuegbar, team.TeamId);
             _ = AddGlobalNoteAsync("Timer gestoppt", GlobalNotesEntryType.TeamStop, team.TeamId);
             SucheGeaendert(team);
         }
@@ -285,9 +285,9 @@ namespace Einsatzueberwachung.Domain.Services
         private void Team_TimerReset(Team team)
         {
             foreach (var personId in GetTeamPersonIds(team))
-                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, ResourceStatus.Verfuegbar);
+                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, ResourceStatus.Verfuegbar, team.TeamId);
             if (!string.IsNullOrWhiteSpace(team.DogId))
-                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.Verfuegbar);
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.Verfuegbar, team.TeamId);
             _ = AddGlobalNoteAsync("Timer zurückgesetzt", GlobalNotesEntryType.TeamReset, team.TeamId);
             SucheGeaendert(team);
         }

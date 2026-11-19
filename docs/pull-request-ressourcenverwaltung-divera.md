@@ -9,10 +9,12 @@ Dieser Branch ergänzt eine einsatzbezogene Ressourcenverwaltung für Personen u
 ### Ressourcenverwaltung und Statusdisposition
 
 - Personen und Hunde werden als getrennte Einsatzressourcen mit jeweils eigenem Status geführt.
-- Check-in aus den Stammdaten mit den Startstatus **Auf Anfahrt** oder **Verfügbar**; Schnellaufnahme neuer Personen mit Speicherung in den Stammdaten.
+- Check-in aus den Stammdaten mit den Startstatus **Auf Anfahrt** oder **Verfügbar**; Personenvorschläge erscheinen erst ab drei Suchzeichen.
+- Schnellaufnahme neuer Personen und Hunde: Speicherung in den Stammdaten und direkter Check-in in den aktiven Einsatz.
 - Statuswechsel pro Ressource: **Verfügbar**, **Vorübergehend abwesend**, **Pause**, **Auf Anfahrt**, **In Suche**, **Drohneneinsatz**, **Sonderauftrag** und **Abgemeldet**.
-- Filter in der Ressourcenübersicht nach Status, Hundeführern, Personen ohne Hund und mit der Option, Hunde auszublenden. Ein Hundeführer bleibt als Zuordnungskontext sichtbar, wenn nur sein Hund zum Statusfilter passt.
+- Filter in der Ressourcenübersicht nach Status, Hundeführern, Personen ohne Hund und mit der Option, Hunde auszublenden. Hunde werden unabhängig vom Status ihres Hundeführers gefiltert; ein Hundeführer bleibt als Zuordnungskontext sichtbar, wenn nur sein Hund zum Statusfilter passt.
 - Versehentliche Check-ins lassen sich nach Bestätigung aus dem aktuellen Einsatz entfernen; die Stammdaten bleiben erhalten. Ressourcen, die einem Team oder Suchsektor zugeordnet sind oder gerade laufen beziehungsweise pausieren, sind bis zum Lösen der Zuordnung geschützt.
+- Bei mehrfach verwendeten Ressourcen bleibt **In Suche** gesetzt, solange ein anderes Team die Ressource nutzt oder einer Suche zugeordnet ist.
 - Ein **Sonderauftrag** benötigt eine Notiz, bevor der Status übernommen wird.
 - Ein Suchauftrag setzt die zugewiesenen Personen und Hunde auf **In Suche**. Nach Abschluss werden sie wieder **Verfügbar**.
 - Nur verfügbare Ressourcen können neuen Suchsektoren zugewiesen werden.
@@ -61,7 +63,7 @@ Die Screenshots stammen aus der lokalen Testumgebung. Sichtbare Personen- und Hu
 
 ## Verifikation
 
-- `dotnet test src/Einsatzueberwachung.Tests --configuration Release --verbosity quiet --nologo` — **556/556 Tests bestanden**.
+- `dotnet test src/Einsatzueberwachung.Tests --configuration Release --verbosity quiet --nologo` — **566/566 Tests bestanden**.
 - `git diff --check` — ohne Beanstandungen.
 
 ## Manuelle Prüfschritte
@@ -70,6 +72,7 @@ Die Screenshots stammen aus der lokalen Testumgebung. Sichtbare Personen- und Hu
 - Den Testalarm über **/divera** und beim Einsatzstart prüfen; bei einem aktiven, nicht anderweitig verknüpften Einsatz auch den direkten Übergang zur Ressourcenverwaltung testen.
 - Positive Rückmeldungen einzeln und gesammelt einchecken. Prüfen, dass der Einzel-Check-in den ausgewählten Startstatus verwendet und bereits eingecheckte Ressourcen beim Sammel-Check-in unverändert bleiben.
 - Personen und Hunde einchecken, mehrere Hundeführer-Zuordnungen prüfen sowie Status-, Hundeführer- und Ohne-Hund-Filter und **Hunde ausblenden** in der Ressourcenverwaltung und im Monitor verwenden.
+- Unter drei Suchzeichen dürfen keine Personenvorschläge erscheinen; ab drei Zeichen prüfen, dass passende Treffer angezeigt werden. Einen neuen Hund mit Name und Rasse schnell erfassen und prüfen, dass Stammdaten und Einsatz-Check-in ohne Reload übernommen werden.
 - Einen Check-in von Person und Hund jeweils abbrechen beziehungsweise bestätigen. Prüfen, dass der Stammdatensatz erhalten bleibt und zugeordnete Ressourcen erst nach dem Lösen der Team-/Sektorzuordnung entfernt werden können.
 - Einen Teamstart mit nicht verfügbaren Ressourcen prüfen: mehrere Korrekturen vormerken, Teammitglied entfernen oder die Prüfung nur für diesen Start bestätigen.
 - Beim Einsatzende prüfen, dass eingecheckte Personen und Hunde auch ohne Teamzuweisung vorausgewählt sind.

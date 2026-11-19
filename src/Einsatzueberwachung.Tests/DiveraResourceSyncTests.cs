@@ -302,9 +302,21 @@ public sealed class DiveraResourceSyncTests
             simulation);
 
         Assert.False(simulatableDivera.IsConfigured);
+        var linkedEinsatzChangeObserved = false;
+        var simulationActiveWhenEinsatzChanged = false;
+        einsatz.EinsatzChanged += () =>
+        {
+            if (einsatz.CurrentEinsatz.DiveraAlarmId != DiveraTestSimulationService.SimulatedAlarmId)
+                return;
+
+            linkedEinsatzChangeObserved = true;
+            simulationActiveWhenEinsatzChanged = simulation.IsActive;
+        };
 
         var summary = await simulation.StartTestAlarmAsync();
 
+        Assert.True(linkedEinsatzChangeObserved);
+        Assert.True(simulationActiveWhenEinsatzChanged);
         Assert.True(simulation.IsActive);
         Assert.True(simulatableDivera.IsConfigured);
         Assert.True(simulatableDivera.HasActiveAlarms);

@@ -47,6 +47,7 @@
         <section class="resource-checkin-section" aria-labelledby="checkin-heading">
             @{
                 var pendingDiveraCount = PendingDiveraCheckInCount;
+                var checkInCandidates = CheckInCandidates;
             }
             <div class="resource-checkin-summary">
                 <div>
@@ -55,7 +56,14 @@
                     <p class="resource-search-hint">
                         @TotalResourceCount eingecheckt
                         <span aria-hidden="true">·</span>
-                        @CheckInCandidates.Count Personen in der Liste
+                        @if (CanShowCheckInSuggestions)
+                        {
+                            <span>@checkInCandidates.Count @(checkInCandidates.Count == 1 ? "Personenvorschlag" : "Personenvorschläge")</span>
+                        }
+                        else
+                        {
+                            <span>Mindestens drei Zeichen für Personenvorschläge</span>
+                        }
                         @if (pendingDiveraCount > 0)
                         {
                             <span aria-hidden="true">·</span>
@@ -83,7 +91,7 @@
                             aria-controls="checkin-controls"
                             @onclick="ToggleCheckIn">
                         <i class="bi @(_checkInExpanded ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></i>
-                        @(_checkInExpanded ? "Check-in schließen" : "Weitere Personen einchecken")
+                        @(_checkInExpanded ? "Check-in schließen" : "Weitere Ressourcen einchecken")
                     </button>
                 </div>
             </div>
@@ -113,19 +121,16 @@
                         </label>
                     </div>
 
-                    @if (CheckInCandidates.Count == 0)
+                    @if (checkInCandidates.Count == 0)
                     {
                         <p class="resource-search-hint" role="status">
-                            @if (string.IsNullOrWhiteSpace(_searchText))
+                            @if (!CanShowCheckInSuggestions)
                             {
-                                @if (ActivePersonnelCount == 0)
-                                {
-                                    <span>Keine aktiven Personen in den Stammdaten vorhanden.</span>
-                                }
-                                else
-                                {
-                                    <span>Alle aktiven Personen sind bereits eingecheckt.</span>
-                                }
+                                <span>Mindestens drei Zeichen eingeben, um Personenvorschläge zu sehen.</span>
+                            }
+                            else if (ActivePersonnelCount == 0)
+                            {
+                                <span>Keine aktiven Personen in den Stammdaten vorhanden.</span>
                             }
                             else
                             {
@@ -136,7 +141,7 @@
                     else
                     {
                         <div class="resource-suggestions" role="list" aria-label="Eincheckbare Personen">
-                            @foreach (var suggestion in CheckInCandidates)
+                            @foreach (var suggestion in checkInCandidates)
                             {
                                 <div class="resource-suggestion @(suggestion.HasDiveraResponse ? "resource-suggestion--divera" : string.Empty)" role="listitem" @key="suggestion.Id">
                                     <div class="resource-suggestion-identity">
@@ -175,13 +180,21 @@
                     }
 
                     <div class="resource-quick-create-prompt">
-                        <span>Person fehlt in der Liste?</span>
-                        <button type="button"
-                                class="btn btn-outline-secondary resource-quick-create-button"
-                                @onclick="OpenQuickCreate">
-                            <i class="bi bi-person-plus" aria-hidden="true"></i>
-                            Schnell erfassen
-                        </button>
+                        <span>Person oder Hund fehlt?</span>
+                        <div class="resource-quick-create-actions">
+                            <button type="button"
+                                    class="btn btn-outline-secondary resource-quick-create-button"
+                                    @onclick="OpenQuickCreate">
+                                <i class="bi bi-person-plus" aria-hidden="true"></i>
+                                Person erfassen
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline-secondary resource-quick-create-button"
+                                    @onclick="OpenDogQuickCreate">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                Hund erfassen
+                            </button>
+                        </div>
                     </div>
                 </div>
             }
@@ -247,6 +260,81 @@
                                     class="btn btn-outline-secondary"
                                     disabled="@_isSaving"
                                     @onclick="CloseQuickCreate">
+                                Abbrechen
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            }
+
+            @if (_showQuickCreateDog)
+            {
+                <div class="modal-overlay">
+                    <button type="button"
+                            class="modal-overlay-dismiss"
+                            disabled="@_isSaving"
+                            @onclick="CloseDogQuickCreate"
+                            aria-label="Schnellaufnahme schließen"></button>
+                    <section class="modal-modern modal-modern--640 resource-quick-create-dialog"
+                             role="dialog"
+                             aria-modal="true"
+                             aria-labelledby="quick-create-dog-heading"
+                             @onclick:stopPropagation="true">
+                        <div class="modal-modern-header">
+                            <div>
+                                <p class="resource-eyebrow">STAMMDATEN UND EINSATZ</p>
+                                <h3 id="quick-create-dog-heading">Hund erfassen und einchecken</h3>
+                            </div>
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    disabled="@_isSaving"
+                                    @onclick="CloseDogQuickCreate"
+                                    aria-label="Dialog schließen">
+                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="modal-modern-body">
+                            <p class="resource-quick-create-explainer">
+                                Der Hund wird dauerhaft in den Stammdaten gespeichert und anschließend diesem Einsatz zugewiesen.
+                            </p>
+                            <div class="resource-quick-create-grid">
+                                <label>
+                                    <span>Name</span>
+                                    <input class="form-control"
+                                           autocomplete="off"
+                                           required
+                                           disabled="@IsQuickCreateDogSaved"
+                                           @bind="_newDog.Name" />
+                                </label>
+                                <label>
+                                    <span>Rasse</span>
+                                    <input class="form-control"
+                                           autocomplete="off"
+                                           required
+                                           disabled="@IsQuickCreateDogSaved"
+                                           @bind="_newDog.Rasse" />
+                                </label>
+                                <label>
+                                    <span>Organisation (optional)</span>
+                                    <input class="form-control"
+                                           autocomplete="organization"
+                                           disabled="@IsQuickCreateDogSaved"
+                                           @bind="_newDog.Organisation" />
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-modern-footer">
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    disabled="@_isSaving"
+                                    @onclick="CreateAndCheckInDogAsync">
+                                <i class="bi bi-check2" aria-hidden="true"></i>
+                                @(IsQuickCreateDogSaved ? "Einchecken wiederholen" : "Stammdaten speichern und einchecken")
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    disabled="@_isSaving"
+                                    @onclick="CloseDogQuickCreate">
                                 Abbrechen
                             </button>
                         </div>

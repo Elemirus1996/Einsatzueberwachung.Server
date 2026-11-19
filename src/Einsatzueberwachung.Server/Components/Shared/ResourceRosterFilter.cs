@@ -37,11 +37,9 @@ public static class ResourceRosterFilter
                 continue;
 
             var primaryMatches = MatchesResourceStateFilter(group.Primary, stateFilter);
-            var matchingDogs = hideDogs
+            IReadOnlyList<ResourceRosterItem> matchingDogs = hideDogs
                 ? Array.Empty<ResourceRosterItem>()
-                : primaryMatches
-                    ? group.CheckedInDogs
-                    : group.CheckedInDogs.Where(dog => MatchesResourceStateFilter(dog, stateFilter)).ToArray();
+                : group.CheckedInDogs.Where(dog => MatchesResourceStateFilter(dog, stateFilter)).ToArray();
 
             if (group.Primary.EntityType == ResourceEntityType.Person)
             {

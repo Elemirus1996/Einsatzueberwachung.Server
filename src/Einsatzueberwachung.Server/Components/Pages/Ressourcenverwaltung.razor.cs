@@ -25,6 +25,7 @@ public partial class Ressourcenverwaltung
     private string _message = string.Empty;
     private bool _messageIsError;
     private bool _showQuickCreate;
+    private bool _showQuickCreateDog;
     private bool _checkInExpanded;
     private bool _rosterFiltersExpanded;
     private bool _hideRosterDogs;
@@ -34,6 +35,7 @@ public partial class Ressourcenverwaltung
     private ResourceRosterItem? _resourceRemovalCandidate;
     private string _resourceRemovalError = string.Empty;
     private PersonalEntry _newPerson = new();
+    private DogEntry _newDog = new();
 
     private bool HasActiveEinsatz =>
         !string.IsNullOrWhiteSpace(EinsatzService.CurrentEinsatz.Einsatzort)
@@ -61,6 +63,8 @@ public partial class Ressourcenverwaltung
     private int TotalResourceCount => CheckedInResources.Count;
 
     private int ActivePersonnelCount => _personnel.Count(person => person.IsActive);
+    private bool CanShowCheckInSuggestions => ResourceCheckInSearch.HasMinimumQueryLength(_searchText);
+    private bool IsQuickCreateDogSaved => _dogs.Any(dog => dog.Id == _newDog.Id);
 
     private IReadOnlyDictionary<string, string> PositiveDiveraResponses =>
         DiveraResourceSyncService.GetPositiveResponsesByPersonId();
@@ -90,6 +94,9 @@ public partial class Ressourcenverwaltung
         get
         {
             var query = _searchText.Trim();
+            if (!ResourceCheckInSearch.HasMinimumQueryLength(query))
+                return [];
+
             var diveraResponses = PositiveDiveraResponses;
             var checkedInPersonIds = CheckedInResources
                 .Where(resource => resource.EntityType == ResourceEntityType.Person)
@@ -169,12 +176,32 @@ public partial class Ressourcenverwaltung
     private void OpenQuickCreate()
     {
         _showQuickCreate = true;
+        _showQuickCreateDog = false;
         _newPerson = new PersonalEntry();
         _newDiveraUserId = string.Empty;
         ClearMessage();
     }
 
     private void CloseQuickCreate() => _showQuickCreate = false;
+
+    private void OpenDogQuickCreate()
+    {
+        _showQuickCreate = false;
+        _showQuickCreateDog = true;
+        _newDog = new DogEntry();
+        ClearMessage();
+    }
+
+    private void CloseDogQuickCreate()
+    {
+        _showQuickCreateDog = false;
+        if (IsQuickCreateDogSaved)
+        {
+            SetMessage(
+                $"{_newDog.Name} wurde in den Stammdaten gespeichert, aber nicht eingecheckt.",
+                isError: true);
+        }
+    }
 
     private async Task CheckInPersonAsync(string personId)
     {
@@ -268,6 +295,54 @@ public partial class Ressourcenverwaltung
         catch (Exception ex)
         {
             SetMessage($"Schnellaufnahme fehlgeschlagen: {ex.Message}", isError: true);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task CreateAndCheckInDogAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newDog.Name) || string.IsNullOrWhiteSpace(_newDog.Rasse))
+        {
+            SetMessage("Hundename und Rasse sind erforderlich.", isError: true);
+            return;
+        }
+
+        if (_isSaving)
+            return;
+
+        _newDog.Name = _newDog.Name.Trim();
+        _newDog.Rasse = _newDog.Rasse.Trim();
+        _newDog.Organisation = _newDog.Organisation.Trim();
+        _isSaving = true;
+        ClearMessage();
+        try
+        {
+            if (!IsQuickCreateDogSaved)
+            {
+                await MasterDataService.AddDogAsync(_newDog);
+                _dogs.Add(_newDog);
+            }
+
+            await EinsatzService.CheckInResourceAsync(new EinsatzResource
+            {
+                EntityType = ResourceEntityType.Dog,
+                EntityId = _newDog.Id,
+                Status = _initialStatus
+            });
+            SetMessage($"{_newDog.Name} wurde in den Stammdaten gespeichert und eingecheckt.");
+            _showQuickCreateDog = false;
+            _searchText = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            SetMessage(
+                IsQuickCreateDogSaved
+                    ? $"{_newDog.Name} ist in den Stammdaten gespeichert, aber der Check-in ist fehlgeschlagen: {ex.Message}"
+                    : $"Schnellaufnahme fehlgeschlagen: {ex.Message}",
+                isError: true);
         }
         finally
         {

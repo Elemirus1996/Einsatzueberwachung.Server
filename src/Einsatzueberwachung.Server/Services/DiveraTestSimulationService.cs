@@ -117,7 +117,7 @@ public sealed class DiveraTestSimulationService
             LastUpdated = now
         };
 
-        var linkedActiveEinsatz = await TryAutoLinkCurrentEinsatzAsync();
+        var (linkedActiveEinsatz, einsatzToLink) = GetAutoLinkPlanForCurrentEinsatz();
         var summary = new DiveraTestSimulationSummary(
             AlarmId: alarm.Id,
             AlarmTitle: alarm.Title,
@@ -127,13 +127,34 @@ public sealed class DiveraTestSimulationService
             PendingResponseCount: ucrDetails.Count(entry => entry.Status == StatusNoResponse),
             LinkedActiveEinsatz: linkedActiveEinsatz);
 
+        var snapshot = new SimulationSnapshot(
+            pullResponse,
+            mappedPersonnelByMemberId,
+            linkedActiveEinsatz,
+            summary);
         lock (_sync)
         {
-            _snapshot = new SimulationSnapshot(
-                pullResponse,
-                mappedPersonnelByMemberId,
-                linkedActiveEinsatz,
-                summary);
+            _snapshot = snapshot;
+        }
+
+        if (einsatzToLink is not null)
+        {
+            einsatzToLink.DiveraAlarmId = SimulatedAlarmId;
+            try
+            {
+                await _einsatzService.UpdateEinsatzAsync(einsatzToLink);
+            }
+            catch
+            {
+                einsatzToLink.DiveraAlarmId = null;
+                lock (_sync)
+                {
+                    if (ReferenceEquals(_snapshot, snapshot))
+                        _snapshot = null;
+                }
+
+                throw;
+            }
         }
 
         _logger.LogInformation(
@@ -197,24 +218,22 @@ public sealed class DiveraTestSimulationService
         }
     }
 
-    private async Task<bool> TryAutoLinkCurrentEinsatzAsync()
+    private (bool LinkedActiveEinsatz, EinsatzData? EinsatzToLink) GetAutoLinkPlanForCurrentEinsatz()
     {
         var current = _einsatzService.CurrentEinsatz;
         var isRunning = current.IstEinsatz
             && !string.IsNullOrWhiteSpace(current.Einsatzort)
             && current.EinsatzEnde is null;
         if (!isRunning)
-            return false;
+            return (false, null);
 
         if (current.DiveraAlarmId == SimulatedAlarmId)
-            return true;
+            return (true, null);
 
         if (current.DiveraAlarmId.HasValue)
-            return false;
+            return (false, null);
 
-        current.DiveraAlarmId = SimulatedAlarmId;
-        await _einsatzService.UpdateEinsatzAsync(current);
-        return true;
+        return (true, current);
     }
 
     private static Dictionary<int, DiveraStatusDefinition> BuildStatusDefinitions() =>

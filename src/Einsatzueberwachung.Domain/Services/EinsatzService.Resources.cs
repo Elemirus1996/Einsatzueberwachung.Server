@@ -182,10 +182,20 @@ public partial class EinsatzService
             ResourcesChanged?.Invoke();
     }
 
-    private void SetResourceStatusFromSearch(ResourceEntityType entityType, string? entityId, ResourceStatus status)
+    private void SetResourceStatusFromSearch(
+        ResourceEntityType entityType,
+        string? entityId,
+        ResourceStatus status,
+        string? excludedTeamId = null)
     {
         if (string.IsNullOrWhiteSpace(entityId))
             return;
+
+        if (status == ResourceStatus.Verfuegbar
+            && IsResourceUsedByAnotherSearchTeam(entityType, entityId, excludedTeamId))
+        {
+            status = ResourceStatus.InSuche;
+        }
 
         var resource = (CurrentEinsatz.Resources ??= new List<EinsatzResource>())
             .FirstOrDefault(entry =>
@@ -200,6 +210,22 @@ public partial class EinsatzService
         resource.StatusChangedAt = Ortszeit.Jetzt;
         ResourcesChanged?.Invoke();
     }
+
+    private bool IsResourceUsedByAnotherSearchTeam(
+        ResourceEntityType entityType,
+        string entityId,
+        string? excludedTeamId) =>
+        _teams.Any(team =>
+            !string.Equals(team.TeamId, excludedTeamId, StringComparison.Ordinal)
+            && (team.IsRunning
+                || team.IsManuallyPaused
+                || (!team.IsSucheBeendet && !string.IsNullOrWhiteSpace(team.SearchAreaId)))
+            && (entityType switch
+            {
+                ResourceEntityType.Person => GetTeamPersonIds(team).Contains(entityId, StringComparer.Ordinal),
+                ResourceEntityType.Dog => string.Equals(team.DogId, entityId, StringComparison.Ordinal),
+                _ => false
+            }));
 
     private static EinsatzResource CloneResource(EinsatzResource resource) => new()
     {

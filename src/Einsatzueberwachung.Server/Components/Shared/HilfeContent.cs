@@ -106,12 +106,13 @@ public static class HilfeContent
 
         ["/ressourcenverwaltung"] = new(
             "Ressourcenverwaltung",
-            "Hier werden Personen und ihre Hunde für den laufenden Einsatz eingecheckt und disponiert. Im Check-in werden aktive, noch nicht eingecheckte Personen angeboten; positive Rückmeldungen aus dem verknüpften DIVERA-Alarm werden oben hervorgehoben und können einzeln oder über „Alle aus DIVERA einchecken“ gesammelt als „Auf Anfahrt“ übernommen werden. Zugeordnete Hunde lassen sich direkt am Eintrag der eingecheckten Person hinzufügen und behalten ihren eigenständigen Status. Fehlende Personen werden per Schnellaufnahme dauerhaft in den Stammdaten gespeichert und eingecheckt. „In Suche“ kann automatisch durch einen gestarteten Suchauftrag oder manuell gesetzt werden. Eine manuelle Statusänderung erzeugt keine Sektorzuweisung; nur Ressourcen eines Suchauftrags werden nach dessen Abschluss automatisch zurückgesetzt. Für einen Sonderauftrag ist ein Zweck erforderlich. Nur Ressourcen mit Status „Im Verfügungsraum“ sind für neue Suchsektoren auswählbar.",
+            "Hier werden Personen und ihre Hunde für den laufenden Einsatz eingecheckt und disponiert. Personenvorschläge erscheinen ab drei Suchzeichen. Positive Rückmeldungen aus dem verknüpften DIVERA-Alarm werden oben hervorgehoben und können einzeln oder über „Alle aus DIVERA einchecken“ gesammelt als „Auf Anfahrt“ übernommen werden. Zugeordnete Hunde lassen sich direkt am Eintrag der eingecheckten Person hinzufügen und behalten ihren eigenständigen Status. Fehlende Personen oder Hunde werden per Schnellaufnahme dauerhaft in den Stammdaten gespeichert und sofort eingecheckt. „In Suche“ kann automatisch durch einen gestarteten Suchauftrag oder manuell gesetzt werden. Eine manuelle Statusänderung erzeugt keine Sektorzuweisung; nur Ressourcen eines Suchauftrags werden nach dessen Abschluss automatisch zurückgesetzt. Für einen Sonderauftrag ist ein Zweck erforderlich. Nur Ressourcen mit Status „Im Verfügungsraum“ sind für neue Suchsektoren auswählbar.",
             new[]
             {
                 "Navigation -> Ressourcenverwaltung",
-                "Check-in: Person mit 'Einchecken' übernehmen oder 'Alle aus DIVERA einchecken' nutzen -> zugeordnete Hunde direkt an der Person hinzufügen",
-                "Fehlende Person: 'Schnell erfassen' -> in Stammdaten speichern und einchecken",
+                "Check-in: ab drei Suchzeichen Personenvorschläge öffnen; Person einzeln oder über 'Alle aus DIVERA einchecken' übernehmen",
+                "Fehlende Person oder Hund: 'Schnell erfassen' -> in Stammdaten speichern und einchecken",
+                "Zugeordnete Hunde: am Eintrag der eingecheckten Person hinzufügen",
                 "Sonderauftrag: Status wählen -> Zweck eintragen -> bestätigen",
                 "DIVERA-Zuordnung für Personen: Stammdaten -> Personal -> Divera Benutzer-ID"
             }),

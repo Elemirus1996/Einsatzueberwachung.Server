@@ -35,6 +35,17 @@ public sealed class EinsatzResourceTests
         }
     }
 
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData("", false)]
+    [InlineData("  ", false)]
+    [InlineData("ab", false)]
+    [InlineData("  ab ", false)]
+    [InlineData("abc", true)]
+    [InlineData(" aBC ", true)]
+    public void CheckInSearch_RequiresThreeTrimmedCharacters(string? query, bool expected) =>
+        Assert.Equal(expected, ResourceCheckInSearch.HasMinimumQueryLength(query));
+
     [Fact]
     public void ResourceRosterFilter_ShowsMatchingDogWithHandlerAsContext()
     {
@@ -68,6 +79,42 @@ public sealed class EinsatzResourceTests
         Assert.False(group.ShowPrimaryStatus);
         Assert.Equal(person.Id, group.Primary.EntityId);
         Assert.Equal(dog.Id, Assert.Single(group.Dogs).EntityId);
+    }
+
+    [Fact]
+    public void ResourceRosterFilter_HidesDogsThatDoNotMatchWhenHandlerMatches()
+    {
+        var handler = new PersonalEntry { Id = "handler", Vorname = "Alex", Nachname = "Muster" };
+        var dog = new DogEntry { Id = "dog-1", Name = "Rex", HundefuehrerIds = [handler.Id] };
+        var groups = ResourceRosterBuilder.Build(
+            new[]
+            {
+                new EinsatzResource
+                {
+                    EntityType = ResourceEntityType.Person,
+                    EntityId = handler.Id,
+                    Status = ResourceStatus.Verfuegbar
+                },
+                new EinsatzResource
+                {
+                    EntityType = ResourceEntityType.Dog,
+                    EntityId = dog.Id,
+                    Status = ResourceStatus.Pause
+                }
+            },
+            [handler],
+            [dog]);
+
+        var filtered = ResourceRosterFilter.Apply(
+            groups,
+            [dog],
+            nameof(ResourceStatus.Verfuegbar),
+            ResourceRosterFilter.AllHandlerAssignments,
+            hideDogs: false);
+
+        var group = Assert.Single(filtered);
+        Assert.True(group.ShowPrimaryStatus);
+        Assert.Empty(group.Dogs);
     }
 
     [Fact]
@@ -331,6 +378,71 @@ public sealed class EinsatzResourceTests
         await einsatz.ResetTeamTimerAsync(team.TeamId);
         Assert.Equal(ResourceStatus.Verfuegbar,
             einsatz.GetEinsatzResources().Single(resource => resource.EntityId == "dog-1").Status);
+    }
+
+    [Fact]
+    public async Task StoppingAndResettingTeam_PreservesSharedResourceStatusWhileOtherTeamRuns()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "person-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        var firstTeam = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Suchteam 1",
+            HundefuehrerId = "person-1"
+        });
+        var secondTeam = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Suchteam 2",
+            HundefuehrerId = "person-1"
+        });
+
+        await einsatz.StartTeamTimerAsync(firstTeam.TeamId);
+        await einsatz.StartTeamTimerIgnoringResourceAvailabilityAsync(secondTeam.TeamId);
+
+        await einsatz.StopTeamTimerAsync(firstTeam.TeamId);
+        Assert.Equal(ResourceStatus.InSuche, Assert.Single(einsatz.GetEinsatzResources()).Status);
+
+        await einsatz.ResetTeamTimerAsync(firstTeam.TeamId);
+        Assert.Equal(ResourceStatus.InSuche, Assert.Single(einsatz.GetEinsatzResources()).Status);
+
+        await einsatz.StopTeamTimerAsync(secondTeam.TeamId);
+        Assert.Equal(ResourceStatus.Verfuegbar, Assert.Single(einsatz.GetEinsatzResources()).Status);
+    }
+
+    [Fact]
+    public async Task UnassigningTeam_PreservesSharedResourceStatusWhileOtherTeamRuns()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "person-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        var assignedTeam = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Zugeordnetes Team",
+            HundefuehrerId = "person-1"
+        });
+        var runningTeam = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Laufendes Team",
+            HundefuehrerId = "person-1"
+        });
+        var area = await einsatz.AddSearchAreaAsync(new SearchArea { Name = "Sektor A" });
+        await einsatz.AssignTeamToSearchAreaAsync(area.Id, assignedTeam.TeamId);
+        await einsatz.StartTeamTimerIgnoringResourceAvailabilityAsync(runningTeam.TeamId);
+
+        await einsatz.AssignTeamToSearchAreaAsync(area.Id, string.Empty);
+
+        Assert.Equal(ResourceStatus.InSuche, Assert.Single(einsatz.GetEinsatzResources()).Status);
+        await einsatz.StopTeamTimerAsync(runningTeam.TeamId);
+        Assert.Equal(ResourceStatus.Verfuegbar, Assert.Single(einsatz.GetEinsatzResources()).Status);
     }
 
     [Fact]
