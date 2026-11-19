@@ -63,6 +63,7 @@ public sealed class DiveraResourceSyncTests
         };
         var divera = EinsatzAbschlussTests.Recorder<IDiveraService>.Create((method, _) => method.Name switch
         {
+            "add_DataChanged" or "remove_DataChanged" => null,
             "get_IsConfigured" => true,
             "get_PollIntervalActiveSeconds" => 60,
             "get_PollIntervalIdleSeconds" => 60,
@@ -231,5 +232,113 @@ public sealed class DiveraResourceSyncTests
         Assert.Equal(ResourceStatus.AufAnfahrt, singleResource.Status);
         Assert.Equal("30 Minuten", singleResource.DiveraRueckmeldung);
         Assert.Equal(2, sync.GetPositiveResponsesByPersonId().Count);
+    }
+
+    [Fact]
+    public async Task LocalTestSimulation_WorksWithoutRealDiveraCallsOrConfiguredDiveraUserIds()
+    {
+        var einsatz = new EinsatzService();
+        await einsatz.StartEinsatzAsync(new EinsatzData
+        {
+            Einsatzort = "Übungsort",
+            IstEinsatz = true
+        });
+
+        var anna = new PersonalEntry { Id = "person-anna", Vorname = "Anna", Nachname = "Albers", DiveraUserId = null };
+        var ben = new PersonalEntry { Id = "person-ben", Vorname = "Ben", Nachname = "Becker", DiveraUserId = null };
+        var clara = new PersonalEntry { Id = "person-clara", Vorname = "Clara", Nachname = "Cramer", DiveraUserId = 77 };
+        var david = new PersonalEntry { Id = "person-david", Vorname = "David", Nachname = "Dorn", DiveraUserId = null };
+        var personnel = new List<PersonalEntry> { anna, ben, clara, david };
+
+        var innerDiveraCalled = false;
+        var innerDivera = EinsatzAbschlussTests.Recorder<IDiveraService>.Create((method, _) =>
+        {
+            if (method.Name is "add_DataChanged" or "remove_DataChanged")
+                return null;
+            if (method.Name == "get_IsConfigured")
+                return false;
+            if (method.Name == "get_HasActiveAlarms")
+                return false;
+            if (method.Name == "get_PollIntervalIdleSeconds")
+                return 600;
+            if (method.Name == "get_PollIntervalActiveSeconds")
+                return 60;
+
+            innerDiveraCalled = true;
+            throw new InvalidOperationException($"Echter DiveraService darf im Testmodus nicht aufgerufen werden ({method.Name}).");
+        });
+
+        var masterData = EinsatzAbschlussTests.Recorder<IMasterDataService>.Create((method, _) => method.Name switch
+        {
+            nameof(IMasterDataService.GetPersonalListAsync) => Task.FromResult(personnel),
+            _ => throw new NotSupportedException(method.Name)
+        });
+        var settings = EinsatzAbschlussTests.Recorder<ISettingsService>.Create((method, _) => method.Name switch
+        {
+            nameof(ISettingsService.GetStaffelSettingsAsync) => Task.FromResult(new StaffelSettings
+            {
+                StaffelAdresse = "Testweg 1, Musterstadt"
+            }),
+            _ => throw new NotSupportedException(method.Name)
+        });
+        var time = EinsatzAbschlussTests.Recorder<ITimeService>.Create((method, _) => method.Name switch
+        {
+            "get_Now" => new DateTime(2026, 11, 19, 12, 0, 0),
+            _ => throw new NotSupportedException(method.Name)
+        });
+
+        var simulation = new DiveraTestSimulationService(
+            masterData.Proxy,
+            settings.Proxy,
+            einsatz,
+            time.Proxy,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<DiveraTestSimulationService>.Instance);
+        using var simulatableDivera = new SimulatableDiveraService(innerDivera.Proxy, simulation);
+        var sync = new DiveraResourceSyncService(
+            einsatz,
+            simulatableDivera,
+            masterData.Proxy,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<DiveraResourceSyncService>.Instance,
+            simulation);
+
+        Assert.False(simulatableDivera.IsConfigured);
+
+        var summary = await simulation.StartTestAlarmAsync();
+
+        Assert.True(simulation.IsActive);
+        Assert.True(simulatableDivera.IsConfigured);
+        Assert.True(simulatableDivera.HasActiveAlarms);
+        Assert.True(summary.LinkedActiveEinsatz);
+        Assert.Equal(DiveraTestSimulationService.SimulatedAlarmId, einsatz.CurrentEinsatz.DiveraAlarmId);
+        Assert.Equal(3, summary.PositiveResponseCount);
+        Assert.Equal(1, summary.NegativeResponseCount);
+        Assert.Null(anna.DiveraUserId);
+        Assert.Null(ben.DiveraUserId);
+        Assert.Equal(77, clara.DiveraUserId);
+
+        var alarms = await simulatableDivera.GetActiveAlarmsAsync();
+        var activeAlarm = Assert.Single(alarms);
+        Assert.Equal("Testweg 1, Musterstadt", activeAlarm.Address);
+        Assert.False(innerDiveraCalled);
+
+        await sync.SyncActiveAlarmResponsesAsync();
+        var positiveResponses = sync.GetPositiveResponsesByPersonId();
+        Assert.Equal(3, positiveResponses.Count);
+        Assert.Equal("30 Minuten", positiveResponses[anna.Id]);
+        Assert.Equal("1 Stunde", positiveResponses[ben.Id]);
+        Assert.Equal("30 Minuten", positiveResponses[clara.Id]);
+        Assert.False(positiveResponses.ContainsKey(david.Id));
+
+        var checkedIn = await sync.CheckInPendingPositiveResponsesAsync();
+        Assert.Equal(3, checkedIn);
+
+        await simulation.StopTestAlarmAsync();
+        await sync.SyncActiveAlarmResponsesAsync();
+
+        Assert.False(simulation.IsActive);
+        Assert.False(simulatableDivera.IsConfigured);
+        Assert.Null(einsatz.CurrentEinsatz.DiveraAlarmId);
+        Assert.Empty(sync.GetPositiveResponsesByPersonId());
+        Assert.False(innerDiveraCalled);
     }
 }

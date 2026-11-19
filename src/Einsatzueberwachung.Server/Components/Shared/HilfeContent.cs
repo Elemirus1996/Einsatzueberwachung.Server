@@ -94,11 +94,12 @@ public static class HilfeContent
 
         ["/divera"] = new(
             "Divera 24/7",
-            "Integration mit dem Alarmierungssystem Divera 24/7. Zeigt aktuelle Alarmierungen, Mitgliederstatus und UCR-Rückmeldungen. Positive Rückmeldungen zum aktiven DIVERA-Alarm heben die eindeutig zugeordneten Personen im Check-in der Ressourcenverwaltung hervor; dort können sie einzeln oder gesammelt mit Status „Auf Anfahrt“ übernommen werden. Hunde werden nicht automatisch eingecheckt. Dafür muss die Divera Benutzer-ID bei der Person in den Stammdaten hinterlegt sein.",
+            "Integration mit dem Alarmierungssystem Divera 24/7. Zeigt aktuelle Alarmierungen, Mitgliederstatus und UCR-Rückmeldungen. Positive Rückmeldungen zum aktiven DIVERA-Alarm heben die eindeutig zugeordneten Personen im Check-in der Ressourcenverwaltung hervor; dort können sie einzeln oder gesammelt mit Status „Auf Anfahrt“ übernommen werden. Hunde werden nicht automatisch eingecheckt. Dafür muss die Divera Benutzer-ID bei der Person in den Stammdaten hinterlegt sein. Zum gefahrlosen Testen ohne Verbindung zum echten DIVERA-System steht in den Einstellungen ein lokaler Testalarm bereit.",
             new[]
             {
                 "Navigation -> Divera 24/7",
-                "API-Key konfigurieren: Einstellungen -> Divera",
+                "API-Key konfigurieren: Einstellungen -> Integration -> Divera 24/7",
+                "Lokalen Testalarm starten: Einstellungen -> Integration -> 'Testalarm starten'",
                 "Divera Benutzer-ID pflegen: Stammdaten -> Personal",
                 "DIVERA-Zusagen übernehmen: Navigation -> Ressourcenverwaltung -> 'Alle aus DIVERA einchecken'"
             }),
@@ -146,10 +147,11 @@ public static class HilfeContent
 
         ["/einstellungen"] = new(
             "Einstellungen",
-            "Konfiguration der Anwendung: Staffel-Stammdaten, Einsatzbetrieb, Erscheinungsbild (Theme), Tastenkürzel, Divera-Integration und Systemwartung. Im Tab 'Tastenkürzel' lassen sich alle Navigationskürzel und der Stepper auf 'Neuer Einsatz' frei belegen. Kürzel werden per Klick auf das Eingabefeld und dann Drücken der gewünschten Taste aufgezeichnet.",
+            "Konfiguration der Anwendung: Staffel-Stammdaten, Einsatzbetrieb, Erscheinungsbild (Theme), Tastenkürzel, Divera-Integration und Systemwartung. Unter 'Integration' lässt sich außerdem ein rein lokaler DIVERA-Testalarm mit Beispiel-Rückmeldungen starten, ohne eine echte Alarmierung auszulösen. Im Tab 'Tastenkürzel' lassen sich alle Navigationskürzel und der Stepper auf 'Neuer Einsatz' frei belegen. Kürzel werden per Klick auf das Eingabefeld und dann Drücken der gewünschten Taste aufgezeichnet.",
             new[]
             {
                 "Navigation -> Einstellungen",
+                "DIVERA lokal testen: Tab 'Integration' -> 'Testalarm starten' / 'Testalarm beenden'",
                 "Tab auswählen (z.B. Tastenkürzel) -> Eingabefeld anklicken -> Taste drücken -> wird sofort gespeichert",
                 "Tastenkürzel zurücksetzen: Reset-Pfeil-Schaltfläche neben dem Feld oder 'Alle zurücksetzen'"
             }),

@@ -59,6 +59,7 @@ namespace Einsatzueberwachung.Domain.Services
             _currentEinsatz.ExportPfad = einsatzData.ExportPfad;
             _currentEinsatz.Einsatzleiter = einsatzData.Einsatzleiter;
             _currentEinsatz.Fuehrungsassistent = einsatzData.Fuehrungsassistent;
+            _currentEinsatz.DiveraAlarmId = einsatzData.DiveraAlarmId;
 
             EinsatzChanged?.Invoke();
             return Task.CompletedTask;

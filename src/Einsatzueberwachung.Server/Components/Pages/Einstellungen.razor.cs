@@ -24,6 +24,8 @@ public partial class Einstellungen
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private IDiveraService DiveraService { get; set; } = default!;
+    [Inject] private DiveraTestSimulationService DiveraTestSimulation { get; set; } = default!;
+    [Inject] private DiveraResourceSyncService DiveraResourceSync { get; set; } = default!;
     [Inject] private LoeschfristenService Loeschen { get; set; } = default!;
 
     // Rueckfrage, bevor neue Loeschfristen sofort Daten im Archiv entfernen (#151)
@@ -76,6 +78,8 @@ public partial class Einstellungen
     private bool _diveraTestBusy;
     private string _diveraTestStatus = string.Empty;
     private bool _diveraTestError;
+    private bool _diveraSimulationBusy;
+    private bool _diveraSimulationSubscribed;
 
     // Aktenregister-State
     [SupplyParameterFromQuery(Name = "tab")] private string? TabFromQuery { get; set; }
@@ -102,7 +106,7 @@ public partial class Einstellungen
         && !string.IsNullOrWhiteSpace(_staffelSettings.StaffelEmail);
 
     private int IntegrationActiveCount =>
-        (_appSettings.DiveraEnabled && !string.IsNullOrWhiteSpace(_appSettings.DiveraAccessKey) ? 1 : 0)
+        ((_appSettings.DiveraEnabled && !string.IsNullOrWhiteSpace(_appSettings.DiveraAccessKey)) || DiveraTestSimulation.IsActive ? 1 : 0)
         + 1; // GPS-Livetracking immer "verfügbar" (Download-Link), zählt als 1
 
     private bool UpdateAvailable => _updateStatus.UpdateAvailable;
@@ -154,6 +158,11 @@ public partial class Einstellungen
         _elAppAdresse = ElAppQr.Inhalt(Navigation.BaseUri);
         _elAppQr = _elAppAdresse is null ? null : QrBild.DataUrl(_elAppAdresse);
         _updateStatus = UpdateService.GetStatusSnapshot();
+        if (!_diveraSimulationSubscribed)
+        {
+            DiveraTestSimulation.StateChanged += OnDiveraSimulationChanged;
+            _diveraSimulationSubscribed = true;
+        }
 
         ApplyTabFromQuery();
     }
@@ -1132,10 +1141,41 @@ private async Task SetDesignModeAsync(bool darkMode)
     }
 
     private void OnTraccarTestEmpfang() => _ = InvokeAsync(StateHasChanged);
+    private void OnDiveraSimulationChanged() => _ = InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
         if (_traccarTestAbonniert) TraccarTest.Geaendert -= OnTraccarTestEmpfang;
+        if (_diveraSimulationSubscribed) DiveraTestSimulation.StateChanged -= OnDiveraSimulationChanged;
+    }
+
+    private async Task StartDiveraSimulationAsync()
+    {
+        _diveraSimulationBusy = true;
+        _diveraTestStatus = string.Empty;
+        try
+        {
+            await DiveraTestSimulation.StartTestAlarmAsync();
+            await DiveraResourceSync.SyncActiveAlarmResponsesAsync();
+        }
+        finally
+        {
+            _diveraSimulationBusy = false;
+        }
+    }
+
+    private async Task StopDiveraSimulationAsync()
+    {
+        _diveraSimulationBusy = true;
+        try
+        {
+            await DiveraTestSimulation.StopTestAlarmAsync();
+            await DiveraResourceSync.SyncActiveAlarmResponsesAsync();
+        }
+        finally
+        {
+            _diveraSimulationBusy = false;
+        }
     }
 
     // ── Systemzustand (Zertifikat, Backup, Speicher, Divera, Uhr) ─────────

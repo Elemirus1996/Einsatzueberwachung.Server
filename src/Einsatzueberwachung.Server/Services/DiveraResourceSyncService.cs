@@ -14,6 +14,7 @@ public sealed class DiveraResourceSyncService : BackgroundService
     private readonly IEinsatzService _einsatzService;
     private readonly IDiveraService _diveraService;
     private readonly IMasterDataService _masterDataService;
+    private readonly DiveraTestSimulationService? _simulationService;
     private readonly ILogger<DiveraResourceSyncService> _logger;
     private readonly HashSet<int> _unmappedResponseMemberIds = new();
     private readonly SemaphoreSlim _syncGate = new(1, 1);
@@ -29,12 +30,14 @@ public sealed class DiveraResourceSyncService : BackgroundService
         IEinsatzService einsatzService,
         IDiveraService diveraService,
         IMasterDataService masterDataService,
-        ILogger<DiveraResourceSyncService> logger)
+        ILogger<DiveraResourceSyncService> logger,
+        DiveraTestSimulationService? simulationService = null)
     {
         _einsatzService = einsatzService;
         _diveraService = diveraService;
         _masterDataService = masterDataService;
         _logger = logger;
+        _simulationService = simulationService;
     }
 
     public IReadOnlyDictionary<string, string> GetPositiveResponsesByPersonId()
@@ -104,6 +107,7 @@ public sealed class DiveraResourceSyncService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _einsatzService.EinsatzChanged += OnEinsatzChanged;
+        _diveraService.DataChanged += OnDiveraDataChanged;
         _syncSignals.Writer.TryWrite(true);
 
         try
@@ -129,6 +133,7 @@ public sealed class DiveraResourceSyncService : BackgroundService
         finally
         {
             _einsatzService.EinsatzChanged -= OnEinsatzChanged;
+            _diveraService.DataChanged -= OnDiveraDataChanged;
         }
     }
 
@@ -176,6 +181,13 @@ public sealed class DiveraResourceSyncService : BackgroundService
                 .GroupBy(person => person.DiveraUserId!.Value)
                 .Where(group => group.Count() == 1)
                 .ToDictionary(group => group.Key, group => group.Single());
+            if (_simulationService is { IsActive: true } && alarmId == DiveraTestSimulationService.SimulatedAlarmId)
+            {
+                foreach (var (simulatedMemberId, simulatedPerson) in _simulationService.GetSimulatedPersonnelByMemberId())
+                {
+                    personal.TryAdd(simulatedMemberId, simulatedPerson);
+                }
+            }
             var unmatchedResponses = positiveResponses
                 .Where(response => !personal.ContainsKey(response.MemberId))
                 .Select(response => response.MemberId)
@@ -301,4 +313,5 @@ public sealed class DiveraResourceSyncService : BackgroundService
     }
 
     private void OnEinsatzChanged() => _syncSignals.Writer.TryWrite(true);
+    private void OnDiveraDataChanged() => _syncSignals.Writer.TryWrite(true);
 }

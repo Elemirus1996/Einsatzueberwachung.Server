@@ -326,7 +326,11 @@ internal static class ServiceCollectionExtensions
         });
 
         services.AddHttpClient<IWeatherService, DwdWeatherService>();
-        services.AddHttpClient<IDiveraService, DiveraService>();
+        services.AddHttpClient<DiveraService>();
+        services.AddSingleton<DiveraTestSimulationService>();
+        services.AddSingleton<IDiveraService>(sp => new SimulatableDiveraService(
+            sp.GetRequiredService<DiveraService>(),
+            sp.GetRequiredService<DiveraTestSimulationService>()));
         return services;
     }
 
