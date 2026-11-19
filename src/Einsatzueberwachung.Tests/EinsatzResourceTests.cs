@@ -35,6 +35,93 @@ public sealed class EinsatzResourceTests
         }
     }
 
+    [Fact]
+    public void ResourceRosterFilter_ShowsMatchingDogWithHandlerAsContext()
+    {
+        var person = new PersonalEntry { Id = "person-1", Vorname = "Alex", Nachname = "Muster" };
+        var dog = new DogEntry { Id = "dog-1", Name = "Rex", HundefuehrerIds = ["person-1"] };
+        var resources = new[]
+        {
+            new EinsatzResource
+            {
+                EntityType = ResourceEntityType.Person,
+                EntityId = person.Id,
+                Status = ResourceStatus.AufAnfahrt
+            },
+            new EinsatzResource
+            {
+                EntityType = ResourceEntityType.Dog,
+                EntityId = dog.Id,
+                Status = ResourceStatus.Verfuegbar
+            }
+        };
+        var groups = ResourceRosterBuilder.Build(resources, [person], [dog]);
+
+        var filtered = ResourceRosterFilter.Apply(
+            groups,
+            [dog],
+            nameof(ResourceStatus.Verfuegbar),
+            ResourceRosterFilter.AllHandlerAssignments,
+            hideDogs: false);
+
+        var group = Assert.Single(filtered);
+        Assert.False(group.ShowPrimaryStatus);
+        Assert.Equal(person.Id, group.Primary.EntityId);
+        Assert.Equal(dog.Id, Assert.Single(group.Dogs).EntityId);
+    }
+
+    [Fact]
+    public void ResourceRosterFilter_AppliesHandlerAndDogVisibilityFilters()
+    {
+        var handler = new PersonalEntry { Id = "handler", Vorname = "Alex", Nachname = "Muster" };
+        var personWithoutDog = new PersonalEntry { Id = "person", Vorname = "Kim", Nachname = "Beispiel" };
+        var dog = new DogEntry { Id = "dog-1", Name = "Rex", HundefuehrerIds = [handler.Id] };
+        var resources = new[]
+        {
+            new EinsatzResource
+            {
+                EntityType = ResourceEntityType.Person,
+                EntityId = handler.Id,
+                Status = ResourceStatus.Verfuegbar
+            },
+            new EinsatzResource
+            {
+                EntityType = ResourceEntityType.Person,
+                EntityId = personWithoutDog.Id,
+                Status = ResourceStatus.Verfuegbar
+            },
+            new EinsatzResource
+            {
+                EntityType = ResourceEntityType.Dog,
+                EntityId = dog.Id,
+                Status = ResourceStatus.Verfuegbar
+            }
+        };
+        var groups = ResourceRosterBuilder.Build(resources, [handler, personWithoutDog], [dog]);
+
+        var handlersOnly = ResourceRosterFilter.Apply(
+            groups,
+            [dog],
+            ResourceRosterFilter.AllResourceStates,
+            ResourceRosterFilter.HandlersOnly,
+            hideDogs: false);
+        var handlerGroup = Assert.Single(handlersOnly);
+        Assert.Equal(handler.Id, handlerGroup.Primary.EntityId);
+        Assert.Single(handlerGroup.Dogs);
+
+        var peopleWithoutDogs = ResourceRosterFilter.Apply(
+            groups,
+            [dog],
+            ResourceRosterFilter.AllResourceStates,
+            ResourceRosterFilter.NoAssignedDog,
+            hideDogs: true);
+        Assert.Equal(personWithoutDog.Id, Assert.Single(peopleWithoutDogs).Primary.EntityId);
+        Assert.Equal(2, ResourceRosterFilter.CountActiveFilters(
+            ResourceRosterFilter.AllResourceStates,
+            ResourceRosterFilter.NoAssignedDog,
+            hideDogs: true));
+    }
+
     [Theory]
     [InlineData("paw", "fa-solid fa-paw")]
     [InlineData("dog", "fa-solid fa-dog")]

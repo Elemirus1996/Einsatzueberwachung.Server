@@ -6,17 +6,11 @@ namespace Einsatzueberwachung.Server.Components.Pages;
 
 public partial class EinsatzMonitor
 {
-    private const string AllResourceStatesFilter = "all";
-    private const string NotAvailableResourceFilter = "not-available";
-    private const string AllHandlerAssignmentsFilter = "all";
-    private const string HandlersOnlyFilter = "handlers";
-    private const string NoAssignedDogFilter = "no-dog";
-
     private string _resourceStatusError = string.Empty;
     private string? _pendingSpecialResourceKey;
     private string _pendingSpecialResourceNote = string.Empty;
-    private string _resourceStateFilter = AllResourceStatesFilter;
-    private string _handlerAssignmentFilter = AllHandlerAssignmentsFilter;
+    private string _resourceStateFilter = ResourceRosterFilter.AllResourceStates;
+    private string _handlerAssignmentFilter = ResourceRosterFilter.AllHandlerAssignments;
     private bool _isUpdatingResourceStatus;
     private bool _resourceFiltersExpanded;
     private bool _hideDogs;
@@ -29,85 +23,22 @@ public partial class EinsatzMonitor
         ResourceIconPresentation.CssClass(item.EntityType, _appSettings.CollarMarkerIconOrDefault);
 
     private int GetActiveResourceFilterCount() =>
-        (_resourceStateFilter == AllResourceStatesFilter ? 0 : 1)
-        + (_handlerAssignmentFilter == AllHandlerAssignmentsFilter ? 0 : 1)
-        + (_hideDogs ? 1 : 0);
+        ResourceRosterFilter.CountActiveFilters(_resourceStateFilter, _handlerAssignmentFilter, _hideDogs);
 
     private void ClearResourceFilters()
     {
-        _resourceStateFilter = AllResourceStatesFilter;
-        _handlerAssignmentFilter = AllHandlerAssignmentsFilter;
+        _resourceStateFilter = ResourceRosterFilter.AllResourceStates;
+        _handlerAssignmentFilter = ResourceRosterFilter.AllHandlerAssignments;
         _hideDogs = false;
     }
 
     private IReadOnlyList<FilteredResourceGroup> GetFilteredMonitorResourceGroups()
-    {
-        var groups = GetMonitorResourceGroups();
-        var filteredGroups = new List<FilteredResourceGroup>();
-
-        foreach (var group in groups)
-        {
-            if (_hideDogs && group.Primary.EntityType == ResourceEntityType.Dog)
-                continue;
-
-            if (!MatchesHandlerAssignmentFilter(group))
-                continue;
-
-            var primaryMatches = MatchesResourceStateFilter(group.Primary);
-            var matchingDogs = _hideDogs
-                ? Array.Empty<ResourceRosterItem>()
-                : primaryMatches
-                    ? group.CheckedInDogs
-                    : group.CheckedInDogs.Where(MatchesResourceStateFilter).ToArray();
-
-            if (group.Primary.EntityType == ResourceEntityType.Person)
-            {
-                if (!primaryMatches && matchingDogs.Count == 0)
-                    continue;
-
-                filteredGroups.Add(new FilteredResourceGroup(
-                    group.Primary,
-                    primaryMatches,
-                    matchingDogs));
-                continue;
-            }
-
-            if (primaryMatches)
-                filteredGroups.Add(new FilteredResourceGroup(group.Primary, true, Array.Empty<ResourceRosterItem>()));
-        }
-
-        return filteredGroups;
-    }
-
-    private bool MatchesResourceStateFilter(ResourceRosterItem item) =>
-        _resourceStateFilter switch
-        {
-            AllResourceStatesFilter => true,
-            NotAvailableResourceFilter => item.Status != ResourceStatus.Verfuegbar,
-            _ when Enum.TryParse<ResourceStatus>(_resourceStateFilter, out var status) => item.Status == status,
-            _ => true
-        };
-
-    private bool MatchesHandlerAssignmentFilter(ResourceRosterGroup group)
-    {
-        if (group.Primary.EntityType != ResourceEntityType.Person)
-            return _handlerAssignmentFilter == AllHandlerAssignmentsFilter;
-
-        var hasAssignedDog = _dogList.Any(dog =>
-            dog.HundefuehrerIds?.Contains(group.Primary.EntityId, StringComparer.Ordinal) == true);
-
-        return _handlerAssignmentFilter switch
-        {
-            HandlersOnlyFilter => hasAssignedDog,
-            NoAssignedDogFilter => !hasAssignedDog,
-            _ => true
-        };
-    }
-
-    private sealed record FilteredResourceGroup(
-        ResourceRosterItem Primary,
-        bool ShowPrimaryStatus,
-        IReadOnlyList<ResourceRosterItem> Dogs);
+        => ResourceRosterFilter.Apply(
+            GetMonitorResourceGroups(),
+            _dogList,
+            _resourceStateFilter,
+            _handlerAssignmentFilter,
+            _hideDogs);
 
     private async Task OnResourceStatusSelectedAsync(ResourceRosterItem item, string? value)
     {

@@ -258,6 +258,7 @@
         <section class="resource-roster-section" aria-labelledby="roster-heading">
             @{
                 var rosterGroups = RosterGroups;
+                var filteredRosterGroups = FilteredRosterGroups;
                 RenderFragment<ResourceRosterItem> renderNotesAndSpecialInput = item => @<text>
                     @if (item.Status == ResourceStatus.Sonderauftrag && !string.IsNullOrWhiteSpace(item.Resource.SonderauftragNotiz))
                     {
@@ -323,10 +324,65 @@
                     <p class="resource-eyebrow">AKTUELLER EINSATZ</p>
                     <h2 id="roster-heading">Eingecheckte Ressourcen</h2>
                 </div>
-                <div class="resource-counts" aria-label="@($"{InVerfuegungsraumCount} Ressourcen im Verfügungsraum, {TotalResourceCount} insgesamt")">
-                    <strong>@InVerfuegungsraumCount</strong>
-                    <span>im Verfügungsraum · @TotalResourceCount gesamt</span>
+                <div class="resource-roster-tools">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary resource-roster-filter-trigger @(ActiveRosterFilterCount > 0 ? "is-filtered" : string.Empty)"
+                            aria-label="Ressourcenfilter @(ActiveRosterFilterCount > 0 ? $"ändern, {ActiveRosterFilterCount} aktiv" : "öffnen")"
+                            aria-expanded="@_rosterFiltersExpanded"
+                            aria-controls="roster-filter-controls"
+                            title="Ressourcen filtern"
+                            @onclick="ToggleRosterFilters">
+                        <i class="bi bi-funnel" aria-hidden="true"></i>
+                        @if (ActiveRosterFilterCount > 0)
+                        {
+                            <span class="resource-roster-filter-count">@ActiveRosterFilterCount</span>
+                        }
+                    </button>
                 </div>
+            </div>
+
+            <div id="roster-filter-controls"
+                 class="resource-roster-filter-controls"
+                 role="group"
+                 aria-label="Ressourcenfilter"
+                 hidden="@(!_rosterFiltersExpanded)">
+                <label>
+                    <span>Status</span>
+                    <select class="form-select form-select-sm"
+                            aria-label="Ressourcenstatus filtern"
+                            @bind="_rosterStateFilter">
+                        <option value="@ResourceRosterFilter.AllResourceStates">Alle Status</option>
+                        <option value="@ResourceRosterFilter.NotAvailable">Nicht im Verfügungsraum</option>
+                        @foreach (var status in Enum.GetValues<ResourceStatus>())
+                        {
+                            <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                        }
+                    </select>
+                </label>
+                <label>
+                    <span>Personen</span>
+                    <select class="form-select form-select-sm"
+                            aria-label="Nach Hundeführern filtern"
+                            @bind="_rosterHandlerAssignmentFilter">
+                        <option value="@ResourceRosterFilter.AllHandlerAssignments">Alle Personen</option>
+                        <option value="@ResourceRosterFilter.HandlersOnly">Hundeführer</option>
+                        <option value="@ResourceRosterFilter.NoAssignedDog">Ohne Hund</option>
+                    </select>
+                </label>
+                <label class="resource-roster-filter-checkbox">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           @bind="_hideRosterDogs" />
+                    <span>Hunde ausblenden</span>
+                </label>
+                @if (ActiveRosterFilterCount > 0)
+                {
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary resource-roster-filter-reset"
+                            @onclick="ClearRosterFilters">
+                        Filter zurücksetzen
+                    </button>
+                }
             </div>
 
             @if (rosterGroups.Count == 0)
@@ -334,6 +390,18 @@
                 <div class="resource-roster-empty">
                     <i class="bi bi-person-check" aria-hidden="true"></i>
                     <span>Noch keine Ressourcen eingecheckt.</span>
+                </div>
+            }
+            else if (filteredRosterGroups.Count == 0)
+            {
+                <div class="resource-roster-empty" role="status">
+                    <i class="bi bi-funnel" aria-hidden="true"></i>
+                    <span>Keine Ressourcen entsprechen den Filtern.</span>
+                    <button type="button"
+                            class="btn btn-sm btn-link p-0"
+                            @onclick="ClearRosterFilters">
+                        Filter zurücksetzen
+                    </button>
                 </div>
             }
             else
@@ -348,10 +416,25 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var group in rosterGroups)
+                            @foreach (var group in filteredRosterGroups)
                             {
                                 var primary = group.Primary;
-                                var hasCheckedInDogs = group.CheckedInDogs.Count > 0;
+                                var hasCheckedInDogs = group.Dogs.Count > 0;
+                                @if (!group.ShowPrimaryStatus)
+                                {
+                                    <tr class="resource-primary-row resource-primary-row--context" @key="primary.UiKey">
+                                        <td>
+                                            <div class="resource-roster-context">
+                                                <i class="bi bi-person" aria-hidden="true"></i>
+                                                <strong>@primary.Name</strong>
+                                                <small>Hundeführer · nur als Zuordnung</small>
+                                            </div>
+                                        </td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                }
+                                else
+                                {
                                 <tr class="resource-primary-row @(hasCheckedInDogs ? "resource-primary-row--has-dogs" : string.Empty)" @key="primary.UiKey">
                                     <td>
                                         <div class="resource-row-identity">
@@ -365,7 +448,7 @@
                                             }
                                         </div>
                                         @renderNotesAndSpecialInput(primary)
-                                        @if (group.UncheckedActiveDogs.Count > 0)
+                                        @if (!_hideRosterDogs && group.UncheckedActiveDogs.Count > 0)
                                         {
                                             <div class="resource-dog-checkin-actions"
                                                  role="group"
@@ -389,10 +472,11 @@
                                     </td>
                                     @renderStatusAndDispositionCells(primary)
                                 </tr>
-                                @for (var dogIndex = 0; dogIndex < group.CheckedInDogs.Count; dogIndex++)
+                                }
+                                @for (var dogIndex = 0; dogIndex < group.Dogs.Count; dogIndex++)
                                 {
-                                    var dogItem = group.CheckedInDogs[dogIndex];
-                                    var isLastDog = dogIndex == group.CheckedInDogs.Count - 1;
+                                    var dogItem = group.Dogs[dogIndex];
+                                    var isLastDog = dogIndex == group.Dogs.Count - 1;
                                     <tr class="resource-dog-subrow @(isLastDog ? "resource-dog-subrow--last" : string.Empty)" @key="dogItem.UiKey">
                                         <td>
                                             <div class="resource-row-identity resource-row-identity--dog">

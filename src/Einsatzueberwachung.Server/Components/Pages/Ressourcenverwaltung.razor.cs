@@ -26,7 +26,11 @@ public partial class Ressourcenverwaltung
     private bool _messageIsError;
     private bool _showQuickCreate;
     private bool _checkInExpanded;
+    private bool _rosterFiltersExpanded;
+    private bool _hideRosterDogs;
     private bool _isSaving;
+    private string _rosterStateFilter = ResourceRosterFilter.AllResourceStates;
+    private string _rosterHandlerAssignmentFilter = ResourceRosterFilter.AllHandlerAssignments;
     private PersonalEntry _newPerson = new();
 
     private bool HasActiveEinsatz =>
@@ -38,10 +42,21 @@ public partial class Ressourcenverwaltung
     private IReadOnlyList<ResourceRosterGroup> RosterGroups =>
         ResourceRosterBuilder.Build(CheckedInResources, _personnel, _dogs);
 
-    private int TotalResourceCount => CheckedInResources.Count;
+    private IReadOnlyList<FilteredResourceGroup> FilteredRosterGroups =>
+        ResourceRosterFilter.Apply(
+            RosterGroups,
+            _dogs,
+            _rosterStateFilter,
+            _rosterHandlerAssignmentFilter,
+            _hideRosterDogs);
 
-    private int InVerfuegungsraumCount =>
-        CheckedInResources.Count(resource => resource.Status == ResourceStatus.Verfuegbar);
+    private int ActiveRosterFilterCount =>
+        ResourceRosterFilter.CountActiveFilters(
+            _rosterStateFilter,
+            _rosterHandlerAssignmentFilter,
+            _hideRosterDogs);
+
+    private int TotalResourceCount => CheckedInResources.Count;
 
     private int ActivePersonnelCount => _personnel.Count(person => person.IsActive);
 
@@ -139,6 +154,15 @@ public partial class Ressourcenverwaltung
     private void OnDiveraResponsesChanged() => _ = InvokeAsync(StateHasChanged);
 
     private void ToggleCheckIn() => _checkInExpanded = !_checkInExpanded;
+
+    private void ToggleRosterFilters() => _rosterFiltersExpanded = !_rosterFiltersExpanded;
+
+    private void ClearRosterFilters()
+    {
+        _rosterStateFilter = ResourceRosterFilter.AllResourceStates;
+        _rosterHandlerAssignmentFilter = ResourceRosterFilter.AllHandlerAssignments;
+        _hideRosterDogs = false;
+    }
 
     private void OpenQuickCreate()
     {
