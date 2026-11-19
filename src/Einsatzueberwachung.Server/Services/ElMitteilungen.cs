@@ -112,13 +112,17 @@ public sealed class ElMitteilungen : IHostedService, IDisposable
             Hinzufuegen("funk", 1, istTeam ? n.SourceTeamId : null,
                 istTeam ? $"Neuer Funkspruch von {TeamName(n.SourceTeamId)}" : "Neuer Funkspruch");
         }
-        // Statusmeldung (POST /statusmeldung, Quelle „Mobile“) und Suche aus der Team-App: feste Texte „[Team] …“
         else if (n.SourceType is "Mobile" || n.SourceType == TeamAppSuche.QuelleTeamApp)
         {
             var team = TeamName(n.SourceTeamId, n.SourceTeamName);
-            var text = n.Text ?? "";
-            var praefix = $"[{n.SourceTeamName}] ";
-            if (text.StartsWith(praefix, StringComparison.Ordinal)) text = text[praefix.Length..];
+            // Nur die festen Texte der Team-App (POST /statusmeldung, POST /suche, beide CreatedBy „Team-App“) zeigen.
+            // Freitext (Team-Webseite, Hub) kann Vermisste oder Orte nennen und gehoert nicht auf den Sperrbildschirm.
+            var text = "neue Statusmeldung";
+            if (n.CreatedBy == TeamAppSuche.QuelleTeamApp && n.Text is { } roh)
+            {
+                var praefix = $"[{n.SourceTeamName}] ";
+                text = roh.StartsWith(praefix, StringComparison.Ordinal) ? roh[praefix.Length..] : roh;
+            }
             Hinzufuegen("status", 1, n.SourceTeamId, $"{team}: {text}".Trim());
         }
     }

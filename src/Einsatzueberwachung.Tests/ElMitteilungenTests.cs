@@ -119,15 +119,19 @@ public sealed class ElMitteilungenTests : IDisposable
             Message = "Team Rex hat einen Punkt gesetzt: Spur" });
         _warnungen.AddWarning(new WarningEntry { Source = WarningRuleDefinition.Sources.ServerStorage });
         await _einsatz.AddGlobalNoteWithSourceAsync("Vermisste Erika gesehen an der Brücke", team.TeamId, team.TeamName, "Funk");
-        await _einsatz.AddGlobalNoteWithSourceAsync("[Team Rex] im Suchgebiet eingetroffen", team.TeamId, team.TeamName, "Mobile");
+        await _einsatz.AddGlobalNoteWithSourceAsync("[Team Rex] im Suchgebiet eingetroffen", team.TeamId, team.TeamName, "Mobile",
+            Einsatzueberwachung.Domain.Models.Enums.GlobalNotesEntryType.Manual, "Team-App");
+        // Freitext der Team-Webseite: nur „neue Statusmeldung“
+        await _einsatz.AddGlobalNoteWithSourceAsync("[Team Rex] Erika am Hochsitz gefunden", team.TeamId, team.TeamName, "Mobile",
+            Einsatzueberwachung.Domain.Models.Enums.GlobalNotesEntryType.Manual, "Team Mobile");
         await _einsatz.AddGlobalNoteWithSourceAsync("Lagebesprechung 10 Uhr", "", "", "Einsatzleitung");
 
         var liste = _mitteilungen.Seit(start).Liste;
-        Assert.Equal(new[] { "funkstille", "funkstille", "akku", "fund", "funk", "status" }, liste.Select(m => m.Art));
+        Assert.Equal(new[] { "funkstille", "funkstille", "akku", "fund", "funk", "status", "status" }, liste.Select(m => m.Art));
         Assert.Equal(new[]
         {
             "Team Rex: Handy sendet nicht", "Team Rex: Halsband sendet nicht", "Team Rex: Halsband-Akku niedrig",
-            "Team Rex meldet einen Fund", "Neuer Funkspruch von Team Rex", "Team Rex: im Suchgebiet eingetroffen"
+            "Team Rex meldet einen Fund", "Neuer Funkspruch von Team Rex", "Team Rex: im Suchgebiet eingetroffen", "Team Rex: neue Statusmeldung"
         }, liste.Select(m => m.Text));
         Assert.DoesNotContain(liste, m => m.Text.Contains("Erika") || m.Text.Contains("Hochsitz"));
     }
