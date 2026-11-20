@@ -1101,9 +1101,14 @@ main:has(.monitor-dashboard-wrapper) .app-content {
         grid-column: 7 / span 3;
     }
 
-    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]) > [data-panel-id="teams"],
-    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]) > [data-panel-id="notizen"] {
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):has(> [data-panel-id="ressourcen"]) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):has(> [data-panel-id="ressourcen"]) > [data-panel-id="notizen"] {
         grid-row: 2 / span 2;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])) > [data-panel-id="notizen"] {
+        grid-row: 2;
     }
 
     .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="notizen"])):has(> [data-panel-id="teams"]) > [data-panel-id="ressourcen"] {
@@ -1116,6 +1121,58 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
     .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="teams"])):not(:has(> [data-panel-id="notizen"])) > [data-panel-id="ressourcen"] {
         grid-column: 1 / -1;
+    }
+
+    /* Reflow resources into the search-area slot when that panel is hidden. */
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])) {
+        grid-template-rows: max-content minmax(0, 1fr);
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])) > [data-panel-id="notizen"],
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])) > [data-panel-id="ressourcen"] {
+        grid-row: 2;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(.monitor-summary-grid)) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(.monitor-summary-grid)) > [data-panel-id="notizen"],
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(.monitor-summary-grid)) > [data-panel-id="ressourcen"] {
+        grid-row: 1;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):has(> [data-panel-id="teams"]):has(> [data-panel-id="notizen"]) > [data-panel-id="teams"] {
+        grid-column: 1 / span 6;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):has(> [data-panel-id="teams"]):has(> [data-panel-id="notizen"]) > [data-panel-id="ressourcen"] {
+        grid-column: 7 / span 3;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):has(> [data-panel-id="teams"]):not(:has(> [data-panel-id="notizen"])) > [data-panel-id="teams"] {
+        grid-column: 1 / span 9;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):has(> [data-panel-id="teams"]):not(:has(> [data-panel-id="notizen"])) > [data-panel-id="ressourcen"] {
+        grid-column: 10 / span 3;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(> [data-panel-id="teams"])):has(> [data-panel-id="notizen"]) > [data-panel-id="ressourcen"] {
+        grid-column: 1 / span 9;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(> [data-panel-id="teams"])):not(:has(> [data-panel-id="notizen"])) > [data-panel-id="ressourcen"] {
+        grid-column: 1 / -1;
+    }
+
+    /* Let search areas fill the available work row when resources are hidden. */
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])) > [data-panel-id="suchgebiete"] {
+        align-self: stretch;
+        max-height: none;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])) > [data-panel-id="suchgebiete"] > .dashboard-panel {
+        height: 100%;
+        max-height: none;
     }
 
 }
