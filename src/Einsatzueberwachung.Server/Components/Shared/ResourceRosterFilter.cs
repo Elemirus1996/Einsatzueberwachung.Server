@@ -36,30 +36,28 @@ public static class ResourceRosterFilter
             if (!MatchesHandlerAssignmentFilter(group, dogs, handlerAssignmentFilter))
                 continue;
 
-            var primaryMatches = MatchesResourceStateFilter(group.Primary, stateFilter);
             IReadOnlyList<ResourceRosterItem> matchingDogs = hideDogs
                 ? Array.Empty<ResourceRosterItem>()
-                : group.CheckedInDogs.Where(dog => MatchesResourceStateFilter(dog, stateFilter)).ToArray();
+                : group.CheckedInDogs;
 
             if (group.Primary.EntityType == ResourceEntityType.Person)
             {
-                if (!primaryMatches && matchingDogs.Count == 0)
+                if (!MatchesResourceStateFilter(group.Primary, stateFilter))
                     continue;
 
                 filteredGroups.Add(new FilteredResourceGroup(
                     group.Primary,
-                    primaryMatches,
+                    true,
                     matchingDogs,
                     group.UncheckedActiveDogs));
                 continue;
             }
 
-            if (primaryMatches)
-                filteredGroups.Add(new FilteredResourceGroup(
-                    group.Primary,
-                    true,
-                    Array.Empty<ResourceRosterItem>(),
-                    group.UncheckedActiveDogs));
+            filteredGroups.Add(new FilteredResourceGroup(
+                group.Primary,
+                true,
+                Array.Empty<ResourceRosterItem>(),
+                group.UncheckedActiveDogs));
         }
 
         return filteredGroups;
@@ -85,7 +83,7 @@ public static class ResourceRosterFilter
         string handlerAssignmentFilter)
     {
         if (group.Primary.EntityType != ResourceEntityType.Person)
-            return handlerAssignmentFilter == AllHandlerAssignments;
+            return true;
 
         var hasAssignedDog = dogs.Any(dog =>
             dog.HundefuehrerIds?.Contains(group.Primary.EntityId, StringComparer.Ordinal) == true);

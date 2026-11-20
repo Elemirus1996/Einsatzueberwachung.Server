@@ -47,7 +47,7 @@ public sealed class EinsatzResourceTests
         Assert.Equal(expected, ResourceCheckInSearch.HasMinimumQueryLength(query));
 
     [Fact]
-    public void ResourceRosterFilter_ShowsMatchingDogWithHandlerAsContext()
+    public void ResourceRosterFilter_DoesNotMatchPeopleBasedOnTheirDogsStatus()
     {
         var person = new PersonalEntry { Id = "person-1", Vorname = "Alex", Nachname = "Muster" };
         var dog = new DogEntry { Id = "dog-1", Name = "Rex", HundefuehrerIds = ["person-1"] };
@@ -75,14 +75,11 @@ public sealed class EinsatzResourceTests
             ResourceRosterFilter.AllHandlerAssignments,
             hideDogs: false);
 
-        var group = Assert.Single(filtered);
-        Assert.False(group.ShowPrimaryStatus);
-        Assert.Equal(person.Id, group.Primary.EntityId);
-        Assert.Equal(dog.Id, Assert.Single(group.Dogs).EntityId);
+        Assert.Empty(filtered);
     }
 
     [Fact]
-    public void ResourceRosterFilter_HidesDogsThatDoNotMatchWhenHandlerMatches()
+    public void ResourceRosterFilter_ShowsDogWhenHandlerMatchesEvenIfDogDoesNot()
     {
         var handler = new PersonalEntry { Id = "handler", Vorname = "Alex", Nachname = "Muster" };
         var dog = new DogEntry { Id = "dog-1", Name = "Rex", HundefuehrerIds = [handler.Id] };
@@ -99,7 +96,7 @@ public sealed class EinsatzResourceTests
                 {
                     EntityType = ResourceEntityType.Dog,
                     EntityId = dog.Id,
-                    Status = ResourceStatus.Pause
+                    Status = ResourceStatus.VoruebergehendAbwesend
                 }
             },
             [handler],
@@ -114,7 +111,63 @@ public sealed class EinsatzResourceTests
 
         var group = Assert.Single(filtered);
         Assert.True(group.ShowPrimaryStatus);
-        Assert.Empty(group.Dogs);
+        var visibleDog = Assert.Single(group.Dogs);
+        Assert.Equal(dog.Id, visibleDog.EntityId);
+        Assert.Equal(ResourceStatus.VoruebergehendAbwesend, visibleDog.Status);
+
+        var dogsHidden = ResourceRosterFilter.Apply(
+            groups,
+            [dog],
+            nameof(ResourceStatus.Verfuegbar),
+            ResourceRosterFilter.AllHandlerAssignments,
+            hideDogs: true);
+
+        var handlerOnlyGroup = Assert.Single(dogsHidden);
+        Assert.True(handlerOnlyGroup.ShowPrimaryStatus);
+        Assert.Empty(handlerOnlyGroup.Dogs);
+    }
+
+    [Fact]
+    public void ResourceRosterFilter_AppliesPersonFiltersOnlyToPeople()
+    {
+        var handler = new PersonalEntry { Id = "handler", Vorname = "Alex", Nachname = "Muster" };
+        var assignedDog = new DogEntry { Id = "assigned-dog", Name = "Rex", HundefuehrerIds = [handler.Id] };
+        var standaloneDog = new DogEntry { Id = "standalone-dog", Name = "Flocke" };
+        var groups = ResourceRosterBuilder.Build(
+            new[]
+            {
+                new EinsatzResource
+                {
+                    EntityType = ResourceEntityType.Person,
+                    EntityId = handler.Id,
+                    Status = ResourceStatus.AufAnfahrt
+                },
+                new EinsatzResource
+                {
+                    EntityType = ResourceEntityType.Dog,
+                    EntityId = assignedDog.Id,
+                    Status = ResourceStatus.Verfuegbar
+                },
+                new EinsatzResource
+                {
+                    EntityType = ResourceEntityType.Dog,
+                    EntityId = standaloneDog.Id,
+                    Status = ResourceStatus.AufAnfahrt
+                }
+            },
+            [handler],
+            [assignedDog, standaloneDog]);
+
+        var filtered = ResourceRosterFilter.Apply(
+            groups,
+            [assignedDog, standaloneDog],
+            nameof(ResourceStatus.Verfuegbar),
+            ResourceRosterFilter.HandlersOnly,
+            hideDogs: false);
+
+        var group = Assert.Single(filtered);
+        Assert.Equal(ResourceEntityType.Dog, group.Primary.EntityType);
+        Assert.Equal(standaloneDog.Id, group.Primary.EntityId);
     }
 
     [Fact]

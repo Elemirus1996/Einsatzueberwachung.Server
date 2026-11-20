@@ -12,7 +12,7 @@ Dieser Branch ergänzt eine einsatzbezogene Ressourcenverwaltung für Personen u
 - Check-in aus den Stammdaten mit den Startstatus **Auf Anfahrt** oder **Verfügbar**; Personenvorschläge erscheinen erst ab drei Suchzeichen.
 - Schnellaufnahme neuer Personen und Hunde: Speicherung in den Stammdaten und direkter Check-in in den aktiven Einsatz.
 - Statuswechsel pro Ressource: **Verfügbar**, **Vorübergehend abwesend**, **Pause**, **Auf Anfahrt**, **In Suche**, **Drohneneinsatz**, **Sonderauftrag** und **Abgemeldet**.
-- Filter in der Ressourcenübersicht nach Status, Hundeführern, Personen ohne Hund und mit der Option, Hunde auszublenden. Hunde werden unabhängig vom Status ihres Hundeführers gefiltert; ein Hundeführer bleibt als Zuordnungskontext sichtbar, wenn nur sein Hund zum Statusfilter passt.
+- Filter in der Ressourcenübersicht nach Status, Hundeführern, Personen ohne Hund und mit der Option, Hunde auszublenden. Status- und Personenfilter werden nur auf Personen angewendet. Hunde bleiben bei sichtbarem Hundeführer unabhängig von ihrem eigenen Status sichtbar; eigenständig eingecheckte Hunde werden durch Personenfilter nicht ausgeblendet. Nur die Option „Hunde ausblenden“ blendet Hunde aus.
 - Versehentliche Check-ins lassen sich nach Bestätigung aus dem aktuellen Einsatz entfernen; die Stammdaten bleiben erhalten. Ressourcen, die einem Team oder Suchsektor zugeordnet sind oder gerade laufen beziehungsweise pausieren, sind bis zum Lösen der Zuordnung geschützt.
 - Bei mehrfach verwendeten Ressourcen bleibt **In Suche** gesetzt, solange ein anderes Team die Ressource nutzt oder einer Suche zugeordnet ist.
 - Ein **Sonderauftrag** benötigt eine Notiz, bevor der Status übernommen wird.
