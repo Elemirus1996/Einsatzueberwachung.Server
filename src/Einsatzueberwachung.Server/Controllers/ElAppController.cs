@@ -34,7 +34,9 @@ public sealed partial class ElAppController(
     // Navigationsziele (Variante C, ElAppController.Aktionen.cs)
     Navigationspunkte? navigationspunkte = null,
     // Bericht teilen (Idee 6.2, ElAppController.Einsatz.cs)
-    Einsatzueberwachung.Domain.Interfaces.IArchivService? archiv = null, Einsatzueberwachung.Domain.Interfaces.IPdfExportService? pdfExport = null) : ControllerBase
+    Einsatzueberwachung.Domain.Interfaces.IArchivService? archiv = null, Einsatzueberwachung.Domain.Interfaces.IPdfExportService? pdfExport = null,
+    // Mitteilungen im Hintergrund (#79, ElAppController.Mitteilungen.cs)
+    ElMitteilungen? mitteilungen = null) : ControllerBase
 {
     /// <summary>Staffellogo als PNG (docs/APP_API.md, Einsatzleitung Abschnitt 3) – nur intern</summary>
     [HttpGet("logo")]
@@ -72,7 +74,7 @@ public sealed partial class ElAppController(
             p.Timestamp > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(p.Timestamp).UtcDateTime : DateTime.UtcNow, p.Battery)));
 
         var antwort = Anweisung(ablaufUtc, ich);
-        return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = angenommen });
+        return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = angenommen, antwort.mitteilungStand });
     }
 
     private string? Bearer()
@@ -81,9 +83,10 @@ public sealed partial class ElAppController(
         return header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? header[7..].Trim() : null;
     }
 
-    // Kein Einsatz: GPS aus, aber angemeldet bleiben – beim naechsten Einsatz geht es ohne Eingabe weiter
+    // Kein Einsatz: GPS aus, aber angemeldet bleiben – beim naechsten Einsatz geht es ohne Eingabe weiter.
+    // Mit Mitteilungen (#79) alle 30 s hochladen, damit Warnungen spaetestens nach einer halben Minute ankommen.
     private ElAnweisung Anweisung(DateTime ablaufUtc, ElIch ich) =>
-        new(OrtungsSteuerung.AlsText(ModusFuer(ich, positionen.Modus)), 30, 60, 120, ablaufUtc);
+        new(OrtungsSteuerung.AlsText(ModusFuer(ich, positionen.Modus)), 30, mitteilungen is null ? 60 : 30, 120, ablaufUtc, mitteilungen?.Stand);
 
     private IActionResult Gone()
     {
@@ -91,5 +94,5 @@ public sealed partial class ElAppController(
         return StatusCode(StatusCodes.Status410Gone, new { mode = "stop" });
     }
 
-    private sealed record ElAnweisung(string mode, int intervalSec, int uploadEverySec, int pauseCheckSec, DateTime expiresAt);
+    private sealed record ElAnweisung(string mode, int intervalSec, int uploadEverySec, int pauseCheckSec, DateTime expiresAt, string? mitteilungStand);
 }

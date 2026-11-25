@@ -175,6 +175,9 @@ internal static class ServiceCollectionExtensions
         // Native Einsatzleitung, Live-Ereignisse (#125)
         services.AddSingleton<ElAppEreignisse>();
         services.AddSingleton<ElAppAktionen>();
+        // Mitteilungen im Hintergrund (#79): ab Serverstart sammeln
+        services.AddSingleton<ElMitteilungen>();
+        services.AddHostedService(sp => sp.GetRequiredService<ElMitteilungen>());
         // Native Team-Ansicht der App (#119)
         services.AddSingleton<TeamAppEreignisse>();
         services.AddSingleton<AppStatusmeldungen>();
