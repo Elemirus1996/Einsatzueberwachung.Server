@@ -39,8 +39,17 @@ public sealed class TeamMobileAppController : ControllerBase
     {
         kennung = _kennung?.Kennung,
         staffel,
-        logoVersion = _logo is null ? null : (await _logo.HolenAsync())?.Version
+        logoVersion = _logo is null ? null : (await _logo.HolenAsync())?.Version,
+        packlisteVersion = await AppPacklisteAntwort.VersionAsync(_settings)
     };
+
+    /// <summary>Packliste der Staffel (Abschnitt 14); 404, wenn keine hinterlegt ist. Abhaken bleibt in der App.</summary>
+    [HttpGet("packliste")]
+    public async Task<IActionResult> GetPackliste()
+    {
+        if (!TryTeam(out _, out _)) return Gone();
+        return await AppPacklisteAntwort.GanzAsync(_settings) is { } packliste ? Ok(packliste) : NotFound();
+    }
 
     /// <summary>Staffellogo als PNG (docs/APP_API.md Abschnitt 10)</summary>
     [HttpGet("logo")]
@@ -157,9 +166,10 @@ public sealed class TeamMobileAppController : ControllerBase
         if (!TryTeam(out var teamId, out _) || _punkte is null) return Gone();
         if (_einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId) is not { } team) return Gone();
         if (request is null) return BadRequest(new { error = "Körper fehlt." });
+        if (request.Typ is not (null or "hinweis" or "fund")) return BadRequest(new { error = "typ muss hinweis oder fund sein." });
 
         var ergebnis = await _punkte.PunktSetzenAsync(team, request.Id ?? "", request.Text, request.Lat, request.Lng,
-            request.Genauigkeit, request.Zeit, DateTime.UtcNow);
+            request.Genauigkeit, request.Zeit, DateTime.UtcNow, istFund: request.Typ == "fund");
         // 409 statt 429: 429 bedeutet in der App „kurz warten“ (nginx), die Grenze gilt aber fuer den ganzen Einsatz
         if (ergebnis.GrenzeErreicht) return Conflict(new { error = ergebnis.Fehler });
         if (ergebnis.Fehler is not null) return BadRequest(new { error = ergebnis.Fehler });
@@ -340,7 +350,7 @@ public sealed class TeamMobileAppController : ControllerBase
         }
 
         var antwort = await Anweisung(teamId, ablaufUtc);
-        return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = gespeichert });
+        return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = gespeichert, antwort.lageStand });
     }
 
     // Wie /team/login: nur mit gueltigem Anmelde-Code und waehrend eines laufenden Einsatzes oder einer Uebung
@@ -378,7 +388,7 @@ public sealed class TeamMobileAppController : ControllerBase
         var team = _einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
         var (intervall, upload) = await AppEinstellungen();
         return new AppAnweisung(OrtungsSteuerung.AlsText(OrtungsSteuerung.FuerTeam(_einsatzService.CurrentEinsatz, team)),
-            intervall, upload, 120, ablaufUtc);
+            intervall, upload, 120, ablaufUtc, _ereignisse?.LageStand(teamId));
     }
 
     private async Task<(int intervall, int upload)> AppEinstellungen()
@@ -394,7 +404,7 @@ public sealed class TeamMobileAppController : ControllerBase
         return StatusCode(StatusCodes.Status410Gone, new { mode = "stop" });
     }
 
-    private sealed record AppAnweisung(string mode, int intervalSec, int uploadEverySec, int pauseCheckSec, DateTime expiresAt);
+    private sealed record AppAnweisung(string mode, int intervalSec, int uploadEverySec, int pauseCheckSec, DateTime expiresAt, string? lageStand);
 
     public sealed class AppStatusmeldungRequest
     {
@@ -422,6 +432,8 @@ public sealed class TeamMobileAppController : ControllerBase
         public double? Genauigkeit { get; set; }
         /// <summary>Zeitpunkt der Ortung (UTC)</summary>
         public DateTime? Zeit { get; set; }
+        /// <summary>hinweis (Standard) oder fund (ab 1.17.0)</summary>
+        public string? Typ { get; set; }
     }
 
     public sealed class AppLoginRequest

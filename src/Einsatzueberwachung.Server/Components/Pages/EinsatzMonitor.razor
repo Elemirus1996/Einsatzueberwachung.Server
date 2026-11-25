@@ -594,6 +594,8 @@
                            SelectedDogCount="SelectedDogNames.Count"
                            NotesCount="EinsatzService.GlobalNotes.Count"
                            Error="@_closeMissionModalError"
+                           Abschluss="_abschluss"
+                           Teams="EinsatzService.Teams"
                            OnClose="CloseCloseMissionModal"
                            OnConfirm="ConfirmCloseMissionAsync"
                            OnPersonnelSelectionChanged="TogglePersonnelSelection"
@@ -660,5 +662,6 @@
 <MonitorTeamMobileDialog IsOpen="_showTeamMobileModal"
                          FullUrl="@_teamMobileFullUrl"
                          QrDataUrl="@_teamMobileQrDataUrl"
+                         AdresseFehlt="_teamMobileAdresseFehlt"
                          ReadableCode='@(string.IsNullOrEmpty(TeamMobileTokenService.CurrentMasterToken) ? string.Empty : TeamCodeLesbar(TeamMobileTokenService.CurrentMasterToken))'
                          OnClose="CloseTeamMobileModal" />

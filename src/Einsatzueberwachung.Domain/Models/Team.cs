@@ -35,6 +35,10 @@ namespace Einsatzueberwachung.Domain.Models
         public string DogName { get; set; }
         public string DogId { get; set; }
         public DogSpecialization DogSpecialization { get; set; }
+        /// <summary>„Eingesetzt als“ (Monitor-Teamdialog bzw. Einsatzende); null = nicht festgelegt.</summary>
+        public Einsatzart? Einsatzart { get; set; }
+        /// <summary>Einsatzart beim Start der laufenden bzw. letzten Suche; geht in die abgeschlossene Suche.</summary>
+        public Einsatzart? SucheEinsatzart { get; set; }
         public string HundefuehrerName { get; set; }
         public string HundefuehrerId { get; set; }
 
@@ -169,6 +173,8 @@ namespace Einsatzueberwachung.Domain.Models
             if (!IsRunning)
             {
                 var t = now ?? Ortszeit.Jetzt;
+                if (!IsManuallyPaused)
+                    SucheEinsatzart = Einsatzart;
                 // Pausen-Zustand für neuen Lauf zurücksetzen
                 IsPausing = false;
                 IsManuallyPaused = false;

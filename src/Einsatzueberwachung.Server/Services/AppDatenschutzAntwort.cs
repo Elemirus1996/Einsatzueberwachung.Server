@@ -84,6 +84,7 @@ public static class AppDatenschutzAntwort
         - Positionen sowie Statusmeldungen und Aktionen, die im Funkloch noch nicht gesendet wurden, bis zum Senden.
         - Name, Logo und Server-Kennung der Heimatstaffel; auch nicht gewählte Server-Kennungen, damit die App nicht erneut fragt.
         - Die Bestätigung dieser Erklärung je Server und Fassung, nur auf dem Gerät; unser Server führt kein Protokoll darüber.
+        - Die Packliste unserer Staffel, eigene Punkte, was abgehakt ist und der Abstand der Erinnerung. Die Erinnerung ist eine lokale Mitteilung des Geräts; unser Server erfährt nicht, ob oder was abgehakt wurde.
         - Nur Android: zwischengespeicherte Kartenkacheln, höchstens 200 MB, nur Kartenbilder.
 
         ## 5. Berechtigungen

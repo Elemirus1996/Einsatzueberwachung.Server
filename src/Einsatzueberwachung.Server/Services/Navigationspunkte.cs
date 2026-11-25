@@ -19,6 +19,8 @@ public sealed class Navigationspunkte
     public const int MaxTextLaenge = 200;
     /// <summary>Farbe der Punkte, die ein Team per App setzt (unterscheidbar von den blauen Punkten der Einsatzleitung)</summary>
     public const string FarbeTeamPunkt = "#E67E22";
+    /// <summary>Fund-Punkt (typ = fund): rot, damit er sich von Hinweisen abhebt</summary>
+    public const string FarbeFund = "#C0392B";
 
     private readonly IEinsatzService _einsatz;
     private readonly ITeamMobileTokenService? _teamNachrichten;
@@ -86,7 +88,7 @@ public sealed class Navigationspunkte
 
     /// <summary>Punkt am Standort des Teams setzen (POST /punkt)</summary>
     public async Task<TeamPunktErgebnis> PunktSetzenAsync(Team team, string id, string? text, double? lat, double? lng,
-        double? genauigkeit, DateTime? zeitUtc, DateTime nowUtc)
+        double? genauigkeit, DateTime? zeitUtc, DateTime nowUtc, bool istFund = false)
     {
         if (string.IsNullOrWhiteSpace(id) || id.Length > 64) return new(null, false, "id fehlt oder ist zu lang (höchstens 64 Zeichen).");
         var inhalt = text?.Trim() ?? "";
@@ -118,21 +120,22 @@ public sealed class Navigationspunkte
                 Description = beschreibung,
                 Latitude = Math.Round(breite, 6),
                 Longitude = Math.Round(laenge, 6),
-                Color = FarbeTeamPunkt,
+                Color = istFund ? FarbeFund : FarbeTeamPunkt,
                 CreatedAt = geortet,
-                TeamId = team.TeamId
+                TeamId = team.TeamId,
+                IstFund = istFund
             });
             _gesetzt[schluessel] = (punkt.Id, nowUtc);
 
             await _einsatz.AddGlobalNoteWithSourceAsync(
-                $"[{team.TeamName}] Punkt gesetzt: {inhalt} ({Koordinate(punkt.Latitude, punkt.Longitude)}"
+                $"[{team.TeamName}] {(istFund ? "Fund gemeldet" : "Punkt gesetzt")}: {inhalt} ({Koordinate(punkt.Latitude, punkt.Longitude)}"
                     + (genauigkeit is { } n ? $", ±{Math.Round(n):0} m" : "") + ")",
                 team.TeamId, team.TeamName, TeamAppSuche.QuelleTeamApp, GlobalNotesEntryType.Manual, TeamAppSuche.QuelleTeamApp);
             _hinweise?.AddWarning(new WarningEntry
             {
                 Title = "Team-App",
-                Message = $"{team.TeamName} hat einen Punkt gesetzt: {inhalt}",
-                Level = WarningLevel.Info,
+                Message = istFund ? $"{team.TeamName} meldet einen Fund: {inhalt}" : $"{team.TeamName} hat einen Punkt gesetzt: {inhalt}",
+                Level = istFund ? WarningLevel.Warning : WarningLevel.Info,
                 TeamId = team.TeamId,
                 Source = WarningRuleDefinition.Sources.TeamAppPunkt,
                 NavigationUrl = "/einsatz-karte",

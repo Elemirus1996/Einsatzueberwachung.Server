@@ -1,4 +1,4 @@
-@page "/einstellungen"
+﻿@page "/einstellungen"
 @rendermode InteractiveServer
 @implements IDisposable
 @using System.Text.Json
@@ -99,7 +99,7 @@
             @if (_activeTab == SettingsTab.Staffel)
             {
                 <h2 class="cfg-pane-title"><i class="bi bi-building me-2"></i>Staffel</h2>
-                <p class="cfg-pane-subtitle">Stammdaten der Staffel und Logos für Berichte.</p>
+                <p class="cfg-pane-subtitle">Stammdaten, Logos, Datenschutz und Packliste der Staffel.</p>
 
                 <div class="cfg-section">
                     <h3 class="cfg-sub-header">Kontaktdaten</h3>
@@ -174,6 +174,86 @@
                             }
                         </div>
                     </div>
+                </div>
+
+                <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-file-earmark-lock me-1"></i>Datenschutzerklärung für die App</h3>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="cfg-ds-titel">Titel und Text</label>
+                        <p class="text-muted small mb-2">Die App zeigt sie vor der ersten Anmeldung an diesem Server und lässt die Kenntnisnahme
+                            bestätigen. Nach jeder Änderung fragt die App erneut. Leer = keine Erklärung hinterlegt.</p>
+                        <input id="cfg-ds-titel" class="cfg-input mb-2" maxlength="@AppDatenschutz.MaxTitelLaenge"
+                               placeholder="Titel, z. B. Datenschutzerklärung RHS Musterstadt" @bind="_appSettings.AppDatenschutzTitel" />
+                        <textarea class="cfg-input" rows="12" maxlength="@AppDatenschutz.MaxTextLaenge" aria-label="Text der Datenschutzerklärung (Markdown)"
+                                  placeholder="Text (einfaches Markdown: ## Überschrift, - Liste, **fett**)" @bind="_appSettings.AppDatenschutzText"></textarea>
+                        @if (string.IsNullOrWhiteSpace(_appSettings.AppDatenschutzText))
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" @onclick="DatenschutzVorlageEinfuegen">Vorlage einfügen</button>
+                        }
+                        else if (_appSettings.AppDatenschutzStandUtc is { } stand)
+                        {
+                            <p class="text-muted small mt-2 mb-0">Gespeicherte Fassung vom @Ortszeit.AusUtc(stand).ToString("dd.MM.yyyy HH:mm") Uhr.
+                                Platzhalter in [eckigen Klammern] vor dem Einsatz ausfüllen.</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-backpack me-1"></i>Packliste für die App</h3>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="cfg-packliste">Punkte</label>
+                        <p class="text-muted small mb-2">Was jedes Mitglied für einen Einsatz dabeihaben sollte. Die App zeigt die Liste, erinnert
+                            regelmäßig daran und lässt sie abhaken. Abgehakt wird nur auf dem Handy, der Server erfährt davon nichts.
+                            Eine Zeile je Punkt; eine Zeile mit Doppelpunkt am Ende beginnt eine Gruppe. Leer = keine Packliste.</p>
+                        <textarea id="cfg-packliste" class="cfg-input" rows="10" maxlength="@AppPackliste.MaxEingabeLaenge"
+                                  placeholder="@PacklisteBeispiel" @bind="_appSettings.AppPacklisteText"></textarea>
+                        @{ var packlisteAnzahl = AppPackliste.Punkte(_appSettings.AppPacklisteText).Count; }
+                        @if (packlisteAnzahl > 0)
+                        {
+                            <p class="text-muted small mt-2 mb-0">@packlisteAnzahl @(packlisteAnzahl == 1 ? "Punkt" : "Punkte")@(_appSettings.AppPacklisteStandUtc is { } packStand ? $", gespeicherte Fassung vom {Ortszeit.AusUtc(packStand):dd.MM.yyyy HH:mm} Uhr" : "").</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-shield-lock me-1"></i>Löschfristen (Datenschutz)</h3>
+                    @if (_appSettings.LoeschfristLaufwegeTage is null && _appSettings.LoeschfristNotizenTage is null && _appSettings.LoeschfristVermissteTage is null)
+                    {
+                        <p class="alert alert-warning py-2 mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Noch keine Löschfristen festgelegt: Der Server löscht
+                            archivierte Einsätze nie automatisch. Bitte legt als Staffel fest, wie lange ihr die Daten aufbewahrt.</p>
+                    }
+                    <p class="text-muted small mb-2">Tage ab Ende des Einsatzes; leer = nicht automatisch löschen. Der Server prüft einmal täglich und löscht
+                        dann nur die gewählte Datenart aus dem Archiv, dazu den gespeicherten PDF-Bericht (im Archiv neu erzeugbar). Laufende Einsätze
+                        werden nie gelöscht. In der Datenschutzerklärung für die App setzen <code>{frist.laufwege}</code>, <code>{frist.notizen}</code>,
+                        <code>{frist.vermisste}</code> und <code>{frist.uebungen}</code> die Fristen automatisch ein.</p>
+                    <div class="cfg-grid cfg-grid-2">
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Laufwege">Laufwege (Handy und Halsband)</label>
+                            <InputNumber id="cfg-lf-Laufwege" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristLaufwegeTage" />
+                            <small class="text-muted">Tracks und abgeschlossene Suchen im Archiv</small>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Notizen">Notizen, Statusmeldungen, Funk</label>
+                            <InputNumber id="cfg-lf-Notizen" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristNotizenTage" />
+                            <small class="text-muted">im Archiv, dazu alte Einträge der Funk-Datenbank</small>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Vermisste">Angaben zur vermissten Person</label>
+                            <InputNumber id="cfg-lf-Vermisste" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristVermissteTage" />
+                            <small class="text-muted">Vermisstenprofile im Archiv</small>
+                        </div>
+                        <div class="cfg-field">
+                            <label class="cfg-label" for="cfg-lf-Uebungen">Übungen (alle Datenarten)</label>
+                            <InputNumber id="cfg-lf-Uebungen" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
+                                         @bind-Value="_appSettings.LoeschfristUebungenTage" />
+                            <small class="text-muted">leer = wie bei Einsätzen</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">Die Protokolle des Webservers (nginx, mit IP-Adressen) liegen außerhalb der Anwendung und werden dort
+                        eingestellt (z. B. logrotate).</p>
                 </div>
             }
 
@@ -297,65 +377,6 @@
                             </label>
                         </div>
                     </div>
-                    <div class="cfg-field mt-3">
-                        <label class="cfg-label" for="cfg-ds-titel">Datenschutzerklärung für die App</label>
-                        <p class="text-muted small mb-2">Die App zeigt sie vor der ersten Anmeldung an diesem Server und lässt die Kenntnisnahme
-                            bestätigen. Nach jeder Änderung fragt die App erneut. Leer = keine Erklärung hinterlegt.</p>
-                        <input id="cfg-ds-titel" class="cfg-input mb-2" maxlength="@AppDatenschutz.MaxTitelLaenge"
-                               placeholder="Titel, z. B. Datenschutzerklärung RHS Musterstadt" @bind="_appSettings.AppDatenschutzTitel" />
-                        <textarea class="cfg-input" rows="12" maxlength="@AppDatenschutz.MaxTextLaenge" aria-label="Text der Datenschutzerklärung (Markdown)"
-                                  placeholder="Text (einfaches Markdown: ## Überschrift, - Liste, **fett**)" @bind="_appSettings.AppDatenschutzText"></textarea>
-                        @if (string.IsNullOrWhiteSpace(_appSettings.AppDatenschutzText))
-                        {
-                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" @onclick="DatenschutzVorlageEinfuegen">Vorlage einfügen</button>
-                        }
-                        else if (_appSettings.AppDatenschutzStandUtc is { } stand)
-                        {
-                            <p class="text-muted small mt-2 mb-0">Gespeicherte Fassung vom @Ortszeit.AusUtc(stand).ToString("dd.MM.yyyy HH:mm") Uhr.
-                                Platzhalter in [eckigen Klammern] vor dem Einsatz ausfüllen.</p>
-                        }
-                    </div>
-                </div>
-
-                <div class="cfg-section">
-                    <h3 class="cfg-sub-header"><i class="bi bi-shield-lock me-1"></i>Löschfristen (Datenschutz)</h3>
-                    @if (_appSettings.LoeschfristLaufwegeTage is null && _appSettings.LoeschfristNotizenTage is null && _appSettings.LoeschfristVermissteTage is null)
-                    {
-                        <p class="alert alert-warning py-2 mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Noch keine Löschfristen festgelegt: Der Server löscht
-                            archivierte Einsätze nie automatisch. Bitte legt als Staffel fest, wie lange ihr die Daten aufbewahrt.</p>
-                    }
-                    <p class="text-muted small mb-2">Tage ab Ende des Einsatzes; leer = nicht automatisch löschen. Der Server prüft einmal täglich und löscht
-                        dann nur die gewählte Datenart aus dem Archiv, dazu den gespeicherten PDF-Bericht (im Archiv neu erzeugbar). Laufende Einsätze
-                        werden nie gelöscht. In der Datenschutzerklärung für die App setzen <code>{frist.laufwege}</code>, <code>{frist.notizen}</code>,
-                        <code>{frist.vermisste}</code> und <code>{frist.uebungen}</code> die Fristen automatisch ein.</p>
-                    <div class="cfg-grid cfg-grid-2">
-                        <div class="cfg-field">
-                            <label class="cfg-label" for="cfg-lf-Laufwege">Laufwege (Handy und Halsband)</label>
-                            <InputNumber id="cfg-lf-Laufwege" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
-                                         @bind-Value="_appSettings.LoeschfristLaufwegeTage" />
-                            <small class="text-muted">Tracks und abgeschlossene Suchen im Archiv</small>
-                        </div>
-                        <div class="cfg-field">
-                            <label class="cfg-label" for="cfg-lf-Notizen">Notizen, Statusmeldungen, Funk</label>
-                            <InputNumber id="cfg-lf-Notizen" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
-                                         @bind-Value="_appSettings.LoeschfristNotizenTage" />
-                            <small class="text-muted">im Archiv, dazu alte Einträge der Funk-Datenbank</small>
-                        </div>
-                        <div class="cfg-field">
-                            <label class="cfg-label" for="cfg-lf-Vermisste">Angaben zur vermissten Person</label>
-                            <InputNumber id="cfg-lf-Vermisste" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
-                                         @bind-Value="_appSettings.LoeschfristVermissteTage" />
-                            <small class="text-muted">Vermisstenprofile im Archiv</small>
-                        </div>
-                        <div class="cfg-field">
-                            <label class="cfg-label" for="cfg-lf-Uebungen">Übungen (alle Datenarten)</label>
-                            <InputNumber id="cfg-lf-Uebungen" class="cfg-input" min="1" max="@Loeschfristen.MaxTage" placeholder="nicht automatisch löschen"
-                                         @bind-Value="_appSettings.LoeschfristUebungenTage" />
-                            <small class="text-muted">leer = wie bei Einsätzen</small>
-                        </div>
-                    </div>
-                    <p class="text-muted small mt-2 mb-0">Die Protokolle des Webservers (nginx, mit IP-Adressen) liegen außerhalb der Anwendung und werden dort
-                        eingestellt (z. B. logrotate).</p>
                 </div>
 
                 <div class="cfg-section">
@@ -428,6 +449,45 @@
                             <label class="cfg-label">Zoom (5–18)</label>
                             <InputNumber class="cfg-input" @bind-Value="_appSettings.MapDefaultZoom" />
                         </div>
+                    </div>
+                </div>
+
+                <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-globe-europe-africa me-1"></i>Satellitenbilder (Esri)</h3>
+                    <p class="cfg-help">
+                        Die amtlichen Luftbilder der Länder (Ebene „Luftbild (Länder)“) gibt es ohne Anmeldung.
+                        Zusätzlich könnt ihr die weltweiten Satellitenbilder von Esri nutzen, zum Beispiel jenseits der Bundesgrenze.
+                        Dafür braucht eure Staffel einen <strong>eigenen, kostenlosen Schlüssel</strong> von Esri. Ohne Schlüssel gibt es die Ebene „Satellit (Esri)“ nicht.
+                    </p>
+                    <details class="cfg-help mb-2">
+                        <summary><strong>So bekommt ihr den Schlüssel</strong></summary>
+                        <ol class="mt-2 mb-1">
+                            <li>Auf <a href="https://location.arcgis.com/sign-up/" target="_blank" rel="noopener">location.arcgis.com/sign-up</a> ein kostenloses Konto für die <strong>ArcGIS Location Platform</strong> anlegen (am besten mit einer Staffel-Mailadresse, nicht privat).</li>
+                            <li>Angemeldet auf <a href="https://developers.arcgis.com" target="_blank" rel="noopener">developers.arcgis.com</a> unter <strong>Developer credentials</strong> → <strong>New developer credential</strong> → <strong>API key credentials</strong> wählen.</li>
+                            <li>Bei den Berechtigungen (<em>Privileges</em>) unter <strong>Location services</strong> den Punkt <strong>Basemaps</strong> anhaken. Ein Ablaufdatum setzen (Esri erlaubt höchstens ein Jahr). Bei „Referrers“ nichts eintragen – der Server lädt die Karten für den Bericht selbst.</li>
+                            <li>Den angezeigten <strong>API key</strong> kopieren (er wird nur einmal angezeigt), hier eintragen, „Prüfen“ drücken und speichern.</li>
+                            <li>Das Ablaufdatum im Kalender notieren und vorher auf derselben Seite einen neuen Schlüssel erzeugen.</li>
+                        </ol>
+                        <p class="mb-1">Esri berechnet die Kacheln über euer Konto: Laut Preisliste sind <strong>2 Millionen Kacheln im Monat frei</strong>, das reicht für den Staffelbetrieb. Ob Esri eine Zahlungsart verlangt, seht ihr beim Anlegen des Kontos.
+                            Die Bezeichnungen auf den Esri-Seiten können sich ändern.</p>
+                    </details>
+                    <div class="cfg-field">
+                        <label class="cfg-label" for="esri-schluessel">Esri API-Schlüssel</label>
+                        <div class="cfg-input-with-action">
+                            <input id="esri-schluessel" type="@(_showEsriKey ? "text" : "password")" class="cfg-input" autocomplete="off"
+                                   placeholder="leer = keine Esri-Ebene" @bind="_appSettings.EsriApiKey" />
+                            <button type="button" class="cfg-icon-btn" @onclick="() => _showEsriKey = !_showEsriKey" title="Zeigen/Verbergen">
+                                <i class="bi @(_showEsriKey ? "bi-eye-slash" : "bi-eye")"></i>
+                            </button>
+                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="PruefeEsriAsync" disabled="@_esriPruefungLaeuft">
+                                <i class="bi bi-check2-circle"></i> Prüfen
+                            </button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_esriPruefung))
+                        {
+                            <span class="cfg-help">@_esriPruefung</span>
+                        }
+                        <span class="cfg-help">Der Schlüssel ist für alle sichtbar, die die Karte im Browser öffnen dürfen. Er gehört eurer Staffel, nicht den Entwicklern.</span>
                     </div>
                 </div>
 
@@ -520,6 +580,14 @@
                             <span class="cfg-inline-status @(_audioTestError ? "is-error" : "is-ok")">@_audioTestStatus</span>
                         }
                     </div>
+                </div>
+
+                <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-signpost-split me-1"></i>Abbruchgründe für Trails</h3>
+                    <p class="text-muted small mb-2">Auswahl beim Einsatzende für jeden Trail (Mantrailer), steht im Einsatzbericht. Eine Zeile je Grund.
+                        Leer = Vorgabe. Ein schon gespeicherter Grund bleibt im Einsatz erhalten, auch wenn er hier entfernt wird.</p>
+                    <textarea id="cfg-abbruchgruende" class="cfg-input" rows="6" aria-label="Abbruchgründe, eine Zeile je Grund"
+                              placeholder="@string.Join("\n", AbschlussAngaben.StandardAbbruchgruende)" @bind="AbbruchgruendeText"></textarea>
                 </div>
 
                 <div class="cfg-section">
@@ -818,6 +886,15 @@
                 <p class="cfg-pane-subtitle">Konfigurierbare Tastaturbefehle für Navigation und Steuerung.</p>
 
                 <div class="cfg-section">
+                    <label class="d-flex align-items-center gap-2 mb-1">
+                        <input type="checkbox" class="form-check-input mt-0" checked="@_shortcuts.Ausgeschaltet"
+                               @onchange="async e => { _shortcuts.Ausgeschaltet = e.Value is true; await SaveShortcutsAsync(); }" />
+                        <span>Tastenkürzel ausschalten</span>
+                    </label>
+                    <small class="cfg-hint">Gilt für alle Seiten in diesem Browser, z. B. wenn Strg+N oder Strg+T wie gewohnt ein neues Fenster bzw. einen neuen Tab öffnen sollen. Die Belegung unten bleibt erhalten.</small>
+                </div>
+
+                <div class="cfg-section @(_shortcuts.Ausgeschaltet ? "opacity-50" : "")">
                     <h3 class="cfg-sub-header">Navigation</h3>
 
                     <div class="cfg-row">
@@ -1230,13 +1307,13 @@
                     <h3 class="cfg-sub-header"><i class="bi bi-phone me-1"></i>Team-Mobile</h3>
                     <p class="cfg-help">
                         Der QR-Code für die Team-Smartphone-Anmeldung enthält die Basis-URL des Servers.
-                        Wenn das Feld leer ist, wird die URL automatisch aus dem Request abgeleitet (Standard für VPN-Betrieb).
-                        Für lokale Tests oder eine abweichende öffentliche Adresse kann hier eine eigene URL eingetragen werden.
+                        Tragt hier die öffentliche Adresse eures Servers ein, unter der die Teams ihn erreichen.
+                        Ohne Adresse zeigt der Monitor keinen QR-Code.
                     </p>
                     <div class="cfg-field">
                         <label class="cfg-label">Basis-URL (für QR-Code)</label>
-                        <InputText class="cfg-input" @bind-Value="_appSettings.MobileBaseUrl" placeholder="https://dein-einsatz.mywire.org" />
-                        <span class="cfg-help">Leer lassen = automatisch aus Request ableiten. URL-Schema optional – fehlt es, wird <code>https://</code> ergänzt. Beispiel: <code>192.168.1.100:5000</code></span>
+                        <InputText class="cfg-input" @bind-Value="_appSettings.MobileBaseUrl" placeholder="https://staffel-musterstadt.mywire.org" />
+                        <span class="cfg-help">URL-Schema optional – fehlt es, wird <code>https://</code> ergänzt. Beispiel: <code>192.168.1.100:5000</code></span>
                     </div>
                 </div>
             }
@@ -1245,6 +1322,11 @@
             {
                 <h2 class="cfg-pane-title"><i class="bi bi-cpu me-2"></i>System</h2>
                 <p class="cfg-pane-subtitle">Versionsstand, Pfade und Update-Verwaltung.</p>
+
+                <div class="cfg-marke">
+                    <img class="cfg-marke-logo cfg-marke-hell" src="img/einsatzueberwachung-logo-hell.png" alt="Einsatzüberwachung – Server · Einsatzleitung" />
+                    <img class="cfg-marke-logo cfg-marke-dunkel" src="img/einsatzueberwachung-logo-dunkel.png" alt="Einsatzüberwachung – Server · Einsatzleitung" />
+                </div>
 
                 <div class="cfg-section">
                     <div class="cfg-section-title-row">
@@ -1350,6 +1432,12 @@
                         <img src="@_elAppQr" alt="QR-Code mit der internen Adresse für die EL-App" class="cfg-vpn-qr" />
                         <span class="cfg-help">@_elAppAdresse</span>
                     }
+                    else if (ElAppQr.IstIpAdresse(Navigation.BaseUri))
+                    {
+                        <span class="cfg-help">Diese Seite ist über eine IP-Adresse geöffnet (@(new Uri(Navigation.BaseUri).Host)). Das Zertifikat
+                            gilt nur für den Namen der internen Adresse, mit der IP-Adresse kann sich die App nicht anmelden. Bitte die
+                            Einstellungen über den Namen öffnen (die Adresse, die ihr im VPN für die Einsatzleitung nutzt), dann erscheint hier der Code.</span>
+                    }
                     else
                     {
                         <span class="cfg-help">Nur verfügbar, wenn diese Seite über HTTPS geöffnet ist (interne Adresse im VPN).</span>
@@ -1374,7 +1462,7 @@
                         <div class="cfg-field">
                             <label class="cfg-label" for="vpn-endpoint">Adresse des VPN-Servers (Domain:Port)</label>
                             <div class="cfg-copy-row">
-                                <input id="vpn-endpoint" class="cfg-input" @bind="_vpnEndpoint" placeholder="dein-einsatz.mywire.org:51820" />
+                                <input id="vpn-endpoint" class="cfg-input" @bind="_vpnEndpoint" placeholder="staffel-musterstadt.mywire.org:51820" />
                                 <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="SaveVpnEndpoint">
                                     <i class="bi bi-check2"></i> Speichern
                                 </button>
@@ -1391,12 +1479,22 @@
                         @if (_vpnDevices.Count > 0)
                         {
                             <table class="table table-sm align-middle">
-                                <thead><tr><th>Gerät</th><th>IP</th><th>Letzter Kontakt</th><th>Gültig bis</th><th></th></tr></thead>
+                                <thead><tr><th>Gerät</th><th>Person (EL-App)</th><th>IP</th><th>Letzter Kontakt</th><th>Gültig bis</th><th></th></tr></thead>
                                 <tbody>
                                     @foreach (var d in _vpnDevices)
                                     {
                                         <tr>
                                             <td>@d.Device.Name</td>
+                                            <td>
+                                                <select class="cfg-input" aria-label="Person für @d.Device.Name" value="@(d.Device.PersonId ?? "")"
+                                                        @onchange="e => VpnPersonSetzen(d.Device, e.Value?.ToString())">
+                                                    <option value="">bei Anmeldung wählen</option>
+                                                    @foreach (var p in _vpnPersonen)
+                                                    {
+                                                        <option value="@p.Id">@p.FullName</option>
+                                                    }
+                                                </select>
+                                            </td>
                                             <td><code>@d.Device.Ip</code></td>
                                             <td>@(d.LastHandshakeUtc is { } h ? Ortszeit.AusUtc(h).ToString("dd.MM. HH:mm") : "noch nie")</td>
                                             <td>@(d.Device.ExpiresUtc is { } e ? Ortszeit.AusUtc(e).ToString("dd.MM. HH:mm") : "unbegrenzt")</td>
@@ -1480,6 +1578,42 @@
                         <dt>Letzter Check</dt><dd>@DisplayDateTime(_updateStatus.LastCheckedAt)</dd>
                         <dt>Letzte Installation</dt><dd>@DisplayDateTime(_updateStatus.LastInstalledAt)</dd>
                     </dl>
+
+                    @if (!string.IsNullOrWhiteSpace(_updateStatus.LatestReleaseNotes))
+                    {
+                        <details class="cfg-versionshinweise mt-2" open="@_updateStatus.UpdateAvailable">
+                            <summary>
+                                @(_updateStatus.UpdateAvailable
+                                    ? $"Was Version {DisplayLatestVersion()} bringt"
+                                    : $"Neu in der installierten Version {_updateStatus.CurrentVersion}")
+                            </summary>
+                            <div class="cfg-versionshinweise-text">
+                                @foreach (var block in Versionshinweise.Zerlegen(_updateStatus.LatestReleaseNotes))
+                                {
+                                    var teile = block.Teile;
+                                    @switch (block.Art)
+                                    {
+                                        case Versionshinweise.BlockArt.Ueberschrift:
+                                            <h4>@InlineText(teile)</h4>
+                                            break;
+                                        case Versionshinweise.BlockArt.Unterueberschrift:
+                                            <h5>@InlineText(teile)</h5>
+                                            break;
+                                        case Versionshinweise.BlockArt.Punkt:
+                                            <p class="cfg-versionshinweise-punkt">@InlineText(teile)</p>
+                                            break;
+                                        default:
+                                            <p>@InlineText(teile)</p>
+                                            break;
+                                    }
+                                }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(_updateStatus.LatestReleaseUrl))
+                            {
+                                <a class="cfg-help" href="@_updateStatus.LatestReleaseUrl" target="_blank" rel="noopener">Release auf GitHub</a>
+                            }
+                        </details>
+                    }
 
                     <div class="cfg-grid cfg-grid-2 mt-2">
                         <div class="cfg-field">

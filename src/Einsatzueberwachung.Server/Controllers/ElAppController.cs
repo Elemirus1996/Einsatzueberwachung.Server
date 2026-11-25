@@ -34,7 +34,9 @@ public sealed partial class ElAppController(
     // Navigationsziele (Variante C, ElAppController.Aktionen.cs)
     Navigationspunkte? navigationspunkte = null,
     // Bericht teilen (Idee 6.2, ElAppController.Einsatz.cs)
-    Einsatzueberwachung.Domain.Interfaces.IArchivService? archiv = null, Einsatzueberwachung.Domain.Interfaces.IPdfExportService? pdfExport = null) : ControllerBase
+    Einsatzueberwachung.Domain.Interfaces.IArchivService? archiv = null, Einsatzueberwachung.Domain.Interfaces.IPdfExportService? pdfExport = null,
+    // Mitteilungen im Hintergrund (#79, ElAppController.Mitteilungen.cs)
+    ElMitteilungen? mitteilungen = null) : ControllerBase
 {
     /// <summary>Staffellogo als PNG (docs/APP_API.md, Einsatzleitung Abschnitt 3) – nur intern</summary>
     [HttpGet("logo")]
@@ -46,19 +48,20 @@ public sealed partial class ElAppController(
     }
 
     [HttpGet("status")]
-    public IActionResult GetStatus()
+    public async Task<IActionResult> GetStatus()
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
-        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out var ablaufUtc)) return Gone();
-        return Ok(Anweisung(ablaufUtc));
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out var ablaufUtc, out _, out var personId)) return Gone();
+        return Ok(Anweisung(ablaufUtc, await IchAsync(personId)));
     }
 
     [HttpPost("positions")]
     [RequestSizeLimit(256 * 1024)]
-    public IActionResult PostPositions([FromBody] TeamMobileAppController.AppPositionenRequest? request)
+    public async Task<IActionResult> PostPositions([FromBody] TeamMobileAppController.AppPositionenRequest? request)
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
-        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out var ablaufUtc)) return Gone();
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out var ablaufUtc, out _, out var personId)) return Gone();
+        var ich = await IchAsync(personId);
 
         var liste = request?.Positions ?? [];
         if (liste.Count > TeamMobileAppController.MaxPositionenProUpload)
@@ -66,11 +69,12 @@ public sealed partial class ElAppController(
 
         // Geraetename aus dem VPN (z. B. „Tablet EL“) – so sieht der Fuehrungsassistent, wer wo ist
         var geraet = geraete.NameFuer(HttpContext.Connection.RemoteIpAddress) ?? LeitungsGeraetNamen.Einsatzleitung;
-        var angenommen = positionen.Melden(geraet, liste.Select(p => (p.Lat, p.Lng, p.Accuracy,
+        // Nur der Einsatzleiter meldet seinen Standort (APP_API EL Abschnitt 4a); sonst verwerfen
+        var angenommen = !ElRolle.SendetStandort(ich.Rolle) ? 0 : positionen.Melden(geraet, liste.Select(p => (p.Lat, p.Lng, p.Accuracy,
             p.Timestamp > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(p.Timestamp).UtcDateTime : DateTime.UtcNow, p.Battery)));
 
-        var antwort = Anweisung(ablaufUtc);
-        return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = angenommen });
+        var antwort = Anweisung(ablaufUtc, ich);
+        return Ok(new { antwort.mode, antwort.intervalSec, antwort.uploadEverySec, antwort.pauseCheckSec, antwort.expiresAt, accepted = angenommen, antwort.mitteilungStand });
     }
 
     private string? Bearer()
@@ -79,9 +83,10 @@ public sealed partial class ElAppController(
         return header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? header[7..].Trim() : null;
     }
 
-    // Kein Einsatz: GPS aus, aber angemeldet bleiben – beim naechsten Einsatz geht es ohne Eingabe weiter
-    private ElAnweisung Anweisung(DateTime ablaufUtc) =>
-        new(OrtungsSteuerung.AlsText(positionen.Modus), 30, 60, 120, ablaufUtc);
+    // Kein Einsatz: GPS aus, aber angemeldet bleiben – beim naechsten Einsatz geht es ohne Eingabe weiter.
+    // Mit Mitteilungen (#79) alle 30 s hochladen, damit Warnungen spaetestens nach einer halben Minute ankommen.
+    private ElAnweisung Anweisung(DateTime ablaufUtc, ElIch ich) =>
+        new(OrtungsSteuerung.AlsText(ModusFuer(ich, positionen.Modus)), 30, mitteilungen is null ? 60 : 30, 120, ablaufUtc, mitteilungen?.Stand);
 
     private IActionResult Gone()
     {
@@ -89,5 +94,5 @@ public sealed partial class ElAppController(
         return StatusCode(StatusCodes.Status410Gone, new { mode = "stop" });
     }
 
-    private sealed record ElAnweisung(string mode, int intervalSec, int uploadEverySec, int pauseCheckSec, DateTime expiresAt);
+    private sealed record ElAnweisung(string mode, int intervalSec, int uploadEverySec, int pauseCheckSec, DateTime expiresAt, string? mitteilungStand);
 }

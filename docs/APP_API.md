@@ -72,14 +72,20 @@ Gesammelte Positionen aus dem lokalen Puffer, höchstens 500 je Anfrage, höchst
 
 Antwort:
 ```json
-{ "mode": "track", "intervalSec": 20, "uploadEverySec": 60, "pauseCheckSec": 120, "expiresAt": "…", "accepted": 2 }
+{ "mode": "track", "intervalSec": 20, "uploadEverySec": 60, "pauseCheckSec": 120, "expiresAt": "…", "accepted": 2, "lageStand": "3f9a1c07b2e4d815" }
 ```
+
+- `lageStand` (ab Server 1.18.0, #79): kurze Kennung des aktuellen Stands von `/lage` für dieses Team. Sie ändert sich,
+  sobald eine neue Mitteilung oder ein Navigationsziel kommt oder sich Suche, Suchgebiet, Team oder Halsband-Zuordnung ändern.
+  Die App merkt sich den letzten Wert; nur wenn er sich ändert, lädt sie im Hintergrund `/lage` und zeigt neue Mitteilungen,
+  Ziele und Gebiete als **lokale Mitteilung** (auch bei gesperrtem Handy). So entfällt die regelmäßige Abfrage von `/lage`
+  im Hintergrund, und es braucht keinen Push. Fehlt das Feld (älterer Server), bleibt die App beim bisherigen Verhalten.
 
 Nach erfolgreicher Antwort (200) löscht die App die gesendeten Positionen aus dem Puffer. Bei Netzfehler oder 5xx bleiben sie und werden beim nächsten Takt erneut gesendet.
 
 ### 4. `GET /status`
 
-Leichte Abfrage ohne GPS, im Modus `pause` alle `pauseCheckSec` Sekunden und beim App-Start. Antwort wie bei `/positions` (ohne `accepted`).
+Leichte Abfrage ohne GPS, im Modus `pause` alle `pauseCheckSec` Sekunden und beim App-Start. Antwort wie bei `/positions` (ohne `accepted`), also auch mit `lageStand`.
 
 ### 5. `mode` – was die App tun muss
 
@@ -107,7 +113,7 @@ Alles, was die Ansicht beim Öffnen braucht (Grundlage: heutige Team-Seite).
   "mode": "track",
   "serverZeit": "2026-10-28T09:15:00Z",
   "einsatz": { "text": "Vermisste Person · Testwald", "uebung": false, "staffel": "RHS Musterstadt" },
-  "team": { "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"] },
+  "team": { "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"], "einsatzart": "Flaeche" },
   "suche": { "status": "laeuft", "seit": "2026-10-28T08:40:00Z", "dauerSec": 2100, "darfSteuern": true },
   "suchgebiet": { "id": "…", "name": "Gebiet A", "farbe": "#2f6fd6", "punkte": [ { "lat": 49.31, "lng": 8.43 } ] },
   "halsband": { "id": "HB-7", "name": "Halsband 7", "lat": 49.312, "lng": 8.431, "zeit": "2026-10-28T09:14:48Z", "akku": 3 },
@@ -143,7 +149,7 @@ Alles, was die Ansicht beim Öffnen braucht (Grundlage: heutige Team-Seite).
 ```
 
 - `laufend`: Halsband-Track (`hund`) und Handy-Laufweg (`mensch`) der **laufenden** Suche dieses Teams, nach Zeit sortiert. Leer, wenn keine Suche läuft.
-- `abgeschlossen`: frühere Suchen dieses Teams im Einsatz. `art` ist `hund` oder `mensch`.
+- `abgeschlossen`: frühere Suchen dieses Teams im Einsatz. `art` ist `hund` oder `mensch`. Ab Server 1.17.0 je Suche `einsatzart` (EL-Rolle Abschnitt 10).
 - Mit `seit`: nur Punkte der laufenden Suche mit `t > seit`, `abgeschlossen` entfällt.
   Hinweis: Positionen, die erst nach einem Funkloch mit älterer Zeit eintreffen, liefert `seit` nicht nach.
   Deshalb lädt die App bei jedem `lage`-Ereignis und spätestens alle 5 Minuten einmal **ohne** `seit`.
@@ -320,6 +326,9 @@ Das Team setzt an seinem Standort einen **Punkt** (Fund, Hinweis), der bei der E
 { "id": "6f1c…-uuid-der-app", "text": "Fund: Jacke", "lat": 49.312345, "lng": 8.431234, "genauigkeit": 8, "zeit": "2026-10-31T09:12:03Z" }
 ```
 
+- `typ` (ab Server 1.17.0, optional): `hinweis` (Standard) oder `fund`. Ein Fund erscheint auf der Karte mit eigenem Symbol und
+  wird beim Einsatzende als Fundort vorgeschlagen (EL-Rolle Abschnitt 10). Unbekannter `typ` → `400`; ältere Server ignorieren das Feld.
+  Die App bietet beim Punkt „Fund“ und „Hinweis“ zur Auswahl an.
 - `text` Pflicht, höchstens 200 Zeichen. `lat`/`lng` Pflicht, gültiger Bereich. `genauigkeit` (Meter, optional) und `zeit`
   (Zeitpunkt der Ortung, UTC mit `Z`, optional; ohne Angabe = Eingang beim Server) aus der Ortung des Handys.
 - Die App nimmt die **aktuelle** Position (nicht älter als 60 s, sonst neu orten). Ohne Ortungsfreigabe gibt es den Knopf nicht.
@@ -348,6 +357,47 @@ Das Team setzt an seinem Standort einen **Punkt** (Fund, Hinweis), der bei der E
 - Bei Überschreitung antwortet nginx mit **429**. Die App zeigt dann „Zu viele Versuche, bitte kurz warten“ und versucht es frühestens nach 30 s erneut.
 - `/ereignisse` läuft über einen eigenen nginx-Block ohne Pufferung und mit langer Laufzeit.
 - Die App sendet nur an den `server` aus der Übergabe und nur über HTTPS.
+
+### 14. Packliste der Staffel (ab Server 1.16.0)
+
+Eine Checkliste „Was brauche ich für den Einsatz?“. Die Staffel gibt eine Packliste vor, jedes Mitglied hakt sie **nur auf
+seinem Gerät** ab und kann eigene Punkte dazunehmen. Die App erinnert in einstellbarem Abstand (Standard 14 Tage) mit einer
+lokalen Mitteilung daran, die Liste durchzugehen.
+
+**Nur die Staffel bearbeitet ihre Vorlage** (Einstellungen → Tracking-App, eine Zeile je Punkt, eine Zeile mit `:` am Ende
+beginnt eine Gruppe). In der App sind Punkte der Staffel nicht änderbar und nicht löschbar, nur abhakbar. Eigene Punkte legt
+das Mitglied in der App an, sie bleiben auf dem Gerät.
+
+**Keine Rückmeldung an die Staffel** (Entscheidung 16.11.2026): Es gibt keinen Endpunkt, der Abhak-Stand, eigene Punkte oder
+Erinnerungen entgegennimmt. Der Server erfährt nicht, wer die Liste geladen oder abgehakt hat.
+
+`server` (Abschnitt 10, in `GET /config` und `POST /login/teams`; bei der Einsatzleitung in `POST /login` und `POST /verlaengern`)
+enthält zusätzlich:
+
+```json
+"server": { "kennung": "…", "staffel": "RHS Musterstadt", "logoVersion": "…", "packlisteVersion": "9c1e2f7a0b3d4c55" }
+```
+
+- `packlisteVersion`: ändert sich genau dann, wenn die Staffel die Packliste ändert (Hash, 16 Zeichen); `null`, wenn keine
+  hinterlegt ist. Die App lädt die Liste nur neu, wenn sich die Version gegenüber ihrer gespeicherten Fassung ändert.
+
+`GET /packliste` (Team-Token) bzw. `GET /api/el/app/v1/packliste` (EL-Token), ungültiges Token → `410` + `stop`:
+
+```json
+{ "version": "9c1e2f7a0b3d4c55", "stand": "2026-11-16T20:00:00Z",
+  "punkte": [ { "id": "3fa1c2d4", "text": "Stirnlampe mit Ersatzakku", "gruppe": "Persönlich" },
+              { "id": "b07e9a11", "text": "Wasser und Napf", "gruppe": "Hund" } ] }
+```
+
+- `punkte` in der Reihenfolge der Staffel. `gruppe` ist `null` für Punkte vor der ersten Gruppe.
+- `id`: aus Gruppe und Text abgeleitet (8 Zeichen). Bleibt gleich, solange der Punkt gleich lautet; die App merkt sich den
+  Abhak-Stand je `id`. Ändert die Staffel den Text, gilt der Punkt als neu (nicht abgehakt).
+- Höchstens 200 Punkte, Text höchstens 200 Zeichen, Gruppe höchstens 60 Zeichen. Längeres kürzt der Server.
+- `404`, wenn keine Packliste hinterlegt ist.
+
+**Nur die Heimatstaffel:** Die App übernimmt die Vorlage nur von dem Server, dessen `kennung` sie als Heimatstaffel gespeichert
+hat (Abschnitt 10). Bei einem gemeinsamen Einsatz mit einer anderen Staffel bleibt die eigene Packliste. Die gespeicherte
+Vorlage bleibt nach dem Abmelden auf dem Gerät, damit Liste und Erinnerung auch ohne Einsatz funktionieren.
 
 ## Rolle Einsatzleitung
 
@@ -381,10 +431,19 @@ Der Server zeigt die jeweils neueste Position je Gerät; der Gerätename kommt a
 
 Die Position der Einsatzleitung wird nicht gespeichert und erscheint nicht im Bericht.
 
+Ab Server 1.18.0 (#79) tragen beide Antworten zusätzlich `mitteilungStand` (Zeichenkette, für die App undurchsichtig). Er ändert
+sich bei jeder neuen Mitteilung für die Einsatzleitung (Abschnitt 11 der nativen App). `uploadEverySec` ist dann 30 statt 60,
+damit Warnungen spätestens nach einer halben Minute ankommen.
+
 ### 3. `GET /logo`
 
 Wie in der Team-Rolle (Abschnitt 10), mit EL-Token, nur intern. Kennung und `logoVersion` liefert die native EL-Anmeldung (Phase 1b)
 im selben Objekt `server`. Bei Einsatzende verschwindet der Marker.
+
+### 4. `GET /packliste` (ab Server 1.16.0)
+
+Wie in der Team-Rolle (Abschnitt 14), mit EL-Token unter `/api/el/app/v1/packliste`, nur intern. `packlisteVersion` steht im
+Objekt `server` von `POST /login` und `POST /verlaengern`. Auch hier keine Rückmeldung an die Staffel.
 
 ## Rolle Einsatzleitung – native App (#125)
 
@@ -440,9 +499,58 @@ ohne das Staffel-Passwort erneut einzugeben. Antwort `200` wie `/login`, zusätz
 **Anmeldung per QR-Code** (Idee 6.3): Der Server zeigt unter Einstellungen → System → „EL-App anmelden“ einen QR-Code mit
 der internen Adresse, unter der die Einstellungen geöffnet sind: `https://<interne Adresse>/el` – **ohne Passwort und ohne Token**
 (mit der Handy-Kamera geöffnet ist es einfach die EL-Seite). Nur bei HTTPS, sonst zeigt der Server statt des Codes einen Hinweis.
+**Keine IP-Adresse** (ab Server 1.16.0): Sind die Einstellungen über eine IP-Adresse geöffnet (z. B. `https://10.10.0.1`), zeigt der
+Server keinen Code, sondern den Hinweis, die Seite über den Namen zu öffnen – das Zertifikat gilt nur für den Namen, die App bekäme
+sonst einen Zertifikatsfehler. Die App lehnt eine IP-Adresse im QR-Code und im Adressfeld der EL-Anmeldung mit einer klaren Meldung ab
+(„Bitte den Namen der internen Adresse eintragen, nicht die IP-Adresse“), auch bei Codes älterer Server.
 Die App erkennt im selben Scanner wie beim Team-Code eine `https://`-Adresse mit dem Pfad `/el` (Groß-/Kleinschreibung und
 `/` am Ende egal, Abfrageteil wird ignoriert), übernimmt daraus nur den Server, zeigt den Servernamen zur Bestätigung und fragt das
 Staffel-Passwort ab (`POST /login`). Ein Team-Code (`/team/login/…`) bleibt eine Team-Anmeldung. Keine neue Schnittstelle.
+
+### 4a. Wer bin ich: Person und Rolle (ab Server 1.17.0)
+
+Nach dem Passwort wählt die App aus den Stammdaten, wer sie bedient. Daraus folgt je Einsatz die Rolle (Entscheidung Paul 17.11.2026).
+Es geht nicht um Schutz vor Missbrauch (wer das Staffel-Passwort hat, könnte sich jeden Namen geben), sondern darum, dass mehrere
+EL-Handys im ELW sich nicht in die Quere kommen: nur die Einsatzleitung steuert und sendet ihren Standort.
+
+**`GET /personen`** (EL-Token): aktive Einträge der Stammdaten, nach Vorname:
+`{ "personen": [ { "personId": "…", "name": "Anna Berg", "einsatzleiter": true, "fuehrungsassistent": false } ] }`
+(`einsatzleiter`/`fuehrungsassistent` = Qualifikation laut Stammdaten, nur als Hinweis bei der Auswahl).
+
+**Feste Person am VPN-Gerät** (Einstellungen → System → VPN-Geräte, Spalte „Person (EL-App)“): Ist dem Gerät eine Person
+zugeordnet, gilt sie immer – `POST /login` stellt das Token gleich mit dieser Person aus und antwortet zusätzlich mit
+`"ich": { "personId", "name", "rolle", "fest": true }`; die App fragt dann nicht. Die Person des Geräts geht auch vor einer Person
+im Token (z. B. Token einer älteren App).
+
+**`POST /ich`** `{ "personId": "…" }` (nur ohne feste Person am Gerät): Person **einmal** wählen. Neues Token mit dieser Person
+(gleicher Ablauf, gleiche Anmeldung, also keine Verlängerung); das alte ist danach gesperrt wie bei `/verlaengern`. Antwort
+`{ "anmeldung": <wie /verlaengern>, "ich": { "personId", "name", "rolle" } }`. Unbekannte oder inaktive Person → `400`.
+**Kein Wechsel** (Entscheidung Paul 17.11.2026): Steht schon eine Person im Token oder am Gerät → `409`. Eine andere Person geht
+nur über Abmelden und neue Anmeldung mit dem Staffel-Passwort. Das Audit-Log nennt bei jeder Aktion Gerät und Person.
+`/verlaengern` behält die Person.
+
+**Rolle** (`ich.rolle`), bei jeder Anfrage neu aus dem laufenden Einsatz bestimmt (Vergleich mit dem Namen in den Einsatzdaten):
+
+| Rolle | wann | darf |
+|---|---|---|
+| `einsatzleiter` | Person = Einsatzleiter des laufenden Einsatzes | alles, sendet ihren Standort |
+| `fuehrungsassistent` | Person = Führungsassistent | alles, **sendet keinen Standort** |
+| `lesen` | sonst, und immer ohne laufenden Einsatz | nur lesen (Lage, Karte, Funk, Vermisste, Tracks, Bericht) |
+
+- Aktionen (Abschnitt 7) mit Rolle `lesen` → `403` + `{ "error" }`. Ausnahme `/einsatz/start`: ohne laufenden Einsatz darf jeder mit
+  EL-Zugang anlegen; wer sich dabei als Einsatzleiter einträgt, hat danach die Rolle `einsatzleiter`.
+- Standort: `GET /status` und `POST /positions` antworten bei `fuehrungsassistent` und `lesen` mit `mode = pause`; `POST /positions`
+  verwirft die Punkte dann (`accepted = 0`). Die App sendet in diesen Rollen nichts.
+- `GET /lage` enthält `"ich": { "personId": "…", "name": "Anna Berg", "rolle": "einsatzleiter" }`. Ändert sich der Einsatzleiter im
+  Monitor, gilt die neue Rolle ab der nächsten Anfrage; die App lädt `/lage` bei jedem Ereignis ohnehin neu.
+- **Ohne gewählte Person** (Apps vor 1.17.0, Token ohne Person, Gerät ohne feste Person): Rolle `einsatzleiter` wie bisher,
+  `ich.personId = null`. Die App ab 1.17.0 fragt nach der Anmeldung nach der Person, bevor sie die Lage zeigt – außer `/login`
+  brachte schon `ich` mit.
+- Mit Rolle `lesen` blendet die App Steuerknöpfe aus (Start, Aktionen, Beenden, Funk schreiben, Vermisste ändern), statt sie nur zu sperren.
+- Token-Format `e4.…` (mit Person); `e3` gilt weiter (ohne Person).
+
+**Ein Handy, zwei Rollen:** Ist auf dem Handy zusätzlich ein Team angemeldet, sendet es seinen Standort nur als Team (die Ortung der
+EL ruht), damit der Suchtrack nicht abreißt. Die App zeigt auf der Startseite beide Anmeldungen und oben immer, in welcher Rolle man ist.
 
 ### 5. `GET /lage`
 
@@ -452,7 +560,7 @@ Staffel-Passwort ab (`POST /login`). Ein Team-Code (`/team/login/…`) bleibt ei
   "einsatz": { "aktiv": true, "text": "Vermisste Person · Testwald", "stichwort": "…", "ort": "…", "szenario": "Flaeche",
                "uebung": false, "beginn": "…Z", "einsatzleiter": "…", "fuehrungsassistent": "…" },
   "teams": [ {
-      "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"],
+      "teamId": "…", "teamName": "Team Rex", "dogName": "Rex", "hundefuehrerName": "Anna", "helfer": ["Ben"], "einsatzart": "Flaeche",
       "suche": { "status": "laeuft", "seit": "…Z", "dauerSec": 2100 },
       "warnstufe": 0, "warnung1Min": 45, "warnung2Min": 60,
       "suchgebiet": { "id": "…", "name": "Gebiet A", "farbe": "#2f6fd6" },
@@ -477,10 +585,10 @@ Staffel-Passwort ab (`POST /login`). Ein Team-Code (`/team/login/…`) bleibt ei
 | `GET /tracks?seit=<unix-ms>` | wie Abschnitt 7 der Team-Rolle, aber `laufend` als Liste je Team: `[ { "teamId", "hund": […], "mensch": […] } ]`, `abgeschlossen` mit `teamId` |
 | `GET /notizen?vor=<id>&anzahl=50` | `{ "notizen": […], "weitere": true }` – Notizen und Funk wie in `/el`, **neueste zuerst**: `id`, `art` (`notiz` · `funk` · `status` · `system`), `text`, `zeit`, `von`, `teamId`, `loeschbar`, `antworten` `[ { "id", "text", "zeit", "von" } ]`. Blättern mit `vor` = älteste geladene `id`; `anzahl` höchstens 200 |
 | `GET /halsbaender` | `{ "frei": [ { "id", "name", "zeit", "akku" } ], "zuletzt": [ { "teamId", "halsbandId" } ] }` – freie Halsbänder für die Rückfrage beim Teamstart, dazu je Team das zuletzt benutzte (nur Teams, die schon eins hatten) |
-| `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen" } ]` |
+| `GET /einsatz/ergebnisse` | erlaubte Ergebnisse für das Einsatzende: `[ { "wert": "Uebung abgeschlossen", "anzeige": "Übung abgeschlossen", "fund": false } ]` – `fund` ab Server 1.17.0 (Abschnitt 10) |
 | `GET /einsatz/vorort` | Anwesenheit für das Einsatzende wie in `/el/beenden`: `{ "personal": [ { "id", "name", "vorausgewaehlt" } ], "hunde": [ { "id", "name", "vorausgewaehlt" } ] }` – nur aktive Einträge der Stammdaten, Personal nach Vorname, Hunde nach Name; `vorausgewaehlt` = in einem Team eingeteilt. Ab Server 1.14.1, ältere Server antworten `404` |
-| `GET /einsatz/bericht/{archivId}` | Einsatzbericht eines beendeten Einsatzes als PDF (`application/pdf`, Dateiname `einsatzbericht-<Einsatznummer>.pdf`), Inhalt wie der Download im Archiv. Optional `?karte=Streets` (`Streets` · `Topographic` · `Satellite`, Unbekanntes = `Streets`), `teams=<teamId>,<teamId>` (ohne = alle), `tracks=0` (ohne Tracks). `archivId` aus der Antwort von `/einsatz/beenden`. Unbekannt → `404` + `{ "error" }`, Fehler beim Erstellen `500` + `{ "error" }`. Abruf steht im Audit-Log. Ab Server 1.15.0, ältere Server antworten `404` |
-| `GET /einsatz/vorlage` | Auswahllisten wie in `/el/start`: `{ "aktiv", "szenarien": ["Mantrailer", …], "divera": [ { "id", "titel", "ort", "lat", "lng", "zeit" } ], "einsatzleiter": ["Anna Berg"], "fuehrungsassistenten": […], "ergebnisse": […], "kartenarten": [ { "wert": "Streets", "anzeige": "Straßenkarte" } ] }` – `divera` leer, wenn Divera nicht eingerichtet oder nicht erreichbar ist |
+| `GET /einsatz/bericht/{archivId}` | Einsatzbericht eines beendeten Einsatzes als PDF (`application/pdf`, Dateiname `einsatzbericht-<Einsatznummer>.pdf`), Inhalt wie der Download im Archiv. Optional `?karte=Streets` (`Streets` · `Topographic` · `Satellite`, Unbekanntes = `Streets`), `teams=<teamId>,<teamId>` (ohne = alle), `tracks=0` (ohne Tracks), ab Server 1.17.0 `abschnitte=` (Abschnitt 10). `archivId` aus der Antwort von `/einsatz/beenden`. Unbekannt → `404` + `{ "error" }`, Fehler beim Erstellen `500` + `{ "error" }`. Abruf steht im Audit-Log. Ab Server 1.15.0, ältere Server antworten `404` |
+| `GET /einsatz/vorlage` | Auswahllisten wie in `/el/start`: `{ "aktiv", "szenarien": ["Mantrailer", …], "divera": [ { "id", "titel", "ort", "lat", "lng", "zeit" } ], "einsatzleiter": ["Anna Berg"], "fuehrungsassistenten": […], "ergebnisse": […], "kartenarten": [ { "wert": "Streets", "anzeige": "Straßenkarte" } ], "alarmiertDurch": [ { "wert": "Polizei", "anzeige": "Polizei" } ] }` – `alarmiertDurch` ab Server 1.17.0 – `divera` leer, wenn Divera nicht eingerichtet oder nicht erreichbar ist |
 
 ### 7. Aktionen
 
@@ -501,8 +609,8 @@ und wiederholen.
 | `/vermisste/{profilId}/entfernen` | – | entfernen |
 | `/vermisste/{profilId}/checkliste` | `punktId`, `erledigt` (bei `typ = jaNein`) bzw. `wert` (bei `auswahl` und `text`) | Checklistenpunkt setzen, ohne `version` |
 | `/szenario` | `szenario` | Szenario des Einsatzes |
-| `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional) | wie `/el/start`; läuft schon ein Einsatz → `409` |
-| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null, "punkte": false }` – `kartenart`: `Streets` · `Topographic` · `Satellite`, sonst `400`; optional `personalIds`, `hundeIds` (IDs aus `/einsatz/vorort`) | wie `/el/beenden` |
+| `/einsatz/start` | `stichwort`, `ort`, `lat`/`lng` (optional), `szenario`, `uebung`, `einsatzleiter`, `fuehrungsassistent`, `diveraAlarmId` (optional); ab Server 1.17.0 `alarmiertDurch` und `melder` (Abschnitt 10) | wie `/el/start`; läuft schon ein Einsatz → `409` |
+| `/einsatz/beenden` | `ergebnis` (`wert` aus `/einsatz/ergebnisse`), `ressourcenGeprueft` (muss `true` sein), `pdf`: `{ "tracks": true, "kartenart": "Streets", "teamIds": null, "punkte": false }` – `kartenart`: `Streets` · `Topographic` · `Satellite` · ab Server 1.18.0 `Luftbild` (amtliche Luftbilder der Länder), sonst `400`; die Auswahl kommt aus `kartenarten` von `/einsatz/vorlage`. Ab Server 1.18.0 steht `Satellite` dort nur, wenn die Staffel einen Esri-Schlüssel eingetragen hat; ohne Schlüssel wird ein gesendetes `Satellite` als `Luftbild` gezeichnet; optional `personalIds`, `hundeIds` (IDs aus `/einsatz/vorort`); ab Server 1.17.0 `abschluss`, `unvollstaendigBestaetigt`, `pdf.abschnitte` (Abschnitt 10) | wie `/el/beenden` |
 
 Antwort jeder Aktion: `200` + `{ "doppelt": false, … }`, beim Anlegen mit der neuen Kennung des Objekts (z. B. `notizId`).
 
@@ -648,3 +756,122 @@ Die Grenze von 10 Verbindungen gilt **je Token**, nicht je Team. Bei Einsatzende
 
 1. diese Beschreibung, 2. `/login`, `/logout`, `/lage`, `/ereignisse`, 3. Team-Aktionen, Notizen, Funk, Mitteilung,
 4. Vermisste, Karte, Tracks, Halsbänder, 5. Einsatz starten und beenden. Bis ein Teil umgesetzt ist, antwortet sein Endpunkt `404`.
+
+### 10. Einsatzbericht: Einsatzart und Abschlussangaben (ab Server 1.17.0)
+
+Grundlage für den neuen Einsatzbericht. Ältere Server liefern die Felder nicht bzw. antworten `404`; die Apps blenden dann alles
+dazu aus und beenden wie bisher.
+
+**Alarmiert durch.** Pflichtfrage beim Anlegen (Monitor, `/el/start`, EL-App): `alarmiertDurch` = `Polizei` · `Feuerwehr` ·
+`Rettungsdienst` · `AndereStaffel`, dazu optional `melder` als Freitext (Stelle oder Name, höchstens 200 Zeichen).
+
+- `POST /einsatz/start` nimmt beide Felder. Die App fragt die Art immer ab, auch beim Start aus Divera: Der Divera-Melder wird
+  nur als Freitext übernommen, die Art wählt die Einsatzleitung. Unbekannter Wert → `400`. Ohne Feld (Apps vor 1.17.0) startet
+  der Server trotzdem; die Art fehlt dann und wird beim Einsatzende abgefragt.
+- `/lage` (EL-Rolle) zeigt `einsatz.alarmiertDurch` (`null` = noch nicht gewählt), `/einsatz/vorlage` die Liste `alarmiertDurch`.
+
+**Polizeiangaben** (Vorgangsnummer, Polizeikontakt) sind nur gefragt, wenn der Einsatz von der Polizei alarmiert wurde – bei
+Übungen nie. Im Beenden-Dialog gibt es dazu „Keine Polizei beteiligt“ (`keinePolizei`): Dann gelten die Polizeiangaben als
+erledigt, und der Bericht zeigt „keine Polizei beteiligt“ statt leerer Felder.
+
+**Einsatzart.** `einsatzart` steht am Team in `/lage` (beide Rollen) und je Suche in `/tracks` → `abgeschlossen[]`:
+`Flaeche` · `Truemmer` · `Mantrailer` · `Wasser` · `Lawine` oder `null` (nicht festgelegt).
+
+- Festgelegt wird sie im Monitor-Teamdialog („Eingesetzt als“), Auswahl aus den Spezialisierungen des Hundes laut Stammdaten.
+  Hat der Hund genau eine davon, ist sie vorausgewählt. In den Apps nur Anzeige auf der Teamkarte; ändern nur im Abschluss (unten).
+- Beim Start jeder Suche speichert der Server die dann gültige Einsatzart an der Suche. Spätere Änderungen am Team ändern
+  abgeschlossene Suchen nicht – außer im Abschluss: dort füllt die Einsatzart des Teams alle Suchen des Teams ohne Einsatzart.
+- Änderung → `team` (EL-Rolle) bzw. `lage` (Team-Rolle).
+
+**Trail** = Suche mit `einsatzart = Mantrailer`. Für Trails kennt der Bericht Start, Ende der Spur (letzter Punkt), Länge und Dauer
+aus dem Track; Abbruchgrund und Geruchsartikel kommen aus dem Abschluss.
+
+**`GET /einsatz/abschluss`** (EL-Rolle) – alles, was der Beenden-Dialog abfragt, mit den aktuellen Werten:
+
+```json
+{
+  "uebung": false,
+  "alarmiertDurch": "Polizei",
+  "keinePolizei": false,
+  "polizeiGefragt": true,
+  "vorgangsnummer": "",
+  "melder": "PI Dortmund-Nord",
+  "polizei": { "name": "PHK Meier", "dienstnummer": "", "telefon": "0621 …" },
+  "fund": { "zeit": null, "lat": null, "lng": null, "ort": "", "uebergabeAn": "", "teamId": null,
+            "vorschlag": { "lat": 49.312, "lng": 8.431, "zeit": "…Z", "teamId": "…" } },
+  "teams": [ { "teamId": "…", "teamName": "Team Rex", "einsatzart": null, "erlaubt": ["Flaeche", "Mantrailer"] } ],
+  "trails": [ { "sucheId": "…", "teamId": "…", "teamName": "Team Rex", "beginn": "…Z", "ende": "…Z",
+                "abbruchgrund": "", "geruchsartikel": "" } ],
+  "abbruchgruende": ["Person gefunden", "Spur verloren", "Hund erschöpft", "Abbruch durch Einsatzleitung", "Gefahr im Gelände"],
+  "fehlend": ["vorgangsnummer", "teams", "trails"]
+}
+```
+
+- `melder` = Stelle oder Name zu „Alarmiert durch“ (Freitext, optional), `polizei` = Polizeikontakt wie in `/vermisste`.
+- `polizeiGefragt`: `true`, wenn Vorgangsnummer und Polizeikontakt abgefragt werden (Einsatz, `alarmiertDurch = Polizei`,
+  nicht `keinePolizei`). Die App blendet die Polizeifelder sonst aus oder zeigt sie als freiwillig.
+- `fund.teamId`: Team, das gefunden hat („Gefunden durch“ im Bericht); der Vorschlag bringt es mit.
+- `fund.vorschlag`: jüngster Kartenpunkt mit `typ = fund` (Team-Rolle Abschnitt 13, im Monitor ebenso setzbar), sonst `null`. Die App übernimmt ihn nur auf Wunsch.
+- `abbruchgruende`: feste Liste für `trails[].abbruchgrund`, in den Server-Einstellungen anpassbar (oben die Vorgabe).
+  Ein gespeicherter Grund bleibt, auch wenn er später aus der Liste entfernt wird.
+- `teams[].erlaubt`: Spezialisierungen des Hundes, die als Einsatzart in Frage kommen; leer = alle fünf.
+- `fehlend`: Angaben, die noch leer sind – `alarmiertDurch` (nur Einsätze), `vorgangsnummer` und `polizei` (Name leer; beide nur
+  bei `polizeiGefragt`), `teams` (ein Team ohne Einsatzart), `trails` (ein Trail ohne Abbruchgrund oder Geruchsartikel). `fund` steht nie darin, weil es vom Ergebnis abhängt: Die App fragt
+  den Fund ab, wenn das gewählte Ergebnis `fund: true` hat (neu in `/einsatz/ergebnisse`).
+- Kein laufender Einsatz → `409`.
+
+**`POST /einsatz/beenden`** bekommt zusätzlich, alles optional:
+
+- `abschluss`: `{ "alarmiertDurch", "keinePolizei", "vorgangsnummer", "melder", "polizei": { "name", "dienstnummer", "telefon" }, "fund": { "zeit", "lat", "lng", "ort", "uebergabeAn", "teamId" },
+  "teams": [ { "teamId", "einsatzart" } ], "trails": [ { "sucheId", "abbruchgrund", "geruchsartikel" } ] }`.
+  Fehlende Felder bleiben, wie sie sind; Texte höchstens 200 Zeichen. `abbruchgrund` muss aus `abbruchgruende` sein. `fund.zeit` in UTC wie `endzeit`. Unbekannte `teamId`/`sucheId`
+  oder eine `einsatzart` außerhalb der Liste → `400`. Der Server speichert die Angaben vor dem Beenden.
+- `unvollstaendigBestaetigt`: Fehlt danach noch etwas (wie `fehlend`, dazu `fund` bei einem Ergebnis mit `fund: true`), antwortet
+  der Server bei `false` mit `409` + `{ "error", "fehlend": [ … ] }` und beendet nicht. So bestätigt die Einsatzleitung ausdrücklich.
+  Ab 1.17.0 schickt die App das Feld immer (erst `false`, nach der Bestätigung `true`); ohne das Feld (ältere Apps) beendet der Server wie bisher.
+- `pdf.abschnitte`: Abschnitte des Berichts, `null` = alle: `vermisste` · `zeitleiste` · `teams` · `karten` · `tracks` · `funk` · `vorort`.
+  Seite 1 (Kopf, Ergebnis, Polizei) ist immer dabei. `pdf.tracks = false` entspricht `tracks` nicht in der Liste (bleibt für ältere Apps).
+  `GET /einsatz/bericht/{archivId}` nimmt dieselbe Liste als `?abschnitte=vermisste,teams,…`.
+
+Nach dem Beenden ist der Einsatz nicht mehr änderbar, auch nicht diese Angaben. Flächenabdeckung steht in keinem Bericht.
+
+### 11. Mitteilungen im Hintergrund (ab Server 1.18.0, #79)
+
+Ohne Push: Solange ein Einsatz läuft und die Person **Einsatzleiter** ist (`mode = track` in `/status` bzw. `/positions`), hält die
+Hintergrund-Ortung die App wach. Bei jeder Antwort vergleicht die App `mitteilungStand` mit dem gemerkten Wert; nur wenn er sich
+ändert, holt sie die neuen Mitteilungen und zeigt sie als **lokale Mitteilung** (auch bei gesperrtem Handy). Führungsassistent und
+Nur lesen bekommen `mode = pause` und damit keinen Hintergrundmodus; im Vordergrund sehen sie alles über `/ereignisse`.
+
+`GET /mitteilungen?seit=<mitteilungStand>`
+
+```json
+{ "stand": "a1-17", "mitteilungen": [
+  { "id": "a1-16", "art": "zeitwarnung", "stufe": 2, "teamId": "…", "text": "Team Rex: 60 min Suchzeit erreicht", "zeit": "…Z" },
+  { "id": "a1-17", "art": "gebiet", "stufe": 2, "teamId": "…", "text": "Team Rex: Hund hat das Suchgebiet verlassen", "zeit": "…Z" }
+] }
+```
+
+| `art` | Anlass | `stufe` |
+|---|---|---|
+| `zeitwarnung` | Team erreicht die erste bzw. zweite Warnzeit | 1 oder 2 |
+| `funkstille` | Handy oder Halsband eines Teams sendet nicht mehr | 2 |
+| `gebiet` | Hund (Halsband) hat das zugewiesene Suchgebiet verlassen | 2 |
+| `fund` | Team meldet über die App einen Fund | 2 |
+| `funk` | neuer Funkspruch eines Teams (ohne Inhalt) | 1 |
+| `status` | Statusmeldung eines Teams bzw. Suche gestartet, Kurzpause, beendet | 1 |
+| `akku` | Akku von Handy oder Halsband eines Teams niedrig | 1 |
+| `einsatzende` | Einsatz beendet (`teamId = null`) | 1 |
+
+- Neueste zuletzt, höchstens 50 je Antwort; `stand` ist der neue Wert zum Merken. Der Server hält die Mitteilungen nur im
+  Arbeitsspeicher (die letzten 200) und leert sie beim Einsatzstart.
+- Unbekannter oder fehlender `seit` (erste Abfrage, Server neu gestartet): leere Liste und aktueller `stand`. So kommt keine Flut alter Mitteilungen.
+- `text` ist knapp und enthält nur den Teamnamen: **keine** Namen von Vermissten, keine Ortsangaben, keinen Funk- oder Fundinhalt.
+  Die App darf ihn so auf dem Sperrbildschirm zeigen.
+- Gleiche Rolle wie Abschnitt 4a: abrufbar mit jedem gültigen EL-Token; ohne laufenden Einsatz leere Liste.
+- Die App stellt **je Art** ein, ob sie eine Mitteilung zeigt. Standard an: `zeitwarnung` nur Stufe 2, `funkstille`, `gebiet`, `fund`;
+  aus: `zeitwarnung` Stufe 1, `funk`, `status`, `akku`, `einsatzende`. Dazu ein Hauptschalter „Mitteilungen im Hintergrund“ (Standard an).
+- Wechselt `mode` von `track` auf `pause` (Einsatzende, Rolle gewechselt), holt die App noch einmal `/mitteilungen` und beendet dann
+  die Ortung. Abmelden beendet sie sofort.
+- Ist auf dem Handy auch ein Team angemeldet, ruht die EL-Ortung (Abschnitt 4a); die App fragt dann im Takt der Team-Ortung
+  `GET /status` der EL ab und zeigt die EL-Mitteilungen trotzdem.
+- Ältere Server liefern kein `mitteilungStand`: die App bleibt beim bisherigen Verhalten (keine EL-Mitteilungen im Hintergrund).

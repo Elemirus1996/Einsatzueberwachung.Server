@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hook fuer certbot (DNS-Pruefung) beim Zertifikat der internen Adresse, z. B. el.dein-einsatz.mywire.org:
+# Hook fuer certbot (DNS-Pruefung) beim Zertifikat der internen Adresse, z. B. el.staffel-musterstadt.mywire.org:
 # setzt bzw. loescht den TXT-Eintrag _acme-challenge.<name> ueber die Dynu-API v2.
 # Eingerichtet von setup-intern-zertifikat.sh; der API-Key steht root-eigen in /etc/einsatzueberwachung/dynu.conf.
 #
@@ -47,7 +47,7 @@ json() { # $1 Python-Ausdruck auf j (geparste Antwort von stdin)
 	python3 -c "import json,sys; j=json.load(sys.stdin); print($1)"
 }
 
-# Domain bei Dynu (z. B. dein-einsatz.mywire.org) und Knotenname des TXT-Eintrags (z. B. _acme-challenge.el)
+# Domain bei Dynu (z. B. staffel-musterstadt.mywire.org) und Knotenname des TXT-Eintrags (z. B. _acme-challenge.el)
 WURZEL="$(api GET "/dns/getroot/$DOMAIN")"
 DNS_ID="$(json 'j["id"]' <<<"$WURZEL")"
 WURZELNAME="$(json 'j["domainName"]' <<<"$WURZEL")"

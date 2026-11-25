@@ -50,7 +50,7 @@ namespace Einsatzueberwachung.Domain.Services
                         table.Cell().Element(c => RowCell(c, bg)).Text(track.CollarName).FontSize(9);
                         table.Cell().Element(c => RowCell(c, bg)).Text(string.IsNullOrWhiteSpace(track.SearchAreaName) ? "-" : track.SearchAreaName).FontSize(9);
                         table.Cell().Element(c => RowCell(c, bg)).AlignCenter().Text(track.FormattedDistance).FontSize(9);
-                        table.Cell().Element(c => RowCell(c, bg)).AlignCenter().Text(track.FormattedDuration).FontSize(9);
+                        table.Cell().Element(c => RowCell(c, bg)).AlignCenter().Text(FormatTimeSpan(track.Duration)).FontSize(9);
                         table.Cell().Element(c => RowCell(c, bg)).AlignCenter().Text($"{track.Points.Count}").FontSize(9);
                         table.Cell().Element(c => RowCell(c, bg)).AlignCenter().Text(track.CapturedAt.ToString("HH:mm")).FontSize(9);
 
@@ -70,7 +70,7 @@ namespace Einsatzueberwachung.Domain.Services
                             row.ConstantItem(14).Height(14).Svg(BuildColorDotSvg(track.Color));
                             row.AutoItem().PaddingLeft(6).AlignMiddle().Text($"{track.TeamName} — {track.CollarName}")
                                 .FontSize(11).Bold();
-                            row.RelativeItem().AlignRight().AlignMiddle().Text($"{track.FormattedDistance}  |  {track.FormattedDuration}")
+                            row.RelativeItem().AlignRight().AlignMiddle().Text($"{track.FormattedDistance}  |  {FormatTimeSpan(track.Duration)}")
                                 .FontSize(9).FontColor(Colors.Grey.Darken1);
                         });
 

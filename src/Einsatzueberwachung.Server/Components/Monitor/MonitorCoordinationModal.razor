@@ -3,7 +3,7 @@
     var policeItems = Items.Where(item => !item.IsBos).ToArray();
     var bosItems = Items.Where(item => item.IsBos).ToArray();
     <div class="modal-overlay">
-        <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
+        <div class="modal-overlay-dismiss" aria-hidden="true"></div>
         <div id="coordination-modal"
              class="modal-modern modal-modern--640"
              role="dialog"

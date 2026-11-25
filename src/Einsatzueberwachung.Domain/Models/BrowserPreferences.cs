@@ -61,6 +61,9 @@ namespace Einsatzueberwachung.Domain.Models
     /// </summary>
     public class KeyboardShortcutPreferences
     {
+        /// <summary>Alle Tastenkürzel in diesem Browser aus (alle Seiten, auch der Stepper auf „Neuer Einsatz“)</summary>
+        public bool Ausgeschaltet { get; set; }
+
         public string NavHome      { get; set; } = "ctrl+h";
         public string NavKarte     { get; set; } = "ctrl+m";
         public string NavMonitor   { get; set; } = "ctrl+n";

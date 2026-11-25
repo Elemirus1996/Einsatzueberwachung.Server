@@ -1,5 +1,7 @@
 (function () {
     let initialized = false;
+    // Schalter „Tastenkürzel ausschalten“ in den Einstellungen (gilt fuer alle Seiten dieses Browsers)
+    let _aus = false;
     let _cfg = {
         navHome:    'ctrl+h',
         navKarte:   'ctrl+m',
@@ -30,6 +32,7 @@
     }
 
     function onKeyDown(event) {
+        if (_aus) return;
         if (matches(event, _cfg.navHome)) {
             event.preventDefault();
             navigate('/');
@@ -47,7 +50,9 @@
 
     window.keyboardShortcuts = {
         configure: function (shortcuts) {
-            _cfg = Object.assign({}, _cfg, shortcuts);
+            const { aus, ...kuerzel } = shortcuts || {};
+            _aus = aus === true;
+            _cfg = Object.assign({}, _cfg, kuerzel);
         }
     };
 

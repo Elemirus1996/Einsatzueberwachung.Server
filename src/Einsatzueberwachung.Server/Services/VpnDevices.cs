@@ -144,6 +144,18 @@ public sealed class VpnDeviceStore
         lock (_lock) { _data.Devices.Add(device); Save(); }
     }
 
+    /// <summary>Person aus den Stammdaten, die dieses Geraet bedient (EL-App, APP_API EL Abschnitt 4a); null = keine</summary>
+    public void SetPerson(string publicKey, string? personId)
+    {
+        lock (_lock)
+        {
+            var geraet = _data.Devices.FirstOrDefault(d => d.PublicKey == publicKey);
+            if (geraet is null) return;
+            geraet.PersonId = string.IsNullOrWhiteSpace(personId) ? null : personId;
+            Save();
+        }
+    }
+
     public void Remove(string publicKey)
     {
         lock (_lock) { _data.Devices.RemoveAll(d => d.PublicKey == publicKey); Save(); }
@@ -170,6 +182,8 @@ public sealed class VpnDevice
     public string Ip { get; set; } = string.Empty;
     public DateTime CreatedUtc { get; set; }
     public DateTime? ExpiresUtc { get; set; }
+    /// <summary>Feste Person fuer die EL-App auf diesem Geraet; null = bei der Anmeldung einmal waehlen</summary>
+    public string? PersonId { get; set; }
 }
 
 /// <summary>Neues Geraet: Konfiguration (mit privatem Schluessel) nur fuer die einmalige Anzeige als QR-Code.</summary>

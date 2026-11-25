@@ -415,6 +415,115 @@ sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.example.org</pre>
 <!-- CHANGELOG_START -->
 <details class="changelog-entry" open>
   <summary>
+    <span class="changelog-version">v1.17.0</span>
+    <span class="changelog-date">17.11.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
+<h4>Neuer Einsatzbericht</h4>
+<ul>
+<li>Der Bericht beginnt mit einer <strong>Übersichtsseite für Polizei und Behörde</strong>: Einsatznummer, Vorgangsnummer der Polizei, Datum und Art, das Ergebnis mit Fundzeit, Fundort (WGS84 und UTM), „Gefunden durch“ und Übergabe, dazu Polizeikontakt, vermisste Person, zeitlicher Ablauf, Suche je Team, Trails, eingesetzte Kräfte und ein Feld für die Unterschrift der Einsatzleitung.</li>
+<li><strong>Folgeseiten:</strong> Übersichtskarte aller Suchgebiete und Tracks mit Legende in den Teamfarben, eine Karte je Trail mit Start und Ende der Spur, Track-Tabelle, Teams, Vor Ort sowie Funk und Notizen (ohne Timer-, System- und Testeinträge). Alle Karten haben Nordpfeil und Maßstab.</li>
+<li><strong>Flächenabdeckung steht nicht mehr im Bericht.</strong> Im Monitor bleibt sie wie bisher.</li>
+<li>Beim Beenden lassen sich <strong>Abschnitte des Berichts an- und abwählen</strong> (Vermisste, Zeitlicher Ablauf, Suche je Team, Karten, Funk und Notizen, Vor Ort). Kopf, Ergebnis und Polizei stehen immer drin.</li>
+</ul>
+<h4>„Eingesetzt als“ je Team</h4>
+<ul>
+<li>Im Teamdialog des Monitors wählt ihr, als was ein Team eingesetzt ist: Fläche, Trümmer, Mantrailer, Wasser oder Lawine. Zur Auswahl stehen die Spezialisierungen des Hundes laut Stammdaten; hat er genau eine, ist sie vorausgewählt.</li>
+<li>Die Einsatzart wird beim Start jeder Suche festgehalten. So weiß der Bericht für jede Suche, ob es ein Trail oder eine Flächensuche war.</li>
+</ul>
+<h4>„Alarmiert durch“ ist jetzt Pflicht</h4>
+<ul>
+<li>Beim Anlegen eines Einsatzes wählt ihr, wer alarmiert hat: Polizei, Feuerwehr, Rettungsdienst oder andere Rettungshundestaffel. Stelle oder Name könnt ihr zusätzlich eintragen. Beim Start aus Divera wird der Melder übernommen, die Auswahl trefft ihr selbst.</li>
+</ul>
+<h4>Beenden fragt alle offenen Angaben ab</h4>
+<ul>
+<li>Der Dialog „Einsatz beenden“ zeigt einen Block „Angaben für den Bericht“: Alarmiert durch, Vorgangsnummer und Polizeikontakt (nur wenn die Polizei alarmiert hat, nie bei Übungen), bei einem Fund Fundzeit, Fundort, „Gefunden durch“ und Übergabe, „Eingesetzt als“ je Team und für jeden Trail Abbruchgrund und Geruchsartikel.</li>
+<li>Fehlt etwas, nennt der Dialog es. Beenden geht trotzdem, aber nur mit dem Haken „Trotzdem ohne diese Angaben beenden“. <strong>Nach dem Beenden ist nichts mehr änderbar</strong> – deshalb jetzt die Nachfrage, gerade wenn die Polizei die Vorgangsnummer erst spät nennt.</li>
+<li>Dasselbe gilt für „Einsatz beenden“ in der Einsatzleitung im Browser (Tablet/Handy, <code>/el/beenden</code>).</li>
+<li>„Keine Polizei beteiligt“ ankreuzen, wenn das zutrifft: Dann entfallen die Polizeiangaben, und der Bericht nennt es so.</li>
+<li>Die <strong>Abbruchgründe für Trails</strong> stehen unter Einstellungen → Einsatzbetrieb und lassen sich dort anpassen.</li>
+</ul>
+<h4>Fund-Punkt aus der App</h4>
+<ul>
+<li>Teams können in der App einen Punkt als <strong>Fund</strong> setzen. Er erscheint im Monitor rot mit Warnhinweis und wird beim Beenden als Fundort vorgeschlagen („Fund-Punkt übernehmen“). Dafür braucht es die neue App-Version.</li>
+</ul>
+<h4>EL-App: Wer bin ich, wer darf was</h4>
+<ul>
+<li>Unter Einstellungen → System → VPN-Geräte ordnet ihr jedem Gerät seine Person zu (z. B. „Handy Paul“ → Paul Richter). Dann meldet sich die App dort immer als diese Person an. Ohne Zuordnung wählt man die Person einmal nach der Anmeldung; ein Wechsel geht nur über Abmelden und neu Anmelden. Das Audit-Log nennt bei jeder Aktion Gerät und Person.</li>
+<li>Daraus folgt die Rolle im laufenden Einsatz: Der <strong>Einsatzleiter</strong> steuert und sendet seinen Standort, der <strong>Führungsassistent</strong> steuert ohne Standort, <strong>alle anderen lesen nur</strong> (Lage, Karte, Funk, Vermisste) und senden keinen Standort. So kommen sich mehrere EL-Handys im ELW nicht in die Quere.</li>
+<li>Wechselt im Monitor der Einsatzleiter, gilt die neue Rolle sofort. Einen Einsatz anlegen darf jeder mit EL-Zugang.</li>
+<li>Dafür braucht es die neue App-Version. Ältere Apps arbeiten wie bisher mit vollen Rechten.</li>
+<li>Die <strong>Einsatzleitung im Browser</strong> (<code>/el</code>, für Geräte ohne App) ist nicht mehr in der Seitenleiste verlinkt. Wie man sie erreicht, steht in der Hilfe.</li>
+</ul>
+<h4>Einstellungen</h4>
+<ul>
+<li>Datenschutzerklärung für die App, Packliste und Löschfristen stehen jetzt unter Einstellungen → <strong>Staffel</strong>.</li>
+<li>Unter Einstellungen → System → Updates stehen die <strong>Versionshinweise</strong> der neuesten Version – bei einem verfügbaren Update vor dem Installieren, sonst für die installierte Version.</li>
+</ul>
+<h4>Behoben</h4>
+<ul>
+<li>Fenster (Team anlegen, Einsatz beenden, Vermisste, Stammdaten usw.) schließen sich <strong>nicht mehr durch einen Klick daneben</strong>, sondern nur noch über ihre Knöpfe. So gehen keine Eingaben mehr verloren.</li>
+<li>Der Monitor zeigt beim schnellen Wechsel zu anderen Seiten und zurück nicht mehr den Balken „Ein Fehler ist aufgetreten“.</li>
+</ul>
+<h4>Technik</h4>
+<ul>
+<li>Schnittstelle erweitert (Beschreibung in <code>docs/APP_API.md</code>, Einsatzleitung Abschnitt 10): <code>einsatzart</code> in <code>/lage</code> und <code>/tracks</code>, <code>typ</code> bei <code>POST /punkt</code>, <code>alarmiertDurch</code> und <code>melder</code> bei <code>/einsatz/start</code>, neu <code>GET /einsatz/abschluss</code>, bei <code>/einsatz/beenden</code> die Felder <code>abschluss</code>, <code>unvollstaendigBestaetigt</code> und <code>pdf.abschnitte</code>, bei <code>/einsatz/bericht</code> der Parameter <code>abschnitte</code>. Ältere Apps laufen weiter wie bisher; die neuen Angaben werden dann im Monitor beim Beenden abgefragt.</li>
+<li>EL-App: neu <code>GET /personen</code> und <code>POST /ich</code>, <code>ich</code> mit <code>rolle</code> in <code>/lage</code>, Aktionen mit Rolle <code>lesen</code> → <code>403</code>, Standort nur vom Einsatzleiter (<code>docs/APP_API.md</code>, Einsatzleitung Abschnitt 4a).</li>
+<li>Keine neuen Pakete, keine nginx-Änderung, keine Datenmigration. Neue Einstellungen werden beim ersten Speichern angelegt.</li>
+</ul></div>
+</details>
+<details class="changelog-entry">
+  <summary>
+    <span class="changelog-version">v1.16.0</span>
+    <span class="changelog-date">16.11.2026</span>
+    <span class="changelog-name"></span>
+  </summary>
+  <div class="changelog-body"><h4>Neu</h4>
+<h4>Neues Logo</h4>
+<ul>
+<li>Einsatzüberwachung hat ein neues Logo: rote Pfote im gestrichelten Suchkreis. Es erscheint als Favicon, als Symbol auf dem Home-Bildschirm (PWA), in der Navigation und groß unter Einstellungen → System.</li>
+<li>Die PDF-Berichte tragen unten rechts das Logo „Einsatzüberwachung“, damit man sieht, womit sie erstellt wurden.</li>
+<li>Browser und installierte Web-Apps speichern Symbole zwischen. Das neue Symbol erscheint ggf. erst nach dem Neuladen bzw. nach erneutem Hinzufügen zum Home-Bildschirm.</li>
+</ul>
+<h4>Packliste für die App</h4>
+<ul>
+<li>Neu unter Einstellungen → Einsatzbetrieb: „Packliste für die App“. Die Staffel trägt ein, was jedes Mitglied für einen Einsatz dabeihaben sollte (eine Zeile je Punkt, eine Zeile mit Doppelpunkt am Ende beginnt eine Gruppe, z. B. „Hund:“).</li>
+<li>Die App EinsatzSpur zeigt die Liste, lässt sie abhaken und erinnert regelmäßig daran (wählbar: nie, alle 7, 14 oder 30 Tage). Mitglieder können eigene Punkte ergänzen, die Punkte der Staffel ändert nur die Staffel.</li>
+<li><strong>Der Server erfährt nicht, was abgehakt ist.</strong> Abhaken, eigene Punkte und Erinnerung bleiben auf dem Handy.</li>
+<li>Die Mitglieder bekommen die Liste bei der nächsten Anmeldung an einem Einsatz oder einer Übung eurer Staffel (als Team oder Einsatzleitung). Dafür braucht es die neue App-Version.</li>
+</ul>
+<h4>Tastenkürzel abschaltbar</h4>
+<ul>
+<li>Neu unter Einstellungen → Tastenkürzel: „Tastenkürzel ausschalten“. Gilt für alle Seiten in diesem Browser, z. B. wenn Strg+N/Strg+T wie gewohnt ein Fenster bzw. einen Tab öffnen sollen. Die Belegung bleibt erhalten.</li>
+</ul>
+<h4>Einsatzbericht korrigiert</h4>
+<ul>
+<li><strong>„Alarmiert durch“:</strong> Der eingetragene Melder (Polizei, Leitstelle …) wurde beim Start durch die Alarmzeit ersetzt. Jetzt bleibt der Melder erhalten. In älteren Berichten, in denen dort nur eine Uhrzeit steht, entfällt die Zeile.</li>
+<li><strong>Notizen:</strong> Kein Kästchen mehr vor „Koordinaten-Marker“, keine doppelte Uhrzeit mehr („[19:31]“ steht schon in der Spalte Zeit).</li>
+<li><strong>Dauer</strong> überall gleich geschrieben: „45 s“, „4 min 43 s“, „1 h 05 min“.</li>
+<li><strong>Karte der Flächenabdeckung:</strong> Steht der ELW weit vom Suchgebiet entfernt, zeigt die Karte trotzdem das Suchgebiet statt eines großen Ausschnitts mit kaum sichtbarem Gebiet.</li>
+<li>Spaltenköpfe und Status der Suchgebiete brechen nicht mehr mitten im Wort um; „Person gefunden – lebend“ einheitlich.</li>
+</ul>
+<h4>EL-App per QR-Code: nicht mehr mit IP-Adresse</h4>
+<ul>
+<li>Sind die Einstellungen über eine IP-Adresse geöffnet (z. B. <code>https://10.10.0.1</code>), zeigt der Server unter „EL-App anmelden“ keinen QR-Code mehr, sondern den Hinweis, die Seite über den Namen der internen Adresse zu öffnen. Mit der IP-Adresse konnte sich die App nicht anmelden (Zertifikat gilt nur für den Namen).</li>
+<li>Die neue App lehnt eine IP-Adresse im Adressfeld und im QR-Code mit einem klaren Hinweis ab.</li>
+</ul>
+<h4>Technik</h4>
+<ul>
+<li>Schnittstelle erweitert: <code>server.packlisteVersion</code>, <code>GET /packliste</code> (Team und Einsatzleitung). Beschreibung in <code>docs/APP_API.md</code>. Ältere Apps laufen weiter wie bisher.</li>
+<li>Keine neuen Pakete, keine nginx-Änderung, keine Datenmigration. Neue Einstellungen werden beim ersten Speichern angelegt.</li>
+</ul>
+<h4>Einspielen</h4>
+<p><strong>Nur, wenn gerade kein Einsatz läuft.</strong></p>
+<p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.16.0“.</p>
+<p>2. Keine weiteren Schritte.</p>
+<p>3. <strong>Wer 1.15.0 oder 1.14.0 übersprungen hat:</strong> zuerst die einmaligen Schritte aus deren Release-Notes ausführen.</p>
+<p>4. Optional: Packliste unter Einstellungen → Einsatzbetrieb eintragen.</p></div>
+</details>
+<details class="changelog-entry">
+  <summary>
     <span class="changelog-version">v1.15.0</span>
     <span class="changelog-date">15.11.2026</span>
     <span class="changelog-name"></span>
@@ -670,46 +779,6 @@ sudo systemctl restart systemd-journald
 <p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.11.11“.</p>
 <p>2. Keine Änderung an nginx nötig (gegenüber 1.11.10).</p>
 <p>3. Kurz prüfen, ob PDF und Karten weiter funktionieren, weil die Grafikbibliothek aktualisiert wurde: im Archiv bei einem Einsatz „PDF“ öffnen, die Karte muss erscheinen.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.10</span>
-    <span class="changelog-date">28.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Neu: Schnittstelle für die eigene App (Test auf dem iPhone)</h4>
-<ul>
-<li><strong>Team-Anmeldung in der App</strong> mit dem bekannten Anmelde-Code aus dem Team-QR-Code des Monitors, jetzt auch in <strong>Übungen</strong> (bisher gab es den Code nur bei Einsätzen; das gilt auch für die Team-Seite im Browser).</li>
-<li><strong>Native Team-Ansicht:</strong> Die App bekommt Einsatz, Team, Suchstatus und -zeit, Suchgebiet, Halsband-Position, Laufwege und Mitteilungen der Einsatzleitung. Sie sendet die Statusmeldungen („im Suchgebiet eingetroffen“, „Pause“, „Funkkontakt benötigt“, „Auftrag beendet“). Änderungen kommen live.</li>
-<li><strong>Mitteilungen der Einsatzleitung an ein Team</strong> werden gespeichert (die letzten 20 je Team), damit die App sie nach einem Funkloch nachholt.</li>
-<li>Die App ortet nur während der Suche und hört nach dem Einsatz von selbst auf.</li>
-</ul>
-<h4>Einspielen</h4>
-<p><strong>Nur, wenn gerade kein Einsatz läuft.</strong></p>
-<p>1. Update wie gewohnt über den Browser (Einstellungen → System). Danach steht dort „1.11.10“.</p>
-<p>2. <strong>nginx-Vorlage übernehmen.</strong> Sie enthält drei neue Blöcke für die App: Anmeldung mit strengem Limit, Positionen und Abfragen, Live-Verbindung ohne Pufferung.</p>
-<pre><code>
-   cd &lt;Repository-Kopie auf dem Server&gt; &amp;&amp; git pull
-   sudo cp deploy/nginx/einsatzueberwachung-public.conf /etc/nginx/sites-available/einsatzueberwachung-public.conf
-   sudo nginx -t &amp;&amp; sudo systemctl reload nginx
-</code></pre>
-<p>Hast du die Datei auf dem Server angepasst (Domain, Zertifikatspfade), übernimm nur die neuen <code>location</code>-Blöcke für <code>/api/team-mobile/app/</code> und die Zeile <code>limit_req_zone … team_app_zone</code>.</p>
-<p>3. Prüfen: <code>curl -s -o /dev/null -w "%{http_code}
-" https://&lt;deine-domain&gt;/api/team-mobile/app/v1/status</code> muss <strong>410</strong> liefern. Das heißt erreichbar, ohne Anmeldung kein Zugang.</p></div>
-</details>
-<details class="changelog-entry">
-  <summary>
-    <span class="changelog-version">v1.11.9</span>
-    <span class="changelog-date">28.10.2026</span>
-    <span class="changelog-name"></span>
-  </summary>
-  <div class="changelog-body"><h4>Korrektur</h4>
-<ul>
-<li><strong>Versionsnummer:</strong> In 1.11.7 und 1.11.8 zeigten Startseite und Einstellungen noch „1.11.6“, und der Updater meldete deshalb dauerhaft „Update verfügbar“. Ab 1.11.9 stimmt die Anzeige wieder, und die Meldung verschwindet nach dem Update. Ein Test verhindert, dass die Nummern wieder auseinanderlaufen.</li>
-</ul>
-<p>Inhaltlich entspricht diese Version 1.11.8 (siehe dort).</p>
-<h4>Einspielen</h4>
-<p>Normales Update über den Browser. Danach zeigt Einstellungen → System „1.11.9“.</p></div>
 </details>
 <!-- CHANGELOG_END -->
       </div>

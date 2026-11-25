@@ -14,7 +14,7 @@ public sealed partial class OsmStaticMapRenderer
         int height = 450,
         Einsatzueberwachung.Domain.Models.Enums.MapTileType tileType = Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets)
     {
-        var kacheln = GetSearchAreaTileConfig(tileType);
+        var kacheln = await KachelConfigAsync(tileType);
         if (trackPoints.Count < 2) return null;
 
         using var renderCts = new CancellationTokenSource(RenderTimeout);
@@ -58,7 +58,7 @@ public sealed partial class OsmStaticMapRenderer
             var minTileY = (int)Math.Floor(absCropTop / TileSize);
             var maxTileY = (int)Math.Floor(absCropBottom / TileSize);
 
-            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, kacheln.UrlTemplates, ct);
+            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, kacheln, ct);
             var (fullBitmap, fullW, fullH) = AssembleTileMosaic(tiles, minTileX, minTileY, maxTileX, maxTileY, TileSize);
 
             using (fullBitmap)
@@ -88,7 +88,9 @@ public sealed partial class OsmStaticMapRenderer
                     DrawMarker(canvas, trackPts[^1], new SKColor(220, 53, 69), "Ende");
                 }
 
-                DrawAttribution(canvas, width, height, kacheln.Attribution);
+                DrawNorthArrow(canvas, width, height);
+                DrawScaleBar(canvas, width, height, ToX, (minLat + maxLat) / 2, minLon, maxLon);
+                DrawAttribution(canvas, width, height, KartenQuelle(kacheln, minTileX, maxTileX, minTileY, maxTileY, zoom));
 
                 return EncodeAsPng(outputBitmap);
             }

@@ -2,6 +2,7 @@
 @layout Layout.ElLayout
 @rendermode InteractiveServer
 @using Einsatzueberwachung.Server.Services
+@using Einsatzueberwachung.Server.Components.Monitor
 
 <PageTitle>Einsatz beenden</PageTitle>
 
@@ -75,6 +76,10 @@
             </section>
 
             <section class="els-section">
+                <MonitorAbschlussAngaben Model="_abschluss" Ergebnis="@_ergebnisWahl" Teams="EinsatzService.Teams" />
+            </section>
+
+            <section class="els-section">
                 <h2 class="els-label">Vor Ort</h2>
                 <details class="els-more">
                     <summary>Personal (@_personalIds.Count)</summary>
@@ -128,7 +133,7 @@
                 {
                     <label class="els-label" for="elb-karte">Karte im Bericht</label>
                     <select id="elb-karte" class="els-input" @bind="_kartenart">
-                        @foreach (var (art, name) in Einsatzueberwachung.Domain.Models.PdfBerichtOptionen.Kartenarten)
+                        @foreach (var (art, name) in Einsatzueberwachung.Domain.Models.PdfBerichtOptionen.KartenartenFuer(_esri))
                         {
                             <option value="@art">@name</option>
                         }

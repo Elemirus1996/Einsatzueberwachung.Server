@@ -59,89 +59,6 @@ getSearchAreaId: function(layer) {
     return '';
 },
     
-// Kartenausschnitt fuer Funkloch sichern (1.11). Nur Strassen- und Topokarte und hoechstens Zoomstufe 16 – die
-// Nutzungsregeln von OpenStreetMap verbieten das Vorabladen groesserer Gebiete ab Stufe 17. Satellitenkacheln werden
-// nur gespeichert, wenn sie angesehen wurden (Service Worker), Google-Kacheln gar nicht.
-OFFLINE_MAX_ZOOM: 16,
-OFFLINE_MAX_TILES: 800,
-
-addOfflineTilesControl: function(map, allowedLayers) {
-    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
-        return; // ohne Service Worker (z. B. ohne gueltiges Zertifikat) wird nichts gespeichert
-    }
-
-    const self = this;
-    const OfflineControl = L.Control.extend({
-        // Unten links: oben links liegt im eingebetteten Modus (EL-Ansicht) die eigene Werkzeugleiste
-        options: { position: 'bottomleft' },
-        onAdd: function() {
-            const button = L.DomUtil.create('button', 'leaflet-bar eu-offline-tiles');
-            button.type = 'button';
-            button.title = 'Sichtbares Gebiet auf diesem Gerät speichern – die Karte bleibt im Funkloch nutzbar';
-            button.textContent = '⤓ Für Funkloch sichern';
-            L.DomEvent.disableClickPropagation(button);
-            L.DomEvent.on(button, 'click', function() { self.saveVisibleTiles(map, allowedLayers, button); });
-            return button;
-        }
-    });
-    new OfflineControl().addTo(map);
-},
-
-offlineTileList: function(map, layer) {
-    const zoom = Math.round(map.getZoom());
-    // Sichtbares Gebiet plus Rand, eine Stufe groeber und eine feiner als die aktuelle Ansicht
-    const bounds = map.getBounds().pad(0.25);
-    const minZoom = Math.max(12, zoom - 1);
-    const maxZoom = Math.min(this.OFFLINE_MAX_ZOOM, zoom + 1, layer.options.maxZoom || this.OFFLINE_MAX_ZOOM);
-    const subdomains = layer.options.subdomains || 'abc';
-    const urls = [];
-    for (let z = minZoom; z <= maxZoom; z++) {
-        const nw = map.project(bounds.getNorthWest(), z).divideBy(256).floor();
-        const se = map.project(bounds.getSouthEast(), z).divideBy(256).floor();
-        for (let x = nw.x; x <= se.x; x++) {
-            for (let y = nw.y; y <= se.y; y++) {
-                const s = subdomains[Math.abs(x + y) % subdomains.length];
-                urls.push(L.Util.template(layer._url, L.extend({}, layer.options, { s: s, x: x, y: y, z: z, r: '' })));
-            }
-        }
-    }
-    return { zoom: zoom, urls: urls };
-},
-
-saveVisibleTiles: async function(map, allowedLayers, button) {
-    if (button.disabled) return;
-    const layer = allowedLayers.find((l) => map.hasLayer(l));
-    const reset = (text) => { button.textContent = text; setTimeout(() => { button.textContent = '⤓ Für Funkloch sichern'; }, 4000); };
-    if (!layer) { reset('Nur Straßen- oder Topokarte'); return; }
-
-    const list = this.offlineTileList(map, layer);
-    if (list.zoom < 12) { reset('Bitte näher heranzoomen'); return; }
-    if (list.urls.length > this.OFFLINE_MAX_TILES) { reset('Gebiet zu groß – näher heranzoomen'); return; }
-
-    button.disabled = true;
-    let done = 0;
-    let failed = 0;
-    const queue = list.urls.slice();
-    // Hoechstens 2 Anfragen gleichzeitig – schont Kachelserver und Mobilfunk
-    const worker = async () => {
-        while (queue.length > 0) {
-            const url = queue.shift();
-            try {
-                const r = await fetch(url, { mode: 'cors', credentials: 'omit' });
-                if (!r.ok) failed++;
-            } catch (e) {
-                failed++;
-            }
-            done++;
-            button.textContent = 'Sichere … ' + done + '/' + list.urls.length;
-        }
-    };
-    await Promise.all([worker(), worker()]);
-    button.disabled = false;
-    reset(failed === 0
-        ? '✓ ' + list.urls.length + ' Kacheln gesichert'
-        : '⚠ ' + (list.urls.length - failed) + '/' + list.urls.length + ' gesichert');
-},
 
 // Initialisiert eine neue Karte
 initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
@@ -151,35 +68,22 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             
         // Layer definieren
         // crossOrigin: 'anonymous' erlaubt Canvas-Export für CORS-kompatible Tile-Server
-        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '(c) OpenStreetMap contributors',
+        const osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
             maxZoom: 19,
             crossOrigin: 'anonymous'
         });
 
-        // Esri Satellite Layer (CORS-kompatibel)
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles (c) Esri',
-            maxZoom: 18,
-            crossOrigin: 'anonymous'
-        });
+        // Esri-Satellit nur mit Schluessel der Staffel (CORS-kompatibel); ohne Schluessel null
+        const satelliteLayer = window.EsriKacheln.vorhanden() ? window.EsriKacheln.ebene({ crossOrigin: 'anonymous' }) : null;
 
-        // Google Satellite (kein CORS – Kacheln erscheinen im Screenshot als grauer Hintergrund)
-        const googleSatellite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-            attribution: 'Map data (c) Google',
-            maxZoom: 20
-        });
-
-        // Hybrid: Satellit mit Strassennamen (kein CORS)
-        const hybridLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-            attribution: 'Map data (c) Google',
-            maxZoom: 20
-        });
+        // Amtliche Luftbilder der Länder (DOP20), alle Länder als eine Ebene
+        const luftbildLayer = window.LuftbildLaender.ebene();
 
         // OpenTopoMap: Topografische Karte mit Hoehenlinien (CORS-kompatibel)
         const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             maxZoom: 17,
-            attribution: 'Kartendaten: (c) OpenStreetMap | Kartenstil: (c) <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
+            attribution: 'Kartendaten: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, SRTM | Kartendarstellung: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
             crossOrigin: 'anonymous'
         });
         
@@ -191,21 +95,18 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
         // Layer Control mit besserer Konfiguration
         const baseMaps = {
             "Strassenkarte": osmLayer,
-            "Satellit (Esri)": satelliteLayer,
-            "Satellit (Google)": googleSatellite,
-            "Hybrid (Google)": hybridLayer,
+            "Luftbild (Länder)": luftbildLayer,
             "Topografisch": topoLayer
         };
         
         log('Layer Control wird hinzugefuegt');
+        if (satelliteLayer) baseMaps["Satellit (Esri)"] = satelliteLayer;
         const layerControl = L.control.layers(baseMaps, null, {
             position: 'topright',
             collapsed: false  // Immer ausgeklappt fuer bessere Sichtbarkeit
         });
         layerControl.addTo(map);
 
-        // Knopf „Für Funkloch sichern“: laedt das sichtbare Gebiet vorab in den Kachelspeicher des Service Workers
-        window.LeafletMap.addOfflineTilesControl(map, [osmLayer, topoLayer]);
         log('Layer Control hinzugeFuegt:', layerControl);
         
         // Koordinaten-Gitter Control (UTM und Lat/Lon)
@@ -352,9 +253,8 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             coordinateMarkersVisible: true,
             layers: {
                 streets: osmLayer,
-                satellite: satelliteLayer,
-                satelliteGoogle: googleSatellite,
-                hybrid: hybridLayer,
+                satellite: satelliteLayer || luftbildLayer, // ohne Esri-Schluessel die Luftbilder der Laender
+                luftbild: luftbildLayer,
                 topo: topoLayer
             },
             currentLayer: osmLayer
@@ -592,8 +492,8 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             } else if (markerId === 'einsatzort') {
                 log('Erstelle Standard Einsatzort-Icon');
                 markerIcon = L.icon({
-                    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                    iconUrl: '/lib/leaflet/images/marker-icon.png',
+                    shadowUrl: '/lib/leaflet/images/marker-shadow.png',
                     iconSize: [25, 41],
                     iconAnchor: [12, 41],
                     popupAnchor: [1, -34],
@@ -602,8 +502,8 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
             } else {
                 log('Erstelle Standard-Icon');
                 markerIcon = L.icon({
-                    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                    iconUrl: '/lib/leaflet/images/marker-icon.png',
+                    shadowUrl: '/lib/leaflet/images/marker-shadow.png',
                     iconSize: [25, 41],
                     iconAnchor: [12, 41],
                     popupAnchor: [1, -34],
@@ -761,11 +661,10 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                 case 'satellite':
                     newLayer = mapData.layers.satellite;
                     break;
-                case 'satelliteGoogle':
-                    newLayer = mapData.layers.satelliteGoogle;
-                    break;
+                case 'luftbild':
+                case 'satelliteGoogle': // Google-Kacheln entfernt (#210), alte Auswahl bekommt die Luftbilder der Laender
                 case 'hybrid':
-                    newLayer = mapData.layers.hybrid;
+                    newLayer = mapData.layers.luftbild;
                     break;
                 case 'topo':
                     newLayer = mapData.layers.topo;
@@ -1039,7 +938,7 @@ initialize: function(mapId, centerLat, centerLng, zoom, dotNetReference) {
                     ctx.drawImage(tile,
                         Math.round(r.left - cr.left), Math.round(r.top - cr.top),
                         Math.round(r.width),          Math.round(r.height));
-                } catch (e) { /* CORS-gesperrt (Google-Tiles) → überspringen */ }
+                } catch (e) { /* CORS-gesperrte Kachel → überspringen */ }
             }
         }
 

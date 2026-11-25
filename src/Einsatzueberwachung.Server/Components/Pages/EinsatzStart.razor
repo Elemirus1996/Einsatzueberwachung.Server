@@ -169,8 +169,15 @@
                                @oninput="OnMapAddressInput" />
                     </div>
                     <div class="es-field">
-                        <label class="es-label">Alarmiert durch (Melder)</label>
-                        <InputText class="es-input" @bind-Value="_model.Alarmiert" placeholder="Polizei, Leitstelle, …" />
+                        <label class="es-label" for="es-alarmiert">Alarmiert durch <span class="es-required-mark">*</span></label>
+                        <select id="es-alarmiert" class="es-input @(_alarmiertMissing ? "is-missing" : "")" @bind="AlarmiertDurchWahl">
+                            <option value="">Bitte wählen</option>
+                            @foreach (var art in AlarmiertDurchExtensions.Alle)
+                            {
+                                <option value="@art">@art.Anzeige()</option>
+                            }
+                        </select>
+                        <InputText class="es-input mt-2" @bind-Value="_model.Alarmiert" aria-label="Alarmierende Stelle oder Name" placeholder="Stelle oder Name (optional)" />
                     </div>
                 </div>
 

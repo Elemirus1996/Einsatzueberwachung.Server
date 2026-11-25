@@ -1,5 +1,6 @@
 using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
+using Einsatzueberwachung.Domain.Services;
 
 namespace Einsatzueberwachung.Server.Services;
 
@@ -17,7 +18,20 @@ public sealed record EinsatzAbschlussAnfrage(
     // Genauer Zeitpunkt des Endes in Ortszeit (EL-App); hat Vorrang vor Endzeit
     DateTime? Ende = null,
     // Kartenpunkte ins Archiv und in den Bericht (Variante C); sonst wird kein Punkt archiviert
-    bool PunkteImBericht = false);
+    bool PunkteImBericht = false,
+    // Angaben aus dem Beenden-Dialog (APP_API EL Abschnitt 10); werden vor dem Beenden gespeichert
+    AbschlussEingabe? Angaben = null,
+    // false: fehlen danach noch Angaben, wird nicht beendet (AbschlussUnvollstaendigException)
+    bool UnvollstaendigBestaetigt = true,
+    // Abschnitte des Berichts; null = alle
+    IReadOnlyCollection<string>? Abschnitte = null);
+
+/// <summary>Beenden abgelehnt, weil Angaben fehlen und die Einsatzleitung das nicht ausdrücklich bestätigt hat.</summary>
+public sealed class AbschlussUnvollstaendigException(IReadOnlyList<string> fehlend)
+    : InvalidOperationException("Es fehlen noch Angaben: " + string.Join(", ", fehlend))
+{
+    public IReadOnlyList<string> Fehlend { get; } = fehlend;
+}
 
 public sealed record EinsatzAbschlussErgebnis(ArchivedEinsatz Archiviert, PdfExportResult Pdf);
 
@@ -45,14 +59,17 @@ public sealed class EinsatzAbschlussService
     private readonly IArchivService _archivService;
     private readonly IPdfExportService _pdfExportService;
     private readonly ITimeService _timeService;
+    private readonly ISettingsService? _settings;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     public EinsatzAbschlussService(
         IEinsatzService einsatzService,
         IArchivService archivService,
         IPdfExportService pdfExportService,
-        ITimeService timeService)
+        ITimeService timeService,
+        ISettingsService? settings = null)
     {
+        _settings = settings;
         _einsatzService = einsatzService;
         _archivService = archivService;
         _pdfExportService = pdfExportService;
@@ -80,6 +97,16 @@ public sealed class EinsatzAbschlussService
                 throw new InvalidOperationException(BereitsBeendetMeldung);
             }
 
+            if (anfrage.Angaben is { } angaben)
+            {
+                var gruende = AbschlussAngaben.Abbruchgruende(_settings is null ? null : await _settings.GetAppSettingsAsync());
+                if (AbschlussAngaben.Anwenden(current, _einsatzService.Teams, angaben, gruende, DateTime.UtcNow) is { } fehler)
+                    throw new ArgumentException(fehler);
+            }
+            if (!anfrage.UnvollstaendigBestaetigt
+                && AbschlussAngaben.Fehlend(current, _einsatzService.Teams, anfrage.Ergebnis) is { Count: > 0 } fehlend)
+                throw new AbschlussUnvollstaendigException(fehlend);
+
             await _einsatzService.EndEinsatzAsync();
 
             var snapshot = BuildArchiveSnapshot(_einsatzService);
@@ -94,8 +121,8 @@ public sealed class EinsatzAbschlussService
                 anfrage.HundeVorOrt.ToList());
 
             var pdf = await _pdfExportService.ExportArchivedEinsatzToPdfAsync(archived,
-                anfrage.TracksImPdf ? new PdfBerichtOptionen(Kartenart: anfrage.Kartenart, TeamIds: anfrage.TeamIds)
-                    : new PdfBerichtOptionen(Tracks: false, Kartenart: anfrage.Kartenart));
+                anfrage.TracksImPdf ? new PdfBerichtOptionen(Kartenart: anfrage.Kartenart, TeamIds: anfrage.TeamIds, Abschnitte: anfrage.Abschnitte)
+                    : new PdfBerichtOptionen(Tracks: false, Kartenart: anfrage.Kartenart, Abschnitte: anfrage.Abschnitte));
 
             _einsatzService.ResetEinsatz();
             return new EinsatzAbschlussErgebnis(archived, pdf);
@@ -209,6 +236,10 @@ public sealed class EinsatzAbschlussService
             EinsatzDatum = current.EinsatzDatum,
             EinsatzEnde = current.EinsatzEnde,
             EinsatzNummer = current.EinsatzNummer,
+            Vorgangsnummer = current.Vorgangsnummer,
+            Fund = current.Fund,
+            AlarmiertDurch = current.AlarmiertDurch,
+            KeinePolizei = current.KeinePolizei,
             StaffelName = current.StaffelName,
             StaffelAdresse = current.StaffelAdresse,
             StaffelTelefon = current.StaffelTelefon,

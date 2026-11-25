@@ -40,7 +40,7 @@ public sealed class TeamMobileOptions
     public const string SectionName = "TeamMobile";
 
     /// <summary>
-    /// Öffentliche Basis-URL der Mobile-Ansicht (z.B. https://dein-einsatz.mywire.org).
+    /// Öffentliche Basis-URL der Mobile-Ansicht (z.B. https://staffel-musterstadt.mywire.org).
     /// Wenn leer, wird die URL aus dem Request abgeleitet.
     /// </summary>
     public string? PublicBaseUrl { get; set; }

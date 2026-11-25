@@ -20,7 +20,7 @@ Entwickelt von **Elemirus1996** und **Freakwave** · Projektseite: <https://elem
 |---|---|
 | 🗂️ **Einsatzmonitor** | Einsatz anlegen und beenden, Teams mit Hund und Hundeführer, Suchzeiten mit Warnstufen (Grün → Orange → Rot), Suchgebiete auf der Karte |
 | 📱 **EL-Ansicht `/el`** | Für das Tablet der Einsatzleitung, als App installierbar: Teams starten, pausieren und beenden, Funk, Notizen, Karte und Einsatz beenden. Hält auch in schwachem Mobilfunk die Verbindung |
-| 📶 **Funkloch** | Funk und Notizen werden auf dem Gerät zwischengespeichert und mit der ursprünglichen Uhrzeit nachgesendet. Kartenkacheln lassen sich vorab „für Funkloch sichern“ |
+| 📶 **Funkloch** | Funk und Notizen werden auf dem Gerät zwischengespeichert und mit der ursprünglichen Uhrzeit nachgesendet. Bereits angesehene Kartenausschnitte bleiben auf dem Gerät verfügbar |
 | 🎯 **Szenarien** | Mantrailer, Fläche, Trümmer und Sonstige. Die Oberfläche passt sich an, z. B. mehrere Vermisste bei Fläche und Trümmer sowie Checklisten je Szenario |
 | 🧱 **Trümmer-Lagekarte** | Drohnenfoto des Trümmerfelds hochladen und Suchbereiche direkt auf dem Bild einzeichnen |
 | 📻 **Funk & Notizen** | Chronologisch, mit Antworten und @-Erwähnungen, auf allen Geräten sofort aktuell. Einträge der Einsatzleitung zeigen das Gerät, z. B. „Einsatzleitung · Tablet EL“ |
@@ -81,8 +81,8 @@ Neuinstallation für eine Staffel: [`INSTALLATION.md`](INSTALLATION.md). Updates
 
 ```bash
 sudo bash deploy/setup.sh                                          # .NET-Laufzeit, nginx, systemd, Firewall, Backups
-sudo bash deploy/scripts/setup-vpn.sh dein-einsatz.mywire.org      # VPN-Geräte per QR-Code (ab 1.10)
-sudo bash deploy/scripts/setup-zertifikat.sh dein-einsatz.mywire.org   # Zertifikat + Knopf „Jetzt erneuern“ (ab 1.11.6)
+sudo bash deploy/scripts/setup-vpn.sh staffel-musterstadt.mywire.org      # VPN-Geräte per QR-Code (ab 1.10)
+sudo bash deploy/scripts/setup-zertifikat.sh staffel-musterstadt.mywire.org   # Zertifikat + Knopf „Jetzt erneuern“ (ab 1.11.6)
 ```
 
 Das Setup richtet ein:

@@ -181,7 +181,7 @@
 @* Track-Detail-Popup *@
 @if (_archiveTrackPopup != null)
 {
-    <button type="button" class="modal-backdrop modal-backdrop-action show" style="z-index: 2000;" @onclick='() => _archiveTrackPopup = null' aria-label="Dialog schließen"></button>
+    <div class="modal-backdrop modal-backdrop-action show" style="z-index: 2000;" aria-hidden="true"></div>
     <div class="modal show d-block" style="z-index: 2001;" tabindex="-1">
         <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
@@ -242,7 +242,7 @@
     @if (_deleteCandidate is not null)
     {
         <div class="modal-overlay">
-            <button type="button" class="modal-overlay-dismiss" @onclick="CancelDelete" aria-label="Dialog schließen"></button>
+            <div class="modal-overlay-dismiss" aria-hidden="true"></div>
             <div class="modal-modern" @onclick:stopPropagation="true">
                 <div class="modal-modern-header">
                     <h3 class="mb-0">Archiv-Eintrag löschen</h3>
@@ -297,7 +297,7 @@
                             <div class="col-12 col-md-4">
                                 <label class="form-label small mb-1">Karte</label>
                                 <select class="form-select form-select-sm" @bind="_pdfKartenart">
-                                    @foreach (var (art, name) in PdfBerichtOptionen.Kartenarten)
+                                    @foreach (var (art, name) in PdfBerichtOptionen.KartenartenFuer(_esri))
                                     {
                                         <option value="@art">@name</option>
                                     }

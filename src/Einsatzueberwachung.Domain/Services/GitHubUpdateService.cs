@@ -22,11 +22,15 @@ namespace Einsatzueberwachung.Domain.Services
         public UpdateCheckResult? LastCheckResult { get; set; }
         public UpdateRuntimeStatus RuntimeStatus { get; }
 
+        private readonly IAuditLogService? _audit;
+
         public GitHubUpdateService(
             HttpClient httpClient,
             ILogger<GitHubUpdateService> logger,
-            ISettingsService settingsService)
+            ISettingsService settingsService,
+            IAuditLogService? audit = null)
         {
+            _audit = audit;
             _httpClient = httpClient;
             _logger = logger;
             _settingsService = settingsService;

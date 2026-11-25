@@ -7,6 +7,10 @@ namespace Einsatzueberwachung.Domain.Services
         public string LatestVersion { get; set; } = string.Empty;
         public string ReleaseUrl { get; set; } = string.Empty;
         public string? InstallerUrl { get; set; }
+        /// <summary>Signatur des Pakets (Asset „&lt;paket&gt;.sig“), ohne sie wird nicht installiert</summary>
+        public string? SignaturUrl { get; set; }
+        /// <summary>SHA-256-Prüfsumme des Pakets (Asset „&lt;paket&gt;.sha256“)</summary>
+        public string? PruefsummeUrl { get; set; }
         public bool IsInstallable { get; set; }
         public string ReleaseNotes { get; set; } = string.Empty;
         public DateTime CheckedAt { get; set; }
@@ -32,6 +36,9 @@ namespace Einsatzueberwachung.Domain.Services
         public DateTime? LastInstalledAt { get; set; }
         public string? LastError { get; set; }
         public string LastMessage { get; set; } = string.Empty;
+        /// <summary>Versionshinweise (Markdown) des neuesten Releases, zum Anzeigen unter Einstellungen → Updates</summary>
+        public string LatestReleaseNotes { get; set; } = string.Empty;
+        public string LatestReleaseUrl { get; set; } = string.Empty;
 
         public UpdateRuntimeStatus Clone() => (UpdateRuntimeStatus)MemberwiseClone();
     }

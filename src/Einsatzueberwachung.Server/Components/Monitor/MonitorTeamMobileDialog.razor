@@ -4,7 +4,7 @@
 @if (IsOpen)
 {
     <div class="modal-overlay">
-        <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
+        <div class="modal-overlay-dismiss" aria-hidden="true"></div>
         <div class="modal-modern modal-modern--md"
              role="dialog"
              aria-modal="true"
@@ -15,7 +15,14 @@
                 <button class="btn btn-sm btn-outline-light" type="button" aria-label="Dialog schließen" @onclick="OnClose">X</button>
             </div>
             <div class="modal-modern-body text-center">
-                @if (string.IsNullOrEmpty(FullUrl))
+                @if (AdresseFehlt)
+                {
+                    <div class="alert alert-warning text-start">
+                        <strong>Keine öffentliche Adresse eingetragen.</strong> Der QR-Code braucht die Adresse, unter der eure Teams
+                        diesen Server erreichen. Bitte unter <a href="/einstellungen">Einstellungen</a> → Team-Mobile → Basis-URL eintragen.
+                    </div>
+                }
+                else if (string.IsNullOrEmpty(FullUrl))
                 {
                     <div class="alert alert-warning">
                         Es ist gerade kein Einsatz aktiv. Starte einen Einsatz, um einen Anmelde-Code zu generieren.
@@ -59,6 +66,7 @@
     [Parameter] public string FullUrl { get; set; } = string.Empty;
     [Parameter] public string QrDataUrl { get; set; } = string.Empty;
     [Parameter] public string ReadableCode { get; set; } = string.Empty;
+    [Parameter] public bool AdresseFehlt { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
     private Task SelectUrlAsync() =>

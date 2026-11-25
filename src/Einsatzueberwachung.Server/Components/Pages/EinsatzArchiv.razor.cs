@@ -12,6 +12,8 @@ public partial class EinsatzArchiv
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private IEinsatzMergeService MergeService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private Einsatzueberwachung.Domain.Interfaces.ISettingsService Einstellungen { get; set; } = default!;
+    private bool _esri;
 
     private bool _loading = true;
     private List<ArchivedEinsatz> _entries = new();
@@ -64,6 +66,7 @@ public partial class EinsatzArchiv
 
     protected override async Task OnInitializedAsync()
     {
+        _esri = Einsatzueberwachung.Server.Services.EsriKacheln.Vorhanden((await Einstellungen.GetAppSettingsAsync())?.EsriApiKey);
         await LoadAsync();
     }
 

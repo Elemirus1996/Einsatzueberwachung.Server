@@ -115,6 +115,15 @@ namespace Einsatzueberwachung.Domain.Models
         public string? AppDatenschutzVersion { get; set; }
         public DateTime? AppDatenschutzStandUtc { get; set; }
 
+        /// <summary>Packliste der Staffel fuer die App (APP_API Team Abschnitt 14): eine Zeile je Punkt, „Gruppe:“ beginnt eine Gruppe; leer = keine</summary>
+        public string? AppPacklisteText { get; set; }
+        /// <summary>Wird beim Speichern gesetzt (AppPackliste.Aktualisieren), nicht von Hand</summary>
+        public string? AppPacklisteVersion { get; set; }
+        public DateTime? AppPacklisteStandUtc { get; set; }
+
+        /// <summary>Abbruchgründe für Trails beim Einsatzende (APP_API EL Abschnitt 10); leer = Vorgabe (AbschlussAngaben.StandardAbbruchgruende)</summary>
+        public List<string>? Abbruchgruende { get; set; }
+
         // Loeschfristen im Archiv in Tagen ab Einsatzende (#151); null = nicht automatisch loeschen (ab Werk)
         public int? LoeschfristLaufwegeTage { get; set; }
         public int? LoeschfristNotizenTage { get; set; }
@@ -170,10 +179,16 @@ namespace Einsatzueberwachung.Domain.Models
         public DateTime? LastBackupAt { get; set; }
 
         /// <summary>
-        /// Öffentliche Basis-URL für den Team-Mobile QR-Code (z.B. https://dein-einsatz.mywire.org).
+        /// Öffentliche Basis-URL für den Team-Mobile QR-Code (z.B. https://staffel-musterstadt.mywire.org).
         /// Wenn leer, wird die URL aus dem Request abgeleitet.
         /// </summary>
         public string MobileBaseUrl { get; set; } = string.Empty;
+
+        /// <summary>
+        /// API-Schlüssel der Staffel für die Esri-Satellitenbilder (ArcGIS Location Platform, Issue 210).
+        /// Leer = keine Esri-Ebene; Karte und Bericht nutzen dann die Luftbilder der Länder.
+        /// </summary>
+        public string EsriApiKey { get; set; } = string.Empty;
 
         public AppSettings()
         {

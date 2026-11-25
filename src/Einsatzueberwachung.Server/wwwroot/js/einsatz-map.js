@@ -20,26 +20,22 @@ window.einsatzMap = (function () {
             preferCanvas: true
         }).setView([centerLat, centerLng], zoom);
 
-        const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        const streetLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19,
-            attribution: "&copy; OpenStreetMap"
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende'
         });
 
-        const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-            maxZoom: 19,
-            attribution: "Tiles &copy; Esri"
-        });
+        // Amtliche Luftbilder der Laender (DOP20), alle Laender als eine Ebene
+        const luftbildLayer = window.LuftbildLaender.ebene();
 
-        const labelsLayer = L.tileLayer("https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
-            maxZoom: 19,
-            attribution: "Labels &copy; Esri"
-        });
-
-        const hybridLayer = L.layerGroup([satelliteLayer, labelsLayer]);
+        // Esri-Satellit nur mit Schluessel der Staffel; ohne Schluessel stehen "satellite"/"hybrid" fuer die Luftbilder
+        const esriLayer = window.EsriKacheln.vorhanden() ? window.EsriKacheln.ebene() : null;
+        const satelliteLayer = esriLayer || luftbildLayer;
+        const hybridLayer = satelliteLayer;
 
         const topoLayer = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
             maxZoom: 17,
-            attribution: 'Kartendaten: &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> | Kartenstil: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+            attribution: 'Kartendaten: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, SRTM | Kartendarstellung: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
         });
 
         streetLayer.addTo(map);
@@ -48,18 +44,16 @@ window.einsatzMap = (function () {
             streets: streetLayer,
             satellite: satelliteLayer,
             hybrid: hybridLayer,
+            luftbild: luftbildLayer,
             topo: topoLayer
         };
-        baseLayerControl = L.control.layers(
-            {
-                "Strassenkarte": streetLayer,
-                "Satellit": satelliteLayer,
-                "Hybrid": hybridLayer,
-                "Topografisch": topoLayer
-            },
-            null,
-            { collapsed: false }
-        ).addTo(map);
+        const auswahl = {
+            "Strassenkarte": streetLayer,
+            "Luftbild (Länder)": luftbildLayer,
+            "Topografisch": topoLayer
+        };
+        if (esriLayer) auswahl["Satellit (Esri)"] = esriLayer;
+        baseLayerControl = L.control.layers(auswahl, null, { collapsed: false }).addTo(map);
 
         areasLayer = L.layerGroup().addTo(map);
         draftLayer = L.layerGroup().addTo(map);
@@ -68,7 +62,7 @@ window.einsatzMap = (function () {
 
         // Lade-Skelett + Kachel-Fehlerbanner (in den Leaflet-Container injiziert,
         // daher außerhalb des Blazor-DOM — Blazor fasst #einsatzMap-Inhalt nicht an)
-        wireTileStatus(containerId, [streetLayer, satelliteLayer, labelsLayer, topoLayer]);
+        wireTileStatus(containerId, [streetLayer, topoLayer].concat(esriLayer ? [esriLayer] : []));
 
         map.on("click", function (event) {
             if (!drawMode) {

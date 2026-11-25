@@ -1,4 +1,4 @@
-@using System.Text.Json
+﻿@using System.Text.Json
 @using Einsatzueberwachung.Domain.Interfaces
 @using Einsatzueberwachung.Domain.Models
 @inject ISettingsService SettingsService
@@ -138,12 +138,11 @@
         })();
     </script>
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    @* Schriften und Bibliotheken lokal (wwwroot/lib): keine IP-Adressen an Dritte, funktioniert auch ohne Internet *@
+    <link rel="stylesheet" href="@Assets["lib/bootstrap-icons/bootstrap-icons.min.css"]" />
+    <link rel="stylesheet" href="@Assets["lib/fontawesome/css/all.min.css"]" />
     @* JetBrains Mono — Funktisch-Typo für die EL-Seite (Daten, Labels, Funkstammbuch) *@
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="@Assets["lib/jetbrains-mono/jetbrains-mono.css"]" />
     @* CSS-Module einzeln mit Fingerabdruck im Dateinamen (statt @import in app.css): nach einem Update laden
        Browser die neue Fassung sofort, statt bis zu 30 Tage die alte aus dem Zwischenspeicher zu nehmen *@
     <link rel="stylesheet" href="@Assets["css/theme-tokens.css"]" />
@@ -160,12 +159,14 @@
     <link rel="stylesheet" href="@Assets["css/utilities.css"]" />
     <link rel="stylesheet" href="@Assets["css/el-forms.css"]" />
     <link rel="stylesheet" href="@Assets["Einsatzueberwachung.Server.styles.css"]" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link rel="stylesheet" href="@Assets["lib/leaflet/leaflet.css"]" />
+    <link rel="stylesheet" href="@Assets["lib/leaflet-draw/leaflet.draw.css"]" />
     <link rel="stylesheet" href="@Assets["leaflet-custom.css"]" />
     <link rel="stylesheet" href="@Assets["print-map.css"]" />
     <ImportMap />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
     <HeadOutlet />
 </head>
 
@@ -185,9 +186,10 @@
         }
         <span class="eu-reconnect-rejected"><i class="bi bi-arrow-clockwise"></i> Sitzung abgelaufen – Seite wird neu geladen …</span>
     </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
+    <script src="@Assets["lib/leaflet/leaflet.js"]"></script>
+    <script src="@Assets["lib/leaflet-draw/leaflet.draw.js"]"></script>
+    <script src="@Assets["lib/proj4/proj4.js"]"></script>
+    <script src="@Assets["js/luftbild-laender.js"]"></script>
     <script src="@Assets["js/html-escape.js"]"></script>
     <script src="@Assets["js/leaflet-grid.js"]"></script>
     <script src="@Assets["js/leaflet-grid-control.js"]"></script>

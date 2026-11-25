@@ -201,17 +201,16 @@
                                 <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "streets")" />
                                 <span>Straßenkarte</span>
                             </label>
+                            @if (EsriVorhanden)
+                            {
                             <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("satellite")' >
                                 <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "satellite")" />
                                 <span>Satellit (Esri)</span>
                             </label>
-                            <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("satelliteGoogle")' >
-                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "satelliteGoogle")" />
-                                <span>Satellit (Google)</span>
-                            </label>
-                            <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("hybrid")' >
-                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "hybrid")" />
-                                <span>Hybrid (Google)</span>
+                            }
+                            <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("luftbild")' >
+                                <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "luftbild")" />
+                                <span>Luftbild (Länder)</span>
                             </label>
                             <label class="map-control-radio" @onclick='() => ChangeMapBaseLayerAsync("topo")' >
                                 <input type="radio" name="mapBaseLayer" checked="@(_mapBaseLayerType == "topo")" />
@@ -265,9 +264,16 @@
                         @onclick='() => SetEmbedTileType("streets")' title="Straßenkarte">
                     <i class="bi bi-map"></i>
                 </button>
+                @if (EsriVorhanden)
+                {
                 <button class="map-embed-btn @(_mapBaseLayerType == "satellite" ? "map-embed-btn-on" : "")"
                         @onclick='() => SetEmbedTileType("satellite")' title="Satellit">
                     <i class="bi bi-globe-europe-africa"></i>
+                </button>
+                }
+                <button class="map-embed-btn @(_mapBaseLayerType == "luftbild" ? "map-embed-btn-on" : "")"
+                        @onclick='() => SetEmbedTileType("luftbild")' title="Luftbild (Länder)">
+                    <i class="bi bi-image"></i>
                 </button>
                 <button class="map-embed-btn @(_mapBaseLayerType == "topo" ? "map-embed-btn-on" : "")"
                         @onclick='() => SetEmbedTileType("topo")' title="Topografisch">
@@ -457,23 +463,20 @@
                                                @onchange='() => _karteTileType = "streets"' />
                                         <span class="print-option-label"><i class="bi bi-map me-2 text-muted"></i>Straßenkarte</span>
                                     </label>
+                                    @if (EsriVorhanden)
+                                    {
                                     <label class="print-option print-option-inline">
                                         <input class="form-check-input" type="radio" name="karteMapType" value="satellite"
                                                checked="@(_karteTileType == "satellite")"
                                                @onchange='() => _karteTileType = "satellite"' />
                                         <span class="print-option-label"><i class="bi bi-globe me-2 text-muted"></i>Satellit (Esri)</span>
                                     </label>
+                                    }
                                     <label class="print-option print-option-inline">
-                                        <input class="form-check-input" type="radio" name="karteMapType" value="satelliteGoogle"
-                                               checked="@(_karteTileType == "satelliteGoogle")"
-                                               @onchange='() => _karteTileType = "satelliteGoogle"' />
-                                        <span class="print-option-label"><i class="bi bi-globe me-2 text-muted"></i>Satellit (Google)</span>
-                                    </label>
-                                    <label class="print-option print-option-inline">
-                                        <input class="form-check-input" type="radio" name="karteMapType" value="hybrid"
-                                               checked="@(_karteTileType == "hybrid")"
-                                               @onchange='() => _karteTileType = "hybrid"' />
-                                        <span class="print-option-label"><i class="bi bi-globe2 me-2 text-muted"></i>Hybrid (Google)</span>
+                                        <input class="form-check-input" type="radio" name="karteMapType" value="luftbild"
+                                               checked="@(_karteTileType == "luftbild")"
+                                               @onchange='() => _karteTileType = "luftbild"' />
+                                        <span class="print-option-label"><i class="bi bi-image me-2 text-muted"></i>Luftbild (Länder)</span>
                                     </label>
                                     <label class="print-option print-option-inline">
                                         <input class="form-check-input" type="radio" name="karteMapType" value="topo"

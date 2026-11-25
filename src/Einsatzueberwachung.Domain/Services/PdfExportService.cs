@@ -1,4 +1,4 @@
-using Einsatzueberwachung.Domain.Interfaces;
+﻿using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
 using QuestPDF.Fluent;
@@ -30,9 +30,45 @@ namespace Einsatzueberwachung.Domain.Services
                 .Text(value ?? "-").FontSize(10);
         }
 
-        private string FormatTimeSpan(TimeSpan ts)
+        /// <summary>Eine Schreibweise für alle Dauern im Bericht: „45 s“, „4 min 43 s“, „1 h 05 min“</summary>
+        public static string FormatTimeSpan(TimeSpan ts)
         {
-            return $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+            if (ts < TimeSpan.Zero) ts = TimeSpan.Zero;
+            if (ts.TotalHours >= 1) return $"{(int)ts.TotalHours} h {ts.Minutes:D2} min";
+            if (ts.TotalMinutes >= 1) return ts.Seconds == 0 ? $"{ts.Minutes} min" : $"{ts.Minutes} min {ts.Seconds} s";
+            return $"{ts.Seconds} s";
+        }
+
+        /// <summary>
+        /// Melder („Alarmiert durch“); null, wenn dort nur eine Uhrzeit steht (Einsätze vor 1.16 schrieben die Alarmzeit hinein)
+        /// </summary>
+        public static string? Melder(string? alarmiert)
+        {
+            var text = alarmiert?.Trim();
+            if (string.IsNullOrEmpty(text)) return null;
+            return DateTime.TryParse(text, System.Globalization.CultureInfo.GetCultureInfo("de-DE"), System.Globalization.DateTimeStyles.None, out _)
+                || TimeSpan.TryParse(text, out _) ? null : text;
+        }
+
+        /// <summary>
+        /// Notiztext für den Bericht: Zeichen ohne Glyphe in der Berichtsschrift (Emoji, Symbole) weglassen und eine
+        /// vorangestellte Uhrzeit „[19:31] “ entfernen, wenn sie der Zeit des Eintrags entspricht (steht schon in der Spalte Zeit).
+        /// </summary>
+        public static string NotizText(string? text, DateTime zeit)
+        {
+            var sauber = new System.Text.StringBuilder();
+            foreach (var rune in (text ?? string.Empty).EnumerateRunes())
+            {
+                // Emoji außerhalb der BMP, Verschiedene Symbole/Dingbats (✅ ✓ ☎ …), Pfeile-Symbole, Variantenwähler, ZWJ.
+                // Gradzeichen, ©, € usw. bleiben.
+                if (rune.Value > 0xFFFF || rune.Value is >= 0x2600 and <= 0x27BF || rune.Value is >= 0x2B00 and <= 0x2BFF
+                    || rune.Value is 0xFE0F or 0x200D) continue;
+                sauber.Append(rune.ToString());
+            }
+            var ergebnis = sauber.ToString().Trim();
+            var vorsatz = $"[{zeit:HH:mm}]";
+            if (ergebnis.StartsWith(vorsatz)) ergebnis = ergebnis[vorsatz.Length..].TrimStart();
+            return ergebnis;
         }
 
         private string GetNoteTypeColor(GlobalNotesEntryType type)
@@ -74,6 +110,24 @@ namespace Einsatzueberwachung.Domain.Services
             if (!string.IsNullOrWhiteSpace(info.Email))
                 parts.Add($"E-Mail: {info.Email}");
             return string.Join(" | ", parts);
+        }
+
+        /// <summary>Programm-Logo (Einsatzüberwachung) für den Fuß der Berichte, eingebettet in die Assembly</summary>
+        private static readonly Lazy<byte[]> ProgrammLogo = new(() =>
+        {
+            using var stream = typeof(PdfExportService).Assembly.GetManifestResourceStream("Einsatzueberwachung.Logo.Hell.png");
+            if (stream is null)
+                return Array.Empty<byte>();
+            using var ms = new MemoryStream();
+            stream.CopyTo(ms);
+            return ms.ToArray();
+        });
+
+        private static void ComposeFussLogo(IContainer container)
+        {
+            var logo = ProgrammLogo.Value;
+            if (logo.Length > 0)
+                container.AlignRight().AlignMiddle().Height(22).Image(logo).FitArea();
         }
 
         private bool TryLoadLogoBytes(string? logoPath, out byte[] logoBytes)

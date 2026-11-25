@@ -45,6 +45,8 @@ public partial class EinsatzKarte
     private double? _liveMapCenterLng;
     private int? _liveMapZoom;
     private string _karteTileType = "streets";
+    private string _esriSchluessel = string.Empty;
+    private bool EsriVorhanden => Einsatzueberwachung.Server.Services.EsriKacheln.Vorhanden(_esriSchluessel);
     private string _karteGridType = "none";
     private string _mapBaseLayerType = "streets";
     private string _gridLayerType = "none";
@@ -138,8 +140,7 @@ public partial class EinsatzKarte
     private string SelectedMapLayerLabel => _mapBaseLayerType switch
     {
         "satellite" => "Satellit (Esri)",
-        "satelliteGoogle" => "Satellit (Google)",
-        "hybrid" => "Hybrid (Google)",
+        "luftbild" => "Luftbild (Länder)",
         "topo" => "Topografisch",
         _ => "Straßenkarte"
     };
@@ -176,6 +177,7 @@ public partial class EinsatzKarte
         _mapCenterLat = settings.MapDefaultLat;
         _mapCenterLng = settings.MapDefaultLng;
         _mapZoom = settings.MapDefaultZoom;
+        _esriSchluessel = settings.EsriApiKey;
         _collarMarkerIcon = settings.CollarMarkerIconOrDefault;
         _humanMarkerIcon = settings.HumanMarkerIconOrDefault;
         _collarTrackColorMode = settings.CollarTrackColorModeOrDefault;
@@ -247,7 +249,8 @@ public partial class EinsatzKarte
         {
             try
             {
-                // Karte initialisieren und Callback-Referenz setzen
+                // Karte initialisieren und Callback-Referenz setzen (Esri-Schluessel vorher, sonst keine Esri-Ebene)
+                await JSRuntime.InvokeVoidAsync("EsriKacheln.setze", _esriSchluessel);
                 await JSRuntime.InvokeVoidAsync("LeafletMap.initialize",
                     "einsatzMap", _mapCenterLat, _mapCenterLng, _mapZoom, _dotNetReference);
 

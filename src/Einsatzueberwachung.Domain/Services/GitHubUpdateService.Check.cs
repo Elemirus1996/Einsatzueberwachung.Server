@@ -61,14 +61,25 @@ namespace Einsatzueberwachung.Domain.Services
 
                 var assets = root.GetProperty("assets");
                 string? installerUrl = null;
+                string? installerName = null;
+                var alleAssets = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var asset in assets.EnumerateArray())
                 {
                     var name = asset.GetProperty("name").GetString() ?? "";
-                    if (IsLinuxX64Asset(name))
+                    var assetUrl = asset.GetProperty("browser_download_url").GetString();
+                    if (assetUrl is not null) alleAssets[name] = assetUrl;
+                    if (installerUrl is null && IsLinuxX64Asset(name))
                     {
-                        installerUrl = asset.GetProperty("browser_download_url").GetString();
-                        break;
+                        installerUrl = assetUrl;
+                        installerName = name;
                     }
+                }
+                // Signatur und Prüfsumme liegen als „<paket>.sig“ und „<paket>.sha256“ daneben (Issue 211)
+                string? signaturUrl = null, pruefsummeUrl = null;
+                if (installerName is not null)
+                {
+                    alleAssets.TryGetValue(installerName + UpdatePaketPruefung.SignaturEndung, out signaturUrl);
+                    alleAssets.TryGetValue(installerName + UpdatePaketPruefung.PruefsummeEndung, out pruefsummeUrl);
                 }
 
                 var newerVersionAvailable = !string.IsNullOrWhiteSpace(version) && IsNewerVersion(version, CurrentVersion);
@@ -79,6 +90,8 @@ namespace Einsatzueberwachung.Domain.Services
                     LatestVersion = version,
                     ReleaseUrl = downloadUrl,
                     InstallerUrl = installerUrl,
+                    SignaturUrl = signaturUrl,
+                    PruefsummeUrl = pruefsummeUrl,
                     ReleaseNotes = releaseNotes,
                     CheckedAt = Ortszeit.Jetzt,
                     UpdateAvailable = newerVersionAvailable,
@@ -92,6 +105,8 @@ namespace Einsatzueberwachung.Domain.Services
                     status.LatestVersion = result.LatestVersion;
                     status.LastCheckedAt = result.CheckedAt;
                     status.UpdateAvailable = result.UpdateAvailable;
+                    status.LatestReleaseNotes = result.ReleaseNotes;
+                    status.LatestReleaseUrl = result.ReleaseUrl;
                     status.LastError = null;
                     status.LastMessage = result.UpdateAvailable
                         ? (result.IsInstallable

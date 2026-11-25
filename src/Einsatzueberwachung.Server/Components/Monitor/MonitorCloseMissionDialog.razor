@@ -1,7 +1,7 @@
 @if (IsOpen)
 {
     <div class="modal-overlay">
-        <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
+        <div class="modal-overlay-dismiss" aria-hidden="true"></div>
         <div class="modal-modern modal-close-mission"
              role="dialog"
              aria-modal="true"
@@ -78,7 +78,7 @@
                         <div class="col-12 col-md-6">
                             <label class="form-label" for="close-mission-map-type">Karte im Bericht</label>
                             <select id="close-mission-map-type" class="form-select" @bind="Form.MapTileType">
-                                @foreach (var (art, name) in PdfBerichtOptionen.Kartenarten)
+                                @foreach (var (art, name) in PdfBerichtOptionen.KartenartenFuer(_esri))
                                 {
                                     <option value="@art">@name</option>
                                 }
@@ -86,6 +86,11 @@
                         </div>
                     }
                 </div>
+
+                @if (Abschluss is not null)
+                {
+                    <MonitorAbschlussAngaben Model="Abschluss" Ergebnis="@Form.Result" Teams="Teams" />
+                }
 
                 <div class="border rounded p-2 mb-3">
                     <div class="small fw-semibold mb-2">Einsatz-Zusammenfassung</div>
@@ -159,7 +164,15 @@
 }
 
 @code {
+    [Inject] private Einsatzueberwachung.Domain.Interfaces.ISettingsService Einstellungen { get; set; } = default!;
+    private bool _esri;
+
+    protected override async Task OnInitializedAsync() =>
+        _esri = Einsatzueberwachung.Server.Services.EsriKacheln.Vorhanden((await Einstellungen.GetAppSettingsAsync())?.EsriApiKey);
+
     [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public MonitorAbschlussModel? Abschluss { get; set; }
+    [Parameter] public IEnumerable<Team> Teams { get; set; } = Array.Empty<Team>();
     [Parameter] public bool IsClosing { get; set; }
     [Parameter, EditorRequired] public MonitorCloseMissionForm Form { get; set; } = default!;
     [Parameter] public IEnumerable<PersonalEntry> Personnel { get; set; } = Array.Empty<PersonalEntry>();

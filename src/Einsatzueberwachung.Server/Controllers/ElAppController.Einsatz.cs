@@ -40,12 +40,15 @@ public sealed partial class ElAppController
             einsatzleiter = personal.Where(p => p.Skills.HasFlag(PersonalSkills.Einsatzleiter)).Select(p => p.FullName),
             fuehrungsassistenten = personal.Where(p => p.Skills.HasFlag(PersonalSkills.Fuehrungsassistent)).Select(p => p.FullName),
             ergebnisse = Ergebnisse(),
-            kartenarten = PdfBerichtOptionen.Kartenarten.Select(k => new { wert = k.Art.ToString(), anzeige = k.Name })
+            alarmiertDurch = AlarmiertDurchExtensions.Alle.Select(x => new { wert = x.ToString(), anzeige = x.Anzeige() }),
+            kartenarten = PdfBerichtOptionen.KartenartenFuer(EsriKacheln.Vorhanden(einstellungen is null ? null : (await einstellungen.GetAppSettingsAsync())?.EsriApiKey))
+                .Select(k => new { wert = k.Art.ToString(), anzeige = k.Name })
         });
     }
 
     public sealed record ElEinsatzStart(string? Id, string? Stichwort, string? Ort, double? Lat, double? Lng, string? Szenario,
-        bool Uebung, string? Einsatzleiter, string? Fuehrungsassistent, int? DiveraAlarmId);
+        bool Uebung, string? Einsatzleiter, string? Fuehrungsassistent, int? DiveraAlarmId,
+        string? AlarmiertDurch = null, string? Melder = null);
 
     [HttpPost("einsatz/start")]
     public Task<IActionResult> EinsatzStarten([FromBody] ElEinsatzStart? anfrage) => Aktion(anfrage?.Id, async () =>
@@ -54,6 +57,11 @@ public sealed partial class ElAppController
         if (!Enum.TryParse<EinsatzSzenarioType>(a.Szenario, ignoreCase: false, out var szenario) || int.TryParse(a.Szenario, out _)
             || !Enum.IsDefined(szenario))
             return BadRequest(new { error = "Bitte ein Szenario auswählen.", szenarien = Enum.GetNames<EinsatzSzenarioType>() });
+        // Ohne Feld (Apps vor 1.17.0) bleibt die Art leer und wird beim Einsatzende abgefragt
+        var alarmiertDurch = AlarmiertDurchExtensions.AusApiWert(a.AlarmiertDurch);
+        if (a.AlarmiertDurch is not null && alarmiertDurch is null)
+            return BadRequest(new { error = "Bitte auswählen, wer alarmiert hat.", alarmiertDurch = AlarmiertDurchExtensions.Alle.Select(x => x.ToString()) });
+        if (a.Melder is { Length: > AbschlussAngaben.MaxTextLaenge }) return BadRequest(new { error = $"melder höchstens {AbschlussAngaben.MaxTextLaenge} Zeichen." });
         if (a.Lat is { } lat1 && (Math.Abs(lat1) > 90 || a.Lng is not { } lng1 || Math.Abs(lng1) > 180) || a.Lat is null && a.Lng is not null)
             return BadRequest(new { error = "Ungültige Koordinate." });
 
@@ -72,10 +80,12 @@ public sealed partial class ElAppController
         if (!string.IsNullOrWhiteSpace(a.Stichwort)) modell.Stichwort = a.Stichwort.Trim();
         if (!string.IsNullOrWhiteSpace(a.Einsatzleiter)) modell.Einsatzleiter = a.Einsatzleiter.Trim();
         if (!string.IsNullOrWhiteSpace(a.Fuehrungsassistent)) modell.Fuehrungsassistent = a.Fuehrungsassistent.Trim();
+        if (!string.IsNullOrWhiteSpace(a.Melder)) modell.Alarmiert = a.Melder.Trim();
+        modell.AlarmiertDurch = alarmiertDurch;
         if (a.Lat is { } lat && a.Lng is { } lng) { EinsatzStartHelper.ApplyCoordinates(modell, lat, lng); koordinate = true; }
         modell.Szenario = szenario;
         modell.IstEinsatz = !a.Uebung;
-        if (EinsatzStartHelper.Validate(modell) is { } fehler) return BadRequest(new { error = fehler });
+        if (EinsatzStartHelper.Validate(modell, artPflicht: false) is { } fehler) return BadRequest(new { error = fehler });
 
         var jetzt = zeit?.Now ?? Ortszeit.Jetzt;
         modell.EinsatzDatum = jetzt;
@@ -87,10 +97,66 @@ public sealed partial class ElAppController
         return Ok(new { doppelt = false, einsatz = new { aktiv = true, beginn = AppZeit.Utc(modell.EinsatzDatum) } });
     }, laufenderEinsatzNoetig: false);
 
-    public sealed record ElPdfWahl(bool Tracks = true, string? Kartenart = null, IReadOnlyList<string>? TeamIds = null, bool Punkte = false);
+    public sealed record ElPdfWahl(bool Tracks = true, string? Kartenart = null, IReadOnlyList<string>? TeamIds = null, bool Punkte = false,
+        IReadOnlyList<string>? Abschnitte = null);
+
+    public sealed record ElAbschlussFund(string? Zeit, double? Lat, double? Lng, string? Ort, string? UebergabeAn, string? TeamId);
+
+    public sealed record ElAbschluss(string? Vorgangsnummer, string? Melder, AbschlussPolizei? Polizei, ElAbschlussFund? Fund,
+        IReadOnlyList<AbschlussTeam>? Teams, IReadOnlyList<AbschlussTrail>? Trails, string? AlarmiertDurch = null, bool? KeinePolizei = null);
 
     public sealed record ElEinsatzEnde(string? Id, string? Ergebnis, bool RessourcenGeprueft, string? Bemerkungen = null,
-        string? Endzeit = null, ElPdfWahl? Pdf = null, IReadOnlyList<string>? PersonalIds = null, IReadOnlyList<string>? HundeIds = null);
+        string? Endzeit = null, ElPdfWahl? Pdf = null, IReadOnlyList<string>? PersonalIds = null, IReadOnlyList<string>? HundeIds = null,
+        ElAbschluss? Abschluss = null, bool? UnvollstaendigBestaetigt = null);
+
+    /// <summary>Alles, was der Beenden-Dialog abfragt, mit den aktuellen Werten (APP_API EL Abschnitt 10)</summary>
+    [HttpGet("einsatz/abschluss")]
+    public async Task<IActionResult> GetAbschluss()
+    {
+        if (!Lesen()) return Zugang();
+        var e = einsatz!.CurrentEinsatz;
+        if (!ElPositionService.Laeuft(e)) return Konflikt("Kein laufender Einsatz.");
+        var teams = einsatz.Teams.ToList();
+        var hunde = stammdaten is null ? [] : await stammdaten.GetDogListAsync();
+        var fund = e.Fund ?? new EinsatzFund();
+        var vorschlag = AbschlussAngaben.FundVorschlag(e);
+
+        return Ok(new
+        {
+            uebung = !e.IstEinsatz,
+            alarmiertDurch = e.AlarmiertDurch?.ToString(),
+            keinePolizei = e.KeinePolizei,
+            polizeiGefragt = AbschlussAngaben.PolizeiGefragt(e),
+            vorgangsnummer = e.Vorgangsnummer ?? "",
+            melder = AbschlussAngaben.Melder(e.Alarmiert),
+            polizei = new { name = e.PolizeiKontaktName ?? "", dienstnummer = e.PolizeiDienstnummer ?? "", telefon = e.PolizeiTelefon ?? "" },
+            fund = new
+            {
+                zeit = fund.ZeitUtc is { } z ? AppZeit.Utc(DateTime.SpecifyKind(z, DateTimeKind.Utc)) : (DateTime?)null,
+                lat = fund.Latitude, lng = fund.Longitude, ort = fund.Ort ?? "", uebergabeAn = fund.UebergabeAn ?? "", teamId = fund.TeamId,
+                vorschlag = vorschlag is null ? null : new
+                {
+                    lat = vorschlag.Latitude, lng = vorschlag.Longitude, zeit = AppZeit.Utc(vorschlag.CreatedAt), teamId = vorschlag.TeamId
+                }
+            },
+            teams = AbschlussAngaben.Hundeteams(teams).Select(t => new
+            {
+                teamId = t.TeamId,
+                teamName = t.TeamName,
+                einsatzart = t.Einsatzart?.ToString(),
+                erlaubt = EinsatzartExtensions.AusSpezialisierungen(
+                    hunde.FirstOrDefault(d => d.Id == t.DogId)?.Specializations ?? t.DogSpecialization).Select(a => a.ToString())
+            }),
+            trails = AbschlussAngaben.Trails(e, teams).Select(s => new
+            {
+                sucheId = s.Id, teamId = s.TeamId, teamName = s.TeamName,
+                beginn = AppZeit.Utc(s.SearchStart), ende = AppZeit.Utc(s.SearchEnd),
+                abbruchgrund = s.Abbruchgrund ?? "", geruchsartikel = s.Geruchsartikel ?? ""
+            }),
+            abbruchgruende = AbschlussAngaben.Abbruchgruende(einstellungen is null ? null : await einstellungen.GetAppSettingsAsync()),
+            fehlend = AbschlussAngaben.Fehlend(e, teams)
+        });
+    }
 
     /// <summary>Aktives Personal und aktive Hunde wie in /el/beenden, sortiert, mit Vorauswahl aus Teams und Einsatz-Check-in</summary>
     private async Task<(List<PersonalEntry> Personal, List<DogEntry> Hunde, HashSet<string> PersonalIds, HashSet<string> HundeIds)> VorOrtListen()
@@ -130,6 +196,24 @@ public sealed partial class ElAppController
         if (a.Pdf?.Kartenart is { } wahl && !(Enum.TryParse(wahl, ignoreCase: false, out kartenart)
             && !int.TryParse(wahl, out _) && PdfBerichtOptionen.Kartenarten.Any(k => k.Art == kartenart)))
             return BadRequest(new { error = "Unbekannte Kartenart.", kartenarten = PdfBerichtOptionen.Kartenarten.Select(k => k.Art.ToString()) });
+        if (a.Pdf?.Abschnitte?.FirstOrDefault(x => !PdfBerichtOptionen.AlleAbschnitte.Contains(x)) is { } unbekannt)
+            return BadRequest(new { error = $"Unbekannter Abschnitt {unbekannt}.", abschnitte = PdfBerichtOptionen.AlleAbschnitte });
+        AbschlussEingabe? angaben = null;
+        if (a.Abschluss is { } ab)
+        {
+            DateTime? fundZeit = null;
+            if (!string.IsNullOrWhiteSpace(ab.Fund?.Zeit))
+            {
+                if (!MitZeitzone(ab.Fund.Zeit) || !DateTimeOffset.TryParse(ab.Fund.Zeit, System.Globalization.CultureInfo.InvariantCulture,
+                        System.Globalization.DateTimeStyles.None, out var fz))
+                    return BadRequest(new { error = "fund.zeit als Zeitpunkt in UTC, z. B. „2026-10-31T17:45:00Z“." });
+                fundZeit = fz.UtcDateTime;
+            }
+            angaben = new AbschlussEingabe(ab.Vorgangsnummer, ab.Melder, ab.Polizei,
+                ab.Fund is { } f ? new AbschlussFund(fundZeit, f.Lat, f.Lng, f.Ort, f.UebergabeAn, f.TeamId) : null,
+                ab.Teams, ab.Trails, ab.AlarmiertDurch, ab.KeinePolizei);
+        }
+
         // Ende als Zeitpunkt in UTC (wie alle Zeiten der App-Schnittstelle); fuer den Bericht in Ortszeit
         DateTime? ende = null;
         if (!string.IsNullOrWhiteSpace(a.Endzeit))
@@ -162,7 +246,19 @@ public sealed partial class ElAppController
                 kartenart,
                 a.Pdf?.TeamIds,
                 ende,
-                a.Pdf?.Punkte ?? false));
+                a.Pdf?.Punkte ?? false,
+                angaben,
+                // Ohne das Feld (Apps vor 1.17.0) beendet der Server wie bisher
+                a.UnvollstaendigBestaetigt ?? true,
+                a.Pdf?.Abschnitte));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (AbschlussUnvollstaendigException ex)
+        {
+            return Conflict(new { error = ex.Message, fehlend = ex.Fehlend });
         }
         catch (InvalidOperationException ex)
         {
@@ -181,7 +277,8 @@ public sealed partial class ElAppController
 
     /// <summary>Bericht eines beendeten Einsatzes als PDF wie der Download im Archiv – zum Öffnen und Teilen in der App (Idee 6.2)</summary>
     [HttpGet("einsatz/bericht/{archivId}")]
-    public async Task<IActionResult> GetBericht(string archivId, string? karte = null, string? teams = null, string? tracks = null)
+    public async Task<IActionResult> GetBericht(string archivId, string? karte = null, string? teams = null, string? tracks = null,
+        string? abschnitte = null)
     {
         if (!Lesen()) return Zugang();
         if (archiv is null || pdfExport is null) return NotFound();
@@ -192,7 +289,7 @@ public sealed partial class ElAppController
         try
         {
             bytes = await pdfExport.ExportArchivedEinsatzToPdfBytesAsync(archiviert,
-                Extensions.DownloadEndpoints.BerichtOptionenAusAdresse(archiviert, karte, teams, tracks));
+                Extensions.DownloadEndpoints.BerichtOptionenAusAdresse(archiviert, karte, teams, tracks, abschnitte));
         }
         catch (Exception ex)
         {
@@ -211,5 +308,5 @@ public sealed partial class ElAppController
         text.EndsWith('Z') || System.Text.RegularExpressions.Regex.IsMatch(text, @"[+-]\d{2}:\d{2}$");
 
     private static IEnumerable<object> Ergebnisse() =>
-        EinsatzAbschlussService.ErgebnisOptionen.Select(o => new { wert = o, anzeige = ErgebnisText.Anzeige(o) });
+        EinsatzAbschlussService.ErgebnisOptionen.Select(o => new { wert = o, anzeige = ErgebnisText.Anzeige(o), fund = ErgebnisText.IstFund(o) });
 }

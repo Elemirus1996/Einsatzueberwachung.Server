@@ -75,6 +75,36 @@ public partial class Einstellungen
 
     // Divera 24/7 Felder
     private bool _showDiveraKey;
+    private bool _showEsriKey;
+    private bool _esriPruefungLaeuft;
+    private string _esriPruefung = string.Empty;
+    [Inject] private IHttpClientFactory HttpClients { get; set; } = default!;
+
+    /// <summary>Lädt eine Kachel mit dem eingetragenen Esri-Schlüssel, um ihn vor dem Speichern zu prüfen.</summary>
+    private async Task PruefeEsriAsync()
+    {
+        if (!EsriKacheln.Vorhanden(_appSettings.EsriApiKey))
+        {
+            _esriPruefung = "Kein Schlüssel eingetragen.";
+            return;
+        }
+        _esriPruefungLaeuft = true;
+        _esriPruefung = "Prüfe …";
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var antwort = await HttpClients.CreateClient("OsmTiles").GetAsync(EsriKacheln.PruefAdresse(_appSettings.EsriApiKey), cts.Token);
+            var text = await antwort.Content.ReadAsStringAsync(cts.Token);
+            _esriPruefung = antwort.IsSuccessStatusCode && !text.Contains("\"error\"")
+                ? "Schlüssel funktioniert. Bitte noch speichern."
+                : "Esri lehnt den Schlüssel ab (falsch kopiert, abgelaufen oder ohne Berechtigung „Basemaps“?).";
+        }
+        catch (Exception)
+        {
+            _esriPruefung = "Esri ist nicht erreichbar. Internetverbindung des Servers prüfen.";
+        }
+        finally { _esriPruefungLaeuft = false; }
+    }
     private bool _diveraTestBusy;
     private string _diveraTestStatus = string.Empty;
     private bool _diveraTestError;
@@ -260,6 +290,39 @@ public partial class Einstellungen
     }
 
     /// <summary>Vorlage der Datenschutzerklaerung fuer die App einfuegen (#148); nur wenn noch kein Text da ist</summary>
+    /// <summary>Text eines Absatzes der Versionshinweise mit **fett** und `Code`, ohne HTML einzubetten</summary>
+    private static RenderFragment InlineText(IReadOnlyList<Versionshinweise.Teil> teile) => builder =>
+    {
+        foreach (var teil in teile)
+        {
+            if (teil.Fett || teil.Code)
+            {
+                builder.OpenElement(0, teil.Code ? "code" : "strong");
+                builder.AddContent(1, teil.Text);
+                builder.CloseElement();
+            }
+            else
+            {
+                builder.AddContent(2, teil.Text);
+            }
+        }
+    };
+
+    /// <summary>Abbruchgründe als Text, eine Zeile je Grund; leer = Vorgabe</summary>
+    private string AbbruchgruendeText
+    {
+        get => string.Join("\n", _appSettings.Abbruchgruende ?? AbschlussAngaben.StandardAbbruchgruende.ToList());
+        set
+        {
+            var liste = (value ?? "").Split('\n').Select(z => z.Trim()).Where(z => z.Length > 0)
+                .Select(z => z.Length > AbschlussAngaben.MaxTextLaenge ? z[..AbschlussAngaben.MaxTextLaenge] : z)
+                .Distinct().Take(30).ToList();
+            _appSettings.Abbruchgruende = liste.Count == 0 ? null : liste;
+        }
+    }
+
+    private const string PacklisteBeispiel = "Persönlich:\nStirnlampe mit Ersatzakku\nRegenjacke\nHund:\nWasser und Napf\nKenndecke";
+
     private void DatenschutzVorlageEinfuegen()
     {
         if (!string.IsNullOrWhiteSpace(_appSettings.AppDatenschutzText)) return;
@@ -854,11 +917,14 @@ private async Task SetDesignModeAsync(bool darkMode)
     [Inject] private LeitungAuthStore LeitungAuthStore { get; set; } = default!;
     [Inject] private VpnDeviceService VpnDevices { get; set; } = default!;
     [Inject] private VpnDeviceStore VpnDeviceStore { get; set; } = default!;
+    [Inject] private Einsatzueberwachung.Domain.Interfaces.IAuditLogService AuditLog { get; set; } = default!;
 
     private sealed record VpnDeviceRow(VpnDevice Device, DateTime? LastHandshakeUtc);
 
     private VpnServerInfo? _vpnServer;
     private List<VpnDeviceRow> _vpnDevices = [];
+    /// <summary>Aktives Personal fuer die feste Person je VPN-Geraet (EL-App, APP_API EL Abschnitt 4a)</summary>
+    private List<PersonalEntry> _vpnPersonen = [];
     private string _vpnEndpoint = string.Empty;
     private string _vpnName = string.Empty;
     private int _vpnValidityDays;
@@ -890,6 +956,8 @@ private async Task SetDesignModeAsync(bool darkMode)
                 .Select(d => new VpnDeviceRow(d, status.GetValueOrDefault(d.PublicKey)))
                 .OrderBy(d => d.Device.Name)
                 .ToList();
+            _vpnPersonen = SelectionListOrdering.OrderPersonnelByFirstName(
+                (await MasterDataService.GetPersonalListAsync()).Where(p => p.IsActive)).ToList();
         }
         catch (Exception ex)
         {
@@ -898,11 +966,20 @@ private async Task SetDesignModeAsync(bool darkMode)
         await InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>Feste Person des Geraets: die EL-App fragt dort nicht mehr, wer sie bedient, und ein Wechsel ist nicht moeglich</summary>
+    private void VpnPersonSetzen(VpnDevice geraet, string? personId)
+    {
+        VpnDeviceStore.SetPerson(geraet.PublicKey, personId);
+        var name = _vpnPersonen.FirstOrDefault(p => p.Id == personId)?.FullName;
+        AuditLog.Log("VPN-Gerät Person zugeordnet", $"{geraet.Name}: {name ?? "bei Anmeldung wählen"}");
+        SetVpnMessage(name is null ? $"{geraet.Name}: Person wird bei der Anmeldung gewählt." : $"{geraet.Name} gehört jetzt {name}.", false);
+    }
+
     private void SaveVpnEndpoint()
     {
         if (!System.Text.RegularExpressions.Regex.IsMatch(_vpnEndpoint.Trim(), @"^[A-Za-z0-9.\-]+:\d{1,5}$"))
         {
-            SetVpnMessage("Bitte als Name:Port angeben, z. B. dein-einsatz.mywire.org:51820.", true);
+            SetVpnMessage("Bitte als Name:Port angeben, z. B. staffel-musterstadt.mywire.org:51820.", true);
             return;
         }
         VpnDeviceStore.SetEndpoint(_vpnEndpoint);
@@ -1379,7 +1456,8 @@ private async Task SetDesignModeAsync(bool darkMode)
 
     private void ResetAllShortcuts()
     {
-        _shortcuts = new KeyboardShortcutPreferences();
+        // „Ausgeschaltet“ ist kein Kürzel: beim Zurücksetzen bleibt der Schalter, wie er ist
+        _shortcuts = new KeyboardShortcutPreferences { Ausgeschaltet = _shortcuts.Ausgeschaltet };
         _ = SaveShortcutsAsync();
     }
 
@@ -1389,6 +1467,7 @@ private async Task SetDesignModeAsync(bool darkMode)
         await BrowserPrefs.SaveAsync();
         await JS.InvokeVoidAsync("keyboardShortcuts.configure", new
         {
+            aus        = _shortcuts.Ausgeschaltet,
             navHome    = _shortcuts.NavHome,
             navKarte   = _shortcuts.NavKarte,
             navMonitor = _shortcuts.NavMonitor,

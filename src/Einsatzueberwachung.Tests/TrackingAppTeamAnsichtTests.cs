@@ -220,6 +220,33 @@ public class TrackingAppTeamAnsichtTests
         Assert.EndsWith("event: stop\ndata: {}\n\n", text);
         Assert.Equal(0, u.Ereignisse.AnzahlVerbindungen);
     }
+
+    [Fact]
+    public async Task LageStand_InStatusUndPositions_AendertSichNurBeiNeuemStand()
+    {
+        var u = await AufbauAsync();
+        string Stand(IActionResult r) => Json(r).GetProperty("lageStand").GetString()!;
+
+        var start = Stand(await Controller(u).GetStatus());
+        Assert.Equal(16, start.Length);
+        Assert.Equal(start, Stand(await Controller(u).GetStatus()));
+        Assert.Equal(start, Stand(await Controller(u).PostPositions(new TeamMobileAppController.AppPositionenRequest { Positions = [] })));
+
+        // Neue Mitteilung → neuer Stand
+        u.Einsatz.TeamMitteilungSpeichern(u.Team.TeamId, "Bitte Funkkontakt");
+        var nachMitteilung = Stand(await Controller(u).GetStatus());
+        Assert.NotEqual(start, nachMitteilung);
+
+        // Suche startet → neuer Stand; reine Laufzeit aendert ihn nicht
+        u.Team.StartTimer();
+        var laeuft = Stand(await Controller(u).GetStatus());
+        Assert.NotEqual(nachMitteilung, laeuft);
+        Assert.Equal(laeuft, Stand(await Controller(u).GetStatus()));
+
+        // Mitteilung an ein anderes Team aendert diesen Stand nicht
+        u.Einsatz.TeamMitteilungSpeichern("anderes-team", "fremd");
+        Assert.Equal(laeuft, Stand(await Controller(u).GetStatus()));
+    }
 }
 
 /// <summary>Befunde der Leitung zu PR #122</summary>

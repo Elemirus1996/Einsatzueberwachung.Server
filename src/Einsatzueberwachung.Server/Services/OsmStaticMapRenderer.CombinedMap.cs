@@ -163,7 +163,7 @@ public sealed partial class OsmStaticMapRenderer
         if (validAreas.Count == 0 && !elwPosition.HasValue)
             return null;
 
-        var tileConfig = GetSearchAreaTileConfig(tileType);
+        var tileConfig = await KachelConfigAsync(tileType);
         var tilePixelSize = tileConfig.PixelSize;
 
         using var renderCts = new CancellationTokenSource(RenderTimeout);
@@ -205,7 +205,7 @@ public sealed partial class OsmStaticMapRenderer
             var minTileY = (int)Math.Floor(absCropTop / tilePixelSize);
             var maxTileY = (int)Math.Floor(absCropBottom / tilePixelSize);
 
-            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, tileConfig.UrlTemplates, ct);
+            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, tileConfig, ct);
             var (fullBitmap, _, _) = AssembleTileMosaic(tiles, minTileX, minTileY, maxTileX, maxTileY, tilePixelSize);
 
             using (fullBitmap)
@@ -259,7 +259,8 @@ public sealed partial class OsmStaticMapRenderer
                     DrawMarker(canvas, new SKPoint(ToX(elwPosition.Value.Longitude), ToY(elwPosition.Value.Latitude)), new SKColor(220, 20, 60), "ELW");
 
                 DrawNorthArrow(canvas, width, height);
-                DrawAttribution(canvas, width, height, tileConfig.Attribution);
+                DrawScaleBar(canvas, width, height, ToX, (minLat + maxLat) / 2, minLon, maxLon);
+                DrawAttribution(canvas, width, height, KartenQuelle(tileConfig, minTileX, maxTileX, minTileY, maxTileY, zoom));
 
                 using var image = SKImage.FromBitmap(outputBitmap);
                 using var data = image.Encode(SKEncodedImageFormat.Png, 92);
@@ -371,7 +372,7 @@ public sealed partial class OsmStaticMapRenderer
             }
         }
 
-        var tileConfig = GetSearchAreaTileConfig(options.TileType);
+        var tileConfig = await KachelConfigAsync(options.TileType);
         var tilePixelSize = tileConfig.PixelSize;
 
         using var renderCts = new CancellationTokenSource(RenderTimeout);
@@ -451,7 +452,7 @@ public sealed partial class OsmStaticMapRenderer
             var minTileY = (int)Math.Floor(absCropTop / tilePixelSize);
             var maxTileY = (int)Math.Floor(absCropBottom / tilePixelSize);
 
-            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, tileConfig.UrlTemplates, ct);
+            var tiles = await DownloadTilesWithConfigAsync(minTileX, maxTileX, minTileY, maxTileY, zoom, tileConfig, ct);
             var (fullBitmap, _, _) = AssembleTileMosaic(tiles, minTileX, minTileY, maxTileX, maxTileY, tilePixelSize);
 
             using (fullBitmap)
@@ -570,7 +571,8 @@ public sealed partial class OsmStaticMapRenderer
                     DrawGrid(canvas, ToX, ToY, minLat, maxLat, minLon, maxLon, width, height, options.GridType);
 
                 DrawNorthArrow(canvas, width, height);
-                DrawAttribution(canvas, width, height, tileConfig.Attribution);
+                DrawScaleBar(canvas, width, height, ToX, (minLat + maxLat) / 2, minLon, maxLon);
+                DrawAttribution(canvas, width, height, KartenQuelle(tileConfig, minTileX, maxTileX, minTileY, maxTileY, zoom));
 
                 using var image = SKImage.FromBitmap(outputBitmap);
                 using var data = image.Encode(SKEncodedImageFormat.Png, 92);

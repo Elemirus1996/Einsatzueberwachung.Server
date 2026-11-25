@@ -35,7 +35,15 @@ public sealed partial class ElAppController
 
         var ablaufUtc = jetzt + ElAppTokenService.Laufzeit;
         audit?.Log("Anmeldung Einsatzleitung (App)", Geraet(anfrage.Geraet));
-        return Ok(await AnmeldeAntwortAsync(tokens.Ausstellen(ablaufUtc, jetzt), ablaufUtc, jetzt));
+        // Feste Person des VPN-Geraets gleich ins Token; die App fragt dann nicht nach (APP_API EL Abschnitt 4a)
+        var personId = geraete.PersonFuer(HttpContext.Connection.RemoteIpAddress);
+        object? ich = null;
+        if (personId is not null)
+        {
+            var i = await IchAsync(personId);
+            ich = new { personId = i.PersonId, name = i.Name, rolle = i.Rolle, fest = true };
+        }
+        return Ok(await AnmeldeAntwortAsync(tokens.Ausstellen(ablaufUtc, jetzt, personId), ablaufUtc, jetzt, ich: ich));
     }
 
     public sealed record ElVerlaengernRequest(string? Geraet);
@@ -47,7 +55,7 @@ public sealed partial class ElAppController
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
         var alt = Bearer();
         var jetzt = DateTime.UtcNow;
-        if (!tokens.TryPruefen(alt, jetzt, out var altAblauf, out var anmeldung) || einsatz is null) return Gone();
+        if (!tokens.TryPruefen(alt, jetzt, out var altAblauf, out var anmeldung, out var personId) || einsatz is null) return Gone();
         if (!ElPositionService.Laeuft(einsatz.CurrentEinsatz))
             return Conflict(new { error = "Verlängern geht nur während eines Einsatzes oder einer Übung." });
 
@@ -56,24 +64,26 @@ public sealed partial class ElAppController
         if (neuAblauf <= altAblauf)
             return Conflict(new { error = "Bitte neu mit dem Staffel-Passwort anmelden (höchstens 72 Stunden ohne Passwort)." });
 
-        var neu = tokens.Ausstellen(neuAblauf, anmeldung);
+        var neu = tokens.Ausstellen(neuAblauf, anmeldung, personId);
         tokens.Abmelden(alt!, altAblauf);
         audit?.Log("Zugang verlängert (EL-App)", Geraet(anfrage?.Geraet));
         return Ok(await AnmeldeAntwortAsync(neu, neuAblauf, anmeldung, mitAnmeldung: true));
     }
 
-    private async Task<object> AnmeldeAntwortAsync(string token, DateTime ablaufUtc, DateTime anmeldungUtc, bool mitAnmeldung = false)
+    private async Task<object> AnmeldeAntwortAsync(string token, DateTime ablaufUtc, DateTime anmeldungUtc, bool mitAnmeldung = false,
+        object? ich = null)
     {
         var staffel = einstellungen is null ? "" : (await einstellungen.GetStaffelSettingsAsync())?.StaffelName ?? "";
         var server = new
         {
             kennung = kennung?.Kennung,
             staffel,
-            logoVersion = logo is null ? null : (await logo.HolenAsync())?.Version
+            logoVersion = logo is null ? null : (await logo.HolenAsync())?.Version,
+            packlisteVersion = await AppPacklisteAntwort.VersionAsync(einstellungen)
         };
         var datenschutz = await AppDatenschutzAntwort.GanzAsync(einstellungen); // #148: die EL-App fragt beim ersten Login
         if (!mitAnmeldung)
-            return new { apiVersion = TeamMobileAppController.ApiVersion, rolle = "el", token, expiresAt = ablaufUtc, server, datenschutz };
+            return new { apiVersion = TeamMobileAppController.ApiVersion, rolle = "el", token, expiresAt = ablaufUtc, server, datenschutz, ich };
         return new
         {
             apiVersion = TeamMobileAppController.ApiVersion,
@@ -102,8 +112,10 @@ public sealed partial class ElAppController
     public async Task<IActionResult> GetLage()
     {
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
-        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _) || einsatz is null) return Gone();
-        return Ok(ElLage.Erstellen(einsatz, halsbaender, positionen.Modus, await AppDatenschutzAntwort.VersionAsync(einstellungen)));
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _, out _, out var personId) || einsatz is null) return Gone();
+        var ich = await IchAsync(personId);
+        return Ok(ElLage.Erstellen(einsatz, halsbaender, ModusFuer(ich, positionen.Modus), await AppDatenschutzAntwort.VersionAsync(einstellungen),
+            new { personId = ich.PersonId, name = ich.Name, rolle = ich.Rolle }));
     }
 
     /// <summary>Datenschutzerklaerung der Staffel zum Nachlesen (#148); 404, wenn keine hinterlegt ist</summary>
@@ -113,6 +125,15 @@ public sealed partial class ElAppController
         if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
         if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _)) return Gone();
         return await AppDatenschutzAntwort.GanzAsync(einstellungen) is { } datenschutz ? Ok(datenschutz) : NotFound();
+    }
+
+    /// <summary>Packliste der Staffel (Team-Rolle Abschnitt 14); 404, wenn keine hinterlegt ist</summary>
+    [HttpGet("packliste")]
+    public async Task<IActionResult> GetPackliste()
+    {
+        if (publicAccess.IsPublicRequest(HttpContext)) return NotFound();
+        if (!tokens.TryPruefen(Bearer(), DateTime.UtcNow, out _)) return Gone();
+        return await AppPacklisteAntwort.GanzAsync(einstellungen) is { } packliste ? Ok(packliste) : NotFound();
     }
 
     /// <summary>Live-Ereignisse (Abschnitt 8). Bei Einsatzende kommt „einsatz“, „stop“ nur bei ungueltigem Token.</summary>
@@ -177,12 +198,13 @@ public sealed partial class ElAppController
     public TimeSpan PingIntervall { get; set; } = TimeSpan.FromSeconds(20);
 
     /// <summary>Name fuer das Audit-Log: VPN-Geraet, sonst Angabe der App, sonst „Einsatzleitung“</summary>
+    /// <summary>Gerätename fürs Audit-Log, mit Person, sobald sie bekannt ist („Handy Paul (Paul Richter)“)</summary>
     private string Geraet(string? angabe)
     {
         var vpn = geraete.NameFuer(HttpContext.Connection.RemoteIpAddress);
-        if (vpn is not null) return vpn;
         var eigen = (angabe ?? "").Trim();
-        return eigen.Length is > 0 and <= 40 ? eigen : LeitungsGeraetNamen.Einsatzleitung;
+        var name = vpn ?? (eigen.Length is > 0 and <= 40 ? eigen : LeitungsGeraetNamen.Einsatzleitung);
+        return HttpContext.Items[PersonImProtokoll] is string person ? $"{name} ({person})" : name;
     }
 }
 
@@ -190,7 +212,8 @@ public sealed partial class ElAppController
 public static class ElLage
 {
     public static object Erstellen(Einsatzueberwachung.Domain.Interfaces.IEinsatzService einsatzService,
-        Einsatzueberwachung.Domain.Interfaces.ICollarTrackingService? halsbaender, OrtungsModus modus, object? datenschutz = null)
+        Einsatzueberwachung.Domain.Interfaces.ICollarTrackingService? halsbaender, OrtungsModus modus, object? datenschutz = null,
+        object? ich = null)
     {
         var e = einsatzService.CurrentEinsatz;
         var aktiv = ElPositionService.Laeuft(e);
@@ -198,6 +221,7 @@ public static class ElLage
         {
             mode = OrtungsSteuerung.AlsText(modus),
             serverZeit = DateTime.UtcNow,
+            ich,
             einsatz = new
             {
                 aktiv,
@@ -205,6 +229,7 @@ public static class ElLage
                 stichwort = e.Stichwort ?? "",
                 ort = e.Einsatzort ?? "",
                 szenario = e.Szenario.ToString(),
+                alarmiertDurch = e.AlarmiertDurch?.ToString(),
                 uebung = !e.IstEinsatz,
                 beginn = aktiv ? AppZeit.Utc(e.AlarmierungsZeit ?? e.EinsatzDatum) : (DateTime?)null,
                 einsatzleiter = e.Einsatzleiter ?? "",
@@ -231,6 +256,7 @@ public static class ElLage
             dogName = t.DogName ?? "",
             hundefuehrerName = t.HundefuehrerName ?? "",
             helfer = t.HelferNames.Where(h => !string.IsNullOrWhiteSpace(h)).ToList(),
+            einsatzart = t.Einsatzart?.ToString(),
             suche = new { status, seit = status == "bereit" ? (DateTime?)null : AppZeit.Utc(t.StartTime), dauerSec = (long)t.ElapsedTime.TotalSeconds },
             warnstufe = t.SecondWarningMinutes > 0 && minuten >= t.SecondWarningMinutes ? 2
                 : t.FirstWarningMinutes > 0 && minuten >= t.FirstWarningMinutes ? 1 : 0,

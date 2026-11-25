@@ -42,6 +42,18 @@ public partial class EinsatzStart
     private bool _busy;
     private bool _einsatzBereitsAktiv;
     private bool _szenarioMissing;
+    private bool _alarmiertMissing;
+
+    /// <summary>„Alarmiert durch“ als Auswahl (Pflicht); bei Divera wird nur die Stelle übernommen</summary>
+    private string AlarmiertDurchWahl
+    {
+        get => _model.AlarmiertDurch?.ToString() ?? string.Empty;
+        set
+        {
+            _model.AlarmiertDurch = AlarmiertDurchExtensions.AusApiWert(value);
+            _alarmiertMissing = false;
+        }
+    }
     private bool _einsatzortMissing;
     private bool _mapAddressUserDirty;
     private bool _diveraDrawerOpen;
@@ -200,6 +212,14 @@ public partial class EinsatzStart
         }
         _szenarioMissing = false;
 
+        if (_model.AlarmiertDurch is null)
+        {
+            _alarmiertMissing = true;
+            _status = "Bitte auswählen, wer alarmiert hat.";
+            _error = true;
+            return;
+        }
+
         if (!TryPrepareAlarmTime())
         {
             _status = "Alarmzeit ungültig. Bitte Format HH:mm verwenden.";
@@ -293,6 +313,7 @@ public partial class EinsatzStart
     private void OnStepperKeyDown(KeyboardEventArgs e)
     {
         var sc = BrowserPrefs.Preferences.Shortcuts;
+        if (sc.Ausgeschaltet) return;
         if (MatchesShortcut(e, sc.StepperUp))
             _model.AnzahlTeams = Math.Min(50, _model.AnzahlTeams + 1);
         else if (MatchesShortcut(e, sc.StepperDown))

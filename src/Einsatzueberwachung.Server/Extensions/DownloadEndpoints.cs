@@ -48,8 +48,9 @@ public static class DownloadEndpoints
             var tileType = mapType switch
             {
                 "satellite" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Satellite,
-                "satelliteGoogle" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.SatelliteGoogle,
-                "hybrid" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Hybrid,
+                "luftbild" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Luftbild,
+                // Google-Kacheln entfernt (#210): alte Links bekommen die Luftbilder der Länder
+                "satelliteGoogle" or "hybrid" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Luftbild,
                 "topo" => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Topographic,
                 _ => Einsatzueberwachung.Domain.Models.Enums.MapTileType.Streets
             };
@@ -329,13 +330,18 @@ public static class DownloadEndpoints
     }
 
     /// <summary>Auswahl aus der Download-Adresse; ohne Angaben wie bisher (alle Tracks, Straßenkarte).</summary>
-    public static PdfBerichtOptionen BerichtOptionenAusAdresse(ArchivedEinsatz einsatz, string? karte, string? teams, string? tracks)
+    public static PdfBerichtOptionen BerichtOptionenAusAdresse(ArchivedEinsatz einsatz, string? karte, string? teams, string? tracks,
+        string? abschnitte = null)
     {
         var mitTracks = tracks != "0" && einsatz.TrackSnapshots?.Any(track => track.Points.Count >= 2) == true;
         var kartenart = Enum.TryParse<MapTileType>(karte, ignoreCase: true, out var art)
             && PdfBerichtOptionen.Kartenarten.Any(k => k.Art == art) ? art : MapTileType.Streets;
         IReadOnlyCollection<string>? teamIds = string.IsNullOrWhiteSpace(teams) ? null
             : teams.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(StringComparer.Ordinal);
-        return new PdfBerichtOptionen(mitTracks, kartenart, teamIds);
+        // Unbekannte Abschnitte fallen weg; ohne Angabe alle
+        IReadOnlyCollection<string>? auswahl = abschnitte is null ? null
+            : abschnitte.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(PdfBerichtOptionen.AlleAbschnitte.Contains).ToHashSet(StringComparer.Ordinal);
+        return new PdfBerichtOptionen(mitTracks, kartenart, teamIds, auswahl);
     }
 }

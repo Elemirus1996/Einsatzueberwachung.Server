@@ -2,13 +2,14 @@
 // eine eigene Seite statt der Fehlerseite des Browsers. Inhalte der App werden bewusst NICHT zwischengespeichert –
 // Einsatzdaten kommen immer frisch vom Server (Blazor), angemeldete Inhalte bleiben aus dem Speicher des Geraets.
 // Ausnahme: Kartenkacheln (oeffentliche Karten, keine Einsatzdaten) – damit die Karte bei schwachem Netz/Funkloch
-// fuer bereits angesehene oder vorab gesicherte Gebiete weiter angezeigt wird.
+// fuer bereits angesehene Gebiete weiter angezeigt wird. Vorabladen gibt es nicht (OSM-Nutzungsregeln, Issue 210).
 const CACHE = 'einsatz-offline-v2';
 const TILE_CACHE = 'einsatz-kacheln-v1';
 const OFFLINE_FILES = ['/offline.html', '/icons/icon-192.png', '/js/el-outbox.js'];
 
-// Nur Kartenanbieter mit CORS (Antworten lassen sich normal speichern). Google-Kacheln werden nicht gespeichert.
-const TILE_HOSTS = /^([abc]\.)?tile\.openstreetmap\.org$|^([abc]\.)?tile\.opentopomap\.org$|^server\.arcgisonline\.com$/;
+// Nur Kartenanbieter mit CORS (Antworten lassen sich normal speichern), dazu die Luftbild-Dienste der Laender mit CORS
+// (wwwroot/data/luftbild-laender.json, "cors": true).
+const TILE_HOSTS = /^([abc]\.)?tile\.openstreetmap\.org$|^([abc]\.)?tile\.opentopomap\.org$|^ibasemaps-api\.arcgis\.com$|^(owsproxy\.lgl-bw\.de|geoservices\.bayern\.de|isk\.geobasis-bb\.de|gdi\.berlin\.de|geodienste\.bremen\.de|www\.gds-srv\.hessen\.de|www\.geodaten-mv\.de|opendata\.lgln\.niedersachsen\.de|geo4\.service24\.rlp\.de|geoportal\.saarland\.de|www\.geoproxy\.geoportal-th\.de)$/;
 const TILE_TIMEOUT_MS = 4000;
 const MAX_TILES = 5000;
 

@@ -1,7 +1,7 @@
 @if (IsOpen)
 {
     <div class="modal-overlay">
-        <button type="button" class="modal-overlay-dismiss" @onclick="OnClose" aria-label="Dialog schließen"></button>
+        <div class="modal-overlay-dismiss" aria-hidden="true"></div>
         <div class="modal-modern"
              role="dialog"
              aria-modal="true"
@@ -48,6 +48,18 @@
                                                          ShowUnknown="@ShouldShowUnknownResourceStatus(ResourceEntityType.Dog, Model.DogId)"
                                                          Name="Hund" Variant="select" />
                             </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="team-einsatzart">Eingesetzt als</label>
+                            <select id="team-einsatzart" class="form-select" @bind="Model.Einsatzart">
+                                <option value="">nicht festgelegt</option>
+                                @foreach (var art in EinsatzartOptionen)
+                                {
+                                    <option value="@art">@art.Anzeige()</option>
+                                }
+                            </select>
+                            <div class="monitor-text-caption mt-1">Für den Einsatzbericht; wird beim Start jeder Suche festgehalten.</div>
                         </div>
 
                         <div class="col-md-6">
@@ -235,6 +247,19 @@
     [Parameter] public EventCallback<ChangeEventArgs> OnDogChanged { get; set; }
     [Parameter] public EventCallback OnDroneChanged { get; set; }
     [Parameter] public EventCallback OnHandlerChanged { get; set; }
+
+    /// <summary>Spezialisierungen des gewählten Hundes; ohne passende Spezialisierung alle fünf (plus eine schon gesetzte Art)</summary>
+    private IEnumerable<Einsatzueberwachung.Domain.Models.Enums.Einsatzart> EinsatzartOptionen
+    {
+        get
+        {
+            var dog = AvailableDogs.FirstOrDefault(d => d.Id == Model.DogId);
+            var arten = EinsatzartExtensions.AusSpezialisierungen(dog?.Specializations ?? DogSpecialization.None);
+            if (arten.Count == 0) arten = EinsatzartExtensions.Alle.ToList();
+            if (EinsatzartExtensions.AusApiWert(Model.Einsatzart) is { } gesetzt && !arten.Contains(gesetzt)) arten.Add(gesetzt);
+            return arten;
+        }
+    }
 
     private Task NotifyTeamTypeChangedAsync() => OnTeamTypeChanged.InvokeAsync();
     private Task NotifyDroneChangedAsync() => OnDroneChanged.InvokeAsync();

@@ -110,6 +110,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable
 
         var sc = BrowserPrefs.Preferences.Shortcuts;
         await JS.InvokeVoidAsync("keyboardShortcuts.configure", new {
+            aus        = sc.Ausgeschaltet,
             navHome    = sc.NavHome,
             navKarte   = sc.NavKarte,
             navMonitor = sc.NavMonitor,

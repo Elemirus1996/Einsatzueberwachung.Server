@@ -175,6 +175,9 @@ internal static class ServiceCollectionExtensions
         // Native Einsatzleitung, Live-Ereignisse (#125)
         services.AddSingleton<ElAppEreignisse>();
         services.AddSingleton<ElAppAktionen>();
+        // Mitteilungen im Hintergrund (#79): ab Serverstart sammeln
+        services.AddSingleton<ElMitteilungen>();
+        services.AddHostedService(sp => sp.GetRequiredService<ElMitteilungen>());
         // Native Team-Ansicht der App (#119)
         services.AddSingleton<TeamAppEreignisse>();
         services.AddSingleton<AppStatusmeldungen>();
@@ -314,7 +317,9 @@ internal static class ServiceCollectionExtensions
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Einsatzueberwachung/1.2 (+https://github.com/Elemirus1996/Einsatzueberwachung.Server)");
             client.DefaultRequestHeaders.Referrer = new Uri("https://github.com/Elemirus1996/Einsatzueberwachung.Server");
             client.Timeout = TimeSpan.FromSeconds(15);
-        });
+        })
+            // Keine Protokollierung der Kachel-Adressen: die Esri-Adresse enthaelt den API-Schluessel der Staffel
+            .RemoveAllLoggers();
         services.AddSingleton<IStaticMapRenderer, OsmStaticMapRenderer>();
 
         services.AddSingleton<GitHubUpdateService>(sp =>
@@ -322,7 +327,8 @@ internal static class ServiceCollectionExtensions
             var factory = sp.GetRequiredService<IHttpClientFactory>();
             var logger = sp.GetRequiredService<ILogger<GitHubUpdateService>>();
             var settingsService = sp.GetRequiredService<ISettingsService>();
-            return new GitHubUpdateService(factory.CreateClient(nameof(GitHubUpdateService)), logger, settingsService);
+            return new GitHubUpdateService(factory.CreateClient(nameof(GitHubUpdateService)), logger, settingsService,
+                sp.GetRequiredService<IAuditLogService>());
         });
 
         services.AddHttpClient<IWeatherService, DwdWeatherService>();

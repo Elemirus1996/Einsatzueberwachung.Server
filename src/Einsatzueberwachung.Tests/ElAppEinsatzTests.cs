@@ -29,10 +29,14 @@ public sealed class ElAppEinsatzTests : IDisposable
     private readonly EinsatzAbschlussTests.Recorder<IArchivService> _archiv;
     private readonly EinsatzAbschlussService _abschluss;
     private DateTime? _archiviertesEnde;
+    private ArchivedEinsatz? _archiviert;
+    private VpnDeviceStore _vpn = null!;
     private List<string>? _archiviertesPersonal;
     private List<string>? _archivierteHunde;
     private readonly PersonalEntry _anna = new() { Vorname = "Anna", Nachname = "Berg", IsActive = true, Skills = PersonalSkills.Einsatzleiter };
     private readonly PersonalEntry _ben = new() { Vorname = "Ben", Nachname = "Kurz", IsActive = true, Skills = PersonalSkills.Fuehrungsassistent };
+    private readonly PersonalEntry _carla = new() { Vorname = "Carla", Nachname = "Diehl", IsActive = true };
+    private readonly PersonalEntry _inaktiv = new() { Vorname = "Ina", Nachname = "Aktiv", IsActive = false };
     private readonly DogEntry _rex = new() { Name = "Rex", IsActive = true };
     private readonly DogEntry _bello = new() { Name = "Bello", IsActive = true };
 
@@ -45,6 +49,7 @@ public sealed class ElAppEinsatzTests : IDisposable
     public ElAppEinsatzTests()
     {
         Directory.CreateDirectory(_dir);
+        _vpn = new VpnDeviceStore(_dir);
         _leitung = new LeitungAuthStore(_dir);
         Assert.Null(_leitung.Setup(_leitung.SetupCode!, "Rettungshund2026", "Rettungshund2026"));
         _tokens = new ElAppTokenService(RandomNumberGenerator.GetBytes(64), _leitung);
@@ -55,7 +60,8 @@ public sealed class ElAppEinsatzTests : IDisposable
             _archiviertesEnde = ((EinsatzData)args![0]!).EinsatzEnde;
             _archiviertesPersonal = (List<string>)args[3]!;
             _archivierteHunde = (List<string>)args[4]!;
-            return Task.FromResult(ArchivedEinsatz.FromEinsatzData((EinsatzData)args[0]!, (string)args[1]!, (string)args[2]!, Ortszeit.Jetzt));
+            _archiviert = ArchivedEinsatz.FromEinsatzData((EinsatzData)args[0]!, (string)args[1]!, (string)args[2]!, Ortszeit.Jetzt);
+            return Task.FromResult(_archiviert);
         });
         var pdf = EinsatzAbschlussTests.Recorder<IPdfExportService>.Create((_, args) =>
         {
@@ -67,13 +73,17 @@ public sealed class ElAppEinsatzTests : IDisposable
 
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
-    private ElAppController Controller(IArchivService? archiv = null, IPdfExportService? pdfExport = null)
+    private ElAppController Controller(IArchivService? archiv = null, IPdfExportService? pdfExport = null, string? token = null)
     {
-        var settings = EinsatzAbschlussTests.Recorder<ISettingsService>.Create((m, _) =>
-            m.Name == nameof(ISettingsService.GetStaffelSettingsAsync) ? Task.FromResult(new StaffelSettings { StaffelName = "RHS Test" }) : null);
+        var settings = EinsatzAbschlussTests.Recorder<ISettingsService>.Create((m, _) => m.Name switch
+        {
+            nameof(ISettingsService.GetStaffelSettingsAsync) => Task.FromResult(new StaffelSettings { StaffelName = "RHS Test" }),
+            nameof(ISettingsService.GetAppSettingsAsync) => Task.FromResult(new AppSettings()),
+            _ => null
+        });
         var stammdaten = EinsatzAbschlussTests.Recorder<IMasterDataService>.Create((m, _) => m.Name switch
         {
-            nameof(IMasterDataService.GetPersonalListAsync) => Task.FromResult(new List<PersonalEntry> { _ben, _anna }),
+            nameof(IMasterDataService.GetPersonalListAsync) => Task.FromResult(new List<PersonalEntry> { _ben, _anna, _carla }),
             nameof(IMasterDataService.GetDogListAsync) => Task.FromResult(new List<DogEntry> { _rex, _bello }),
             _ => null
         });
@@ -84,7 +94,7 @@ public sealed class ElAppEinsatzTests : IDisposable
             nameof(IDiveraService.GetAlarmByIdAsync) => Task.FromResult((int)args![0]! == 7 ? Alarm() : null),
             _ => null
         });
-        var c = new ElAppController(_tokens, new ElPositionService(_einsatz), new LeitungsGeraetNamen(new VpnDeviceStore(_dir)),
+        var c = new ElAppController(_tokens, new ElPositionService(_einsatz), new LeitungsGeraetNamen(_vpn),
             new PublicAccess(5002), NullLogger<ElAppController>.Instance, null,
             _leitung, new LoginLockout(), null, _einsatz, null, settings.Proxy, null, null, _aktionen,
             abschluss: _abschluss, stammdaten: stammdaten.Proxy, divera: divera.Proxy, zeit: new Uhr(),
@@ -92,7 +102,7 @@ public sealed class ElAppEinsatzTests : IDisposable
         var http = new DefaultHttpContext();
         http.Connection.LocalPort = 5000;
         http.Connection.RemoteIpAddress = IPAddress.Parse("10.10.0.9");
-        http.Request.Headers.Authorization = "Bearer " + _token;
+        http.Request.Headers.Authorization = "Bearer " + (token ?? _token);
         c.ControllerContext = new ControllerContext { HttpContext = http };
         return c;
     }
@@ -117,7 +127,7 @@ public sealed class ElAppEinsatzTests : IDisposable
         Assert.Equal("Anna Berg", Assert.Single(vorlage.GetProperty("einsatzleiter").EnumerateArray()).GetString());
         Assert.Equal("Ben Kurz", Assert.Single(vorlage.GetProperty("fuehrungsassistenten").EnumerateArray()).GetString());
         Assert.Equal(7, Assert.Single(vorlage.GetProperty("divera").EnumerateArray()).GetProperty("id").GetInt32());
-        Assert.Equal(["Streets", "Topographic", "Satellite"], vorlage.GetProperty("kartenarten").EnumerateArray().Select(k => k.GetProperty("wert").GetString()).ToArray());
+        Assert.Equal(["Streets", "Topographic", "Luftbild"], vorlage.GetProperty("kartenarten").EnumerateArray().Select(k => k.GetProperty("wert").GetString()).ToArray());
 
         var ergebnisse = Json(Controller().GetErgebnisse()).EnumerateArray().ToList();
         Assert.Contains(ergebnisse, e => e.GetProperty("wert").GetString() == "Uebung abgeschlossen" && e.GetProperty("anzeige").GetString() == "Übung abgeschlossen");
@@ -176,6 +186,248 @@ public sealed class ElAppEinsatzTests : IDisposable
         Assert.Equal(1, _archiv.Calls.Count(c => c == nameof(IArchivService.ArchiveEinsatzAsync)));
     }
 
+    /// <summary>Einsatz mit Mantrailer-Team (Hund kann Fläche und Mantrailer), einem Trail und einem Fund-Punkt</summary>
+    private async Task<(Team Team, CompletedSearch Trail)> AbschlussEinsatzAsync(string? alarmiertDurch = "Polizei")
+    {
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzStarten(Start() with { AlarmiertDurch = alarmiertDurch, Melder = "PI Nord" }));
+        _rex.Specializations = DogSpecialization.Flaechensuche | DogSpecialization.Mantrailing;
+        var team = await _einsatz.AddTeamAsync(new Team { TeamName = "Team Rex", DogId = _rex.Id, DogName = "Rex" });
+        var trail = await _einsatz.CreateCompletedSearchAsync(team.TeamId, DateTime.UtcNow.AddMinutes(-40), DateTime.UtcNow.AddMinutes(-10));
+        trail.Einsatzart = Einsatzart.Mantrailer;
+        _einsatz.CurrentEinsatz.MapMarkers.Add(new MapMarker { Label = "Fund", Latitude = 49.3, Longitude = 8.4, IstFund = true, TeamId = team.TeamId, CreatedAt = Ortszeit.Jetzt });
+        _einsatz.CurrentEinsatz.EinsatzDatum = Ortszeit.Jetzt.AddHours(-2);
+        return (team, trail);
+    }
+
+    [Fact]
+    public async Task Abschluss_ZeigtWerteFehlendVorschlagUndListen_OhneEinsatz409()
+    {
+        Assert.IsType<ConflictObjectResult>(await Controller().GetAbschluss());
+        var (team, trail) = await AbschlussEinsatzAsync();
+
+        var json = Json(await Controller().GetAbschluss());
+
+        Assert.Equal(["vorgangsnummer", "polizei", "teams", "trails"], json.GetProperty("fehlend").EnumerateArray().Select(x => x.GetString()));
+        Assert.Equal("Polizei", json.GetProperty("alarmiertDurch").GetString());
+        Assert.True(json.GetProperty("polizeiGefragt").GetBoolean());
+        var t = Assert.Single(json.GetProperty("teams").EnumerateArray());
+        Assert.Equal(team.TeamId, t.GetProperty("teamId").GetString());
+        Assert.Equal(JsonValueKind.Null, t.GetProperty("einsatzart").ValueKind);
+        Assert.Equal(["Flaeche", "Mantrailer"], t.GetProperty("erlaubt").EnumerateArray().Select(x => x.GetString()));
+        Assert.Equal(trail.Id, Assert.Single(json.GetProperty("trails").EnumerateArray()).GetProperty("sucheId").GetString());
+        var vorschlag = json.GetProperty("fund").GetProperty("vorschlag");
+        Assert.Equal(49.3, vorschlag.GetProperty("lat").GetDouble());
+        Assert.Equal(team.TeamId, vorschlag.GetProperty("teamId").GetString());
+        Assert.Equal(AbschlussAngaben.StandardAbbruchgruende, json.GetProperty("abbruchgruende").EnumerateArray().Select(x => x.GetString()));
+        Assert.Equal("PI Nord", json.GetProperty("melder").GetString());
+    }
+
+    [Fact]
+    public async Task Beenden_MitAbschluss_Unvollstaendig409_FalscheAngaben400_VollstaendigArchiviert()
+    {
+        var (team, trail) = await AbschlussEinsatzAsync();
+        var fundZeit = DateTime.UtcNow.AddMinutes(-15);
+        fundZeit = fundZeit.AddTicks(-(fundZeit.Ticks % TimeSpan.TicksPerSecond));
+
+        ElAppController.ElEinsatzEnde Ende(ElAppController.ElAbschluss? abschluss, bool? bestaetigt = false, IReadOnlyList<string>? abschnitte = null) =>
+            new(NeueId(), "Person gefunden - lebend", true, "", null, new ElAppController.ElPdfWahl(false, Abschnitte: abschnitte),
+                Abschluss: abschluss, UnvollstaendigBestaetigt: bestaetigt);
+        ElAppController.ElAbschluss Angaben(string art = "Mantrailer", string grund = "Person gefunden", string sucheId = "") =>
+            new("PP 2026/1", "Polizei", new AbschlussPolizei("POK Müller", "4711", "0231"),
+                new ElAppController.ElAbschlussFund(fundZeit.ToString("yyyy-MM-ddTHH:mm:ssZ"), 49.3, 8.4, "Stadtgarten", "Rettungsdienst", team.TeamId),
+                [new AbschlussTeam(team.TeamId, art)], [new AbschlussTrail(sucheId.Length > 0 ? sucheId : trail.Id, grund, "Schal")]);
+
+        // Ohne Angaben und ohne Bestaetigung: nichts beendet, Liste der fehlenden Angaben
+        var offen = await Controller().EinsatzBeenden(Ende(null));
+        Assert.IsType<ConflictObjectResult>(offen);
+        Assert.Contains("fund", Json(offen).GetProperty("fehlend").EnumerateArray().Select(x => x.GetString()));
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende(Angaben(art: "Fliegen"))));
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende(Angaben(grund: "Keine Lust"))));
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende(Angaben(sucheId: "gibtsnicht"))));
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende(Angaben(), abschnitte: ["karten", "erfunden"])));
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(Ende(Angaben() with
+        {
+            Fund = new ElAppController.ElAbschlussFund("2026-10-31T17:45:00", null, null, null, null, null) // ohne Zone
+        })));
+        Assert.True(ElPositionService.Laeuft(_einsatz.CurrentEinsatz));
+        Assert.Null(_archiviert);
+
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzBeenden(Ende(Angaben(), abschnitte: ["teams", "funk"])));
+
+        var a = _archiviert!;
+        Assert.Equal("PP 2026/1", a.Vorgangsnummer);
+        Assert.Equal("POK Müller", a.PolizeiKontaktName);
+        Assert.Equal(fundZeit, a.Fund.ZeitUtc);
+        Assert.Equal("Rettungsdienst", a.Fund.UebergabeAn);
+        Assert.Equal(team.TeamId, a.Fund.TeamId);
+        Assert.Equal(Einsatzart.Mantrailer, Assert.Single(a.Teams).Einsatzart);
+        var archivTrail = Assert.Single(a.CompletedSearches!);
+        Assert.Equal(("Person gefunden", "Schal"), (archivTrail.Abbruchgrund, archivTrail.Geruchsartikel));
+        Assert.Equal(["teams", "funk"], Assert.Single(_pdfOptionen).Abschnitte);
+    }
+
+    [Fact]
+    public async Task Beenden_UnvollstaendigBestaetigtOderAlteApp_BeendetTrotzFehlenderAngaben()
+    {
+        await AbschlussEinsatzAsync();
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzBeenden(
+            new ElAppController.ElEinsatzEnde(NeueId(), "Person gefunden - lebend", true, UnvollstaendigBestaetigt: true)));
+
+        await AbschlussEinsatzAsync();
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzBeenden(
+            new ElAppController.ElEinsatzEnde(NeueId(), "Suche erfolglos abgeschlossen", true))); // App vor 1.17.0
+    }
+
+    [Fact]
+    public async Task Abschluss_PolizeiangabenNurBeiPolizei_KeinePolizeiZaehltAlsErledigt_UebungNie()
+    {
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzStarten(Start() with { AlarmiertDurch = "Bundeswehr" }));
+
+        // Feuerwehr: keine Polizeiangaben gefragt
+        await AbschlussEinsatzAsync("Feuerwehr");
+        Assert.Equal(["teams", "trails"], Json(await Controller().GetAbschluss()).GetProperty("fehlend").EnumerateArray().Select(x => x.GetString()));
+        Assert.Equal(AlarmiertDurch.Feuerwehr, _einsatz.CurrentEinsatz.AlarmiertDurch);
+        Assert.Equal("PI Nord", _einsatz.CurrentEinsatz.Alarmiert);
+        _einsatz.ResetEinsatz();
+
+        // Aeltere App ohne Art: Art wird beim Abschluss gefragt und dort gesetzt
+        await AbschlussEinsatzAsync(null);
+        Assert.Contains("alarmiertDurch", Json(await Controller().GetAbschluss()).GetProperty("fehlend").EnumerateArray().Select(x => x.GetString()));
+        var leer = new ElAppController.ElAbschluss(null, null, null, null, null, null);
+        Assert.IsType<BadRequestObjectResult>(await Controller().EinsatzBeenden(
+            new ElAppController.ElEinsatzEnde(NeueId(), "Suche erfolglos abgeschlossen", true, Abschluss: leer with { AlarmiertDurch = "Bundeswehr" }, UnvollstaendigBestaetigt: false)));
+
+        // Polizei, aber „Keine Polizei beteiligt“: Vorgangsnummer und Kontakt entfallen
+        var ende = await Controller().EinsatzBeenden(new ElAppController.ElEinsatzEnde(NeueId(), "Suche erfolglos abgeschlossen", true,
+            Abschluss: leer with { AlarmiertDurch = "Polizei", KeinePolizei = true }, UnvollstaendigBestaetigt: false));
+        var fehlend = Json(ende).GetProperty("fehlend").EnumerateArray().Select(x => x.GetString()).ToList();
+        Assert.Equal(["teams", "trails"], fehlend);
+        Assert.True(_einsatz.CurrentEinsatz.KeinePolizei);
+        _einsatz.ResetEinsatz();
+
+        // Uebung: nie Polizeiangaben, auch keine Art
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzStarten(Start(uebung: true) with { AlarmiertDurch = "Polizei" }));
+        Assert.Empty(Json(await Controller().GetAbschluss()).GetProperty("fehlend").EnumerateArray());
+    }
+
+    private static string Rolle(JsonElement lage) => lage.GetProperty("ich").GetProperty("rolle").GetString()!;
+
+    [Fact]
+    public async Task Personen_Ich_NeuesTokenMitPerson_AltesGesperrt_UnbekanntOderInaktiv400()
+    {
+        var liste = Json(await Controller().GetPersonen()).GetProperty("personen").EnumerateArray().ToList();
+        Assert.Equal(["Anna Berg", "Ben Kurz", "Carla Diehl"], liste.Select(p => p.GetProperty("name").GetString()));
+        Assert.True(liste[0].GetProperty("einsatzleiter").GetBoolean());
+
+        Assert.IsType<BadRequestObjectResult>(await Controller().Ich(new ElAppController.ElIchRequest("gibtsnicht")));
+        Assert.IsType<BadRequestObjectResult>(await Controller().Ich(new ElAppController.ElIchRequest(_inaktiv.Id)));
+
+        var antwort = Json(await Controller().Ich(new ElAppController.ElIchRequest(_anna.Id)));
+        var token = antwort.GetProperty("anmeldung").GetProperty("token").GetString()!;
+        Assert.StartsWith("e4.", token);
+        Assert.Equal("Anna Berg", antwort.GetProperty("ich").GetProperty("name").GetString());
+        Assert.True(_tokens.TryPruefen(token, DateTime.UtcNow, out _, out _, out var personId));
+        Assert.Equal(_anna.Id, personId);
+        Assert.False(_tokens.TryPruefen(_token, DateTime.UtcNow, out _)); // altes Token gesperrt
+
+        // Kein Wechsel: mit Person im Token 409, Wechsel nur über Abmelden und neue Anmeldung
+        Assert.IsType<ConflictObjectResult>(await Controller(token: token).Ich(new ElAppController.ElIchRequest(_ben.Id)));
+    }
+
+    [Fact]
+    public async Task VpnGeraetMitPerson_AnmeldungMitFesterPerson_KeinWechsel_GeraetVorToken()
+    {
+        // Das Testgerät hat die VPN-Adresse 10.10.0.9 (Controller)
+        _vpn.Add(new VpnDevice { Name = "Handy Carla", PublicKey = "pk1", Ip = "10.10.0.9/32" });
+        _vpn.SetPerson("pk1", _carla.Id);
+        Assert.IsType<OkObjectResult>(await Controller().EinsatzStarten(Start() with { Einsatzleiter = "Carla Diehl", AlarmiertDurch = "Polizei" }));
+
+        var anmeldung = Json(await Controller().Login(new ElAppController.ElLoginRequest("Rettungshund2026", null)));
+        var token = anmeldung.GetProperty("token").GetString()!;
+        Assert.True(_tokens.TryPruefen(token, DateTime.UtcNow, out _, out _, out var person));
+        Assert.Equal(_carla.Id, person);
+        Assert.True(anmeldung.GetProperty("ich").GetProperty("fest").GetBoolean());
+        Assert.Equal("einsatzleiter", anmeldung.GetProperty("ich").GetProperty("rolle").GetString());
+
+        // Auch ein Token ohne Person (ältere App) oder mit anderer Person gilt auf diesem Gerät als Carla
+        Assert.IsType<ConflictObjectResult>(await Controller().Ich(new ElAppController.ElIchRequest(_anna.Id)));
+        var fremd = _tokens.Ausstellen(DateTime.UtcNow.AddHours(1), DateTime.UtcNow, _anna.Id);
+        Assert.Equal("Carla Diehl", Json(await Controller(token: fremd).GetLage()).GetProperty("ich").GetProperty("name").GetString());
+
+        _vpn.SetPerson("pk1", null);
+        Assert.Equal("Anna Berg", Json(await Controller(token: fremd).GetLage()).GetProperty("ich").GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task Rollen_EinsatzleiterSteuertUndSendet_FuehrungsassistentOhneStandort_AndereNurLesen_OhnePersonWieBisher()
+    {
+        // Für jede Person ein eigenes Token wie nach POST /ich
+        string NeuesToken(PersonalEntry p) => _tokens.Ausstellen(DateTime.UtcNow.AddHours(1), DateTime.UtcNow, p.Id);
+        var tokenAnna = NeuesToken(_anna);
+        var tokenBen = NeuesToken(_ben);
+        var tokenCarla = NeuesToken(_carla);
+        var ohnePerson = _tokens.Ausstellen(DateTime.UtcNow.AddHours(1));
+
+        // Ohne Einsatz: alle lesen, anlegen darf jeder
+        Assert.Equal("lesen", Rolle(Json(await Controller(token: tokenCarla).GetLage())));
+        Assert.IsType<OkObjectResult>(await Controller(token: tokenCarla).EinsatzStarten(
+            Start() with { Einsatzleiter = "Anna Berg", Fuehrungsassistent = "Ben Kurz", AlarmiertDurch = "Feuerwehr" }));
+
+        Assert.Equal("einsatzleiter", Rolle(Json(await Controller(token: tokenAnna).GetLage())));
+        Assert.Equal("fuehrungsassistent", Rolle(Json(await Controller(token: tokenBen).GetLage())));
+        Assert.Equal("lesen", Rolle(Json(await Controller(token: tokenCarla).GetLage())));
+        Assert.Equal("einsatzleiter", Rolle(Json(await Controller(token: ohnePerson).GetLage()))); // ältere App
+
+        var notiz = new ElAppController.ElAktion(NeueId(), Text: "Lagemeldung");
+        Assert.IsType<OkObjectResult>(await Controller(token: tokenAnna).NotizAnlegen(notiz));
+        Assert.IsType<OkObjectResult>(await Controller(token: tokenBen).NotizAnlegen(notiz with { Id = NeueId() }));
+        var verboten = (ObjectResult)await Controller(token: tokenCarla).NotizAnlegen(notiz with { Id = NeueId() });
+        Assert.Equal(StatusCodes.Status403Forbidden, verboten.StatusCode);
+
+        // Standort: nur der Einsatzleiter
+        string Modus(IActionResult r) => Json(r).GetProperty("mode").GetString()!;
+        Assert.Equal("track", Modus(await Controller(token: tokenAnna).GetStatus()));
+        Assert.Equal("pause", Modus(await Controller(token: tokenBen).GetStatus()));
+        Assert.Equal("pause", Modus(await Controller(token: tokenCarla).GetStatus()));
+        var punkte = new TeamMobileAppController.AppPositionenRequest
+        {
+            Positions = [new TeamMobileAppController.AppPosition { Lat = 49.3, Lng = 8.4, Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }]
+        };
+        Assert.Equal(0, Json(await Controller(token: tokenBen).PostPositions(punkte)).GetProperty("accepted").GetInt32());
+        Assert.Equal(1, Json(await Controller(token: tokenAnna).PostPositions(punkte)).GetProperty("accepted").GetInt32());
+
+        // Einsatzleiter wechselt im Monitor: Rolle ab der nächsten Anfrage
+        _einsatz.CurrentEinsatz.Einsatzleiter = "carla diehl";
+        Assert.Equal("einsatzleiter", Rolle(Json(await Controller(token: tokenCarla).GetLage())));
+        Assert.Equal("lesen", Rolle(Json(await Controller(token: tokenAnna).GetLage())));
+
+        // Verlängern behält die Person
+        var verlaengert = Json(await Controller(token: tokenCarla).Verlaengern(new ElAppController.ElVerlaengernRequest(null)));
+        Assert.True(_tokens.TryPruefen(verlaengert.GetProperty("token").GetString(), DateTime.UtcNow, out _, out _, out var person));
+        Assert.Equal(_carla.Id, person);
+    }
+
+    [Fact]
+    public void Einsatzart_WirdBeimStartDerSucheFestgehalten_KurzpauseBehaeltSie()
+    {
+        var team = new Team { Einsatzart = Einsatzart.Flaeche };
+        team.StartTimer();
+        team.Einsatzart = Einsatzart.Mantrailer;
+        Assert.Equal(Einsatzart.Flaeche, team.SucheEinsatzart);
+        team.PauseTimer();
+        team.StartTimer();
+        Assert.Equal(Einsatzart.Flaeche, team.SucheEinsatzart);
+        team.StopTimer();
+        team.StartTimer();
+        Assert.Equal(Einsatzart.Mantrailer, team.SucheEinsatzart);
+
+        Assert.Equal(Einsatzart.Mantrailer, EinsatzartExtensions.Vorauswahl(DogSpecialization.Mantrailing | DogSpecialization.InAusbildung));
+        Assert.Null(EinsatzartExtensions.Vorauswahl(DogSpecialization.Mantrailing | DogSpecialization.Flaechensuche));
+        Assert.Null(EinsatzartExtensions.AusApiWert("5"));
+        Assert.True(ErgebnisText.IstFund("Person gefunden - verstorben"));
+        Assert.False(ErgebnisText.IstFund("Abbruch - Wetter"));
+    }
+
     [Fact]
     public async Task VorOrt_ListenMitVorauswahl_BeendenUebernimmtAuswahlOderVorauswahl()
     {
@@ -184,9 +436,9 @@ public sealed class ElAppEinsatzTests : IDisposable
 
         var vorOrt = Json(await Controller().GetVorOrt());
         var personal = vorOrt.GetProperty("personal").EnumerateArray().ToList();
-        Assert.Equal(["Anna Berg", "Ben Kurz"], personal.Select(p => p.GetProperty("name").GetString()));
+        Assert.Equal(["Anna Berg", "Ben Kurz", "Carla Diehl"], personal.Select(p => p.GetProperty("name").GetString()));
         Assert.Equal(_anna.Id, personal[0].GetProperty("id").GetString());
-        Assert.Equal([true, false], personal.Select(p => p.GetProperty("vorausgewaehlt").GetBoolean()));
+        Assert.Equal([true, false, false], personal.Select(p => p.GetProperty("vorausgewaehlt").GetBoolean()));
         var hunde = vorOrt.GetProperty("hunde").EnumerateArray().ToList();
         Assert.Equal(["Bello", "Rex"], hunde.Select(d => d.GetProperty("name").GetString()));
         Assert.Equal([false, true], hunde.Select(d => d.GetProperty("vorausgewaehlt").GetBoolean()));

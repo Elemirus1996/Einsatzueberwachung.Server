@@ -78,13 +78,16 @@ namespace Einsatzueberwachung.Domain.Services
 
         private void EnsureAlarmTime(EinsatzData einsatzData)
         {
-            if (!einsatzData.AlarmierungsZeit.HasValue && TryParseAlarmText(einsatzData.Alarmiert, out var parsedAlarm))
-                einsatzData.AlarmierungsZeit = parsedAlarm;
+            // „Alarmiert“ ist der Melder (Polizei, Leitstelle …). Ältere Aufrufe schicken dort die Uhrzeit:
+            // dann als Alarmierungszeit übernehmen und das Feld leeren, statt den Melder durch eine Zeit zu ersetzen.
+            if (TryParseAlarmText(einsatzData.Alarmiert, out var parsedAlarm))
+            {
+                einsatzData.AlarmierungsZeit ??= parsedAlarm;
+                einsatzData.Alarmiert = string.Empty;
+            }
 
             if (!einsatzData.AlarmierungsZeit.HasValue)
                 einsatzData.AlarmierungsZeit = GetServerNowLocal();
-
-            einsatzData.Alarmiert = einsatzData.AlarmierungsZeit.Value.ToString("dd.MM.yyyy HH:mm", DeCulture);
         }
 
         private bool TryParseAlarmText(string? alarmText, out DateTime parsed)
@@ -136,6 +139,7 @@ namespace Einsatzueberwachung.Domain.Services
             target.DogName = source.DogName;
             target.DogId = source.DogId;
             target.DogSpecialization = source.DogSpecialization;
+            target.Einsatzart = source.Einsatzart;
             target.HundefuehrerName = source.HundefuehrerName;
             target.HundefuehrerId = source.HundefuehrerId;
             target.HelferIds = new List<string>(source.HelferIds);

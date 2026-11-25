@@ -56,7 +56,7 @@ st setzen domain staffel-x.mywire.org
 # Vorlagen: keine Beispielwerte mehr, Nachbaradressen (10.10.0.10) bleiben unberuehrt
 PUB="$(st vorlage "$HERE/../nginx/einsatzueberwachung-public.conf")"
 INT="$(st vorlage "$HERE/../nginx/einsatzueberwachung.conf")"
-grep -q 'dein-einsatz\|10\.10\.0' <<<"$PUB$INT" && bad "Beispielwerte in Vorlage uebrig" || ok "Beispielwerte ersetzt"
+grep -q 'staffel-musterstadt\|10\.10\.0' <<<"$PUB$INT" && bad "Beispielwerte in Vorlage uebrig" || ok "Beispielwerte ersetzt"
 grep -q "server_name staffel-x.mywire.org;" <<<"$PUB" && grep -q "live/staffel-x.mywire.org/fullchain.pem" <<<"$PUB" \
 	&& ok "Domain in public-Vorlage" || bad "Domain fehlt in public-Vorlage"
 grep -qE '^\s+10\.77\.3\.0/24\s+1;' <<<"$PUB" && ok "VPN-Netz in public-Vorlage" || bad "VPN-Netz fehlt in public-Vorlage"

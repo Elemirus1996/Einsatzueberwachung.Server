@@ -117,8 +117,8 @@ public class LagebewusstseinTests
     }
 
     [Theory]
-    [InlineData("https://dein-einsatz.mywire.org", null, "dein-einsatz.mywire.org")]
-    [InlineData("dein-einsatz.mywire.org/", null, "dein-einsatz.mywire.org")]
+    [InlineData("https://einsatz.example.org", null, "einsatz.example.org")]
+    [InlineData("einsatz.example.org/", null, "einsatz.example.org")]
     [InlineData("", "https://andere.example:8443/team", "andere.example")]
     [InlineData("http://nur-http.example", null, null)]
     [InlineData(null, null, null)]
