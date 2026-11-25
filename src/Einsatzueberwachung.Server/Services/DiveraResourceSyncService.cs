@@ -15,6 +15,7 @@ public sealed class DiveraResourceSyncService : BackgroundService
     private readonly IDiveraService _diveraService;
     private readonly IMasterDataService _masterDataService;
     private readonly DiveraTestSimulationService? _simulationService;
+    private readonly ISettingsService? _settingsService;
     private readonly ILogger<DiveraResourceSyncService> _logger;
     private readonly HashSet<int> _unmappedResponseMemberIds = new();
     private readonly SemaphoreSlim _syncGate = new(1, 1);
@@ -31,8 +32,10 @@ public sealed class DiveraResourceSyncService : BackgroundService
         IDiveraService diveraService,
         IMasterDataService masterDataService,
         ILogger<DiveraResourceSyncService> logger,
-        DiveraTestSimulationService? simulationService = null)
+        DiveraTestSimulationService? simulationService = null,
+        ISettingsService? settingsService = null)
     {
+        _settingsService = settingsService;
         _einsatzService = einsatzService;
         _diveraService = diveraService;
         _masterDataService = masterDataService;
@@ -143,7 +146,9 @@ public sealed class DiveraResourceSyncService : BackgroundService
         try
         {
             var einsatz = _einsatzService.CurrentEinsatz;
-            if (!HasActiveLinkedEinsatz(einsatz) || einsatz.DiveraAlarmId is not int alarmId)
+            var ressourcenAktiv = _settingsService is null
+                || (await _settingsService.GetAppSettingsAsync()).RessourcenverwaltungAktiv;
+            if (!ressourcenAktiv || !HasActiveLinkedEinsatz(einsatz) || einsatz.DiveraAlarmId is not int alarmId)
             {
                 _unmappedResponseMemberIds.Clear();
                 _loggedUnmappedAlarmId = null;
@@ -273,8 +278,7 @@ public sealed class DiveraResourceSyncService : BackgroundService
     }
 
     private static bool HasActiveLinkedEinsatz(EinsatzData einsatz) =>
-        einsatz.IstEinsatz
-        && einsatz.EinsatzEnde is null
+        einsatz.EinsatzEnde is null
         && !string.IsNullOrWhiteSpace(einsatz.Einsatzort)
         && einsatz.DiveraAlarmId.HasValue;
 

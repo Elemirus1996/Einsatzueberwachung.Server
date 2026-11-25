@@ -52,6 +52,8 @@ namespace Einsatzueberwachung.Domain.Interfaces
         Task RemoveResourceAsync(ResourceEntityType entityType, string entityId);
         Task SetResourceStatusAsync(ResourceEntityType entityType, string entityId, ResourceStatus status, string? note = null);
         bool CanAssignResourceToSearch(ResourceEntityType entityType, string entityId);
+        /// <summary>Alle Check-ins des laufenden Einsatzes verwerfen (Ressourcenverwaltung ausgeschaltet).</summary>
+        void ClearEinsatzResources();
         IReadOnlyList<TeamResourceAvailabilityIssue> GetTeamStartResourceIssues(string teamId);
         void RefreshExpiredDogResourcePauses();
 

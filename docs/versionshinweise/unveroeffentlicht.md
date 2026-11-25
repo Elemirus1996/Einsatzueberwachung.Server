@@ -27,6 +27,13 @@
 - Der Server sagt der Team-App bei jeder Positionsmeldung, ob es Neues gibt (Mitteilung, Ziel, Suchgebiet, Suche). Nur dann lädt die App die Lage nach und zeigt eine Mitteilung auf dem Sperrbildschirm. Das spart Akku und braucht keinen Push-Dienst. Dafür braucht es die neue App-Version.
 - Auch die Einsatzleitung bekommt Warnungen aufs gesperrte Handy, solange ein Einsatz läuft und sie in der App als Einsatzleiter angemeldet ist: Zeitwarnung, Funkstille von Handy oder Halsband, Hund außerhalb des Suchgebiets, Fund, auf Wunsch auch Funk, Statusmeldungen, Akku und Einsatzende. Jede Art lässt sich in der App einzeln abschalten. Die Texte nennen nur das Team, nie Vermisste, Orte oder Funkinhalte. Dafür braucht es die neue App-Version.
 
+### Ressourcenverwaltung (wahlweise)
+- Neue Seite **Ressourcenverwaltung**: Personen und Hunde werden für den Einsatz oder die Übung eingecheckt und haben einen eigenen Status (z. B. Auf Anfahrt, Im Verfügungsraum, Pause, In Suche, Sonderauftrag).
+- Ist jemand eingecheckt, prüft der Teamstart, ob alle Mitglieder verfügbar sind, und bietet sonst an, den Status anzupassen, jemanden aus dem Team zu nehmen oder trotzdem zu starten.
+- Mit DIVERA: Zusagen zum verknüpften Alarm werden hervorgehoben und lassen sich einzeln oder gesammelt als „Auf Anfahrt“ einchecken. Ein lokaler Testalarm unter Einstellungen → Integration zeigt den Ablauf ohne echtes DIVERA.
+- **Ab Werk ausgeschaltet.** Wer sie nutzen will, schaltet sie unter **Einstellungen → Einsatzbetrieb → Ressourcenverwaltung verwenden** ein. Ohne Einschalten ändert sich nichts.
+- Hunde und Personen haben ein neues Feld „Organisation“, auch im Excel-Import und -Export.
+
 ## Datenschutz
 
 ### Keine Schriften und Bibliotheken mehr von fremden Servern

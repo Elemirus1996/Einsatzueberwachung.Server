@@ -24,13 +24,24 @@
         }
     </header>
 
-    @if (!HasActiveEinsatz)
+    @if (!_appSettings.RessourcenverwaltungAktiv)
+    {
+        <section class="resource-empty-state" role="status">
+            <i class="bi bi-toggle-off" aria-hidden="true"></i>
+            <div>
+                <h2>Ressourcenverwaltung ausgeschaltet</h2>
+                <p>Die Staffel nutzt die Ressourcenverwaltung nicht. Einschalten unter Einstellungen → Einsatzbetrieb.</p>
+                <a class="btn btn-primary" href="/einstellungen?tab=einsatzbetrieb">Zu den Einstellungen</a>
+            </div>
+        </section>
+    }
+    else if (!HasActiveEinsatz)
     {
         <section class="resource-empty-state" role="status">
             <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
             <div>
                 <h2>Kein Einsatz aktiv</h2>
-                <p>Die Ressourcenverwaltung steht nur während eines laufenden Einsatzes zur Verfügung.</p>
+                <p>Die Ressourcenverwaltung steht nur während eines laufenden Einsatzes oder einer laufenden Übung zur Verfügung.</p>
                 <a class="btn btn-primary" href="/einsatz-start">Einsatz starten</a>
             </div>
         </section>

@@ -111,6 +111,7 @@
         @{
             var workPanels = _currentLayout
                 .Where(panel => panel.IsVisible && !IsSummaryPanel(panel.PanelId))
+                .Where(panel => panel.PanelId != KnownPanels.Ressourcen || _appSettings.RessourcenverwaltungAktiv)
                 .ToArray();
             var tabletPanels = workPanels
                 .OrderBy(panel => TabletPanelOrder(panel.PanelId))

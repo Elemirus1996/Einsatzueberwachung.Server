@@ -13,6 +13,15 @@ public partial class EinsatzService
             .ToArray();
     }
 
+    public void ClearEinsatzResources()
+    {
+        var resources = CurrentEinsatz.Resources ??= new List<EinsatzResource>();
+        if (resources.Count == 0)
+            return;
+        resources.Clear();
+        ResourcesChanged?.Invoke();
+    }
+
     public IReadOnlyList<TeamResourceAvailabilityIssue> GetTeamStartResourceIssues(string teamId)
     {
         var team = _teams.FirstOrDefault(entry => entry.TeamId == teamId);
@@ -23,11 +32,25 @@ public partial class EinsatzService
         return GetTeamStartResourceIssues(team, allowAssignedInSearch: true);
     }
 
-    public Task CheckInResourceAsync(EinsatzResource resource)
+    /// <summary>Einsatz oder Übung läuft (Ort gesetzt, nicht beendet). Ressourcen gelten für beides.</summary>
+    private bool EinsatzLaeuft =>
+        CurrentEinsatz.EinsatzEnde is null && !string.IsNullOrWhiteSpace(CurrentEinsatz.Einsatzort);
+
+    private async Task<bool> RessourcenverwaltungAktivAsync() =>
+        _settingsService is null || (await _settingsService.GetAppSettingsAsync()).RessourcenverwaltungAktiv;
+
+    public async Task CheckInResourceAsync(EinsatzResource resource)
     {
         ArgumentNullException.ThrowIfNull(resource);
-        if (!CurrentEinsatz.IstEinsatz)
-            throw new InvalidOperationException("Ressourcen können nur in einen laufenden Einsatz eingecheckt werden.");
+        if (!await RessourcenverwaltungAktivAsync())
+            throw new InvalidOperationException("Die Ressourcenverwaltung ist ausgeschaltet (Einstellungen → Einsatzbetrieb).");
+        await CheckInResourceCoreAsync(resource);
+    }
+
+    private Task CheckInResourceCoreAsync(EinsatzResource resource)
+    {
+        if (!EinsatzLaeuft)
+            throw new InvalidOperationException("Ressourcen können nur in einen laufenden Einsatz oder eine laufende Übung eingecheckt werden.");
         if (string.IsNullOrWhiteSpace(resource.EntityId))
             throw new ArgumentException("Die Ressourcen-ID darf nicht leer sein.", nameof(resource));
         if (resource.Status is not (ResourceStatus.Verfuegbar or ResourceStatus.AufAnfahrt))
@@ -90,8 +113,8 @@ public partial class EinsatzService
 
     public Task RemoveResourceAsync(ResourceEntityType entityType, string entityId)
     {
-        if (!CurrentEinsatz.IstEinsatz)
-            throw new InvalidOperationException("Ressourcen können nur aus einem laufenden Einsatz entfernt werden.");
+        if (!EinsatzLaeuft)
+            throw new InvalidOperationException("Ressourcen können nur aus einem laufenden Einsatz oder einer laufenden Übung entfernt werden.");
         if (string.IsNullOrWhiteSpace(entityId))
             throw new ArgumentException("Die Ressourcen-ID darf nicht leer sein.", nameof(entityId));
 

@@ -279,6 +279,17 @@
                 </div>
 
                 <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-person-lines-fill me-1"></i>Ressourcenverwaltung</h3>
+                    <div class="cfg-field">
+                        <label class="d-flex align-items-center gap-2">
+                            <InputCheckbox @bind-Value="_appSettings.RessourcenverwaltungAktiv" />
+                            Ressourcenverwaltung verwenden (Check-in von Personen und Hunden, Startsperre für nicht verfügbare Kräfte, Übernahme aus DIVERA)
+                        </label>
+                        <span class="cfg-help">Standard aus. Beim Ausschalten werden die Check-ins des laufenden Einsatzes verworfen.</span>
+                    </div>
+                </div>
+
+                <div class="cfg-section">
                     <h3 class="cfg-sub-header"><i class="bi bi-hourglass-split me-1"></i>Hundepausen</h3>
                     <div class="cfg-grid cfg-grid-3">
                         <div class="cfg-field">

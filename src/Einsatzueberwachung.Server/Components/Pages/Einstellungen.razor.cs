@@ -16,6 +16,7 @@ namespace Einsatzueberwachung.Server.Components.Pages;
 public partial class Einstellungen
 {
     [Inject] private ISettingsService SettingsService { get; set; } = default!;
+    [Inject] private IEinsatzService EinsatzService { get; set; } = default!;
     [Inject] private IMasterDataService MasterDataService { get; set; } = default!;
     [Inject] private IArchivService ArchivService { get; set; } = default!;
     [Inject] private GitHubUpdateService UpdateService { get; set; } = default!;
@@ -356,6 +357,7 @@ public partial class Einstellungen
 
         await SettingsService.SaveStaffelSettingsAsync(_staffelSettings);
         await SettingsService.SaveAppSettingsAsync(_appSettings);
+        if (!_appSettings.RessourcenverwaltungAktiv) EinsatzService.ClearEinsatzResources();
         if (betroffen > 0) await Loeschen.AusfuehrenAsync(Ortszeit.Jetzt); // bestaetigt: nicht bis zum naechsten Tageslauf warten
 
         // Divera-Konfiguration sofort uebernehmen
