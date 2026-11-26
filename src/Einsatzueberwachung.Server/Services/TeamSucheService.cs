@@ -93,12 +93,38 @@ public sealed class TeamSucheService
     /// <summary>Halsband zuweisen (falls gewaehlt) und die Suche starten.</summary>
     public async Task StartWithCollarAsync(string teamId, string? collarId)
     {
+        var team = _einsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
+        var previousCollarId = team?.CollarId;
+        var assignedNewCollar = false;
+
         if (!string.IsNullOrEmpty(collarId))
         {
-            await _collarTrackingService.AssignCollarToTeamAsync(collarId, teamId);
+            var issues = _einsatzService.GetTeamStartResourceIssues(teamId);
+            if (issues.Count > 0)
+                throw new Einsatzueberwachung.Domain.Services.TeamResourceAvailabilityException(issues, team);
+
+            if (collarId != previousCollarId)
+            {
+                await _collarTrackingService.AssignCollarToTeamAsync(collarId, teamId);
+                assignedNewCollar = true;
+            }
         }
 
-        await StartAsync(teamId);
+        try
+        {
+            await StartAsync(teamId);
+        }
+        catch
+        {
+            if (assignedNewCollar && !string.IsNullOrEmpty(collarId))
+            {
+                await _collarTrackingService.UnassignCollarAsync(collarId);
+                if (!string.IsNullOrEmpty(previousCollarId))
+                    await _collarTrackingService.AssignCollarToTeamAsync(previousCollarId, teamId);
+            }
+
+            throw;
+        }
     }
 
     public async Task StopAsync(string teamId)

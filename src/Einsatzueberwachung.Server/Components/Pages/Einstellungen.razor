@@ -1188,13 +1188,13 @@
                                     @simSummary.AlarmTitle · @simSummary.PositiveResponseCount Zusage@(simSummary.PositiveResponseCount == 1 ? "" : "n"), @simSummary.NegativeResponseCount Absage@(simSummary.NegativeResponseCount == 1 ? "" : "n"), @simSummary.PendingResponseCount offen
                                 </span>
                                 <div class="cfg-actions">
-                                    @if (simSummary.LinkedActiveEinsatz)
+                                    @if (simSummary.LinkedActiveEinsatz && _appSettings.RessourcenverwaltungAktiv)
                                     {
                                         <a class="cfg-btn cfg-btn-ghost cfg-btn-touch" href="/ressourcenverwaltung">
                                             <i class="bi bi-person-lines-fill"></i> Zur Ressourcenverwaltung
                                         </a>
                                     }
-                                    else
+                                    else if (!simSummary.LinkedActiveEinsatz)
                                     {
                                         <a class="cfg-btn cfg-btn-ghost cfg-btn-touch" href="/einsatz-start">
                                             <i class="bi bi-alarm"></i> Einsatz mit Testalarm starten

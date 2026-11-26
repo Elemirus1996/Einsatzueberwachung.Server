@@ -134,7 +134,9 @@ public partial class EinsatzMonitor
         var updated = new EinsatzData
         {
             IstEinsatz = _editEinsatzForm.IstEinsatz,
+            Szenario = current.Szenario,
             EinsatzNummer = _editEinsatzForm.EinsatzNummer,
+            DiveraAlarmId = current.DiveraAlarmId,
             EinsatzkontakteMigriert = true,
             PolizeiKontaktName = _editEinsatzForm.PolizeiKontaktName,
             PolizeiDienstnummer = _editEinsatzForm.PolizeiDienstnummer,

@@ -499,7 +499,6 @@ namespace Einsatzueberwachung.LiveTracking
         private IntPtr deviceHandle = NativeMethods.INVALID_HANDLE_VALUE;
         private string? devicePath;
         private GpsPacketProcessor? packetProcessor;
-        private Thread? listenThread;
         private volatile bool isListening;
         private ManualResetEvent stopEvent = new ManualResetEvent(false);
         private IntPtr overlappedEventRead;

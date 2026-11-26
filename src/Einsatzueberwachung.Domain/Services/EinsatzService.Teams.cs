@@ -213,17 +213,21 @@ namespace Einsatzueberwachung.Domain.Services
                 throw new InvalidOperationException("Die Suche läuft – bitte zuerst beenden.");
 
             var dogId = team.DogId;
-            team.ResetTimer();
-
             if (!string.IsNullOrWhiteSpace(dogId))
             {
                 _dogPauses.Remove(dogId);
-                SetResourceStatusFromSearch(ResourceEntityType.Dog, dogId, ResourceStatus.Verfuegbar, team.TeamId);
                 foreach (var sibling in _teams.Where(t => t.TeamId != teamId && t.DogId == dogId && t.IsPausing).ToList())
                 {
                     sibling.SilentReset();
                     TeamUpdated?.Invoke(sibling);
                 }
+            }
+
+            team.ResetTimer();
+
+            if (!string.IsNullOrWhiteSpace(dogId))
+            {
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, dogId, ResourceStatus.Verfuegbar, team.TeamId);
             }
         }
 

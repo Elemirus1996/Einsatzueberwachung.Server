@@ -522,6 +522,8 @@ public partial class EinsatzImportExport
             var imported = (PersonalEntry)item.ImportedEntry;
             local.Vorname = imported.Vorname;
             local.Nachname = imported.Nachname;
+            if (!string.IsNullOrWhiteSpace(imported.Organisation))
+                local.Organisation = imported.Organisation;
             local.Skills = imported.Skills;
             if (!string.IsNullOrWhiteSpace(imported.Notizen))
                 local.Notizen = imported.Notizen;
@@ -537,6 +539,7 @@ public partial class EinsatzImportExport
                 Id = Guid.NewGuid().ToString(),
                 Name = src.Name,
                 Rasse = src.Rasse,
+                Organisation = src.Organisation,
                 Alter = src.Alter,
                 Specializations = src.Specializations,
                 HundefuehrerIds = new System.Collections.Generic.List<string>(src.HundefuehrerIds),
@@ -555,6 +558,8 @@ public partial class EinsatzImportExport
             var imported = (DogEntry)item.ImportedEntry;
             local.Name = imported.Name;
             local.Rasse = imported.Rasse;
+            if (!string.IsNullOrWhiteSpace(imported.Organisation))
+                local.Organisation = imported.Organisation;
             local.Specializations = imported.Specializations;
             if (!string.IsNullOrWhiteSpace(imported.Notizen))
                 local.Notizen = imported.Notizen;

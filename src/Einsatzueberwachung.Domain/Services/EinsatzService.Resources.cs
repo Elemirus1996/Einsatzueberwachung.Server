@@ -189,6 +189,8 @@ public partial class EinsatzService
             if (!pause.IsPauseComplete)
                 continue;
 
+            _dogPauses.Remove(dogId);
+
             var resource = (CurrentEinsatz.Resources ??= new List<EinsatzResource>())
                 .FirstOrDefault(entry =>
                     entry.EntityType == ResourceEntityType.Dog
@@ -214,10 +216,16 @@ public partial class EinsatzService
         if (string.IsNullOrWhiteSpace(entityId))
             return;
 
-        if (status == ResourceStatus.Verfuegbar
-            && IsResourceUsedByAnotherSearchTeam(entityType, entityId, excludedTeamId))
+        if (status == ResourceStatus.Verfuegbar)
         {
-            status = ResourceStatus.InSuche;
+            if (IsResourceUsedByAnotherSearchTeam(entityType, entityId, excludedTeamId))
+            {
+                status = ResourceStatus.InSuche;
+            }
+            else if (entityType == ResourceEntityType.Dog && IsDogInActiveMandatoryPause(entityId, excludedTeamId))
+            {
+                status = ResourceStatus.Pause;
+            }
         }
 
         var resource = (CurrentEinsatz.Resources ??= new List<EinsatzResource>())
@@ -232,6 +240,18 @@ public partial class EinsatzService
         resource.DiveraRueckmeldung = string.Empty;
         resource.StatusChangedAt = Ortszeit.Jetzt;
         ResourcesChanged?.Invoke();
+    }
+
+    private bool IsDogInActiveMandatoryPause(string dogId, string? excludedTeamId)
+    {
+        if (_dogPauses.TryGetValue(dogId, out var activePause) && !activePause.IsPauseComplete)
+            return true;
+
+        return _teams.Any(team =>
+            !string.Equals(team.TeamId, excludedTeamId, StringComparison.Ordinal)
+            && string.Equals(team.DogId, dogId, StringComparison.Ordinal)
+            && team.IsPausing
+            && !team.IsPauseComplete);
     }
 
     private bool IsResourceUsedByAnotherSearchTeam(
@@ -273,7 +293,7 @@ public partial class EinsatzService
     {
         var unavailableResources = GetTeamStartResourceIssues(team, allowAssignedInSearch);
         if (unavailableResources.Count > 0)
-            throw new TeamResourceAvailabilityException(unavailableResources);
+            throw new TeamResourceAvailabilityException(unavailableResources, team);
     }
 
     private IReadOnlyList<TeamResourceAvailabilityIssue> GetTeamStartResourceIssues(
@@ -285,9 +305,10 @@ public partial class EinsatzService
             return Array.Empty<TeamResourceAvailabilityIssue>();
 
         var alreadyAssignedToSearch = allowAssignedInSearch
-            && !string.IsNullOrWhiteSpace(team.SearchAreaId)
-            && CurrentEinsatz.SearchAreas.Any(area =>
-                area.Id == team.SearchAreaId && area.AssignedTeamId == team.TeamId);
+            && (team.IsManuallyPaused
+                || (!string.IsNullOrWhiteSpace(team.SearchAreaId)
+                    && CurrentEinsatz.SearchAreas.Any(area =>
+                        area.Id == team.SearchAreaId && area.AssignedTeamId == team.TeamId)));
         var required = GetTeamPersonIds(team)
             .Select(id => (ResourceEntityType.Person, Id: id))
             .Concat(!string.IsNullOrWhiteSpace(team.DogId)

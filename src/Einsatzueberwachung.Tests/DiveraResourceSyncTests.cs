@@ -353,4 +353,83 @@ public sealed class DiveraResourceSyncTests
         Assert.Empty(sync.GetPositiveResponsesByPersonId());
         Assert.False(innerDiveraCalled);
     }
+
+    [Fact]
+    public async Task UpdateEinsatzAsync_ErhaeltDiveraAlarmIdUndSzenarioBeiTeilUpdate()
+    {
+        var einsatz = new EinsatzService();
+        await einsatz.StartEinsatzAsync(new EinsatzData
+        {
+            Einsatzort = "Testwald",
+            IstEinsatz = true,
+            Szenario = Einsatzueberwachung.Domain.Models.Enums.EinsatzSzenarioType.Flaeche,
+            DiveraAlarmId = 4711
+        });
+
+        await einsatz.UpdateEinsatzAsync(new EinsatzData
+        {
+            IstEinsatz = true,
+            Einsatzort = "Testwald Nord",
+            PolizeiVermisstenmeldungAufgenommen = true
+        });
+
+        Assert.Equal(4711, einsatz.CurrentEinsatz.DiveraAlarmId);
+        Assert.Equal(Einsatzueberwachung.Domain.Models.Enums.EinsatzSzenarioType.Flaeche, einsatz.CurrentEinsatz.Szenario);
+    }
+
+    [Fact]
+    public async Task Testalarm_VerknuepftLaufendeUebung_UndVerdecktEchteAlarmeNicht()
+    {
+        var einsatz = new EinsatzService();
+        await einsatz.StartEinsatzAsync(new EinsatzData
+        {
+            Einsatzort = "Übungswald",
+            IstEinsatz = false
+        });
+
+        var realAlarm = new Einsatzueberwachung.Domain.Models.Divera.DiveraAlarm
+        {
+            Id = 1234,
+            Title = "Echter Alarm",
+            Closed = false
+        };
+        var innerDivera = EinsatzAbschlussTests.Recorder<IDiveraService>.Create((method, args) => method.Name switch
+        {
+            "add_DataChanged" or "remove_DataChanged" => null,
+            "get_IsConfigured" => true,
+            "get_HasActiveAlarms" => true,
+            nameof(IDiveraService.GetActiveAlarmsAsync) => Task.FromResult(new List<Einsatzueberwachung.Domain.Models.Divera.DiveraAlarm> { realAlarm }),
+            nameof(IDiveraService.GetAlarmByIdAsync) => Task.FromResult((int)args![0]! == 1234 ? realAlarm : null),
+            _ => null
+        });
+        var masterData = EinsatzAbschlussTests.Recorder<IMasterDataService>.Create((method, _) =>
+            method.Name == nameof(IMasterDataService.GetPersonalListAsync)
+                ? Task.FromResult(new List<PersonalEntry>())
+                : null);
+        var settings = EinsatzAbschlussTests.Recorder<ISettingsService>.Create((method, _) => method.Name switch
+        {
+            nameof(ISettingsService.GetStaffelSettingsAsync) => Task.FromResult(new StaffelSettings()),
+            nameof(ISettingsService.GetAppSettingsAsync) => Task.FromResult(new AppSettings { RessourcenverwaltungAktiv = true }),
+            _ => null
+        });
+        var time = EinsatzAbschlussTests.Recorder<ITimeService>.Create((method, _) =>
+            method.Name == "get_Now" ? new DateTime(2026, 11, 20, 12, 0, 0) : null);
+
+        var simulation = new DiveraTestSimulationService(
+            masterData.Proxy,
+            settings.Proxy,
+            einsatz,
+            time.Proxy,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<DiveraTestSimulationService>.Instance);
+        using var simulatableDivera = new SimulatableDiveraService(innerDivera.Proxy, simulation);
+
+        var summary = await simulation.StartTestAlarmAsync();
+
+        Assert.True(summary.LinkedActiveEinsatz);
+        Assert.Equal(DiveraTestSimulationService.SimulatedAlarmId, einsatz.CurrentEinsatz.DiveraAlarmId);
+
+        var activeAlarms = await simulatableDivera.GetActiveAlarmsAsync();
+        Assert.Equal(2, activeAlarms.Count);
+        Assert.NotNull(await simulatableDivera.GetAlarmByIdAsync(1234));
+    }
 }

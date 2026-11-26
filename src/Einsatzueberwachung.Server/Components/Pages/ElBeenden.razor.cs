@@ -72,7 +72,11 @@ public partial class ElBeenden : IDisposable
 
         _personal = await MasterDataService.GetPersonalListAsync();
         _hunde = await MasterDataService.GetDogListAsync();
-        (_personalIds, _hundeIds) = EinsatzAbschlussService.PreselectVorOrt(EinsatzService.Teams, ActivePersonnel, ActiveDogs);
+        (_personalIds, _hundeIds) = EinsatzAbschlussService.PreselectVorOrt(
+            EinsatzService.Teams,
+            ActivePersonnel,
+            ActiveDogs,
+            EinsatzService.GetEinsatzResources());
         var gruende = AbschlussAngaben.Abbruchgruende(await SettingsService.GetAppSettingsAsync());
         _abschluss.Laden(einsatz, EinsatzService.Teams, _hunde, gruende);
 

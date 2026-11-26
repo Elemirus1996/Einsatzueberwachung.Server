@@ -60,8 +60,7 @@ namespace Einsatzueberwachung.Domain.Services
                 throw new InvalidOperationException("Das ausgewählte Team existiert nicht mehr.");
             if (team is not null)
             {
-                var sameAssignment = team.SearchAreaId == area.Id && area.AssignedTeamId == team.TeamId;
-                EnsureTeamResourcesAvailable(team, allowAssignedInSearch: sameAssignment);
+                EnsureTeamResourcesAvailable(team, allowAssignedInSearch: true);
             }
 
             if (!string.IsNullOrWhiteSpace(area.AssignedTeamId) && area.AssignedTeamId != teamId)

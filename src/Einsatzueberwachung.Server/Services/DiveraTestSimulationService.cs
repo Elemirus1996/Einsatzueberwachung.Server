@@ -221,8 +221,7 @@ public sealed class DiveraTestSimulationService
     private (bool LinkedActiveEinsatz, EinsatzData? EinsatzToLink) GetAutoLinkPlanForCurrentEinsatz()
     {
         var current = _einsatzService.CurrentEinsatz;
-        var isRunning = current.IstEinsatz
-            && !string.IsNullOrWhiteSpace(current.Einsatzort)
+        var isRunning = !string.IsNullOrWhiteSpace(current.Einsatzort)
             && current.EinsatzEnde is null;
         if (!isRunning)
             return (false, null);

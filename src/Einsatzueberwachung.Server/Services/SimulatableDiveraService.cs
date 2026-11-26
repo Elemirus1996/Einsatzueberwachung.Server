@@ -33,18 +33,23 @@ public sealed class SimulatableDiveraService : IDiveraService, IDisposable
     public async Task<List<DiveraAlarm>> GetActiveAlarmsAsync()
     {
         if (_simulation.GetActiveAlarmSnapshot() is { } simulatedAlarm)
+        {
+            if (_inner.IsConfigured)
+            {
+                var realAlarms = await _inner.GetActiveAlarmsAsync();
+                return [simulatedAlarm, .. realAlarms.Where(alarm => alarm.Id != simulatedAlarm.Id)];
+            }
+
             return [simulatedAlarm];
+        }
 
         return await _inner.GetActiveAlarmsAsync();
     }
 
     public async Task<DiveraAlarm?> GetAlarmByIdAsync(int alarmId)
     {
-        if (_simulation.IsActive)
-        {
-            var alarm = _simulation.GetActiveAlarmSnapshot();
-            return alarm?.Id == alarmId ? alarm : null;
-        }
+        if (_simulation.IsActive && _simulation.GetActiveAlarmSnapshot() is { } alarm && alarm.Id == alarmId)
+            return alarm;
 
         return await _inner.GetAlarmByIdAsync(alarmId);
     }

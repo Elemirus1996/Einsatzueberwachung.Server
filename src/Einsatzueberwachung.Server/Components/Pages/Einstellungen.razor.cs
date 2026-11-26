@@ -358,6 +358,7 @@ public partial class Einstellungen
         await SettingsService.SaveStaffelSettingsAsync(_staffelSettings);
         await SettingsService.SaveAppSettingsAsync(_appSettings);
         if (!_appSettings.RessourcenverwaltungAktiv) EinsatzService.ClearEinsatzResources();
+        DiveraResourceSync.RequestSync();
         if (betroffen > 0) await Loeschen.AusfuehrenAsync(Ortszeit.Jetzt); // bestaetigt: nicht bis zum naechsten Tageslauf warten
 
         // Divera-Konfiguration sofort uebernehmen

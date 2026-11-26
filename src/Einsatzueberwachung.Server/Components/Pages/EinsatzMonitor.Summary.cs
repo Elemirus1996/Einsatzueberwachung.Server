@@ -18,10 +18,13 @@ public partial class EinsatzMonitor
     {
         if (HasActiveEinsatz)
         {
+            var visibleMenuPanels = _currentLayout
+                .Where(panel => panel.PanelId != KnownPanels.Ressourcen || _appSettings.RessourcenverwaltungAktiv)
+                .ToArray();
             MissionTopbar.SetContent(this, builder =>
             {
                 builder.OpenComponent<MonitorPanelsMenu>(0);
-                builder.AddAttribute(1, nameof(MonitorPanelsMenu.Layout), _currentLayout);
+                builder.AddAttribute(1, nameof(MonitorPanelsMenu.Layout), visibleMenuPanels);
                 builder.AddAttribute(2, nameof(MonitorPanelsMenu.OnTogglePanel),
                     EventCallback.Factory.Create<string>(this, TogglePanelVisibleAsync));
                 builder.CloseComponent();
@@ -32,6 +35,14 @@ public partial class EinsatzMonitor
             MissionTopbar.ClearContent(this);
         }
     }
+
+    private void OnAppSettingsChanged() => _ = InvokeAsync(async () =>
+    {
+        if (_verlassen) return;
+        _appSettings = await SettingsService.GetAppSettingsAsync();
+        UpdateMissionTopbar();
+        StateHasChanged();
+    });
 
     private async Task TogglePanelVisibleAsync(string panelId)
     {
@@ -61,7 +72,10 @@ public partial class EinsatzMonitor
     private void SelectTabletPanel(string panelId)
     {
         if (_currentLayout.Any(panel =>
-                panel.IsVisible && !IsSummaryPanel(panel.PanelId) && panel.PanelId == panelId))
+                panel.IsVisible
+                && !IsSummaryPanel(panel.PanelId)
+                && (panel.PanelId != KnownPanels.Ressourcen || _appSettings.RessourcenverwaltungAktiv)
+                && panel.PanelId == panelId))
         {
             _tabletActivePanelId = panelId;
         }

@@ -222,6 +222,7 @@ public partial class EinsatzMonitor
         EinsatzService.TeamsReordered += OnTeamsReordered;
         EinsatzService.EinsatzChanged += OnEinsatzChanged;
         EinsatzService.NoteAdded += OnNoteAdded;
+        SettingsService.AppSettingsChanged += OnAppSettingsChanged;
         CollarTrackingService.CollarLocationReceived += OnCollarLocationChanged;
         CollarTrackingService.CollarHistoryCleared += OnCollarHistoryChanged;
     }
@@ -321,6 +322,7 @@ public partial class EinsatzMonitor
         EinsatzService.TeamsReordered -= OnTeamsReordered;
         EinsatzService.EinsatzChanged -= OnEinsatzChanged;
         EinsatzService.NoteAdded -= OnNoteAdded;
+        SettingsService.AppSettingsChanged -= OnAppSettingsChanged;
         CollarTrackingService.CollarLocationReceived -= OnCollarLocationChanged;
         CollarTrackingService.CollarHistoryCleared -= OnCollarHistoryChanged;
         MissionTopbar.ClearContent(this);

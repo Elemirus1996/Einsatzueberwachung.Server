@@ -95,18 +95,27 @@ public sealed partial class ElAppController
         var gebiet = gebietId is null ? null : einsatz.CurrentEinsatz.SearchAreas.FirstOrDefault(a => a.Id == gebietId);
         if (gebietId is not null && gebiet is null) return NotFound(new { error = "Suchgebiet nicht gefunden." });
 
-        // Bisheriges Gebiet des Teams freigeben; ein Gebiet eines anderen Teams wechselt wie im Monitor zu diesem Team
-        foreach (var alt in einsatz.CurrentEinsatz.SearchAreas.Where(a => a.AssignedTeamId == team.TeamId && a.Id != gebietId).ToList())
-            await einsatz.AssignTeamToSearchAreaAsync(alt.Id, string.Empty);
-        if (gebiet is not null)
+        try
         {
-            await einsatz.AssignTeamToSearchAreaAsync(gebiet.Id, team.TeamId);
+            if (gebiet is not null)
+            {
+                await einsatz.AssignTeamToSearchAreaAsync(gebiet.Id, team.TeamId);
+            }
+            else
+            {
+                foreach (var alt in einsatz.CurrentEinsatz.SearchAreas.Where(a => a.AssignedTeamId == team.TeamId).ToList())
+                    await einsatz.AssignTeamToSearchAreaAsync(alt.Id, string.Empty);
+                if (!string.IsNullOrEmpty(team.SearchAreaId))
+                {
+                    team.SearchAreaId = string.Empty;
+                    team.SearchAreaName = string.Empty;
+                    await einsatz.UpdateTeamAsync(team);
+                }
+            }
         }
-        else if (!string.IsNullOrEmpty(team.SearchAreaId))
+        catch (InvalidOperationException ex)
         {
-            team.SearchAreaId = string.Empty;
-            team.SearchAreaName = string.Empty;
-            await einsatz.UpdateTeamAsync(team);
+            return Konflikt(ex.Message);
         }
 
         audit?.Log(gebiet is null ? "Suchgebiet entfernt (EL-App)" : "Suchgebiet zugewiesen (EL-App)", Geraet(null),

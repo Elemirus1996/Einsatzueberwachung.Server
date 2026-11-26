@@ -185,6 +185,11 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
             return;
         }
 
+        if (snapshot.CurrentEinsatz?.DiveraAlarmId == DiveraTestSimulationService.SimulatedAlarmId)
+        {
+            snapshot.CurrentEinsatz.DiveraAlarmId = null;
+        }
+
         await _einsatzService.ImportRuntimeSnapshotAsync(snapshot);
         await RestoreCollarAssignmentsAsync();
 
@@ -345,6 +350,10 @@ public sealed class RuntimeStatePersistenceService : BackgroundService
     private async Task PersistRuntimeStateAsync(CancellationToken cancellationToken)
     {
         var snapshot = _einsatzService.ExportRuntimeSnapshot();
+        if (snapshot.CurrentEinsatz.DiveraAlarmId == DiveraTestSimulationService.SimulatedAlarmId)
+        {
+            snapshot.CurrentEinsatz.DiveraAlarmId = null;
+        }
 
         // Verlaeufe laufender Suchen liegen nicht im Schnappschuss, sondern in runtime_track_points
         snapshot.CollarLocationHistory.Clear();

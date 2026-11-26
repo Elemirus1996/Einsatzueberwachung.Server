@@ -315,7 +315,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 [data-panel-id="suchgebiete"] { grid-column: span 3; grid-row: 2; }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="suchgebiete"])) [data-panel-id="teams"] {
-    grid-column: span 8;
+    grid-column: span 9;
 }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="teams"])) [data-panel-id="suchgebiete"] {
@@ -352,7 +352,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
 .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="teams"],
 .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="suchgebiete"],
-.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"] {
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="ressourcen"] {
     grid-row: 1;
 }
 
@@ -915,6 +916,17 @@ main:has(.monitor-dashboard-wrapper) .app-content {
         grid-template-rows: minmax(0, 1fr) max-content;
     }
 
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) .monitor-tablet-tabs {
+        grid-row: 2;
+    }
+
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="teams"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="suchgebiete"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="ressourcen"] {
+        grid-row: 1 !important;
+    }
+
 }
 
 /* Mobile and tablet share one active workspace; the navigation stays at the bottom. */
@@ -940,7 +952,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
         display: grid;
         grid-column: 1 / -1;
         grid-row: 3;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
         gap: 2px;
         padding: 4px;
         padding-bottom: max(4px, env(safe-area-inset-bottom));
@@ -979,7 +991,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
     .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="teams"],
     .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="suchgebiete"],
-    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"] {
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="ressourcen"] {
         grid-row: 1 !important;
     }
 }
@@ -1091,10 +1104,18 @@ main:has(.monitor-dashboard-wrapper) .app-content {
         grid-template-rows: max-content max-content minmax(12rem, 1fr);
     }
 
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(.monitor-summary-grid)) {
+        grid-template-rows: max-content minmax(12rem, 1fr);
+    }
+
     .monitor-dashboard-grid > [data-panel-id="ressourcen"] {
         grid-column: 1 / -1;
         grid-row: 3;
         min-height: 12rem;
+    }
+
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)) > [data-panel-id="ressourcen"] {
+        grid-row: 2;
     }
 
     .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]) > [data-panel-id="ressourcen"] {
@@ -1106,9 +1127,19 @@ main:has(.monitor-dashboard-wrapper) .app-content {
         grid-row: 2 / span 2;
     }
 
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):has(> [data-panel-id="ressourcen"]):not(:has(.monitor-summary-grid)) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):has(> [data-panel-id="ressourcen"]):not(:has(.monitor-summary-grid)) > [data-panel-id="notizen"] {
+        grid-row: 1 / span 2;
+    }
+
     .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])) > [data-panel-id="teams"],
     .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])) > [data-panel-id="notizen"] {
         grid-row: 2;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])):not(:has(.monitor-summary-grid)) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])):not(:has(.monitor-summary-grid)) > [data-panel-id="notizen"] {
+        grid-row: 1;
     }
 
     .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="notizen"])):has(> [data-panel-id="teams"]) > [data-panel-id="ressourcen"] {
@@ -1126,6 +1157,10 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     /* Reflow resources into the search-area slot when that panel is hidden. */
     .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])) {
         grid-template-rows: max-content minmax(0, 1fr);
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(.monitor-summary-grid)) {
+        grid-template-rows: minmax(0, 1fr);
     }
 
     .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])) > [data-panel-id="teams"],

@@ -541,6 +541,11 @@
                 </div>
                 <div class="modal-body">
                     <EditForm Model="@_currentArea" OnValidSubmit="@SaveArea">
+                        @if (!string.IsNullOrWhiteSpace(_areaDialogError))
+                        {
+                            <div class="alert alert-danger mb-3" role="alert">@_areaDialogError</div>
+                        }
+
                         <div class="form-group mb-3">
                             <label class="form-label">Name</label>
                             <InputText @bind-Value="_currentArea.Name" class="form-control form-control-lg" placeholder="z.B. Sektor Alpha" />

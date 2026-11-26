@@ -532,7 +532,7 @@ public partial class EinsatzMonitor
                     EntityType = resolution.EntityType,
                     EntityId = resolution.EntityId,
                     Status = resolution.NewStatus!.Value,
-                    SonderauftragNotiz = resolution.Note
+                    SonderauftragNotiz = resolution.Note ?? string.Empty
                 };
                 var isCheckedIn = EinsatzService.GetEinsatzResources().Any(entry =>
                     entry.EntityType == resource.EntityType
@@ -623,18 +623,21 @@ public partial class EinsatzMonitor
             return false;
 
         var removedIds = removals.Select(removal => removal.EntityId).ToHashSet(StringComparer.Ordinal);
+        string? promotedHelperId = null;
         if (removedIds.Contains(team.HundefuehrerId ?? string.Empty))
         {
             var replacementIndex = team.HelferIds.FindIndex(id =>
                 !removedIds.Contains(id)
                 && IsEligibleTeamLeader(team, id));
-            team.HundefuehrerId = team.HelferIds[replacementIndex];
+            promotedHelperId = team.HelferIds[replacementIndex];
+            team.HundefuehrerId = promotedHelperId;
             team.HundefuehrerName = team.HelferNames.ElementAtOrDefault(replacementIndex) ?? string.Empty;
         }
 
         for (var index = team.HelferIds.Count - 1; index >= 0; index--)
         {
-            if (!removedIds.Contains(team.HelferIds[index]))
+            if (!removedIds.Contains(team.HelferIds[index])
+                && !string.Equals(team.HelferIds[index], promotedHelperId, StringComparison.Ordinal))
                 continue;
 
             team.HelferIds.RemoveAt(index);
@@ -840,8 +843,24 @@ public partial class EinsatzMonitor
         if (_editingTeamId is null)
         {
             var newTeam = BuildNewTeam();
+            if (!ValidateCandidateSearchAreaAssignment(newTeam, alreadyAssignedInSearch: false, out var newAreaError))
+            {
+                SetTeamFormMessage(newAreaError, true);
+                return;
+            }
+
             await EinsatzService.AddTeamAsync(newTeam);
-            await SyncTeamSearchAreaAsync(newTeam, string.Empty);
+            try
+            {
+                await SyncTeamSearchAreaAsync(newTeam, string.Empty);
+            }
+            catch (InvalidOperationException ex)
+            {
+                SetTeamFormMessage(ex.Message, true);
+                _editingTeamId = newTeam.TeamId;
+                return;
+            }
+
             await SyncCollarAssignmentAsync(newTeam);
 
             SetTeamFormMessage("Team wurde gespeichert.", false);
@@ -857,11 +876,31 @@ public partial class EinsatzMonitor
             return;
         }
 
+        var candidateTeam = BuildNewTeam();
+        var alreadyAssigned = existingTeam.IsManuallyPaused
+            || (!string.IsNullOrWhiteSpace(existingTeam.SearchAreaId)
+                && EinsatzService.CurrentEinsatz.SearchAreas.Any(area =>
+                    area.Id == existingTeam.SearchAreaId && area.AssignedTeamId == existingTeam.TeamId));
+        if (!ValidateCandidateSearchAreaAssignment(candidateTeam, alreadyAssigned, out var editAreaError))
+        {
+            SetTeamFormMessage(editAreaError, true);
+            return;
+        }
+
         var previousAreaId = existingTeam.SearchAreaId;
         var previousCollarId = existingTeam.CollarId;
         ApplyFormToExistingTeam(existingTeam);
         await EinsatzService.UpdateTeamAsync(existingTeam);
-        await SyncTeamSearchAreaAsync(existingTeam, previousAreaId);
+        try
+        {
+            await SyncTeamSearchAreaAsync(existingTeam, previousAreaId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            SetTeamFormMessage(ex.Message, true);
+            return;
+        }
+
         await SyncCollarAssignmentAsync(existingTeam, previousCollarId);
         await EinsatzService.AddGlobalNoteWithSourceAsync(
             $"{existingTeam.TeamName} wurde aktualisiert.",
@@ -876,16 +915,57 @@ public partial class EinsatzMonitor
         _showTeamModal = false;
     }
 
-    private async Task SyncTeamSearchAreaAsync(Team team, string previousAreaId)
+    private bool ValidateCandidateSearchAreaAssignment(
+        Team candidateTeam,
+        bool alreadyAssignedInSearch,
+        out string errorMessage)
     {
-        if (!string.IsNullOrWhiteSpace(previousAreaId) && previousAreaId != _teamForm.SearchAreaId)
+        errorMessage = string.Empty;
+        if (string.IsNullOrWhiteSpace(_teamForm.SearchAreaId))
+            return true;
+
+        var resources = EinsatzService.GetEinsatzResources();
+        if (resources.Count == 0)
+            return true;
+
+        var required = new[] { candidateTeam.HundefuehrerId }
+            .Concat(candidateTeam.HelferIds ?? new List<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .Select(id => (EntityType: ResourceEntityType.Person, Id: id))
+            .Concat(!string.IsNullOrWhiteSpace(candidateTeam.DogId)
+                ? new[] { (EntityType: ResourceEntityType.Dog, Id: candidateTeam.DogId) }
+                : Array.Empty<(ResourceEntityType EntityType, string Id)>());
+
+        var issues = new List<TeamResourceAvailabilityIssue>();
+        foreach (var (entityType, id) in required)
         {
-            await EinsatzService.AssignTeamToSearchAreaAsync(previousAreaId, string.Empty);
+            var resource = resources.FirstOrDefault(entry =>
+                entry.EntityType == entityType
+                && string.Equals(entry.EntityId, id, StringComparison.Ordinal));
+            if (resource?.Status != ResourceStatus.Verfuegbar
+                && !(alreadyAssignedInSearch && resource?.Status == ResourceStatus.InSuche))
+            {
+                issues.Add(new TeamResourceAvailabilityIssue(entityType, id, resource?.Status));
+            }
         }
 
+        if (issues.Count == 0)
+            return true;
+
+        errorMessage = new TeamResourceAvailabilityException(issues, candidateTeam).Message;
+        return false;
+    }
+
+    private async Task SyncTeamSearchAreaAsync(Team team, string previousAreaId)
+    {
         if (!string.IsNullOrWhiteSpace(_teamForm.SearchAreaId))
         {
             await EinsatzService.AssignTeamToSearchAreaAsync(_teamForm.SearchAreaId, team.TeamId);
+        }
+        else if (!string.IsNullOrWhiteSpace(previousAreaId))
+        {
+            await EinsatzService.AssignTeamToSearchAreaAsync(previousAreaId, string.Empty);
         }
         else
         {

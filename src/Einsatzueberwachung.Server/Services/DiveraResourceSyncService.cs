@@ -111,6 +111,8 @@ public sealed class DiveraResourceSyncService : BackgroundService
     {
         _einsatzService.EinsatzChanged += OnEinsatzChanged;
         _diveraService.DataChanged += OnDiveraDataChanged;
+        if (_settingsService is not null)
+            _settingsService.AppSettingsChanged += OnSettingsChanged;
         _syncSignals.Writer.TryWrite(true);
 
         try
@@ -137,6 +139,8 @@ public sealed class DiveraResourceSyncService : BackgroundService
         {
             _einsatzService.EinsatzChanged -= OnEinsatzChanged;
             _diveraService.DataChanged -= OnDiveraDataChanged;
+            if (_settingsService is not null)
+                _settingsService.AppSettingsChanged -= OnSettingsChanged;
         }
     }
 
@@ -148,7 +152,10 @@ public sealed class DiveraResourceSyncService : BackgroundService
             var einsatz = _einsatzService.CurrentEinsatz;
             var ressourcenAktiv = _settingsService is null
                 || (await _settingsService.GetAppSettingsAsync()).RessourcenverwaltungAktiv;
-            if (!ressourcenAktiv || !HasActiveLinkedEinsatz(einsatz) || einsatz.DiveraAlarmId is not int alarmId)
+            if (!ressourcenAktiv
+                || !HasActiveLinkedEinsatz(einsatz)
+                || einsatz.DiveraAlarmId is not int alarmId
+                || (alarmId == DiveraTestSimulationService.SimulatedAlarmId && _simulationService?.IsActive != true))
             {
                 _unmappedResponseMemberIds.Clear();
                 _loggedUnmappedAlarmId = null;
@@ -318,4 +325,5 @@ public sealed class DiveraResourceSyncService : BackgroundService
 
     private void OnEinsatzChanged() => _syncSignals.Writer.TryWrite(true);
     private void OnDiveraDataChanged() => _syncSignals.Writer.TryWrite(true);
+    private void OnSettingsChanged() => _syncSignals.Writer.TryWrite(true);
 }

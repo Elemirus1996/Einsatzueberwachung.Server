@@ -1,3 +1,4 @@
+using Einsatzueberwachung.Domain.Interfaces;
 using Einsatzueberwachung.Domain.Models;
 using Einsatzueberwachung.Domain.Models.Enums;
 using Einsatzueberwachung.Domain.Services;
@@ -36,15 +37,19 @@ public sealed class EinsatzResourceTests
     }
 
     [Theory]
-    [InlineData(null, false)]
-    [InlineData("", false)]
-    [InlineData("  ", false)]
-    [InlineData("ab", false)]
-    [InlineData("  ab ", false)]
-    [InlineData("abc", true)]
-    [InlineData(" aBC ", true)]
-    public void CheckInSearch_RequiresThreeTrimmedCharacters(string? query, bool expected) =>
-        Assert.Equal(expected, ResourceCheckInSearch.HasMinimumQueryLength(query));
+    [InlineData(null, true)]
+    [InlineData("", true)]
+    [InlineData("  ", true)]
+    [InlineData("a", true)]
+    [InlineData("an", true)]
+    [InlineData(" rhs ", true)]
+    [InlineData("rex", true)]
+    [InlineData("30 min", true)]
+    [InlineData("unbekannt", false)]
+    public void CheckInSearch_ShowsAllByDefaultAndRefinesOnAnyInput(string? query, bool expected) =>
+        Assert.Equal(
+            expected,
+            ResourceCheckInSearch.MatchesQuery(query, "Anna Berg", "RHS Nord · Hund: Rex", "30 Minuten"));
 
     [Fact]
     public void ResourceRosterFilter_DoesNotMatchPeopleBasedOnTheirDogsStatus()
@@ -812,6 +817,169 @@ public sealed class EinsatzResourceTests
                 Assert.Equal("Anna Alpha", third.Primary.Name);
                 Assert.Equal("Karla", Assert.Single(third.CheckedInDogs).Name);
             });
+    }
+
+    [Fact]
+    public async Task PauseUndWeiter_OhneSuchgebiet_ErlaubtFortsetzenTrotzInSuche()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "hf-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Dog,
+            EntityId = "dog-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+
+        var team = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Mantrailer 1",
+            HundefuehrerId = "hf-1",
+            HundefuehrerName = "Anna Berg",
+            DogId = "dog-1",
+            DogName = "Rex"
+        });
+
+        await einsatz.StartTeamTimerAsync(team.TeamId);
+        await einsatz.PauseTeamTimerAsync(team.TeamId);
+        Assert.True(team.IsManuallyPaused);
+
+        await einsatz.StartTeamTimerAsync(team.TeamId);
+        Assert.True(team.IsRunning);
+        Assert.False(team.IsManuallyPaused);
+    }
+
+    [Fact]
+    public async Task SuchgebietAufhebenOderLoeschen_WaehrendHundepflichtpause_BehaeltPauseStatus()
+    {
+        var currentTime = new DateTime(2026, 11, 20, 10, 0, 0);
+        var time = EinsatzAbschlussTests.Recorder<ITimeService>.Create((m, _) =>
+            m.Name == "get_Now" ? currentTime : null);
+        var einsatz = new EinsatzService(timeService: time.Proxy);
+        await einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Testort", IstEinsatz = true });
+
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "hf-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Dog,
+            EntityId = "dog-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+
+        var area = await einsatz.AddSearchAreaAsync(new SearchArea { Name = "Sektor Nord" });
+        var team = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Fläche 1",
+            HundefuehrerId = "hf-1",
+            DogId = "dog-1",
+            DogName = "Rex",
+            PauseThresholdMinutes = 5,
+            PauseMinutesShortRun = 20,
+            PauseMinutesLongRun = 30
+        });
+        await einsatz.AssignTeamToSearchAreaAsync(area.Id, team.TeamId);
+
+        await einsatz.StartTeamTimerAsync(team.TeamId);
+        team.ElapsedTime = TimeSpan.FromMinutes(10);
+        await einsatz.StopTeamTimerAsync(team.TeamId);
+
+        Assert.True(team.IsPausing);
+        await einsatz.DeleteSearchAreaAsync(area.Id);
+
+        var resources = einsatz.GetEinsatzResources();
+        Assert.Equal(ResourceStatus.Verfuegbar, resources.Single(r => r.EntityId == "hf-1").Status);
+        Assert.Equal(ResourceStatus.Pause, resources.Single(r => r.EntityId == "dog-1").Status);
+    }
+
+    [Fact]
+    public async Task AbgelaufeneHundepause_WirdEntferntUndUeberschreibtSpaetereManuellePauseNicht()
+    {
+        var currentTime = new DateTime(2026, 11, 20, 10, 0, 0);
+        var time = EinsatzAbschlussTests.Recorder<ITimeService>.Create((m, _) =>
+            m.Name == "get_Now" ? currentTime : null);
+        var einsatz = new EinsatzService(timeService: time.Proxy);
+        await einsatz.StartEinsatzAsync(new EinsatzData { Einsatzort = "Testort", IstEinsatz = true });
+
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "hf-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Dog,
+            EntityId = "dog-1",
+            Status = ResourceStatus.Verfuegbar
+        });
+
+        var team = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Fläche 1",
+            HundefuehrerId = "hf-1",
+            DogId = "dog-1",
+            DogName = "Rex",
+            PauseThresholdMinutes = 5,
+            PauseMinutesShortRun = 1,
+            PauseMinutesLongRun = 1
+        });
+
+        await einsatz.StartTeamTimerAsync(team.TeamId);
+        team.ElapsedTime = TimeSpan.FromMinutes(10);
+        await einsatz.StopTeamTimerAsync(team.TeamId);
+        var pauseRecord = einsatz.GetDogPause("dog-1")!;
+        pauseRecord.PauseStartTime = Ortszeit.Jetzt.AddMinutes(-5);
+
+        einsatz.RefreshExpiredDogResourcePauses();
+        Assert.Null(einsatz.GetDogPause("dog-1"));
+        Assert.Equal(ResourceStatus.Verfuegbar, einsatz.GetEinsatzResources().Single(r => r.EntityId == "dog-1").Status);
+
+        await einsatz.SetResourceStatusAsync(ResourceEntityType.Dog, "dog-1", ResourceStatus.Pause);
+        einsatz.RefreshExpiredDogResourcePauses();
+        Assert.Equal(ResourceStatus.Pause, einsatz.GetEinsatzResources().Single(r => r.EntityId == "dog-1").Status);
+    }
+
+    [Fact]
+    public async Task StartWithCollarAsync_VerwendetKlarnamenInFehlermeldungUndLaesstHalsbandUnzugewiesen()
+    {
+        var einsatz = await CreateActiveEinsatzAsync();
+        var collars = new CollarTrackingService(einsatz);
+        await collars.ReceiveLocationAsync("HB-1", "Alpha", 51.4, 7.0, 90, DateTime.UtcNow);
+        var time = EinsatzAbschlussTests.Recorder<ITimeService>.Create((m, _) =>
+            m.Name == "get_Now" ? new DateTime(2026, 11, 20, 12, 0, 0) : null);
+        var suche = new Einsatzueberwachung.Server.Services.TeamSucheService(einsatz, collars, time.Proxy);
+
+        await einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "guid-person-1",
+            Status = ResourceStatus.AufAnfahrt
+        });
+
+        var team = await einsatz.AddTeamAsync(new Team
+        {
+            TeamName = "Team Alpha",
+            HundefuehrerId = "guid-person-1",
+            HundefuehrerName = "Anna Berg"
+        });
+
+        var ex = await Assert.ThrowsAsync<TeamResourceAvailabilityException>(() =>
+            suche.StartWithCollarAsync(team.TeamId, "HB-1"));
+
+        Assert.Contains("Anna Berg", ex.Message);
+        Assert.DoesNotContain("guid-person-1", ex.Message);
+        Assert.True(string.IsNullOrEmpty(team.CollarId));
+        Assert.Contains(collars.GetAvailableCollars(), c => c.Id == "HB-1");
     }
 
     private static async Task<EinsatzService> CreateActiveEinsatzAsync()

@@ -63,7 +63,6 @@ public partial class Ressourcenverwaltung
     private int TotalResourceCount => CheckedInResources.Count;
 
     private int ActivePersonnelCount => _personnel.Count(person => person.IsActive);
-    private bool CanShowCheckInSuggestions => ResourceCheckInSearch.HasMinimumQueryLength(_searchText);
     private bool IsQuickCreateDogSaved => _dogs.Any(dog => dog.Id == _newDog.Id);
 
     private IReadOnlyDictionary<string, string> PositiveDiveraResponses =>
@@ -94,8 +93,6 @@ public partial class Ressourcenverwaltung
         get
         {
             var query = _searchText.Trim();
-            if (!ResourceCheckInSearch.HasMinimumQueryLength(query))
-                return [];
 
             var diveraResponses = PositiveDiveraResponses;
             var checkedInPersonIds = CheckedInResources
@@ -130,10 +127,11 @@ public partial class Ressourcenverwaltung
                         string.IsNullOrWhiteSpace(detail) ? null : detail,
                         string.IsNullOrWhiteSpace(diveraResponse) ? null : diveraResponse);
                 })
-                .Where(suggestion => string.IsNullOrWhiteSpace(query)
-                    || ContainsSearchTerm(suggestion.Name, query)
-                    || ContainsSearchTerm(suggestion.Detail, query)
-                    || ContainsSearchTerm(suggestion.DiveraResponseText, query))
+                .Where(suggestion => ResourceCheckInSearch.MatchesQuery(
+                    query,
+                    suggestion.Name,
+                    suggestion.Detail,
+                    suggestion.DiveraResponseText))
                 .ToList();
         }
     }
@@ -144,6 +142,7 @@ public partial class Ressourcenverwaltung
         _personnel = await MasterDataService.GetPersonalListAsync();
         _dogs = await MasterDataService.GetDogListAsync();
         _checkInExpanded = EinsatzService.GetEinsatzResources().Count == 0;
+        SettingsService.AppSettingsChanged += OnAppSettingsChanged;
         EinsatzService.ResourcesChanged += OnResourcesChanged;
         EinsatzService.EinsatzChanged += OnEinsatzChanged;
         DiveraResourceSyncService.ResponsesChanged += OnDiveraResponsesChanged;
@@ -152,11 +151,18 @@ public partial class Ressourcenverwaltung
 
     public ValueTask DisposeAsync()
     {
+        SettingsService.AppSettingsChanged -= OnAppSettingsChanged;
         EinsatzService.ResourcesChanged -= OnResourcesChanged;
         EinsatzService.EinsatzChanged -= OnEinsatzChanged;
         DiveraResourceSyncService.ResponsesChanged -= OnDiveraResponsesChanged;
         return ValueTask.CompletedTask;
     }
+
+    private void OnAppSettingsChanged() => _ = InvokeAsync(async () =>
+    {
+        _appSettings = await SettingsService.GetAppSettingsAsync();
+        StateHasChanged();
+    });
 
     private void OnResourcesChanged() => _ = InvokeAsync(StateHasChanged);
     private void OnEinsatzChanged() => _ = InvokeAsync(StateHasChanged);
@@ -497,10 +503,6 @@ public partial class Ressourcenverwaltung
 
     private void SetPendingNote(ResourceRosterItem item, string? note) =>
         _pendingNotes[item.UiKey] = note ?? string.Empty;
-
-    private static bool ContainsSearchTerm(string? value, string term) =>
-        !string.IsNullOrWhiteSpace(value)
-        && value.Contains(term, StringComparison.CurrentCultureIgnoreCase);
 
     private void SetMessage(string text, bool isError = false)
     {

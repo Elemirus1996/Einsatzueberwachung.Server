@@ -173,6 +173,7 @@
     protected override async Task OnInitializedAsync()
     {
         EinsatzService.SzenarioChanged += OnSzenarioChanged;
+        SettingsService.AppSettingsChanged += OnAppSettingsChanged;
         _ressourcenAktiv = (await SettingsService.GetAppSettingsAsync()).RessourcenverwaltungAktiv;
 
         var settings = await SettingsService.GetStaffelSettingsAsync();
@@ -187,8 +188,15 @@
 
     private void OnSzenarioChanged() => InvokeAsync(StateHasChanged);
 
+    private void OnAppSettingsChanged() => _ = InvokeAsync(async () =>
+    {
+        _ressourcenAktiv = (await SettingsService.GetAppSettingsAsync()).RessourcenverwaltungAktiv;
+        StateHasChanged();
+    });
+
     public void Dispose()
     {
         EinsatzService.SzenarioChanged -= OnSzenarioChanged;
+        SettingsService.AppSettingsChanged -= OnAppSettingsChanged;
     }
 }
