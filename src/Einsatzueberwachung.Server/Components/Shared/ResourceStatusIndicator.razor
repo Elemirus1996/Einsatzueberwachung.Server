@@ -1,0 +1,38 @@
+@if (IsVisible)
+{
+    <span class="@IndicatorClass"
+          role="img"
+          aria-label="@AccessibleLabel"
+          title="@AccessibleLabel">
+        <i class="bi @IconClass" aria-hidden="true"></i>
+    </span>
+}
+
+@code {
+    [Parameter] public ResourceStatus? Status { get; set; }
+    [Parameter] public bool ShowUnknown { get; set; }
+    [Parameter] public bool OnlyWhenUnavailable { get; set; }
+    [Parameter] public string Name { get; set; } = "Ressource";
+    [Parameter] public string Variant { get; set; } = "inline";
+
+    private bool IsVisible => Status is { } status
+        ? !OnlyWhenUnavailable || status != ResourceStatus.Verfuegbar
+        : ShowUnknown;
+
+    private string IconClass => Status is { } status
+        ? ResourceStatusPresentation.Icon(status)
+        : "bi-question-circle";
+
+    private string StatusClass => Status is { } status
+        ? ResourceStatusPresentation.CssClass(status)
+        : "resource-status--off";
+
+    private string StatusLabel => Status is { } status
+        ? ResourceStatusPresentation.Label(status)
+        : "Nicht eingecheckt";
+
+    private string AccessibleLabel => $"{Name}: {StatusLabel}";
+
+    private string IndicatorClass =>
+        $"resource-status-indicator resource-status-indicator--{Variant} {StatusClass}";
+}

@@ -16,6 +16,8 @@ namespace Einsatzueberwachung.Domain.Services
         private StaffelSettings? _staffelSettings;
         private AppSettings? _appSettings;
 
+        public event Action? AppSettingsChanged;
+
         public SettingsService()
         {
             _dataPath = AppPathResolver.GetDataDirectory();
@@ -93,6 +95,7 @@ namespace Einsatzueberwachung.Domain.Services
             var options = new JsonSerializerOptions { WriteIndented = true };
             var json = JsonSerializer.Serialize(settings, options);
             await File.WriteAllTextAsync(filePath, json);
+            AppSettingsChanged?.Invoke();
         }
 
         public async Task<bool> GetIsDarkModeAsync()

@@ -119,6 +119,7 @@ public class DiveraController : ControllerBase
         var einsatzData = new EinsatzData
         {
             EinsatzNummer = $"D-{alarm.Id}",
+            DiveraAlarmId = alarm.Id,
             Einsatzort = alarm.Address,
             MapAddress = alarm.Address,
             Stichwort = alarm.Title,

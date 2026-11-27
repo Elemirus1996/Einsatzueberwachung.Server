@@ -111,6 +111,7 @@
         @{
             var workPanels = _currentLayout
                 .Where(panel => panel.IsVisible && !IsSummaryPanel(panel.PanelId))
+                .Where(panel => panel.PanelId != KnownPanels.Ressourcen || _appSettings.RessourcenverwaltungAktiv)
                 .ToArray();
             var tabletPanels = workPanels
                 .OrderBy(panel => TabletPanelOrder(panel.PanelId))
@@ -224,6 +225,18 @@
                                         <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                     </a>
                                 }
+                                else if (panel.PanelId == KnownPanels.Ressourcen)
+                                {
+                                    <a class="dashboard-panel-title-popout"
+                                       href="/ressourcenverwaltung"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       aria-label="Ressourcenverwaltung in neuem Fenster öffnen"
+                                       title="Ressourcenverwaltung öffnen">
+                                        <span>@PanelLabel(panel.PanelId)</span>
+                                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                    </a>
+                                }
                                 else
                                 {
                                     @PanelLabel(panel.PanelId)
@@ -293,6 +306,22 @@
                                 </button>
                             </div>
                         }
+                        else if (panel.PanelId == KnownPanels.Ressourcen)
+                        {
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary resource-monitor-filter-trigger ms-auto @(GetActiveResourceFilterCount() > 0 ? "is-filtered" : string.Empty)"
+                                    aria-label="Ressourcenfilter @(GetActiveResourceFilterCount() > 0 ? $"ändern, {GetActiveResourceFilterCount()} aktiv" : "öffnen")"
+                                    aria-expanded="@_resourceFiltersExpanded"
+                                    aria-controls="resource-filter-controls"
+                                    title="Ressourcen filtern"
+                                    @onclick="ToggleResourceFilters">
+                                <i class="bi bi-funnel" aria-hidden="true"></i>
+                                @if (GetActiveResourceFilterCount() > 0)
+                                {
+                                    <span class="resource-monitor-filter-count">@GetActiveResourceFilterCount()</span>
+                                }
+                            </button>
+                        }
                         else if (panel.PanelId == KnownPanels.Notizen)
                         {
                             <div class="ms-auto d-flex align-items-center gap-1">
@@ -304,6 +333,52 @@
                     </div>
 
                     <div class="dashboard-panel-body">
+                        @if (panel.PanelId == KnownPanels.Ressourcen)
+                        {
+                            <div id="resource-filter-controls"
+                                 class="resource-monitor-filter-controls"
+                                 role="group"
+                                 aria-label="Ressourcenfilter"
+                                 hidden="@(!_resourceFiltersExpanded)">
+                                <label>
+                                    <span>Status</span>
+                                    <select class="form-select form-select-sm"
+                                            aria-label="Ressourcenstatus filtern"
+                                            @bind="_resourceStateFilter">
+                                        <option value="all">Alle Status</option>
+                                        <option value="not-available">Nicht im Verfügungsraum</option>
+                                        @foreach (var status in Enum.GetValues<ResourceStatus>())
+                                        {
+                                            <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                                        }
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>Personen</span>
+                                    <select class="form-select form-select-sm"
+                                            aria-label="Nach Hundeführern filtern"
+                                            @bind="_handlerAssignmentFilter">
+                                        <option value="all">Alle Personen</option>
+                                        <option value="handlers">Hundeführer</option>
+                                        <option value="no-dog">Ohne Hund</option>
+                                    </select>
+                                </label>
+                                <label class="resource-monitor-filter-checkbox">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           @bind="_hideDogs" />
+                                    <span>Hunde ausblenden</span>
+                                </label>
+                                @if (GetActiveResourceFilterCount() > 0)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary resource-monitor-filter-reset"
+                                            @onclick="ClearResourceFilters">
+                                        Filter zurücksetzen
+                                    </button>
+                                }
+                            </div>
+                        }
                         @switch (panel.PanelId)
                         {
                                 case KnownPanels.EinsatzInfo:
@@ -317,6 +392,7 @@
                                 case KnownPanels.Teams:
                                     <MonitorTeamsPanel HasTeams="@(EinsatzService.Teams.Count > 0)"
                                                        Items="GetMonitorTeamCardItems()"
+                                                       Resources="EinsatzService.GetEinsatzResources()"
                                                        DroneList="_droneList"
                                                        StatusMessage="@_teamStatusMessage"
                                                        StatusIsError="_teamStatusIsError"
@@ -327,6 +403,118 @@
                                                        OnReset="RequestResetTeamAsync"
                                                        OnEdit="EditTeam"
                                                        OnToggleExpand="ToggleTeamExpand" />
+                                    break;
+
+                                case KnownPanels.Ressourcen:
+                                    var resourceGroups = GetFilteredMonitorResourceGroups();
+                                    RenderFragment<ResourceRosterItem> renderMonitorResourceEntry = item => @<text>
+                                        @{
+                                            var itemNote = item.GetMonitorNote();
+                                        }
+                                        <div class="resource-monitor-row">
+                                            <div class="resource-monitor-identity">
+                                                <i class="@GetResourceIconClass(item)"
+                                                   title="@item.TypeLabel"
+                                                   aria-hidden="true"></i>
+                                                <strong>@item.Name</strong>
+                                            </div>
+                                            <select class="resource-monitor-status-chip @ResourceStatusPresentation.CssClass(item.Status)"
+                                                    aria-label="@($"Status für {item.TypeLabel} {item.Name} ändern")"
+                                                    value="@item.Status"
+                                                    disabled="@_isUpdatingResourceStatus"
+                                                    @onchange="args => OnResourceStatusSelectedAsync(item, args.Value?.ToString())">
+                                                @foreach (var status in ResourceStatusPresentation.Options(item.EntityType))
+                                                {
+                                                    <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(itemNote))
+                                        {
+                                            <small class="resource-monitor-note">@itemNote</small>
+                                        }
+                                        @if (_pendingSpecialResourceKey == item.UiKey)
+                                        {
+                                            <div class="resource-monitor-special-editor">
+                                                <label>
+                                                    <span>Auftrag / Zweck (Pflichtfeld)</span>
+                                                    <input class="form-control form-control-sm"
+                                                           value="@_pendingSpecialResourceNote"
+                                                           @oninput="args => SetPendingSpecialResourceNote(args.Value?.ToString())" />
+                                                </label>
+                                                <div class="resource-monitor-special-actions">
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-primary"
+                                                            disabled="@(_isUpdatingResourceStatus || string.IsNullOrWhiteSpace(_pendingSpecialResourceNote))"
+                                                            @onclick="() => ConfirmSpecialResourceAssignmentAsync(item)">
+                                                        Bestätigen
+                                                    </button>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-secondary"
+                                                            disabled="@_isUpdatingResourceStatus"
+                                                            @onclick="CancelSpecialResourceAssignment">
+                                                        Abbrechen
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    </text>;
+                                    @if (resourceGroups.Count == 0)
+                                    {
+                                        <div class="resource-monitor-empty">
+                                            @if (GetActiveResourceFilterCount() > 0)
+                                            {
+                                                <span>Keine Ressourcen entsprechen den Filtern.</span>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-link p-0"
+                                                        @onclick="ClearResourceFilters">
+                                                    Filter zurücksetzen
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span>Noch keine Ressourcen eingecheckt.</span>
+                                                <a href="/ressourcenverwaltung">Zum Check-in</a>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        @if (!string.IsNullOrWhiteSpace(_resourceStatusError))
+                                        {
+                                            <div class="resource-monitor-error" role="alert">@_resourceStatusError</div>
+                                        }
+                                        <ul class="resource-monitor-list" aria-label="Eingecheckte Ressourcen">
+                                            @foreach (var group in resourceGroups)
+                                            {
+                                                <li class="resource-monitor-item" @key="group.Primary.UiKey">
+                                                    @if (group.ShowPrimaryStatus)
+                                                    {
+                                                        @renderMonitorResourceEntry(group.Primary)
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="resource-monitor-context">
+                                                            <i class="bi bi-person" aria-hidden="true"></i>
+                                                            <strong>@group.Primary.Name</strong>
+                                                            <small>Hundeführer · nur als Zuordnung</small>
+                                                        </div>
+                                                    }
+                                                    @if (group.Dogs.Count > 0)
+                                                    {
+                                                        <ul class="resource-monitor-sublist" aria-label="@($"Passende Hunde von {group.Primary.Name}")">
+                                                            @foreach (var dogItem in group.Dogs)
+                                                            {
+                                                                <li class="resource-monitor-subitem" @key="dogItem.UiKey">
+                                                                    @renderMonitorResourceEntry(dogItem)
+                                                                </li>
+                                                            }
+                                                        </ul>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
                                     break;
 
                                 case KnownPanels.Notizen:
@@ -381,7 +569,16 @@
                                OnStartWithout="CollarSelectStartWithoutAsync"
                                OnAssignAndStart="CollarSelectConfirmAsync" />
 
-@* ===== Modals ===== *@
+    <MonitorTeamStartResolutionDialog IsOpen="_showTeamStartResolutionModal"
+                                      IsBusy="_teamStartResolutionBusy"
+                                      TeamName='@(EinsatzService.Teams.FirstOrDefault(team => team.TeamId == _teamStartResolutionTeamId)?.TeamName ?? "?")'
+                                      Issues="_teamStartResolutionIssues"
+                                      ErrorMessage="@_teamStartResolutionError"
+                                      OnCancel="CloseTeamStartResolutionDialog"
+                                      OnIgnoreAndStart="IgnoreTeamStartResourceIssuesAsync"
+                                      OnApplyChangesAndStart="ApplyTeamStartResourceResolutionsAndStartAsync" />
+
+    @* ===== Modals ===== *@
 
 <MonitorCloseMissionDialog IsOpen="_showCloseMissionModal"
                            IsClosing="_closingMission"
@@ -436,12 +633,13 @@
 <MonitorTeamEditorDialog IsOpen="_showTeamModal"
                          IsEditing="@(_editingTeamId is not null)"
                          Model="_teamForm"
-                         ActivePersonnel="ActivePersonnel"
+                         ActivePersonnel="TeamPersonnelOptions"
                          HundefuehrerOptions="HundefuehrerOptions"
                          HelferOptions="HelferOptions"
                          DrohnenpilotOptions="DrohnenpilotOptions"
                          AvailableDogs="AvailableDogs"
                          AvailableDrones="AvailableDrones"
+                         Resources="EinsatzService.GetEinsatzResources()"
                          SearchAreas="EinsatzService.CurrentEinsatz.SearchAreas"
                          Collars="CollarTrackingService.Collars"
                          Message="@_teamFormMessage"

@@ -16,8 +16,9 @@ namespace Einsatzueberwachung.Domain.Services
             ws.Cell(1, 4).Value = "Qualifikationen";
             ws.Cell(1, 5).Value = "Notizen";
             ws.Cell(1, 6).Value = "Aktiv";
+            ws.Cell(1, 7).Value = "Organisation";
 
-            var headerRange = ws.Range(1, 1, 1, 6);
+            var headerRange = ws.Range(1, 1, 1, 7);
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
             headerRange.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
@@ -31,6 +32,7 @@ namespace Einsatzueberwachung.Domain.Services
                 ws.Cell(row, 4).Value = GetSkillsString(person.Skills);
                 ws.Cell(row, 5).Value = person.Notizen;
                 ws.Cell(row, 6).Value = person.IsActive ? "Ja" : "Nein";
+                ws.Cell(row, 7).Value = person.Organisation;
                 row++;
             }
 
@@ -49,8 +51,9 @@ namespace Einsatzueberwachung.Domain.Services
             ws.Cell(1, 5).Value = "Hundeführer";
             ws.Cell(1, 6).Value = "Notizen";
             ws.Cell(1, 7).Value = "Aktiv";
+            ws.Cell(1, 8).Value = "Organisation";
 
-            var headerRange = ws.Range(1, 1, 1, 7);
+            var headerRange = ws.Range(1, 1, 1, 8);
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightGreen;
             headerRange.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
@@ -69,6 +72,7 @@ namespace Einsatzueberwachung.Domain.Services
                 ws.Cell(row, 5).Value = string.Join("; ", hundefuehrerNames);
                 ws.Cell(row, 6).Value = dog.Notizen;
                 ws.Cell(row, 7).Value = dog.IsActive ? "Ja" : "Nein";
+                ws.Cell(row, 8).Value = dog.Organisation;
                 row++;
             }
 

@@ -214,5 +214,17 @@ public sealed class ElAppAktionenTests : IDisposable
         Assert.IsType<NotFoundObjectResult>(await Controller().TeamSuchgebiet(rex.TeamId, Gebiet("gibtsnicht")));
         Assert.IsType<NotFoundObjectResult>(await Controller().TeamSuchgebiet("gibtsnicht", Gebiet(a.Id)));
         Assert.Equal(410, ((IStatusCodeActionResult)await Controller(token: "falsch").TeamSuchgebiet(rex.TeamId, Gebiet(a.Id))).StatusCode);
+
+        // Nicht verfuegbare Ressource beim Gebietszuweisen liefert 409 statt 500
+        rex.HundefuehrerId = "hf-nicht-bereit";
+        rex.HundefuehrerName = "Max Muster";
+        await _einsatz.CheckInResourceAsync(new EinsatzResource
+        {
+            EntityType = ResourceEntityType.Person,
+            EntityId = "hf-nicht-bereit",
+            Status = ResourceStatus.AufAnfahrt
+        });
+        var konflikt = Assert.IsType<ConflictObjectResult>(await Controller().TeamSuchgebiet(rex.TeamId, Gebiet(a.Id)));
+        Assert.Contains("Max Muster", Json(konflikt).GetProperty("error").GetString());
     }
 }

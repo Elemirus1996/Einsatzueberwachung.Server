@@ -53,6 +53,7 @@ namespace Einsatzueberwachung.Domain.Services
             var colSkills = GetColumnIndexByHeader(ws, "Qualifikationen") ?? (colDiveraId.HasValue ? 4 : 3);
             var colNotizen = GetColumnIndexByHeader(ws, "Notizen") ?? (colDiveraId.HasValue ? 5 : 4);
             var colAktiv = GetColumnIndexByHeader(ws, "Aktiv") ?? (colDiveraId.HasValue ? 6 : 5);
+            var colOrganisation = GetColumnIndexByHeader(ws, "Organisation", "Organisation/Einheit");
 
             foreach (var row in rows)
             {
@@ -82,6 +83,7 @@ namespace Einsatzueberwachung.Domain.Services
                         DiveraUserId = colDiveraId.HasValue ? ParseNullableInt(row.Cell(colDiveraId.Value).GetString()) : null,
                         Skills = ParseSkills(row.Cell(colSkills).GetString()),
                         Notizen = row.Cell(colNotizen).GetString().Trim(),
+                        Organisation = colOrganisation.HasValue ? row.Cell(colOrganisation.Value).GetString().Trim() : string.Empty,
                         IsActive = ParseBool(row.Cell(colAktiv).GetString())
                     };
 
@@ -99,6 +101,7 @@ namespace Einsatzueberwachung.Domain.Services
         {
             var existingDogs = await _masterDataService.GetDogListAsync();
             var rows = ws.RowsUsed().Skip(1);
+            var colOrganisation = GetColumnIndexByHeader(ws, "Organisation", "Organisation/Einheit");
 
             foreach (var row in rows)
             {
@@ -143,6 +146,7 @@ namespace Einsatzueberwachung.Domain.Services
                         Specializations = ParseSpecializations(row.Cell(4).GetString()),
                         HundefuehrerIds = hundefuehrerIds,
                         Notizen = row.Cell(6).GetString().Trim(),
+                        Organisation = colOrganisation.HasValue ? row.Cell(colOrganisation.Value).GetString().Trim() : string.Empty,
                         IsActive = ParseBool(row.Cell(7).GetString())
                     };
 

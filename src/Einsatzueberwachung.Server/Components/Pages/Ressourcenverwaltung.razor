@@ -1,0 +1,670 @@
+@page "/ressourcenverwaltung"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@using Einsatzueberwachung.Domain.Models
+@using Einsatzueberwachung.Domain.Models.Enums
+@using Einsatzueberwachung.Server.Components.Shared
+
+<PageTitle>Ressourcenverwaltung</PageTitle>
+
+<main class="resource-page">
+    <header class="resource-page-header">
+        <div>
+            <p class="resource-eyebrow">EINSATZKRÄFTE UND HUNDE</p>
+            <h1>Ressourcenverwaltung</h1>
+            <p class="resource-intro">Personen und Hunde für den laufenden Einsatz einchecken und disponieren.</p>
+        </div>
+        @if (HasActiveEinsatz)
+        {
+            <a class="btn btn-outline-secondary resource-monitor-link" href="/einsatz-monitor">
+                <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                <span>Zum Einsatzmonitor</span>
+            </a>
+        }
+    </header>
+
+    @if (!_appSettings.RessourcenverwaltungAktiv)
+    {
+        <section class="resource-empty-state" role="status">
+            <i class="bi bi-toggle-off" aria-hidden="true"></i>
+            <div>
+                <h2>Ressourcenverwaltung ausgeschaltet</h2>
+                <p>Die Staffel nutzt die Ressourcenverwaltung nicht. Einschalten unter Einstellungen → Einsatzbetrieb.</p>
+                <a class="btn btn-primary" href="/einstellungen?tab=einsatzbetrieb">Zu den Einstellungen</a>
+            </div>
+        </section>
+    }
+    else if (!HasActiveEinsatz)
+    {
+        <section class="resource-empty-state" role="status">
+            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+            <div>
+                <h2>Kein Einsatz aktiv</h2>
+                <p>Die Ressourcenverwaltung steht nur während eines laufenden Einsatzes oder einer laufenden Übung zur Verfügung.</p>
+                <a class="btn btn-primary" href="/einsatz-start">Einsatz starten</a>
+            </div>
+        </section>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <div class="alert @(_messageIsError ? "alert-warning" : "alert-success")" role="status">
+                @_message
+            </div>
+        }
+
+        <section class="resource-checkin-section" aria-labelledby="checkin-heading">
+            @{
+                var pendingDiveraCount = PendingDiveraCheckInCount;
+                var checkInCandidates = CheckInCandidates;
+            }
+            <div class="resource-checkin-summary">
+                <div>
+                    <p class="resource-eyebrow">AUFNAHME</p>
+                    <h2 id="checkin-heading">Check-in</h2>
+                    <p class="resource-search-hint">
+                        @TotalResourceCount eingecheckt
+                        <span aria-hidden="true">·</span>
+                        <span>@checkInCandidates.Count @(checkInCandidates.Count == 1 ? "Person auswählbar" : "Personen auswählbar")</span>
+                        @if (pendingDiveraCount > 0)
+                        {
+                            <span aria-hidden="true">·</span>
+                            <span class="resource-divera-summary-hint">
+                                @pendingDiveraCount @(pendingDiveraCount == 1 ? "DIVERA-Zusage offen" : "DIVERA-Zusagen offen")
+                            </span>
+                        }
+                    </p>
+                </div>
+                <div class="resource-checkin-summary-actions">
+                    @if (pendingDiveraCount > 0)
+                    {
+                        <button type="button"
+                                class="btn btn-primary resource-divera-bulk-btn"
+                                disabled="@_isSaving"
+                                title="Alle offenen positiven DIVERA-Rückmeldungen mit Status „Auf Anfahrt“ einchecken"
+                                @onclick="CheckInAllDiveraAsync">
+                            <i class="bi bi-broadcast-pin" aria-hidden="true"></i>
+                            <span>Alle aus DIVERA einchecken (@pendingDiveraCount)</span>
+                        </button>
+                    }
+                    <button type="button"
+                            class="btn btn-outline-secondary resource-checkin-toggle"
+                            aria-expanded="@_checkInExpanded"
+                            aria-controls="checkin-controls"
+                            @onclick="ToggleCheckIn">
+                        <i class="bi @(_checkInExpanded ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></i>
+                        @(_checkInExpanded ? "Check-in schließen" : "Weitere Ressourcen einchecken")
+                    </button>
+                </div>
+            </div>
+
+            @if (_checkInExpanded)
+            {
+                <div id="checkin-controls" class="resource-checkin-controls">
+                    <div class="resource-checkin-toolbar">
+                        <label class="resource-initial-status">
+                            <span>Startstatus</span>
+                            <select class="form-select" @bind="_initialStatus">
+                                <option value="@ResourceStatus.AufAnfahrt">Auf Anfahrt</option>
+                                <option value="@ResourceStatus.Verfuegbar">Im Verfügungsraum</option>
+                            </select>
+                        </label>
+                        <label class="resource-search-field">
+                            <span>Personen filtern</span>
+                            <span class="resource-search-input-wrap">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                                <input type="search"
+                                       class="form-control"
+                                       placeholder="Name, Organisation, Hund oder DIVERA-Meldung"
+                                       autocomplete="off"
+                                       @bind="_searchText"
+                                       @bind:event="oninput" />
+                            </span>
+                        </label>
+                    </div>
+
+                    @if (checkInCandidates.Count == 0)
+                    {
+                        <p class="resource-search-hint" role="status">
+                            @if (ActivePersonnelCount == 0)
+                            {
+                                <span>Keine aktiven Personen in den Stammdaten vorhanden.</span>
+                            }
+                            else if (string.IsNullOrWhiteSpace(_searchText))
+                            {
+                                <span>Alle aktiven Personen aus den Stammdaten sind bereits eingecheckt.</span>
+                            }
+                            else
+                            {
+                                <span>Keine passenden, noch nicht eingecheckten Personen gefunden.</span>
+                            }
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="resource-suggestions" role="list" aria-label="Eincheckbare Personen">
+                            @foreach (var suggestion in checkInCandidates)
+                            {
+                                <div class="resource-suggestion @(suggestion.HasDiveraResponse ? "resource-suggestion--divera" : string.Empty)" role="listitem" @key="suggestion.Id">
+                                    <div class="resource-suggestion-identity">
+                                        <span class="resource-kind-icon" aria-hidden="true">
+                                            <i class="bi @(suggestion.HasDiveraResponse ? "bi-broadcast-pin" : "bi-person")"></i>
+                                        </span>
+                                        <span class="resource-suggestion-meta">
+                                            <span class="resource-suggestion-title-row">
+                                                <strong>@suggestion.Name</strong>
+                                                @if (suggestion.HasDiveraResponse)
+                                                {
+                                                    <span class="resource-divera-badge">
+                                                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                                                        <span>DIVERA: @suggestion.DiveraResponseText</span>
+                                                    </span>
+                                                }
+                                            </span>
+                                            @if (!string.IsNullOrWhiteSpace(suggestion.Detail))
+                                            {
+                                                <small>@suggestion.Detail</small>
+                                            }
+                                        </span>
+                                    </div>
+                                    <button type="button"
+                                            class="btn btn-sm btn-primary resource-suggestion-checkin-btn"
+                                            aria-label="@($"{suggestion.Name} einchecken")"
+                                            title="@($"Mit Status „{ResourceStatusPresentation.Label(_initialStatus)}“ einchecken")"
+                                            disabled="@_isSaving"
+                                            @onclick="() => CheckInPersonAsync(suggestion.Id)">
+                                        <i class="bi bi-person-check" aria-hidden="true"></i>
+                                        Einchecken
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <div class="resource-quick-create-prompt">
+                        <span>Person oder Hund fehlt?</span>
+                        <div class="resource-quick-create-actions">
+                            <button type="button"
+                                    class="btn btn-outline-secondary resource-quick-create-button"
+                                    @onclick="OpenQuickCreate">
+                                <i class="bi bi-person-plus" aria-hidden="true"></i>
+                                Person erfassen
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline-secondary resource-quick-create-button"
+                                    @onclick="OpenDogQuickCreate">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                Hund erfassen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (_showQuickCreate)
+            {
+                <div class="modal-overlay">
+                    <button type="button"
+                            class="modal-overlay-dismiss"
+                            disabled="@_isSaving"
+                            @onclick="CloseQuickCreate"
+                            aria-label="Schnellaufnahme schließen"></button>
+                    <section class="modal-modern modal-modern--640 resource-quick-create-dialog"
+                             role="dialog"
+                             aria-modal="true"
+                             aria-labelledby="quick-create-heading"
+                             @onclick:stopPropagation="true">
+                        <div class="modal-modern-header">
+                            <div>
+                                <p class="resource-eyebrow">STAMMDATEN UND EINSATZ</p>
+                                <h3 id="quick-create-heading">Person erfassen und einchecken</h3>
+                            </div>
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    disabled="@_isSaving"
+                                    @onclick="CloseQuickCreate"
+                                    aria-label="Dialog schließen">
+                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="modal-modern-body">
+                            <p class="resource-quick-create-explainer">
+                                Der Datensatz wird dauerhaft in den Stammdaten gespeichert und anschließend diesem Einsatz zugewiesen.
+                            </p>
+                            <div class="resource-quick-create-grid">
+                                <label>
+                                    <span>Vorname</span>
+                                    <input class="form-control" autocomplete="given-name" @bind="_newPerson.Vorname" />
+                                </label>
+                                <label>
+                                    <span>Nachname</span>
+                                    <input class="form-control" autocomplete="family-name" @bind="_newPerson.Nachname" />
+                                </label>
+                                <label>
+                                    <span>Organisation (optional)</span>
+                                    <input class="form-control" @bind="_newPerson.Organisation" />
+                                </label>
+                                <label>
+                                    <span>Divera-Benutzer-ID (optional)</span>
+                                    <input class="form-control" inputmode="numeric" @bind="_newDiveraUserId" />
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-modern-footer">
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    disabled="@_isSaving"
+                                    @onclick="CreateAndCheckInAsync">
+                                <i class="bi bi-check2" aria-hidden="true"></i>
+                                Stammdaten speichern und einchecken
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    disabled="@_isSaving"
+                                    @onclick="CloseQuickCreate">
+                                Abbrechen
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            }
+
+            @if (_showQuickCreateDog)
+            {
+                <div class="modal-overlay">
+                    <button type="button"
+                            class="modal-overlay-dismiss"
+                            disabled="@_isSaving"
+                            @onclick="CloseDogQuickCreate"
+                            aria-label="Schnellaufnahme schließen"></button>
+                    <section class="modal-modern modal-modern--640 resource-quick-create-dialog"
+                             role="dialog"
+                             aria-modal="true"
+                             aria-labelledby="quick-create-dog-heading"
+                             @onclick:stopPropagation="true">
+                        <div class="modal-modern-header">
+                            <div>
+                                <p class="resource-eyebrow">STAMMDATEN UND EINSATZ</p>
+                                <h3 id="quick-create-dog-heading">Hund erfassen und einchecken</h3>
+                            </div>
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    disabled="@_isSaving"
+                                    @onclick="CloseDogQuickCreate"
+                                    aria-label="Dialog schließen">
+                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="modal-modern-body">
+                            <p class="resource-quick-create-explainer">
+                                Der Hund wird dauerhaft in den Stammdaten gespeichert und anschließend diesem Einsatz zugewiesen.
+                            </p>
+                            <div class="resource-quick-create-grid">
+                                <label>
+                                    <span>Name</span>
+                                    <input class="form-control"
+                                           autocomplete="off"
+                                           required
+                                           disabled="@IsQuickCreateDogSaved"
+                                           @bind="_newDog.Name" />
+                                </label>
+                                <label>
+                                    <span>Rasse</span>
+                                    <input class="form-control"
+                                           autocomplete="off"
+                                           required
+                                           disabled="@IsQuickCreateDogSaved"
+                                           @bind="_newDog.Rasse" />
+                                </label>
+                                <label>
+                                    <span>Organisation (optional)</span>
+                                    <input class="form-control"
+                                           autocomplete="organization"
+                                           disabled="@IsQuickCreateDogSaved"
+                                           @bind="_newDog.Organisation" />
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-modern-footer">
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    disabled="@_isSaving"
+                                    @onclick="CreateAndCheckInDogAsync">
+                                <i class="bi bi-check2" aria-hidden="true"></i>
+                                @(IsQuickCreateDogSaved ? "Einchecken wiederholen" : "Stammdaten speichern und einchecken")
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    disabled="@_isSaving"
+                                    @onclick="CloseDogQuickCreate">
+                                Abbrechen
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            }
+        </section>
+
+        <section class="resource-roster-section" aria-labelledby="roster-heading">
+            @{
+                var rosterGroups = RosterGroups;
+                var filteredRosterGroups = FilteredRosterGroups;
+                RenderFragment<ResourceRosterItem> renderNotesAndSpecialInput = item => @<text>
+                    @if (item.Status == ResourceStatus.Sonderauftrag && !string.IsNullOrWhiteSpace(item.Resource.SonderauftragNotiz))
+                    {
+                        <small class="resource-assignment-note">@item.Resource.SonderauftragNotiz</small>
+                    }
+                    else if (item.Status == ResourceStatus.AufAnfahrt && !string.IsNullOrWhiteSpace(item.Resource.DiveraRueckmeldung))
+                    {
+                        <small class="resource-assignment-note">Divera: @item.Resource.DiveraRueckmeldung</small>
+                    }
+                    @if (IsSpecialAssignmentPending(item))
+                    {
+                        <label class="resource-assignment-note-input">
+                            <span>Auftrag / Zweck (Pflichtfeld)</span>
+                            <input class="form-control form-control-sm"
+                                   value="@PendingNote(item)"
+                                   @oninput="args => SetPendingNote(item, args.Value?.ToString())" />
+                        </label>
+                    }
+                </text>;
+
+                RenderFragment<ResourceRosterItem> renderResourceRemoveButton = item => @<text>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger resource-remove-button"
+                            aria-label="@($"{item.TypeLabel} {item.Name} aus Einsatz entfernen")"
+                            title="@(IsResourceRemovalBlocked(item) ? "Zuerst Teamzuordnung lösen" : "Aus diesem Einsatz entfernen")"
+                            disabled="@_isSaving"
+                            @onclick="() => RequestResourceRemoval(item)">
+                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                    </button>
+                </text>;
+
+                RenderFragment<ResourceRosterItem> renderStatusAndDispositionCells = item => @<text>
+                    <td>
+                        <span class="resource-status @ResourceStatusPresentation.CssClass(item.Status)">
+                            <i class="bi @ResourceStatusPresentation.Icon(item.Status)" aria-hidden="true"></i>
+                            @ResourceStatusPresentation.Label(item.Status)
+                        </span>
+                    </td>
+                    <td>
+                        <div class="resource-disposition-controls">
+                            @if (IsSpecialAssignmentPending(item))
+                            {
+                                <div class="resource-row-actions">
+                                    <button type="button"
+                                            class="btn btn-sm btn-primary"
+                                            disabled="@_isSaving"
+                                            @onclick="() => ConfirmSpecialAssignmentAsync(item)">
+                                        Bestätigen
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            @onclick="() => CancelSpecialAssignment(item)">
+                                        Abbrechen
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <select class="form-select resource-status-select"
+                                        aria-label="@($"Status für {item.TypeLabel} {item.Name} ändern")"
+                                        value="@item.Status"
+                                        disabled="@_isSaving"
+                                        @onchange="args => OnStatusSelectedAsync(item, args.Value?.ToString())">
+                                    @foreach (var status in StatusOptions(item.EntityType))
+                                    {
+                                        <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                                    }
+                                </select>
+                            }
+                            @renderResourceRemoveButton(item)
+                        </div>
+                    </td>
+                </text>;
+            }
+            <div class="resource-section-heading">
+                <div>
+                    <p class="resource-eyebrow">AKTUELLER EINSATZ</p>
+                    <h2 id="roster-heading">Eingecheckte Ressourcen</h2>
+                </div>
+                <div class="resource-roster-tools">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary resource-roster-filter-trigger @(ActiveRosterFilterCount > 0 ? "is-filtered" : string.Empty)"
+                            aria-label="Ressourcenfilter @(ActiveRosterFilterCount > 0 ? $"ändern, {ActiveRosterFilterCount} aktiv" : "öffnen")"
+                            aria-expanded="@_rosterFiltersExpanded"
+                            aria-controls="roster-filter-controls"
+                            title="Ressourcen filtern"
+                            @onclick="ToggleRosterFilters">
+                        <i class="bi bi-funnel" aria-hidden="true"></i>
+                        @if (ActiveRosterFilterCount > 0)
+                        {
+                            <span class="resource-roster-filter-count">@ActiveRosterFilterCount</span>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            <div id="roster-filter-controls"
+                 class="resource-roster-filter-controls"
+                 role="group"
+                 aria-label="Ressourcenfilter"
+                 hidden="@(!_rosterFiltersExpanded)">
+                <label>
+                    <span>Status</span>
+                    <select class="form-select form-select-sm"
+                            aria-label="Ressourcenstatus filtern"
+                            @bind="_rosterStateFilter">
+                        <option value="@ResourceRosterFilter.AllResourceStates">Alle Status</option>
+                        <option value="@ResourceRosterFilter.NotAvailable">Nicht im Verfügungsraum</option>
+                        @foreach (var status in Enum.GetValues<ResourceStatus>())
+                        {
+                            <option value="@status">@ResourceStatusPresentation.Label(status)</option>
+                        }
+                    </select>
+                </label>
+                <label>
+                    <span>Personen</span>
+                    <select class="form-select form-select-sm"
+                            aria-label="Nach Hundeführern filtern"
+                            @bind="_rosterHandlerAssignmentFilter">
+                        <option value="@ResourceRosterFilter.AllHandlerAssignments">Alle Personen</option>
+                        <option value="@ResourceRosterFilter.HandlersOnly">Hundeführer</option>
+                        <option value="@ResourceRosterFilter.NoAssignedDog">Ohne Hund</option>
+                    </select>
+                </label>
+                <label class="resource-roster-filter-checkbox">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           @bind="_hideRosterDogs" />
+                    <span>Hunde ausblenden</span>
+                </label>
+                @if (ActiveRosterFilterCount > 0)
+                {
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary resource-roster-filter-reset"
+                            @onclick="ClearRosterFilters">
+                        Filter zurücksetzen
+                    </button>
+                }
+            </div>
+
+            @if (rosterGroups.Count == 0)
+            {
+                <div class="resource-roster-empty">
+                    <i class="bi bi-person-check" aria-hidden="true"></i>
+                    <span>Noch keine Ressourcen eingecheckt.</span>
+                </div>
+            }
+            else if (filteredRosterGroups.Count == 0)
+            {
+                <div class="resource-roster-empty" role="status">
+                    <i class="bi bi-funnel" aria-hidden="true"></i>
+                    <span>Keine Ressourcen entsprechen den Filtern.</span>
+                    <button type="button"
+                            class="btn btn-sm btn-link p-0"
+                            @onclick="ClearRosterFilters">
+                        Filter zurücksetzen
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="resource-table-wrap">
+                    <table class="table resource-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Ressource</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Disposition</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var group in filteredRosterGroups)
+                            {
+                                var primary = group.Primary;
+                                var hasCheckedInDogs = group.Dogs.Count > 0;
+                                @if (!group.ShowPrimaryStatus)
+                                {
+                                    <tr class="resource-primary-row resource-primary-row--context" @key="primary.UiKey">
+                                        <td>
+                                            <div class="resource-roster-context">
+                                                <i class="bi bi-person" aria-hidden="true"></i>
+                                                <strong>@primary.Name</strong>
+                                                <small>Hundeführer · nur als Zuordnung</small>
+                                            </div>
+                                        </td>
+                                        <td></td>
+                                        <td>
+                                            <div class="resource-disposition-controls resource-disposition-controls--context">
+                                                @renderResourceRemoveButton(primary)
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                <tr class="resource-primary-row @(hasCheckedInDogs ? "resource-primary-row--has-dogs" : string.Empty)" @key="primary.UiKey">
+                                    <td>
+                                        <div class="resource-row-identity">
+                                            <i class="@GetResourceIconClass(primary.EntityType)"
+                                               title="@primary.TypeLabel"
+                                               aria-hidden="true"></i>
+                                            <strong>@primary.Name</strong>
+                                            @if (primary.EntityType == ResourceEntityType.Dog)
+                                            {
+                                                <span class="resource-standalone-hint">Ohne eingecheckten Hundeführer</span>
+                                            }
+                                        </div>
+                                        @renderNotesAndSpecialInput(primary)
+                                        @if (!_hideRosterDogs && group.UncheckedActiveDogs.Count > 0)
+                                        {
+                                            <div class="resource-dog-checkin-actions"
+                                                 role="group"
+                                                 aria-label="@($"Hunde von {primary.Name} hinzufügen")">
+                                                @foreach (var dog in group.UncheckedActiveDogs)
+                                                {
+                                                    var derivedStatus = ResourceRosterBuilder.DeriveDogCheckInStatus(primary.Status);
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-secondary resource-dog-add-btn"
+                                                            disabled="@_isSaving"
+                                                            aria-label="@($"Hund {dog.Name} als {ResourceStatusPresentation.Label(derivedStatus)} hinzufügen")"
+                                                            title="@($"Hund {dog.Name} als „{ResourceStatusPresentation.Label(derivedStatus)}“ einchecken")"
+                                                            @onclick="() => CheckInHandlerDogAsync(primary, dog)">
+                                                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                                        <i class="@GetResourceIconClass(ResourceEntityType.Dog)" aria-hidden="true"></i>
+                                                        <span>@dog.Name</span>
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                    @renderStatusAndDispositionCells(primary)
+                                </tr>
+                                }
+                                @for (var dogIndex = 0; dogIndex < group.Dogs.Count; dogIndex++)
+                                {
+                                    var dogItem = group.Dogs[dogIndex];
+                                    var isLastDog = dogIndex == group.Dogs.Count - 1;
+                                    <tr class="resource-dog-subrow @(isLastDog ? "resource-dog-subrow--last" : string.Empty)" @key="dogItem.UiKey">
+                                        <td>
+                                            <div class="resource-row-identity resource-row-identity--dog">
+                                                <span class="resource-dog-connector" aria-hidden="true"></span>
+                                                <i class="@GetResourceIconClass(ResourceEntityType.Dog)" title="Hund" aria-hidden="true"></i>
+                                                <strong>@dogItem.Name</strong>
+                                            </div>
+                                            <div class="resource-dog-subrow-details">
+                                                @renderNotesAndSpecialInput(dogItem)
+                                            </div>
+                                        </td>
+                                        @renderStatusAndDispositionCells(dogItem)
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        @if (_resourceRemovalCandidate is { } removalCandidate)
+        {
+            <div class="modal-overlay">
+                <button type="button"
+                        class="modal-overlay-dismiss"
+                        disabled="@_isSaving"
+                        @onclick="CancelResourceRemoval"
+                        aria-label="Entfernen abbrechen"></button>
+                <section class="modal-modern modal-modern--480 resource-removal-dialog"
+                         role="dialog"
+                         aria-modal="true"
+                         aria-labelledby="resource-removal-heading"
+                         @onclick:stopPropagation="true">
+                    <div class="modal-modern-header">
+                        <div>
+                            <p class="resource-eyebrow">AKTUELLER EINSATZ</p>
+                            <h3 id="resource-removal-heading">Ressource entfernen?</h3>
+                        </div>
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled="@_isSaving"
+                                @onclick="CancelResourceRemoval"
+                                aria-label="Dialog schließen">
+                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="modal-modern-body">
+                        <p><strong>@removalCandidate.TypeLabel @removalCandidate.Name</strong> aus diesem Einsatz entfernen?</p>
+                        <p class="resource-removal-explainer">Nur der Check-in wird entfernt. Der Stammdatensatz bleibt erhalten.</p>
+                        @if (IsResourceRemovalBlocked(removalCandidate))
+                        {
+                            <div class="alert alert-warning mb-0" role="alert">
+                                Diese Ressource ist einem Team oder Suchsektor zugeordnet. Löse zuerst die Teamzuordnung.
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_resourceRemovalError))
+                        {
+                            <div class="alert alert-warning mb-0" role="alert">@_resourceRemovalError</div>
+                        }
+                    </div>
+                    <div class="modal-modern-footer">
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled="@_isSaving"
+                                @onclick="CancelResourceRemoval">
+                            Abbrechen
+                        </button>
+                        <button type="button"
+                                class="btn btn-danger"
+                                disabled="@(_isSaving || IsResourceRemovalBlocked(removalCandidate))"
+                                @onclick="ConfirmResourceRemovalAsync">
+                            Aus Einsatz entfernen
+                        </button>
+                    </div>
+                </section>
+            </div>
+        }
+    }
+</main>

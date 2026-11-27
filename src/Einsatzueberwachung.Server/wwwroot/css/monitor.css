@@ -310,12 +310,12 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 
 /* Teams are the primary work surface; notes and search areas remain available beside them. */
-[data-panel-id="notizen"] { grid-column: 9 / span 4; grid-row: 2; }
+[data-panel-id="notizen"] { grid-column: 10 / span 3; grid-row: 2; }
 [data-panel-id="teams"] { grid-column: span 6; grid-row: 2; }
-[data-panel-id="suchgebiete"] { grid-column: span 2; grid-row: 2; }
+[data-panel-id="suchgebiete"] { grid-column: span 3; grid-row: 2; }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="suchgebiete"])) [data-panel-id="teams"] {
-    grid-column: span 8;
+    grid-column: span 9;
 }
 
 .monitor-dashboard-grid:not(:has([data-panel-id="teams"])) [data-panel-id="suchgebiete"] {
@@ -352,7 +352,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
 .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="teams"],
 .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="suchgebiete"],
-.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"] {
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"],
+.monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="ressourcen"] {
     grid-row: 1;
 }
 
@@ -901,7 +902,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
     [data-panel-id="teams"],
     [data-panel-id="suchgebiete"],
-    [data-panel-id="notizen"] {
+    [data-panel-id="notizen"],
+    [data-panel-id="ressourcen"] {
         grid-column: 1 / -1 !important;
         grid-row: 2 !important;
     }
@@ -912,6 +914,17 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
     .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) {
         grid-template-rows: minmax(0, 1fr) max-content;
+    }
+
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) .monitor-tablet-tabs {
+        grid-row: 2;
+    }
+
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="teams"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="suchgebiete"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="ressourcen"] {
+        grid-row: 1 !important;
     }
 
 }
@@ -939,7 +952,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
         display: grid;
         grid-column: 1 / -1;
         grid-row: 3;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
         gap: 2px;
         padding: 4px;
         padding-bottom: max(4px, env(safe-area-inset-bottom));
@@ -958,7 +971,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
     [data-panel-id="teams"],
     [data-panel-id="suchgebiete"],
-    [data-panel-id="notizen"] {
+    [data-panel-id="notizen"],
+    [data-panel-id="ressourcen"] {
         grid-column: 1 / -1 !important;
         grid-row: 2 !important;
     }
@@ -977,7 +991,8 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 
     .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="teams"],
     .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="suchgebiete"],
-    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"] {
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="notizen"],
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)):not(:has([data-panel-id="einsatz-info"])):not(:has([data-panel-id="vermissten"])):not(:has([data-panel-id="wetter"])) [data-panel-id="ressourcen"] {
         grid-row: 1 !important;
     }
 }
@@ -1049,7 +1064,7 @@ main:has(.monitor-dashboard-wrapper) .app-content {
 }
 
 /* The operational modules share one quiet surface; state remains explicit in their content. */
-:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel {
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel {
     border: 1px solid var(--ui-tile-border);
     border-radius: var(--theme-border-radius, 10px);
     box-shadow: none;
@@ -1057,27 +1072,150 @@ main:has(.monitor-dashboard-wrapper) .app-content {
     transition: none;
 }
 
-:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel:hover {
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel:hover {
     box-shadow: none;
 }
 
-:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel .dashboard-panel-header {
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel .dashboard-panel-header {
     min-height: 2.75rem;
     padding: 0.65rem 0.875rem 0.2rem;
     border-bottom: 0;
     background: transparent;
 }
 
-:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel .dashboard-panel-title {
+[data-panel-id="ressourcen"] > .dashboard-panel .dashboard-panel-header {
+    flex-wrap: wrap;
+}
+
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel .dashboard-panel-title {
     color: var(--ui-text);
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0;
 }
 
-:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"]) > .dashboard-panel .dashboard-panel-body {
+:is([data-panel-id="teams"], [data-panel-id="suchgebiete"], [data-panel-id="notizen"], [data-panel-id="ressourcen"]) > .dashboard-panel .dashboard-panel-body {
     padding: 0.35rem 0.875rem 0.875rem;
     background: var(--ui-surface);
+}
+
+@media (min-width: 1200.01px) {
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]) {
+        grid-template-rows: max-content max-content minmax(12rem, 1fr);
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(.monitor-summary-grid)) {
+        grid-template-rows: max-content minmax(12rem, 1fr);
+    }
+
+    .monitor-dashboard-grid > [data-panel-id="ressourcen"] {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        min-height: 12rem;
+    }
+
+    .monitor-dashboard-grid:not(:has(.monitor-summary-grid)) > [data-panel-id="ressourcen"] {
+        grid-row: 2;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]) > [data-panel-id="ressourcen"] {
+        grid-column: 7 / span 3;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):has(> [data-panel-id="ressourcen"]) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):has(> [data-panel-id="ressourcen"]) > [data-panel-id="notizen"] {
+        grid-row: 2 / span 2;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):has(> [data-panel-id="ressourcen"]):not(:has(.monitor-summary-grid)) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):has(> [data-panel-id="ressourcen"]):not(:has(.monitor-summary-grid)) > [data-panel-id="notizen"] {
+        grid-row: 1 / span 2;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])) > [data-panel-id="notizen"] {
+        grid-row: 2;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])):not(:has(.monitor-summary-grid)) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])):not(:has(.monitor-summary-grid)) > [data-panel-id="notizen"] {
+        grid-row: 1;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="notizen"])):has(> [data-panel-id="teams"]) > [data-panel-id="ressourcen"] {
+        grid-column: 10 / span 3;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="teams"])):has(> [data-panel-id="notizen"]) > [data-panel-id="ressourcen"] {
+        grid-column: 1 / span 3;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="teams"])):not(:has(> [data-panel-id="notizen"])) > [data-panel-id="ressourcen"] {
+        grid-column: 1 / -1;
+    }
+
+    /* Reflow resources into the search-area slot when that panel is hidden. */
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])) {
+        grid-template-rows: max-content minmax(0, 1fr);
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(.monitor-summary-grid)) {
+        grid-template-rows: minmax(0, 1fr);
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])) > [data-panel-id="notizen"],
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])) > [data-panel-id="ressourcen"] {
+        grid-row: 2;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(.monitor-summary-grid)) > [data-panel-id="teams"],
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(.monitor-summary-grid)) > [data-panel-id="notizen"],
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(.monitor-summary-grid)) > [data-panel-id="ressourcen"] {
+        grid-row: 1;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):has(> [data-panel-id="teams"]):has(> [data-panel-id="notizen"]) > [data-panel-id="teams"] {
+        grid-column: 1 / span 6;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):has(> [data-panel-id="teams"]):has(> [data-panel-id="notizen"]) > [data-panel-id="ressourcen"] {
+        grid-column: 7 / span 3;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):has(> [data-panel-id="teams"]):not(:has(> [data-panel-id="notizen"])) > [data-panel-id="teams"] {
+        grid-column: 1 / span 9;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):has(> [data-panel-id="teams"]):not(:has(> [data-panel-id="notizen"])) > [data-panel-id="ressourcen"] {
+        grid-column: 10 / span 3;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(> [data-panel-id="teams"])):has(> [data-panel-id="notizen"]) > [data-panel-id="ressourcen"] {
+        grid-column: 1 / span 9;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]):not(:has(> [data-panel-id="suchgebiete"])):not(:has(> [data-panel-id="teams"])):not(:has(> [data-panel-id="notizen"])) > [data-panel-id="ressourcen"] {
+        grid-column: 1 / -1;
+    }
+
+    /* Let search areas fill the available work row when resources are hidden. */
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])) > [data-panel-id="suchgebiete"] {
+        align-self: stretch;
+        max-height: none;
+    }
+
+    .monitor-dashboard-grid:has(> [data-panel-id="suchgebiete"]):not(:has(> [data-panel-id="ressourcen"])) > [data-panel-id="suchgebiete"] > .dashboard-panel {
+        height: 100%;
+        max-height: none;
+    }
+
+}
+
+@media (min-width: 1200.01px) and (max-height: 800px) {
+    .monitor-dashboard-grid:has(> [data-panel-id="ressourcen"]) {
+        overflow-y: auto;
+    }
 }
 
 [data-panel-id="suchgebiete"] {

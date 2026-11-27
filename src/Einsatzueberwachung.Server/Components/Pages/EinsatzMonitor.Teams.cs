@@ -269,7 +269,11 @@ public partial class EinsatzMonitor
 
     private void PreselectVorOrtChecklists()
     {
-        var (personalIds, hundeIds) = EinsatzAbschlussService.PreselectVorOrt(EinsatzService.Teams, ActivePersonnel, ActiveDogs);
+        var (personalIds, hundeIds) = EinsatzAbschlussService.PreselectVorOrt(
+            EinsatzService.Teams,
+            ActivePersonnel,
+            ActiveDogs,
+            EinsatzService.GetEinsatzResources());
         _selectedPersonnelIds.UnionWith(personalIds);
         _selectedDogIds.UnionWith(hundeIds);
     }
@@ -328,18 +332,38 @@ public partial class EinsatzMonitor
         }
     }
 
-    private async Task StartTeamAsync(string teamId)
+    private Task StartTeamAsync(string teamId) =>
+        RequestTeamStartAsync(teamId, ignoreResourceAvailability: false);
+
+    private async Task RequestTeamStartAsync(string teamId, bool ignoreResourceAvailability)
     {
         var team = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == teamId);
+        if (team is null)
+        {
+            _teamStatusMessage = "Das Team ist nicht mehr vorhanden. Bitte aktualisieren Sie die Liste.";
+            _teamStatusIsError = true;
+            return;
+        }
+
+        if (!ignoreResourceAvailability)
+        {
+            var issues = EinsatzService.GetTeamStartResourceIssues(teamId);
+            if (issues.Count > 0)
+            {
+                OpenTeamStartResolutionDialog(team, issues);
+                return;
+            }
+        }
 
         // "Weiter" nach manueller Kurzpause: Track/Halsband-Historie darf nicht angetastet werden,
         // die Aufzeichnung läuft nahtlos weiter.
-        var resumingFromManualPause = team?.IsManuallyPaused == true;
+        var resumingFromManualPause = team.IsManuallyPaused;
 
         // Kein Halsband zugewiesen → Dialog zur Auswahl einblenden (nur für Hundeteams)
-        if (!resumingFromManualPause && team != null && !team.IsDroneTeam && !team.IsSupportTeam && string.IsNullOrEmpty(team.CollarId))
+        if (!resumingFromManualPause && !team.IsDroneTeam && !team.IsSupportTeam && string.IsNullOrEmpty(team.CollarId))
         {
             _collarSelectTeamId = teamId;
+            _ignoreResourceAvailabilityOnNextStart = ignoreResourceAvailability;
             // Zuletzt von diesem Team benutztes Halsband vorauswaehlen, wenn es frei ist
             _collarSelectCollarId = TeamSuche.CollarOptions(teamId).FirstOrDefault(c =>
                 c.Id == TeamSucheService.LastCollarId(EinsatzService.CurrentEinsatz.TrackSnapshots ?? [], teamId))?.Id ?? string.Empty;
@@ -347,15 +371,327 @@ public partial class EinsatzMonitor
             return;
         }
 
+        await ExecuteTeamStartAsync(teamId, ignoreResourceAvailability);
+    }
+
+    private async Task ExecuteTeamStartAsync(string teamId, bool ignoreResourceAvailability)
+    {
         try
         {
-            await TeamSuche.StartAsync(teamId);
+            if (ignoreResourceAvailability)
+                await TeamSuche.StartIgnoringResourceAvailabilityAsync(teamId);
+            else
+                await TeamSuche.StartAsync(teamId);
+
+            _teamStatusMessage = string.Empty;
+        }
+        catch (TeamResourceAvailabilityException ex)
+        {
+            var team = EinsatzService.Teams.FirstOrDefault(entry => entry.TeamId == teamId);
+            if (team is not null)
+                OpenTeamStartResolutionDialog(team, ex.UnavailableResources);
+            else
+                SetTeamStartResolutionError("Das Team ist nicht mehr vorhanden. Bitte aktualisieren Sie die Liste.");
         }
         catch (InvalidOperationException ex)
         {
             _teamStatusMessage = ex.Message;
             _teamStatusIsError = true;
         }
+    }
+
+    private void OpenTeamStartResolutionDialog(
+        Team team,
+        IReadOnlyList<TeamResourceAvailabilityIssue> issues)
+    {
+        _teamStartResolutionTeamId = team.TeamId;
+        _teamStartResolutionIssues = issues.Select(issue =>
+        {
+            var role = GetTeamResourceRole(team, issue);
+            return new TeamStartResourceIssueViewModel(
+                issue.EntityType,
+                issue.EntityId,
+                GetTeamResourceName(team, issue),
+                role,
+                issue.Status,
+                CanRemoveTeamPerson(team, issue));
+        }).ToArray();
+        _teamStartResolutionError = string.Empty;
+        _showTeamStartResolutionModal = _teamStartResolutionIssues.Count > 0;
+    }
+
+    private static string GetTeamResourceRole(Team team, TeamResourceAvailabilityIssue issue)
+    {
+        if (issue.EntityType == ResourceEntityType.Dog)
+            return "Hund";
+        if (string.Equals(team.HundefuehrerId, issue.EntityId, StringComparison.Ordinal))
+            return team.IsDroneTeam ? "Pilot" : team.IsSupportTeam ? "Teamleitung" : "Hundeführer";
+        return "Helfer";
+    }
+
+    private static string GetTeamResourceName(Team team, TeamResourceAvailabilityIssue issue)
+    {
+        if (issue.EntityType == ResourceEntityType.Dog)
+            return string.IsNullOrWhiteSpace(team.DogName) ? "Hund" : team.DogName;
+        if (string.Equals(team.HundefuehrerId, issue.EntityId, StringComparison.Ordinal))
+            return string.IsNullOrWhiteSpace(team.HundefuehrerName) ? "Hundeführer" : team.HundefuehrerName;
+
+        var helperIndex = team.HelferIds.FindIndex(id => string.Equals(id, issue.EntityId, StringComparison.Ordinal));
+        if (helperIndex < 0 || helperIndex >= team.HelferNames.Count)
+            return "Person";
+
+        return string.IsNullOrWhiteSpace(team.HelferNames[helperIndex])
+            ? "Helfer"
+            : team.HelferNames[helperIndex];
+    }
+
+    private bool CanRemoveTeamPerson(Team team, TeamResourceAvailabilityIssue issue)
+    {
+        if (issue.EntityType != ResourceEntityType.Person)
+            return false;
+
+        var personIds = new HashSet<string>(StringComparer.Ordinal);
+        if (!string.IsNullOrWhiteSpace(team.HundefuehrerId))
+            personIds.Add(team.HundefuehrerId);
+        foreach (var helperId in (team.HelferIds ?? new List<string>()).Where(id => !string.IsNullOrWhiteSpace(id)))
+            personIds.Add(helperId);
+
+        if (personIds.Count <= 1 || !personIds.Contains(issue.EntityId))
+            return false;
+
+        return !string.Equals(team.HundefuehrerId, issue.EntityId, StringComparison.Ordinal)
+            || FindReplacementTeamLeaderIndex(team) >= 0;
+    }
+
+    private void CloseTeamStartResolutionDialog()
+    {
+        _showTeamStartResolutionModal = false;
+        _teamStartResolutionTeamId = null;
+        _teamStartResolutionIssues = Array.Empty<TeamStartResourceIssueViewModel>();
+        _teamStartResolutionError = string.Empty;
+        _teamStartResolutionBusy = false;
+    }
+
+    private async Task IgnoreTeamStartResourceIssuesAsync()
+    {
+        if (_teamStartResolutionTeamId is not { } teamId)
+            return;
+
+        CloseTeamStartResolutionDialog();
+        await RequestTeamStartAsync(teamId, ignoreResourceAvailability: true);
+    }
+
+    private async Task ApplyTeamStartResourceResolutionsAndStartAsync(
+        IReadOnlyList<TeamStartResourceResolution> resolutions)
+    {
+        if (_teamStartResolutionTeamId is not { } teamId)
+            return;
+
+        _teamStartResolutionBusy = true;
+        try
+        {
+            var team = await EinsatzService.GetTeamByIdAsync(teamId);
+            if (team is null)
+            {
+                SetTeamStartResolutionError("Das Team ist nicht mehr vorhanden. Bitte aktualisieren Sie die Liste.");
+                return;
+            }
+
+            if (resolutions.Select(resolution => $"{resolution.EntityType}:{resolution.EntityId}").Distinct(StringComparer.Ordinal).Count()
+                != resolutions.Count
+                || resolutions.Any(resolution => resolution.RemoveFromTeam && resolution.NewStatus.HasValue))
+            {
+                SetTeamStartResolutionError("Die Auswahl ist ungültig. Bitte prüfen Sie die Änderungen erneut.");
+                return;
+            }
+
+            foreach (var resolution in resolutions)
+            {
+                var issue = _teamStartResolutionIssues.FirstOrDefault(entry =>
+                    entry.EntityType == resolution.EntityType
+                    && string.Equals(entry.EntityId, resolution.EntityId, StringComparison.Ordinal));
+                if (issue is null
+                    || (resolution.RemoveFromTeam && (!issue.CanRemove || issue.EntityType != ResourceEntityType.Person)))
+                {
+                    SetTeamStartResolutionError("Eine Ressource ist nicht mehr wie erwartet im Team. Bitte prüfen Sie die Auswahl erneut.");
+                    return;
+                }
+            }
+
+            var removals = resolutions.Where(resolution => resolution.RemoveFromTeam).ToArray();
+            if (removals.Length > 0 && !CanRemoveTeamPeople(team, removals))
+            {
+                SetTeamStartResolutionError("Diese Auswahl lässt keine gültige Teamleitung oder keine Person im Team zurück.");
+                return;
+            }
+
+            foreach (var resolution in resolutions.Where(resolution => resolution.NewStatus.HasValue))
+            {
+                var resource = new EinsatzResource
+                {
+                    EntityType = resolution.EntityType,
+                    EntityId = resolution.EntityId,
+                    Status = resolution.NewStatus!.Value,
+                    SonderauftragNotiz = resolution.Note ?? string.Empty
+                };
+                var isCheckedIn = EinsatzService.GetEinsatzResources().Any(entry =>
+                    entry.EntityType == resource.EntityType
+                    && string.Equals(entry.EntityId, resource.EntityId, StringComparison.Ordinal));
+                if (isCheckedIn)
+                    await EinsatzService.SetResourceStatusAsync(
+                        resource.EntityType,
+                        resource.EntityId,
+                        resource.Status,
+                        resource.SonderauftragNotiz);
+                else
+                    await EinsatzService.CheckInResourceAsync(resource);
+            }
+
+            if (removals.Length > 0)
+            {
+                if (!RemoveTeamPeople(team, removals))
+                {
+                    SetTeamStartResolutionError("Die Teamzuordnung hat sich geändert. Bitte prüfen Sie die Auswahl erneut.");
+                    return;
+                }
+
+                await EinsatzService.UpdateTeamAsync(team);
+                foreach (var removal in removals)
+                {
+                    var issue = _teamStartResolutionIssues.FirstOrDefault(entry =>
+                        entry.EntityType == removal.EntityType
+                        && string.Equals(entry.EntityId, removal.EntityId, StringComparison.Ordinal));
+                    await EinsatzService.AddGlobalNoteWithSourceAsync(
+                        $"{issue?.Name ?? removal.EntityId} wurde aus Team {team.TeamName} entfernt.",
+                        team.TeamId,
+                        team.TeamName,
+                        "Team",
+                        GlobalNotesEntryType.System,
+                        LeitungsGeraetNamen.Absender(Geraet));
+                }
+            }
+
+            CloseTeamStartResolutionDialog();
+            await RequestTeamStartAsync(teamId, ignoreResourceAvailability: false);
+        }
+        catch (ArgumentException ex)
+        {
+            RefreshTeamStartResolutionAfterFailure(teamId, ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            RefreshTeamStartResolutionAfterFailure(teamId, ex.Message);
+        }
+        finally
+        {
+            _teamStartResolutionBusy = false;
+        }
+    }
+
+    private bool CanRemoveTeamPeople(Team team, IReadOnlyList<TeamStartResourceResolution> removals)
+    {
+        team.HelferIds ??= new List<string>();
+        team.HelferNames ??= new List<string>();
+        var removedIds = removals
+            .Where(removal => removal.EntityType == ResourceEntityType.Person)
+            .Select(removal => removal.EntityId)
+            .ToHashSet(StringComparer.Ordinal);
+        if (removedIds.Count != removals.Count)
+            return false;
+
+        var personIds = team.HelferIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToHashSet(StringComparer.Ordinal);
+        if (!string.IsNullOrWhiteSpace(team.HundefuehrerId))
+            personIds.Add(team.HundefuehrerId);
+        if (!removedIds.IsSubsetOf(personIds) || !personIds.Except(removedIds).Any())
+            return false;
+
+        if (removedIds.Contains(team.HundefuehrerId ?? string.Empty))
+        {
+            return team.HelferIds.Any(id =>
+                !removedIds.Contains(id)
+                && IsEligibleTeamLeader(team, id));
+        }
+
+        return true;
+    }
+
+    private bool RemoveTeamPeople(Team team, IReadOnlyList<TeamStartResourceResolution> removals)
+    {
+        if (!CanRemoveTeamPeople(team, removals))
+            return false;
+
+        var removedIds = removals.Select(removal => removal.EntityId).ToHashSet(StringComparer.Ordinal);
+        string? promotedHelperId = null;
+        if (removedIds.Contains(team.HundefuehrerId ?? string.Empty))
+        {
+            var replacementIndex = team.HelferIds.FindIndex(id =>
+                !removedIds.Contains(id)
+                && IsEligibleTeamLeader(team, id));
+            promotedHelperId = team.HelferIds[replacementIndex];
+            team.HundefuehrerId = promotedHelperId;
+            team.HundefuehrerName = team.HelferNames.ElementAtOrDefault(replacementIndex) ?? string.Empty;
+        }
+
+        for (var index = team.HelferIds.Count - 1; index >= 0; index--)
+        {
+            if (!removedIds.Contains(team.HelferIds[index])
+                && !string.Equals(team.HelferIds[index], promotedHelperId, StringComparison.Ordinal))
+                continue;
+
+            team.HelferIds.RemoveAt(index);
+            if (index < team.HelferNames.Count)
+                team.HelferNames.RemoveAt(index);
+        }
+
+        return true;
+    }
+
+    private void RefreshTeamStartResolutionAfterFailure(string teamId, string message)
+    {
+        var issues = EinsatzService.GetTeamStartResourceIssues(teamId);
+        var team = EinsatzService.Teams.FirstOrDefault(entry => entry.TeamId == teamId);
+        if (team is not null && issues.Count > 0)
+            OpenTeamStartResolutionDialog(team, issues);
+
+        SetTeamStartResolutionError($"Änderungen konnten nicht vollständig angewendet werden: {message}");
+    }
+
+    private int FindReplacementTeamLeaderIndex(Team team)
+    {
+        var helperIds = team.HelferIds ?? new List<string>();
+        for (var index = 0; index < helperIds.Count; index++)
+        {
+            if (IsEligibleTeamLeader(team, helperIds[index]))
+                return index;
+        }
+
+        return -1;
+    }
+
+    private bool IsEligibleTeamLeader(Team team, string personId)
+    {
+        var person = _personalList.FirstOrDefault(entry => entry.Id == personId);
+        if (person is null)
+            return false;
+        if (team.IsDroneTeam)
+            return person.Skills.HasFlag(PersonalSkills.Drohnenpilot);
+        if (team.IsSupportTeam)
+            return true;
+        if (!person.Skills.HasFlag(PersonalSkills.Hundefuehrer))
+            return false;
+
+        var dog = _dogList.FirstOrDefault(entry => entry.Id == team.DogId);
+        return dog is null
+            || dog.HundefuehrerIds.Count == 0
+            || dog.HundefuehrerIds.Contains(personId);
+    }
+
+    private void SetTeamStartResolutionError(string message)
+    {
+        _teamStartResolutionError = message;
+        _showTeamStartResolutionModal = true;
     }
 
     private async Task PauseTeamAsync(string teamId)
@@ -387,29 +723,16 @@ public partial class EinsatzMonitor
     {
         if (_collarSelectTeamId == null) return;
 
+        var teamId = _collarSelectTeamId;
+        var ignoreResourceAvailability = _ignoreResourceAvailabilityOnNextStart;
         if (!string.IsNullOrEmpty(_collarSelectCollarId))
         {
-            await CollarTrackingService.AssignCollarToTeamAsync(_collarSelectCollarId, _collarSelectTeamId);
+            await CollarTrackingService.AssignCollarToTeamAsync(_collarSelectCollarId, teamId);
         }
 
         _showCollarSelectModal = false;
-
-        // Jetzt Start durchführen (Halsband ist jetzt zugewiesen oder bewusst ausgelassen)
-        var team = EinsatzService.Teams.FirstOrDefault(t => t.TeamId == _collarSelectTeamId);
-        if (team != null && !string.IsNullOrEmpty(team.CollarId))
-        {
-            CollarTrackingService.ClearCollarHistory(team.CollarId);
-        }
-
-        try
-        {
-            await EinsatzService.StartTeamTimerAsync(_collarSelectTeamId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _teamStatusMessage = ex.Message;
-            _teamStatusIsError = true;
-        }
+        _ignoreResourceAvailabilityOnNextStart = false;
+        await ExecuteTeamStartAsync(teamId, ignoreResourceAvailability);
 
         _collarSelectTeamId = null;
         _collarSelectCollarId = string.Empty;
@@ -418,17 +741,11 @@ public partial class EinsatzMonitor
     private async Task CollarSelectStartWithoutAsync()
     {
         if (_collarSelectTeamId == null) return;
+        var teamId = _collarSelectTeamId;
+        var ignoreResourceAvailability = _ignoreResourceAvailabilityOnNextStart;
         _showCollarSelectModal = false;
-
-        try
-        {
-            await EinsatzService.StartTeamTimerAsync(_collarSelectTeamId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _teamStatusMessage = ex.Message;
-            _teamStatusIsError = true;
-        }
+        _ignoreResourceAvailabilityOnNextStart = false;
+        await ExecuteTeamStartAsync(teamId, ignoreResourceAvailability);
 
         _collarSelectTeamId = null;
         _collarSelectCollarId = string.Empty;
@@ -439,6 +756,7 @@ public partial class EinsatzMonitor
         _showCollarSelectModal = false;
         _collarSelectTeamId = null;
         _collarSelectCollarId = string.Empty;
+        _ignoreResourceAvailabilityOnNextStart = false;
     }
 
     private async Task RequestResetTeamAsync(string teamId)
@@ -525,8 +843,24 @@ public partial class EinsatzMonitor
         if (_editingTeamId is null)
         {
             var newTeam = BuildNewTeam();
+            if (!ValidateCandidateSearchAreaAssignment(newTeam, alreadyAssignedInSearch: false, out var newAreaError))
+            {
+                SetTeamFormMessage(newAreaError, true);
+                return;
+            }
+
             await EinsatzService.AddTeamAsync(newTeam);
-            await SyncTeamSearchAreaAsync(newTeam, string.Empty);
+            try
+            {
+                await SyncTeamSearchAreaAsync(newTeam, string.Empty);
+            }
+            catch (InvalidOperationException ex)
+            {
+                SetTeamFormMessage(ex.Message, true);
+                _editingTeamId = newTeam.TeamId;
+                return;
+            }
+
             await SyncCollarAssignmentAsync(newTeam);
 
             SetTeamFormMessage("Team wurde gespeichert.", false);
@@ -542,11 +876,31 @@ public partial class EinsatzMonitor
             return;
         }
 
+        var candidateTeam = BuildNewTeam();
+        var alreadyAssigned = existingTeam.IsManuallyPaused
+            || (!string.IsNullOrWhiteSpace(existingTeam.SearchAreaId)
+                && EinsatzService.CurrentEinsatz.SearchAreas.Any(area =>
+                    area.Id == existingTeam.SearchAreaId && area.AssignedTeamId == existingTeam.TeamId));
+        if (!ValidateCandidateSearchAreaAssignment(candidateTeam, alreadyAssigned, out var editAreaError))
+        {
+            SetTeamFormMessage(editAreaError, true);
+            return;
+        }
+
         var previousAreaId = existingTeam.SearchAreaId;
         var previousCollarId = existingTeam.CollarId;
         ApplyFormToExistingTeam(existingTeam);
         await EinsatzService.UpdateTeamAsync(existingTeam);
-        await SyncTeamSearchAreaAsync(existingTeam, previousAreaId);
+        try
+        {
+            await SyncTeamSearchAreaAsync(existingTeam, previousAreaId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            SetTeamFormMessage(ex.Message, true);
+            return;
+        }
+
         await SyncCollarAssignmentAsync(existingTeam, previousCollarId);
         await EinsatzService.AddGlobalNoteWithSourceAsync(
             $"{existingTeam.TeamName} wurde aktualisiert.",
@@ -561,16 +915,57 @@ public partial class EinsatzMonitor
         _showTeamModal = false;
     }
 
-    private async Task SyncTeamSearchAreaAsync(Team team, string previousAreaId)
+    private bool ValidateCandidateSearchAreaAssignment(
+        Team candidateTeam,
+        bool alreadyAssignedInSearch,
+        out string errorMessage)
     {
-        if (!string.IsNullOrWhiteSpace(previousAreaId) && previousAreaId != _teamForm.SearchAreaId)
+        errorMessage = string.Empty;
+        if (string.IsNullOrWhiteSpace(_teamForm.SearchAreaId))
+            return true;
+
+        var resources = EinsatzService.GetEinsatzResources();
+        if (resources.Count == 0)
+            return true;
+
+        var required = new[] { candidateTeam.HundefuehrerId }
+            .Concat(candidateTeam.HelferIds ?? new List<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .Select(id => (EntityType: ResourceEntityType.Person, Id: id))
+            .Concat(!string.IsNullOrWhiteSpace(candidateTeam.DogId)
+                ? new[] { (EntityType: ResourceEntityType.Dog, Id: candidateTeam.DogId) }
+                : Array.Empty<(ResourceEntityType EntityType, string Id)>());
+
+        var issues = new List<TeamResourceAvailabilityIssue>();
+        foreach (var (entityType, id) in required)
         {
-            await EinsatzService.AssignTeamToSearchAreaAsync(previousAreaId, string.Empty);
+            var resource = resources.FirstOrDefault(entry =>
+                entry.EntityType == entityType
+                && string.Equals(entry.EntityId, id, StringComparison.Ordinal));
+            if (resource?.Status != ResourceStatus.Verfuegbar
+                && !(alreadyAssignedInSearch && resource?.Status == ResourceStatus.InSuche))
+            {
+                issues.Add(new TeamResourceAvailabilityIssue(entityType, id, resource?.Status));
+            }
         }
 
+        if (issues.Count == 0)
+            return true;
+
+        errorMessage = new TeamResourceAvailabilityException(issues, candidateTeam).Message;
+        return false;
+    }
+
+    private async Task SyncTeamSearchAreaAsync(Team team, string previousAreaId)
+    {
         if (!string.IsNullOrWhiteSpace(_teamForm.SearchAreaId))
         {
             await EinsatzService.AssignTeamToSearchAreaAsync(_teamForm.SearchAreaId, team.TeamId);
+        }
+        else if (!string.IsNullOrWhiteSpace(previousAreaId))
+        {
+            await EinsatzService.AssignTeamToSearchAreaAsync(previousAreaId, string.Empty);
         }
         else
         {

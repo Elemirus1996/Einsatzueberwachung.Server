@@ -14,6 +14,7 @@ namespace Einsatzueberwachung.Domain.Models
         public string Id { get; set; }
         public string Name { get; set; }
         public string Rasse { get; set; }
+        public string Organisation { get; set; }
         public int Alter { get; set; }
         public DogSpecialization Specializations { get; set; }
 
@@ -55,6 +56,7 @@ namespace Einsatzueberwachung.Domain.Models
             Id = Guid.NewGuid().ToString();
             Name = string.Empty;
             Rasse = string.Empty;
+            Organisation = string.Empty;
             Specializations = DogSpecialization.None;
             HundefuehrerIds = new List<string>();
             Notizen = string.Empty;

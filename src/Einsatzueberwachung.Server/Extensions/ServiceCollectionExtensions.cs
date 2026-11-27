@@ -332,7 +332,11 @@ internal static class ServiceCollectionExtensions
         });
 
         services.AddHttpClient<IWeatherService, DwdWeatherService>();
-        services.AddHttpClient<IDiveraService, DiveraService>();
+        services.AddHttpClient<DiveraService>();
+        services.AddSingleton<DiveraTestSimulationService>();
+        services.AddSingleton<IDiveraService>(sp => new SimulatableDiveraService(
+            sp.GetRequiredService<DiveraService>(),
+            sp.GetRequiredService<DiveraTestSimulationService>()));
         return services;
     }
 
@@ -351,6 +355,8 @@ internal static class ServiceCollectionExtensions
         services.AddHostedService<TeamTimerTickService>();
         services.AddHostedService<UpdateAutoCheckService>();
         services.AddHostedService<RuntimeStatePersistenceService>();
+        services.AddSingleton<DiveraResourceSyncService>();
+        services.AddHostedService(sp => sp.GetRequiredService<DiveraResourceSyncService>());
         return services;
     }
 }

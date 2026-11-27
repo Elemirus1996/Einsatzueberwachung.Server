@@ -279,6 +279,17 @@
                 </div>
 
                 <div class="cfg-section">
+                    <h3 class="cfg-sub-header"><i class="bi bi-person-lines-fill me-1"></i>Ressourcenverwaltung</h3>
+                    <div class="cfg-field">
+                        <label class="d-flex align-items-center gap-2">
+                            <InputCheckbox @bind-Value="_appSettings.RessourcenverwaltungAktiv" />
+                            Ressourcenverwaltung verwenden (Check-in von Personen und Hunden, Startsperre für nicht verfügbare Kräfte, Übernahme aus DIVERA)
+                        </label>
+                        <span class="cfg-help">Standard aus. Beim Ausschalten werden die Check-ins des laufenden Einsatzes verworfen.</span>
+                    </div>
+                </div>
+
+                <div class="cfg-section">
                     <h3 class="cfg-sub-header"><i class="bi bi-hourglass-split me-1"></i>Hundepausen</h3>
                     <div class="cfg-grid cfg-grid-3">
                         <div class="cfg-field">
@@ -1055,7 +1066,11 @@
                 <div class="cfg-section">
                     <div class="cfg-section-title-row">
                         <h3 class="cfg-sub-header"><i class="bi bi-broadcast-pin me-1"></i>Divera 24/7</h3>
-                        @if (_appSettings.DiveraEnabled && !string.IsNullOrWhiteSpace(_appSettings.DiveraAccessKey))
+                        @if (DiveraTestSimulation.IsActive)
+                        {
+                            <span class="cfg-inline-badge warning"><i class="bi bi-flask me-1"></i>Testmodus aktiv</span>
+                        }
+                        else if (_appSettings.DiveraEnabled && !string.IsNullOrWhiteSpace(_appSettings.DiveraAccessKey))
                         {
                             <span class="cfg-inline-badge ok">aktiv</span>
                         }
@@ -1106,7 +1121,7 @@
                         </div>
 
                         <div class="cfg-actions mt-2">
-                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="TestDiveraConnectionAsync" disabled="@_diveraTestBusy">
+                            <button type="button" class="cfg-btn cfg-btn-ghost" @onclick="TestDiveraConnectionAsync" disabled="@(_diveraTestBusy || DiveraTestSimulation.IsActive)">
                                 @if (_diveraTestBusy)
                                 {
                                     <span class="spinner-border spinner-border-sm"></span>
@@ -1126,6 +1141,72 @@
                             }
                         </div>
                     }
+
+                    <div class="cfg-divera-sim mt-3">
+                        <div class="cfg-divera-sim-head">
+                            <div>
+                                <div class="cfg-label"><i class="bi bi-flask"></i>Lokaler Testalarm (ohne DIVERA-Verbindung)</div>
+                                <p class="cfg-help mb-0">
+                                    Simuliert lokal auf diesem Server einen aktiven DIVERA-Alarm samt Beispiel-Rückmeldungen für die Stammdaten-Personen.
+                                    Es wird keine Verbindung zu DIVERA aufgebaut und niemand real alarmiert.
+                                </p>
+                            </div>
+                            @if (DiveraTestSimulation.IsActive)
+                            {
+                                <button type="button"
+                                        class="cfg-btn cfg-btn-ghost-danger cfg-btn-touch"
+                                        @onclick="StopDiveraSimulationAsync"
+                                        disabled="@_diveraSimulationBusy">
+                                    <i class="bi bi-stop-circle"></i>
+                                    Testalarm beenden
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="cfg-btn cfg-btn-ghost cfg-btn-touch"
+                                        @onclick="StartDiveraSimulationAsync"
+                                        disabled="@_diveraSimulationBusy">
+                                    @if (_diveraSimulationBusy)
+                                    {
+                                        <span class="spinner-border spinner-border-sm"></span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-play-circle"></i>
+                                    }
+                                    Testalarm starten
+                                </button>
+                            }
+                        </div>
+
+                        @if (DiveraTestSimulation.CurrentSummary is { } simSummary)
+                        {
+                            <div class="cfg-divera-sim-status mt-2">
+                                <span class="cfg-inline-status is-ok">
+                                    <i class="bi bi-check-circle"></i>
+                                    @simSummary.AlarmTitle · @simSummary.PositiveResponseCount Zusage@(simSummary.PositiveResponseCount == 1 ? "" : "n"), @simSummary.NegativeResponseCount Absage@(simSummary.NegativeResponseCount == 1 ? "" : "n"), @simSummary.PendingResponseCount offen
+                                </span>
+                                <div class="cfg-actions">
+                                    @if (simSummary.LinkedActiveEinsatz && _appSettings.RessourcenverwaltungAktiv)
+                                    {
+                                        <a class="cfg-btn cfg-btn-ghost cfg-btn-touch" href="/ressourcenverwaltung">
+                                            <i class="bi bi-person-lines-fill"></i> Zur Ressourcenverwaltung
+                                        </a>
+                                    }
+                                    else if (!simSummary.LinkedActiveEinsatz)
+                                    {
+                                        <a class="cfg-btn cfg-btn-ghost cfg-btn-touch" href="/einsatz-start">
+                                            <i class="bi bi-alarm"></i> Einsatz mit Testalarm starten
+                                        </a>
+                                    }
+                                    <a class="cfg-btn cfg-btn-ghost cfg-btn-touch" href="/divera">
+                                        <i class="bi bi-broadcast-pin"></i> Divera-Ansicht
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
 
                 <div class="cfg-section">

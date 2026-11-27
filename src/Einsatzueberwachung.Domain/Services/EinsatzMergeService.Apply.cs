@@ -381,6 +381,8 @@ namespace Einsatzueberwachung.Domain.Services
                 var imported = (PersonalEntry)item.ImportedEntry;
                 local.Vorname = imported.Vorname;
                 local.Nachname = imported.Nachname;
+                if (!string.IsNullOrWhiteSpace(imported.Organisation))
+                    local.Organisation = imported.Organisation;
                 local.Skills = imported.Skills;
                 if (!string.IsNullOrWhiteSpace(imported.Notizen))
                     local.Notizen = imported.Notizen;
@@ -403,6 +405,8 @@ namespace Einsatzueberwachung.Domain.Services
                 var imported = (DogEntry)item.ImportedEntry;
                 local.Name = imported.Name;
                 local.Rasse = imported.Rasse;
+                if (!string.IsNullOrWhiteSpace(imported.Organisation))
+                    local.Organisation = imported.Organisation;
                 local.Specializations = imported.Specializations;
                 if (!string.IsNullOrWhiteSpace(imported.Notizen))
                     local.Notizen = imported.Notizen;

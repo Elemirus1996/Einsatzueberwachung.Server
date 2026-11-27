@@ -62,6 +62,13 @@ public partial class EinsatzMonitor
     private bool _showCollarSelectModal;
     private string? _collarSelectTeamId;
     private string _collarSelectCollarId = string.Empty;
+    private bool _ignoreResourceAvailabilityOnNextStart;
+    private bool _showTeamStartResolutionModal;
+    private bool _teamStartResolutionBusy;
+    private string? _teamStartResolutionTeamId;
+    private string _teamStartResolutionError = string.Empty;
+    private IReadOnlyList<TeamStartResourceIssueViewModel> _teamStartResolutionIssues =
+        Array.Empty<TeamStartResourceIssueViewModel>();
     private string _editEinsatzMessage = string.Empty;
     private bool _editEinsatzIsError;
     private MonitorEditEinsatzForm _editEinsatzForm = new();
@@ -211,9 +218,11 @@ public partial class EinsatzMonitor
         EinsatzService.TeamAdded += OnTeamChanged;
         EinsatzService.TeamRemoved += OnTeamChanged;
         EinsatzService.TeamUpdated += OnTeamChanged;
+        EinsatzService.ResourcesChanged += OnResourcesChanged;
         EinsatzService.TeamsReordered += OnTeamsReordered;
         EinsatzService.EinsatzChanged += OnEinsatzChanged;
         EinsatzService.NoteAdded += OnNoteAdded;
+        SettingsService.AppSettingsChanged += OnAppSettingsChanged;
         CollarTrackingService.CollarLocationReceived += OnCollarLocationChanged;
         CollarTrackingService.CollarHistoryCleared += OnCollarHistoryChanged;
     }
@@ -309,9 +318,11 @@ public partial class EinsatzMonitor
         EinsatzService.TeamAdded -= OnTeamChanged;
         EinsatzService.TeamRemoved -= OnTeamChanged;
         EinsatzService.TeamUpdated -= OnTeamChanged;
+        EinsatzService.ResourcesChanged -= OnResourcesChanged;
         EinsatzService.TeamsReordered -= OnTeamsReordered;
         EinsatzService.EinsatzChanged -= OnEinsatzChanged;
         EinsatzService.NoteAdded -= OnNoteAdded;
+        SettingsService.AppSettingsChanged -= OnAppSettingsChanged;
         CollarTrackingService.CollarLocationReceived -= OnCollarLocationChanged;
         CollarTrackingService.CollarHistoryCleared -= OnCollarHistoryChanged;
         MissionTopbar.ClearContent(this);
@@ -332,7 +343,5 @@ public partial class EinsatzMonitor
 
         _teamOrderingReference?.Dispose();
     }
-
-    // ===== Dashboard-Layout-Methoden =====
 
 }

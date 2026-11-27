@@ -144,21 +144,30 @@ public sealed class EinsatzAbschlussService
         return ende > now ? ende.AddDays(-1) : ende;
     }
 
-    /// <summary>Personal und Hunde, die in Teams eingeteilt sind, fuer die Vor-Ort-Liste vorauswaehlen.</summary>
+    /// <summary>Personal und Hunde aus Teamzuweisungen und Einsatz-Check-in fuer die Vor-Ort-Liste vorauswaehlen.</summary>
     public static (HashSet<string> PersonalIds, HashSet<string> HundeIds) PreselectVorOrt(
         IEnumerable<Team> teams,
         IEnumerable<PersonalEntry> personal,
-        IEnumerable<DogEntry> hunde)
+        IEnumerable<DogEntry> hunde,
+        IEnumerable<EinsatzResource>? eingecheckteRessourcen = null)
     {
+        var personalListe = personal.ToList();
+        var hundeListe = hunde.ToList();
         var personalIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var hundeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        var personnelByName = personal
+        var personalIdsInListe = personalListe
+            .Select(person => person.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var hundeIdsInListe = hundeListe
+            .Select(dog => dog.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var personnelByName = personalListe
             .Where(person => !string.IsNullOrWhiteSpace(person.FullName))
             .GroupBy(person => person.FullName.Trim(), StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.First().Id, StringComparer.OrdinalIgnoreCase);
 
-        var dogsByName = hunde
+        var dogsByName = hundeListe
             .Where(dog => !string.IsNullOrWhiteSpace(dog.Name))
             .GroupBy(dog => dog.Name.Trim(), StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.First().Id, StringComparer.OrdinalIgnoreCase);
@@ -184,6 +193,25 @@ public sealed class EinsatzAbschlussService
                 && dogsByName.TryGetValue(team.DogName.Trim(), out var dogId))
             {
                 hundeIds.Add(dogId);
+            }
+        }
+
+        foreach (var resource in eingecheckteRessourcen ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(resource.EntityId))
+            {
+                continue;
+            }
+
+            if (resource.EntityType == Einsatzueberwachung.Domain.Models.Enums.ResourceEntityType.Person
+                && personalIdsInListe.Contains(resource.EntityId))
+            {
+                personalIds.Add(resource.EntityId);
+            }
+            else if (resource.EntityType == Einsatzueberwachung.Domain.Models.Enums.ResourceEntityType.Dog
+                && hundeIdsInListe.Contains(resource.EntityId))
+            {
+                hundeIds.Add(resource.EntityId);
             }
         }
 
@@ -233,8 +261,10 @@ public sealed class EinsatzAbschlussService
             BosAbschnittAbgestimmt = current.BosAbschnittAbgestimmt,
             BosRessourcenBesprochen = current.BosRessourcenBesprochen,
             AlarmierungsZeit = current.AlarmierungsZeit,
+            DiveraAlarmId = current.DiveraAlarmId,
             ElwPosition = current.ElwPosition,
             Teams = einsatzService.Teams.ToList(),
+            Resources = einsatzService.GetEinsatzResources().ToList(),
             SearchAreas = current.SearchAreas.ToList(),
             GlobalNotesEntries = einsatzService.GlobalNotes.ToList(),
             TrackSnapshots = current.TrackSnapshots.ToList(),

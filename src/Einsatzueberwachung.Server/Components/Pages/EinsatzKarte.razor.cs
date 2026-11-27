@@ -156,6 +156,7 @@ public partial class EinsatzKarte
 
     protected override async Task OnInitializedAsync()
     {
+        EinsatzService.ResourcesChanged += OnResourcesChanged;
         _searchAreas = EinsatzService.CurrentEinsatz.SearchAreas.ToList();
         foreach (var area in _searchAreas)
         {
@@ -198,6 +199,33 @@ public partial class EinsatzKarte
         }
 
         ConfigureMissionTopbarContent();
+    }
+
+    private void OnResourcesChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private bool IsTeamSearchSelectable(Team team)
+    {
+        var alreadyAssignedHere = _editingArea?.AssignedTeamId == team.TeamId;
+
+        var personIds = new[] { team.HundefuehrerId }
+            .Concat(team.HelferIds ?? new List<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (personIds.Count == 0 && string.IsNullOrWhiteSpace(team.DogId))
+            return false;
+
+        var resourceStatuses = EinsatzService.GetEinsatzResources()
+            .ToDictionary(resource => $"{resource.EntityType}:{resource.EntityId}", resource => resource.Status, StringComparer.Ordinal);
+        bool IsSelectable(ResourceEntityType type, string id) =>
+            EinsatzService.CanAssignResourceToSearch(type, id)
+            || (alreadyAssignedHere
+                && resourceStatuses.TryGetValue($"{type}:{id}", out var status)
+                && status == ResourceStatus.InSuche);
+
+        return personIds.All(id => IsSelectable(ResourceEntityType.Person, id))
+            && (string.IsNullOrWhiteSpace(team.DogId)
+                || IsSelectable(ResourceEntityType.Dog, team.DogId));
     }
 
     protected override void OnParametersSet()
@@ -445,8 +473,11 @@ public partial class EinsatzKarte
         }
 
         _selectedTeamId = "";
+        _areaDialogError = string.Empty;
         _showDialog = true;
     }
+
+    private string _areaDialogError = string.Empty;
 
     private void EditSearchArea(SearchArea area)
     {
@@ -458,10 +489,13 @@ public partial class EinsatzKarte
             Color = area.Color,
             Notes = area.Notes,
             IsCompleted = area.IsCompleted,
+            AssignedTeamId = area.AssignedTeamId,
+            AssignedTeamName = area.AssignedTeamName,
             GeoJsonData = area.GeoJsonData,
             Coordinates = new List<(double, double)>(area.Coordinates)
         };
         _selectedTeamId = area.AssignedTeamId;
+        _areaDialogError = string.Empty;
         _showDialog = true;
     }
 
@@ -505,6 +539,26 @@ public partial class EinsatzKarte
     private async Task SaveArea()
     {
         var selectedTeamId = _selectedTeamId?.Trim() ?? string.Empty;
+        _areaDialogError = string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(selectedTeamId))
+        {
+            var selectedTeam = _teams.FirstOrDefault(t => t.TeamId == selectedTeamId);
+            if (selectedTeam is null)
+            {
+                _areaDialogError = "Das ausgewählte Team existiert nicht mehr.";
+                return;
+            }
+
+            if (!IsTeamSearchSelectable(selectedTeam))
+            {
+                var issues = EinsatzService.GetTeamStartResourceIssues(selectedTeamId);
+                _areaDialogError = issues.Count > 0
+                    ? new Einsatzueberwachung.Domain.Services.TeamResourceAvailabilityException(issues, selectedTeam).Message
+                    : "Das ausgewählte Team ist für diesen Suchsektor nicht verfügbar.";
+                return;
+            }
+        }
 
         // Hält beide Geometriedarstellungen konsistent (GeoJsonData <-> Coordinates).
         if (!string.IsNullOrWhiteSpace(_currentArea.GeoJsonData))
@@ -512,18 +566,9 @@ public partial class EinsatzKarte
             ExtractCoordinatesFromGeoJson(_currentArea);
         }
 
-        // Auswahl immer explizit auf das Suchgebiet anwenden, auch beim Entfernen der Teamzuweisung.
-        if (!string.IsNullOrWhiteSpace(selectedTeamId))
-        {
-            var team = _teams.FirstOrDefault(t => t.TeamId == selectedTeamId);
-            _currentArea.AssignedTeamId = team?.TeamId ?? string.Empty;
-            _currentArea.AssignedTeamName = team?.TeamName ?? string.Empty;
-        }
-        else
-        {
-            _currentArea.AssignedTeamId = string.Empty;
-            _currentArea.AssignedTeamName = string.Empty;
-        }
+        // Bestehende Zuweisung bis AssignTeamToSearchAreaAsync beibehalten, damit das alte Team sauber abgelöst wird.
+        _currentArea.AssignedTeamId = _editingArea?.AssignedTeamId ?? string.Empty;
+        _currentArea.AssignedTeamName = _editingArea?.AssignedTeamName ?? string.Empty;
 
         if (_editingArea != null)
         {
@@ -551,7 +596,17 @@ public partial class EinsatzKarte
         }
 
         // Persistiert die Team<->Suchgebiet-Relation beidseitig (SearchArea + Team).
-        await EinsatzService.AssignTeamToSearchAreaAsync(_currentArea.Id, selectedTeamId);
+        try
+        {
+            await EinsatzService.AssignTeamToSearchAreaAsync(_currentArea.Id, selectedTeamId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _editingArea = _currentArea;
+            _areaDialogError = ex.Message;
+            _searchAreas = EinsatzService.CurrentEinsatz.SearchAreas.ToList();
+            return;
+        }
 
         _searchAreas = EinsatzService.CurrentEinsatz.SearchAreas.ToList();
 
@@ -1715,6 +1770,7 @@ public partial class EinsatzKarte
         try
         {
             MissionTopbar.ClearContent(this);
+            EinsatzService.ResourcesChanged -= OnResourcesChanged;
             CollarTrackingService.CollarLocationReceived -= OnCollarLocationReceived;
             CollarTrackingService.OutOfBoundsDetected -= OnOutOfBoundsDetected;
             CollarTrackingService.CollarHistoryCleared -= OnCollarHistoryCleared;

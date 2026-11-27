@@ -167,6 +167,9 @@
 }
 
 .tc-crew-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
     min-width: 0;
     color: var(--ui-text);
     overflow-wrap: anywhere;

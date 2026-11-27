@@ -26,14 +26,15 @@ public static class HilfeContent
 
         ["/einsatz-monitor"] = new(
             "Einsatz-Monitor",
-            "Die zentrale Übersicht aller Teams im laufenden Einsatz. Teams können hier gestartet, pausiert und zurückgemeldet werden. Jede Team-Karte zeigt Laufzeit, Hundename, Spezialisierung und aktuelle Warnungen. Neue Teams lassen sich direkt hinzufügen und bestehende bearbeiten oder entfernen.",
+            "Die zentrale Übersicht aller Teams und eingecheckten Personen und Hunde im laufenden Einsatz. Das Ressourcenpanel sortiert sofort verfügbare Kräfte nach oben. Teams können gestartet, pausiert und zurückgemeldet werden. Neue Teams lassen sich direkt hinzufügen und bestehende bearbeiten oder entfernen.",
             new[]
             {
                 "Navigation -> Monitor",
                 "Team starten: Team-Karte -> 'Start'-Button",
                 "Team pausieren: Team-Karte -> 'Pause'-Button",
                 "Team zurückmelden: Team-Karte -> 'Zurück'-Button",
-                "Neues Team: '+ Team hinzufügen'-Button oben rechts"
+                "Neues Team: '+ Team hinzufügen'-Button oben rechts",
+                "Ressourcen verwalten: Panel-Link 'Ressourcenverwaltung'"
             }),
 
         ["/einsatz-karte"] = new(
@@ -92,11 +93,28 @@ public static class HilfeContent
 
         ["/divera"] = new(
             "Divera 24/7",
-            "Integration mit dem Alarmierungssystem Divera 24/7. Zeigt aktuelle Alarmierungen, Mitgliederstatus und UCR-Einträge aus der eigenen Divera-Organisation. Erfordert einen konfigurierten Divera-API-Key in den Einstellungen.",
+            "Integration mit dem Alarmierungssystem Divera 24/7. Zeigt aktuelle Alarmierungen, Mitgliederstatus und UCR-Rückmeldungen. Positive Rückmeldungen zum aktiven DIVERA-Alarm heben die eindeutig zugeordneten Personen im Check-in der Ressourcenverwaltung hervor; dort können sie einzeln oder gesammelt mit Status „Auf Anfahrt“ übernommen werden. Hunde werden nicht automatisch eingecheckt. Dafür muss die Divera Benutzer-ID bei der Person in den Stammdaten hinterlegt sein. Zum gefahrlosen Testen ohne Verbindung zum echten DIVERA-System steht in den Einstellungen ein lokaler Testalarm bereit.",
             new[]
             {
                 "Navigation -> Divera 24/7",
-                "API-Key konfigurieren: Einstellungen -> Divera"
+                "API-Key konfigurieren: Einstellungen -> Integration -> Divera 24/7",
+                "Lokalen Testalarm starten: Einstellungen -> Integration -> 'Testalarm starten'",
+                "Divera Benutzer-ID pflegen: Stammdaten -> Personal",
+                "DIVERA-Zusagen übernehmen: Navigation -> Ressourcenverwaltung -> 'Alle aus DIVERA einchecken'"
+            }),
+
+        ["/ressourcenverwaltung"] = new(
+            "Ressourcenverwaltung",
+            "Die Ressourcenverwaltung ist ab Werk ausgeschaltet; die Staffel schaltet sie unter Einstellungen → Einsatzbetrieb ein. Hier werden Personen und ihre Hunde für den laufenden Einsatz oder die laufende Übung eingecheckt und disponiert. Sobald jemand eingecheckt ist, kann ein Team nur starten, wenn alle Mitglieder eingecheckt und verfügbar sind (oder die Prüfung im Startdialog übergangen wird). Alle aktiven, noch nicht eingecheckten Personen aus den Stammdaten werden direkt angezeigt und lassen sich über das Suchfeld verfeinern. Positive Rückmeldungen aus dem verknüpften DIVERA-Alarm werden oben hervorgehoben und können einzeln oder über „Alle aus DIVERA einchecken“ gesammelt als „Auf Anfahrt“ übernommen werden. Zugeordnete Hunde lassen sich direkt am Eintrag der eingecheckten Person hinzufügen und behalten ihren eigenständigen Status. Fehlende Personen oder Hunde werden per Schnellaufnahme dauerhaft in den Stammdaten gespeichert und sofort eingecheckt. „In Suche“ kann automatisch durch einen gestarteten Suchauftrag oder manuell gesetzt werden. Eine manuelle Statusänderung erzeugt keine Sektorzuweisung; nur Ressourcen eines Suchauftrags werden nach dessen Abschluss automatisch zurückgesetzt. Für einen Sonderauftrag ist ein Zweck erforderlich. Nur Ressourcen mit Status „Im Verfügungsraum“ sind für neue Suchsektoren auswählbar.",
+            new[]
+            {
+                "Einschalten: Einstellungen -> Einsatzbetrieb -> 'Ressourcenverwaltung verwenden'",
+                "Navigation -> Ressourcenverwaltung",
+                "Check-in: Personenliste optional per Suchfeld eingrenzen; Person einzeln oder über 'Alle aus DIVERA einchecken' übernehmen",
+                "Fehlende Person oder Hund: 'Schnell erfassen' -> in Stammdaten speichern und einchecken",
+                "Zugeordnete Hunde: am Eintrag der eingecheckten Person hinzufügen",
+                "Sonderauftrag: Status wählen -> Zweck eintragen -> bestätigen",
+                "DIVERA-Zuordnung für Personen: Stammdaten -> Personal -> Divera Benutzer-ID"
             }),
 
         ["/stammdaten"] = new(
@@ -130,10 +148,11 @@ public static class HilfeContent
 
         ["/einstellungen"] = new(
             "Einstellungen",
-            "Konfiguration der Anwendung: Staffel-Stammdaten, Einsatzbetrieb, Erscheinungsbild (Theme), Tastenkürzel, Divera-Integration und Systemwartung. Im Tab 'Tastenkürzel' lassen sich alle Navigationskürzel und der Stepper auf 'Neuer Einsatz' frei belegen. Kürzel werden per Klick auf das Eingabefeld und dann Drücken der gewünschten Taste aufgezeichnet.",
+            "Konfiguration der Anwendung: Staffel-Stammdaten, Einsatzbetrieb, Erscheinungsbild (Theme), Tastenkürzel, Divera-Integration und Systemwartung. Unter 'Integration' lässt sich außerdem ein rein lokaler DIVERA-Testalarm mit Beispiel-Rückmeldungen starten, ohne eine echte Alarmierung auszulösen. Im Tab 'Tastenkürzel' lassen sich alle Navigationskürzel und der Stepper auf 'Neuer Einsatz' frei belegen. Kürzel werden per Klick auf das Eingabefeld und dann Drücken der gewünschten Taste aufgezeichnet.",
             new[]
             {
                 "Navigation -> Einstellungen",
+                "DIVERA lokal testen: Tab 'Integration' -> 'Testalarm starten' / 'Testalarm beenden'",
                 "Tab auswählen (z.B. Tastenkürzel) -> Eingabefeld anklicken -> Taste drücken -> wird sofort gespeichert",
                 "Tastenkürzel zurücksetzen: Reset-Pfeil-Schaltfläche neben dem Feld oder 'Alle zurücksetzen'",
                 "Alle Tastenkürzel in diesem Browser abschalten: Tab 'Tastenkürzel' -> 'Tastenkürzel ausschalten'"

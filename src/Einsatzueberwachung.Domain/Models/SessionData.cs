@@ -108,6 +108,9 @@ namespace Einsatzueberwachung.Domain.Models
         /// <summary>Tracking-App (#133): Teams duerfen die Suche selbst starten, pausieren und beenden</summary>
         public bool AppTeamsSteuernSuche { get; set; } = true;
 
+        /// <summary>Ressourcenverwaltung (#168): Check-in von Personen und Hunden, Startsperre und DIVERA-Übernahme. Standard aus, die Staffel schaltet sie bewusst ein.</summary>
+        public bool RessourcenverwaltungAktiv { get; set; }
+
         /// <summary>Datenschutzerklaerung der Staffel fuer die App (#148); leer = keine hinterlegt</summary>
         public string? AppDatenschutzTitel { get; set; }
         public string? AppDatenschutzText { get; set; }

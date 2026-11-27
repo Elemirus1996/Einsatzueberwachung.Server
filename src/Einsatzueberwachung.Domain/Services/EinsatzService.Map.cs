@@ -1,4 +1,5 @@
 using Einsatzueberwachung.Domain.Models;
+using Einsatzueberwachung.Domain.Models.Enums;
 
 namespace Einsatzueberwachung.Domain.Services
 {
@@ -35,6 +36,8 @@ namespace Einsatzueberwachung.Domain.Services
                     {
                         assignedTeam.SearchAreaId = string.Empty;
                         assignedTeam.SearchAreaName = string.Empty;
+                        if (!assignedTeam.IsRunning)
+                            SetTeamResourcesStatus(assignedTeam, ResourceStatus.Verfuegbar);
                         TeamUpdated?.Invoke(assignedTeam);
                     }
                 }
@@ -50,6 +53,16 @@ namespace Einsatzueberwachung.Domain.Services
             if (area == null)
                 return Task.CompletedTask;
 
+            var team = string.IsNullOrWhiteSpace(teamId)
+                ? null
+                : _teams.FirstOrDefault(t => t.TeamId == teamId);
+            if (!string.IsNullOrWhiteSpace(teamId) && team is null)
+                throw new InvalidOperationException("Das ausgewählte Team existiert nicht mehr.");
+            if (team is not null)
+            {
+                EnsureTeamResourcesAvailable(team, allowAssignedInSearch: true);
+            }
+
             if (!string.IsNullOrWhiteSpace(area.AssignedTeamId) && area.AssignedTeamId != teamId)
             {
                 var oldTeam = _teams.FirstOrDefault(t => t.TeamId == area.AssignedTeamId);
@@ -57,6 +70,8 @@ namespace Einsatzueberwachung.Domain.Services
                 {
                     oldTeam.SearchAreaId = string.Empty;
                     oldTeam.SearchAreaName = string.Empty;
+                    if (!oldTeam.IsRunning)
+                        SetTeamResourcesStatus(oldTeam, ResourceStatus.Verfuegbar);
                     TeamUpdated?.Invoke(oldTeam);
                 }
             }
@@ -70,6 +85,8 @@ namespace Einsatzueberwachung.Domain.Services
                     {
                         previousTeam.SearchAreaId = string.Empty;
                         previousTeam.SearchAreaName = string.Empty;
+                        if (!previousTeam.IsRunning)
+                            SetTeamResourcesStatus(previousTeam, ResourceStatus.Verfuegbar);
                         TeamUpdated?.Invoke(previousTeam);
                     }
                 }
@@ -79,7 +96,6 @@ namespace Einsatzueberwachung.Domain.Services
                 return Task.CompletedTask;
             }
 
-            var team = _teams.FirstOrDefault(t => t.TeamId == teamId);
             if (team == null)
                 return Task.CompletedTask;
 
@@ -93,10 +109,19 @@ namespace Einsatzueberwachung.Domain.Services
             area.AssignedTeamName = team.TeamName;
             team.SearchAreaId = areaId;
             team.SearchAreaName = area.Name;
+            SetTeamResourcesStatus(team, ResourceStatus.InSuche);
             EinsatzChanged?.Invoke();
             TeamUpdated?.Invoke(team);
 
             return Task.CompletedTask;
+        }
+
+        private void SetTeamResourcesStatus(Team team, ResourceStatus status)
+        {
+            foreach (var personId in GetTeamPersonIds(team))
+                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, status);
+            if (!string.IsNullOrWhiteSpace(team.DogId))
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, status);
         }
 
         public Task SetElwPositionAsync(double latitude, double longitude)

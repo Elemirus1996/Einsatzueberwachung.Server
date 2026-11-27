@@ -36,13 +36,18 @@
                     {
                         <div class="col-12">
                             <label class="form-label">Hund</label>
-                            <select class="form-select" value="@Model.DogId" @onchange="OnDogChanged">
-                                <option value="">Hund auswählen</option>
-                                @foreach (var dog in AvailableDogs)
-                                {
-                                    <option value="@dog.Id">@dog.Name (@dog.SpecializationsShortDisplay)</option>
-                                }
-                            </select>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select flex-grow-1" value="@Model.DogId" @onchange="OnDogChanged">
+                                    <option value="">Hund auswählen</option>
+                                    @foreach (var dog in AvailableDogs)
+                                    {
+                                        <option value="@dog.Id">@DogOptionLabel(dog)</option>
+                                    }
+                                </select>
+                                <ResourceStatusIndicator Status="GetResourceStatus(ResourceEntityType.Dog, Model.DogId)"
+                                                         ShowUnknown="@ShouldShowUnknownResourceStatus(ResourceEntityType.Dog, Model.DogId)"
+                                                         Name="Hund" Variant="select" />
+                            </div>
                         </div>
 
                         <div class="col-md-6">
@@ -59,13 +64,18 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Hundeführer</label>
-                            <select class="form-select" @bind="Model.HundefuehrerId" @bind:after="NotifyHandlerChangedAsync">
-                                <option value="">Hundeführer auswählen</option>
-                                @foreach (var person in HundefuehrerOptions)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select flex-grow-1" @bind="Model.HundefuehrerId" @bind:after="NotifyHandlerChangedAsync">
+                                    <option value="">Hundeführer auswählen</option>
+                                    @foreach (var person in HundefuehrerOptions)
+                                    {
+                                        <option value="@person.Id">@PersonOptionLabel(person)</option>
+                                    }
+                                </select>
+                                <ResourceStatusIndicator Status="GetResourceStatus(ResourceEntityType.Person, Model.HundefuehrerId)"
+                                                         ShowUnknown="@ShouldShowUnknownResourceStatus(ResourceEntityType.Person, Model.HundefuehrerId)"
+                                                         Name="Hundeführer" Variant="select" />
+                            </div>
                         </div>
 
                         @for (var index = 0; index < 3; index++)
@@ -73,13 +83,18 @@
                             var slot = index;
                             <div class="col-md-6">
                                 <label class="form-label">Helfer @(slot + 1) @if (slot > 0) { <span class="monitor-text-caption">(optional)</span> }</label>
-                                <select class="form-select" value="@GetHelferId(slot)" @onchange="args => SetHelferId(slot, args.Value?.ToString())">
-                                    <option value="">@(slot switch { 0 => "Helfer auswählen", 1 => "— kein zweiter Helfer —", _ => "— kein dritter Helfer —" })</option>
-                                    @foreach (var person in HelferOptions)
-                                    {
-                                        <option value="@person.Id">@person.FullName</option>
-                                    }
-                                </select>
+                                <div class="d-flex align-items-center gap-2">
+                                    <select class="form-select flex-grow-1" value="@GetHelferId(slot)" @onchange="args => SetHelferId(slot, args.Value?.ToString())">
+                                        <option value="">@(slot switch { 0 => "Helfer auswählen", 1 => "— kein zweiter Helfer —", _ => "— kein dritter Helfer —" })</option>
+                                        @foreach (var person in HelferOptions)
+                                        {
+                                            <option value="@person.Id">@PersonOptionLabel(person)</option>
+                                        }
+                                    </select>
+                                    <ResourceStatusIndicator Status="GetResourceStatus(ResourceEntityType.Person, GetHelferId(slot))"
+                                                             ShowUnknown="@ShouldShowUnknownResourceStatus(ResourceEntityType.Person, GetHelferId(slot))"
+                                                             Name="Helfer" Variant="select" />
+                                </div>
                             </div>
                         }
                     }
@@ -98,48 +113,68 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Pilot</label>
-                            <select class="form-select" @bind="Model.HundefuehrerId">
-                                <option value="">Pilot auswählen</option>
-                                @foreach (var person in DrohnenpilotOptions)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select flex-grow-1" @bind="Model.HundefuehrerId">
+                                    <option value="">Pilot auswählen</option>
+                                    @foreach (var person in DrohnenpilotOptions)
+                                    {
+                                        <option value="@person.Id">@PersonOptionLabel(person)</option>
+                                    }
+                                </select>
+                                <ResourceStatusIndicator Status="GetResourceStatus(ResourceEntityType.Person, Model.HundefuehrerId)"
+                                                         ShowUnknown="@ShouldShowUnknownResourceStatus(ResourceEntityType.Person, Model.HundefuehrerId)"
+                                                         Name="Pilot" Variant="select" />
+                            </div>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Unterstützung</label>
-                            <select class="form-select" @bind="Model.HelferId">
-                                <option value="">Person auswählen</option>
-                                @foreach (var person in ActivePersonnel)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select flex-grow-1" @bind="Model.HelferId">
+                                    <option value="">Person auswählen</option>
+                                    @foreach (var person in ActivePersonnel)
+                                    {
+                                        <option value="@person.Id">@PersonOptionLabel(person)</option>
+                                    }
+                                </select>
+                                <ResourceStatusIndicator Status="GetResourceStatus(ResourceEntityType.Person, Model.HelferId)"
+                                                         ShowUnknown="@ShouldShowUnknownResourceStatus(ResourceEntityType.Person, Model.HelferId)"
+                                                         Name="Unterstützung" Variant="select" />
+                            </div>
                         </div>
                     }
                     else
                     {
                         <div class="col-md-6">
                             <label class="form-label">Leitung / Führung</label>
-                            <select class="form-select" @bind="Model.HundefuehrerId">
-                                <option value="">Person auswählen</option>
-                                @foreach (var person in ActivePersonnel)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select flex-grow-1" @bind="Model.HundefuehrerId">
+                                    <option value="">Person auswählen</option>
+                                    @foreach (var person in ActivePersonnel)
+                                    {
+                                        <option value="@person.Id">@PersonOptionLabel(person)</option>
+                                    }
+                                </select>
+                                <ResourceStatusIndicator Status="GetResourceStatus(ResourceEntityType.Person, Model.HundefuehrerId)"
+                                                         ShowUnknown="@ShouldShowUnknownResourceStatus(ResourceEntityType.Person, Model.HundefuehrerId)"
+                                                         Name="Leitung" Variant="select" />
+                            </div>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Zweite Person</label>
-                            <select class="form-select" @bind="Model.HelferId">
-                                <option value="">Person auswählen</option>
-                                @foreach (var person in ActivePersonnel)
-                                {
-                                    <option value="@person.Id">@person.FullName</option>
-                                }
-                            </select>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select flex-grow-1" @bind="Model.HelferId">
+                                    <option value="">Person auswählen</option>
+                                    @foreach (var person in ActivePersonnel)
+                                    {
+                                        <option value="@person.Id">@PersonOptionLabel(person)</option>
+                                    }
+                                </select>
+                                <ResourceStatusIndicator Status="GetResourceStatus(ResourceEntityType.Person, Model.HelferId)"
+                                                         ShowUnknown="@ShouldShowUnknownResourceStatus(ResourceEntityType.Person, Model.HelferId)"
+                                                         Name="Person" Variant="select" />
+                            </div>
                         </div>
                     }
 
@@ -199,6 +234,7 @@
     [Parameter] public IEnumerable<PersonalEntry> HelferOptions { get; set; } = Array.Empty<PersonalEntry>();
     [Parameter] public IEnumerable<PersonalEntry> DrohnenpilotOptions { get; set; } = Array.Empty<PersonalEntry>();
     [Parameter] public IEnumerable<DogEntry> AvailableDogs { get; set; } = Array.Empty<DogEntry>();
+    [Parameter] public IReadOnlyList<EinsatzResource> Resources { get; set; } = Array.Empty<EinsatzResource>();
     [Parameter] public IEnumerable<DroneEntry> AvailableDrones { get; set; } = Array.Empty<DroneEntry>();
     [Parameter] public IEnumerable<SearchArea> SearchAreas { get; set; } = Array.Empty<SearchArea>();
     [Parameter] public IReadOnlyList<Collar> Collars { get; set; } = Array.Empty<Collar>();
@@ -228,6 +264,36 @@
     private Task NotifyTeamTypeChangedAsync() => OnTeamTypeChanged.InvokeAsync();
     private Task NotifyDroneChangedAsync() => OnDroneChanged.InvokeAsync();
     private Task NotifyHandlerChangedAsync() => OnHandlerChanged.InvokeAsync();
+
+    private ResourceStatus? GetResourceStatus(ResourceEntityType entityType, string? entityId) =>
+        string.IsNullOrWhiteSpace(entityId)
+            ? null
+            : Resources.FirstOrDefault(resource =>
+                resource.EntityType == entityType
+                && string.Equals(resource.EntityId, entityId, StringComparison.Ordinal))?.Status;
+
+    private bool ShouldShowUnknownResourceStatus(ResourceEntityType entityType, string? entityId) =>
+        !string.IsNullOrWhiteSpace(entityId)
+        && Resources.Count > 0
+        && GetResourceStatus(entityType, entityId) is null;
+
+    private string PersonOptionLabel(PersonalEntry person) =>
+        ResourceOptionLabel(ResourceEntityType.Person, person.Id, person.FullName);
+
+    private string DogOptionLabel(DogEntry dog) =>
+        ResourceOptionLabel(
+            ResourceEntityType.Dog,
+            dog.Id,
+            $"{dog.Name} ({dog.SpecializationsShortDisplay})");
+
+    private string ResourceOptionLabel(ResourceEntityType entityType, string entityId, string name)
+    {
+        var status = GetResourceStatus(entityType, entityId);
+        if (status is { } currentStatus)
+            return $"{name} · {ResourceStatusPresentation.Label(currentStatus)}";
+
+        return Resources.Count > 0 ? $"{name} · Nicht eingecheckt" : name;
+    }
 
     private string GetHelferId(int slot) => slot switch
     {

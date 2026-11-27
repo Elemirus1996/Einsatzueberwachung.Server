@@ -1,0 +1,816 @@
+.resource-page {
+    display: grid;
+    gap: 1.5rem;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    color: var(--ui-text);
+}
+
+.resource-page-header,
+.resource-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.resource-page-header h1,
+.resource-section-heading h2,
+.resource-section-heading h3,
+.resource-empty-state h2 {
+    margin: 0;
+    color: var(--ui-heading-text);
+}
+
+.resource-page-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.resource-intro,
+.resource-search-hint,
+.resource-assignment-note {
+    margin: 0.35rem 0 0;
+    color: var(--ui-muted);
+}
+
+.resource-eyebrow {
+    margin: 0 0 0.25rem;
+    color: var(--ui-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.resource-monitor-link,
+.resource-checkin-toggle,
+.resource-divera-bulk-btn,
+.resource-suggestion-checkin-btn,
+.resource-quick-create-button,
+.resource-row-actions .btn {
+    min-height: 44px;
+}
+
+.resource-checkin-section,
+.resource-roster-section,
+.resource-empty-state {
+    border: 1px solid var(--ui-border);
+    border-radius: var(--theme-border-radius);
+    background: var(--ui-surface);
+    padding: 1.25rem;
+}
+
+.resource-checkin-section,
+.resource-roster-section {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.resource-checkin-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.resource-checkin-summary h2 {
+    margin: 0;
+    color: var(--ui-heading-text);
+    font-size: 1.25rem;
+    font-weight: 650;
+}
+
+.resource-checkin-summary .resource-search-hint {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.resource-divera-summary-hint {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.resource-checkin-summary-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.resource-checkin-toggle,
+.resource-divera-bulk-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.resource-checkin-controls {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.resource-section-heading h2 {
+    font-size: 1.25rem;
+    font-weight: 650;
+}
+
+.resource-section-heading h3 {
+    font-size: 1.1rem;
+    font-weight: 650;
+}
+
+.resource-row-actions {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.resource-checkin-toolbar {
+    display: grid;
+    grid-template-columns: minmax(170px, 220px) minmax(220px, 1fr);
+    align-items: end;
+    gap: 0.75rem;
+}
+
+.resource-search-field {
+    min-width: 0;
+}
+
+.resource-initial-status {
+    min-width: 0;
+}
+
+.resource-search-field > span:first-child,
+.resource-initial-status > span,
+.resource-quick-create-grid label > span,
+.resource-assignment-note-input > span {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+}
+
+.resource-search-input-wrap {
+    position: relative;
+    display: block;
+}
+
+.resource-search-input-wrap > i {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 0.9rem;
+    transform: translateY(-50%);
+    color: var(--ui-muted);
+}
+
+.resource-search-input-wrap .form-control {
+    min-height: 44px;
+    padding-left: 2.5rem;
+    background: var(--ui-form-bg);
+    border-color: var(--ui-form-border);
+}
+
+.resource-initial-status .form-select,
+.resource-status-select {
+    min-height: 44px;
+    background-color: var(--ui-form-bg);
+}
+
+.resource-suggestions {
+    display: grid;
+    max-height: 25rem;
+    overflow-y: auto;
+    border-top: 1px solid var(--ui-border);
+    border-bottom: 1px solid var(--ui-border);
+}
+
+.resource-suggestion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 64px;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--ui-border);
+}
+
+.resource-suggestion:last-child {
+    border-bottom: 0;
+}
+
+.resource-suggestion--divera {
+    background-color: color-mix(in srgb, var(--success-color) 7%, var(--ui-surface));
+}
+
+.resource-suggestion--divera .resource-kind-icon {
+    background-color: color-mix(in srgb, var(--success-color) 15%, var(--ui-surface-2));
+    color: var(--success-color);
+}
+
+.resource-suggestion-identity {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.resource-suggestion-meta {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.resource-suggestion-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.resource-divera-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid color-mix(in srgb, var(--success-color) 45%, var(--ui-border));
+    border-radius: 999px;
+    background-color: color-mix(in srgb, var(--success-color) 12%, var(--ui-surface));
+    color: var(--success-color);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.resource-suggestion-identity small {
+    color: var(--ui-muted);
+}
+
+.resource-suggestion-checkin-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.resource-kind-icon,
+.resource-roster-empty > i {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--ui-surface-2);
+    color: var(--ui-heading-text);
+}
+
+.resource-quick-create-prompt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--ui-border);
+    color: var(--ui-muted);
+}
+
+.resource-quick-create-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.resource-quick-create-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.resource-quick-create-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 0.75rem;
+}
+
+.resource-quick-create-grid label {
+    display: block;
+}
+
+.resource-quick-create-grid label > span {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+}
+
+.resource-quick-create-grid .form-control {
+    min-height: 44px;
+    background: var(--ui-form-bg);
+}
+
+.resource-quick-create-dialog .modal-modern-header {
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.resource-quick-create-dialog .modal-modern-header h3 {
+    font-size: 1.25rem;
+}
+
+.resource-quick-create-dialog .resource-eyebrow {
+    margin-bottom: 0.35rem;
+}
+
+.resource-quick-create-dialog .modal-modern-body {
+    padding: 1.5rem;
+}
+
+.resource-quick-create-explainer {
+    margin: 0 0 1rem;
+    color: var(--ui-muted);
+}
+
+.resource-quick-create-dialog .modal-modern-footer {
+    flex-wrap: wrap;
+    padding: 1rem 1.5rem;
+}
+
+.resource-quick-create-dialog .modal-modern-footer .btn {
+    min-height: 44px;
+}
+
+.resource-quick-create-dialog .modal-modern-footer .btn:first-child {
+    flex: 2 1 18rem;
+}
+
+.resource-quick-create-dialog .modal-modern-footer .btn:last-child {
+    flex: 1 1 8rem;
+}
+
+.resource-removal-dialog .modal-modern-header {
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.resource-removal-dialog .modal-modern-header h3 {
+    font-size: 1.25rem;
+}
+
+.resource-removal-dialog .modal-modern-body {
+    padding: 1.5rem;
+}
+
+.resource-removal-explainer {
+    margin-bottom: 0;
+    color: var(--ui-muted);
+}
+
+.resource-removal-dialog .modal-modern-body .alert {
+    margin-top: 1rem;
+}
+
+.resource-removal-dialog .modal-modern-footer {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+}
+
+.resource-removal-dialog .modal-modern-footer .btn {
+    min-height: 44px;
+}
+
+.resource-counts {
+    display: grid;
+    justify-items: end;
+    line-height: 1.2;
+}
+
+.resource-counts strong {
+    color: var(--success-color);
+    font-size: 1.4rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.resource-counts span {
+    color: var(--ui-muted);
+    font-size: 0.85rem;
+}
+
+.resource-roster-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.resource-roster-filter-trigger {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+}
+
+.resource-roster-filter-trigger.is-filtered {
+    border-color: var(--theme-primary);
+    color: var(--ui-text);
+}
+
+.resource-roster-filter-count {
+    position: absolute;
+    top: -0.2rem;
+    right: -0.2rem;
+    display: grid;
+    min-width: 1rem;
+    height: 1rem;
+    place-items: center;
+    padding: 0 0.2rem;
+    border-radius: 999px;
+    background: var(--theme-primary);
+    color: var(--theme-on-accent);
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.resource-roster-filter-controls:not([hidden]) {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid var(--ui-border);
+}
+
+.resource-roster-filter-controls label {
+    display: grid;
+    flex: 1 1 11rem;
+    gap: 0.2rem;
+    min-width: 0;
+    color: var(--ui-muted);
+    font-size: 0.75rem;
+}
+
+.resource-roster-filter-controls .form-select {
+    width: 100%;
+    min-height: 44px;
+    border-color: var(--ui-border);
+    background-color: var(--ui-surface);
+    color: var(--ui-text);
+}
+
+.resource-roster-filter-controls .resource-roster-filter-checkbox {
+    display: flex;
+    align-items: center;
+    flex: 0 1 auto;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0 0.35rem;
+    color: var(--ui-text);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.resource-roster-filter-checkbox .form-check-input {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.resource-roster-filter-reset {
+    flex: 0 0 auto;
+    min-height: 44px;
+}
+
+.resource-roster-context {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.2rem 0.4rem;
+    color: var(--ui-muted);
+}
+
+.resource-roster-context > i {
+    color: var(--ui-muted);
+}
+
+.resource-roster-context small {
+    font-size: 0.75rem;
+}
+
+.resource-table-wrap {
+    overflow-x: auto;
+}
+
+.resource-table {
+    margin: 0;
+    color: var(--ui-text);
+    vertical-align: middle;
+}
+
+.resource-table th {
+    color: var(--ui-muted);
+    font-size: 0.8rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.resource-table td {
+    min-width: 115px;
+    border-color: var(--ui-border);
+}
+
+.resource-table td:first-child {
+    min-width: 240px;
+}
+
+.resource-primary-row--has-dogs td {
+    border-bottom-color: color-mix(in srgb, var(--ui-border) 40%, transparent);
+    padding-bottom: 0.55rem;
+}
+
+.resource-dog-subrow td {
+    background-color: color-mix(in srgb, var(--ui-surface-2) 45%, var(--ui-surface));
+    border-bottom-color: color-mix(in srgb, var(--ui-border) 40%, transparent);
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+}
+
+.resource-dog-subrow--last td {
+    border-bottom-color: var(--ui-border);
+}
+
+.resource-row-identity {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.resource-row-identity > i {
+    color: var(--ui-muted);
+}
+
+.resource-row-identity--dog {
+    padding-left: 1.25rem;
+}
+
+.resource-dog-connector {
+    display: inline-block;
+    width: 0.65rem;
+    height: 0.55rem;
+    margin-right: 0.1rem;
+    border-left: 1px solid var(--ui-border);
+    border-bottom: 1px solid var(--ui-border);
+    transform: translateY(-0.15rem);
+}
+
+.resource-dog-subrow-details {
+    padding-left: 2.05rem;
+}
+
+.resource-standalone-hint {
+    color: var(--ui-muted);
+    font-size: 0.78rem;
+}
+
+.resource-dog-checkin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.5rem;
+    padding-left: 1.4rem;
+}
+
+.resource-dog-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 36px;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .resource-dog-add-btn {
+        min-height: 44px;
+    }
+}
+
+.resource-assignment-note {
+    display: block;
+    max-width: 44rem;
+    overflow-wrap: anywhere;
+    font-size: 0.875rem;
+}
+
+.resource-assignment-note-input {
+    display: block;
+    max-width: 32rem;
+    margin-top: 0.75rem;
+}
+
+.resource-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 32px;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.resource-status--available {
+    color: var(--success-color);
+}
+
+.resource-status--pending {
+    color: var(--warning-color);
+}
+
+.resource-status--bound {
+    color: var(--info-color);
+}
+
+.resource-status--off {
+    color: var(--ui-muted);
+}
+
+.resource-status-select {
+    min-width: 190px;
+}
+
+.resource-disposition-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 240px;
+}
+
+.resource-disposition-controls .resource-row-actions {
+    flex: 1 1 auto;
+}
+
+.resource-disposition-controls .resource-status-select {
+    flex: 1 1 190px;
+    width: 100%;
+}
+
+.resource-disposition-controls--context {
+    justify-content: flex-end;
+    min-width: 0;
+}
+
+.resource-remove-button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+}
+
+.resource-roster-empty,
+.resource-empty-state {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.resource-roster-empty {
+    min-height: 64px;
+    color: var(--ui-muted);
+}
+
+.resource-empty-state {
+    align-items: flex-start;
+    padding: 1.5rem;
+}
+
+.resource-empty-state > i {
+    color: var(--warning-color);
+    font-size: 1.5rem;
+}
+
+.resource-empty-state p {
+    margin: 0.4rem 0 1rem;
+    color: var(--ui-muted);
+}
+
+@media (max-width: 720px) {
+    .resource-page {
+        gap: 1rem;
+        padding: 1rem 0.75rem;
+    }
+
+    .resource-page-header,
+    .resource-section-heading,
+    .resource-checkin-summary {
+        align-items: flex-start;
+    }
+
+    .resource-page-header {
+        flex-direction: column;
+    }
+
+    .resource-checkin-summary {
+        flex-direction: column;
+    }
+
+    .resource-checkin-summary-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .resource-checkin-toggle,
+    .resource-divera-bulk-btn {
+        width: 100%;
+    }
+
+    .resource-checkin-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .resource-initial-status,
+    .resource-search-field {
+        width: 100%;
+    }
+
+    .resource-suggestion {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .resource-suggestion > .btn {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .resource-quick-create-prompt {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .resource-quick-create-actions {
+        flex-direction: column;
+    }
+
+    .resource-quick-create-button {
+        width: 100%;
+    }
+
+    .resource-roster-section,
+    .resource-checkin-section {
+        padding: 1rem;
+    }
+
+    .resource-roster-tools {
+        flex: 0 0 auto;
+        justify-content: flex-end;
+    }
+
+    .resource-quick-create-dialog .modal-modern-header,
+    .resource-quick-create-dialog .modal-modern-body,
+    .resource-quick-create-dialog .modal-modern-footer {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .resource-quick-create-dialog .modal-modern-footer {
+        flex-direction: column;
+    }
+
+    .resource-quick-create-dialog .modal-modern-footer .btn {
+        width: 100%;
+        flex-basis: auto;
+    }
+
+    .resource-removal-dialog .modal-modern-header,
+    .resource-removal-dialog .modal-modern-body,
+    .resource-removal-dialog .modal-modern-footer {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .resource-removal-dialog .modal-modern-footer {
+        flex-direction: column;
+    }
+
+    .resource-removal-dialog .modal-modern-footer .btn {
+        width: 100%;
+    }
+
+    .resource-table {
+        min-width: 540px;
+    }
+}

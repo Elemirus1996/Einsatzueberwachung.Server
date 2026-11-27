@@ -567,6 +567,39 @@
     color: var(--ui-muted);
 }
 
+/* ---------- DIVERA Test Simulation --------------------------------- */
+
+::deep .cfg-divera-sim {
+    border-top: 1px solid var(--ui-border);
+    padding-top: 0.85rem;
+}
+
+::deep .cfg-divera-sim-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+}
+
+::deep .cfg-divera-sim-head > div {
+    flex: 1 1 280px;
+    min-width: 0;
+}
+
+::deep .cfg-divera-sim-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+::deep .cfg-btn-touch {
+    min-height: 44px;
+    padding: 0.45rem 0.9rem;
+}
+
 /* ---------- Logo Cards --------------------------------------------- */
 
 ::deep .cfg-logo-card {

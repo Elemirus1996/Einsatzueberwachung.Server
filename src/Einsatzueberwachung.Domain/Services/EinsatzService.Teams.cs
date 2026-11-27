@@ -141,10 +141,20 @@ namespace Einsatzueberwachung.Domain.Services
         public Task<Team?> GetTeamByIdAsync(string teamId)
             => Task.FromResult(_teams.FirstOrDefault(t => t.TeamId == teamId));
 
-        public async Task StartTeamTimerAsync(string teamId)
+        public Task StartTeamTimerAsync(string teamId) =>
+            StartTeamTimerCoreAsync(teamId, ignoreResourceAvailability: false);
+
+        public Task StartTeamTimerIgnoringResourceAvailabilityAsync(string teamId) =>
+            StartTeamTimerCoreAsync(teamId, ignoreResourceAvailability: true);
+
+        private async Task StartTeamTimerCoreAsync(string teamId, bool ignoreResourceAvailability)
         {
             var team = await GetTeamByIdAsync(teamId);
             if (team == null) return;
+
+            RefreshExpiredDogResourcePauses();
+            if (!ignoreResourceAvailability)
+                EnsureTeamResourcesAvailable(team, allowAssignedInSearch: true);
 
             if (!string.IsNullOrWhiteSpace(team.DogId))
             {
@@ -186,6 +196,7 @@ namespace Einsatzueberwachung.Domain.Services
                     RequiredPauseMinutes = team.RequiredPauseMinutes
                 };
                 _dogPauses[team.DogId] = record;
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.Pause);
 
                 foreach (var sibling in _teams.Where(t => t.TeamId != teamId && t.DogId == team.DogId))
                     sibling.SyncPauseFromDog(record.PauseStartTime, record.RunTimeBeforePause, record.RequiredPauseMinutes);
@@ -202,8 +213,6 @@ namespace Einsatzueberwachung.Domain.Services
                 throw new InvalidOperationException("Die Suche läuft – bitte zuerst beenden.");
 
             var dogId = team.DogId;
-            team.ResetTimer();
-
             if (!string.IsNullOrWhiteSpace(dogId))
             {
                 _dogPauses.Remove(dogId);
@@ -212,6 +221,13 @@ namespace Einsatzueberwachung.Domain.Services
                     sibling.SilentReset();
                     TeamUpdated?.Invoke(sibling);
                 }
+            }
+
+            team.ResetTimer();
+
+            if (!string.IsNullOrWhiteSpace(dogId))
+            {
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, dogId, ResourceStatus.Verfuegbar, team.TeamId);
             }
         }
 
@@ -252,18 +268,30 @@ namespace Einsatzueberwachung.Domain.Services
         // und die Speicherung erfuhren sonst nichts davon.
         private void Team_TimerStarted(Team team)
         {
+            foreach (var personId in GetTeamPersonIds(team))
+                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, ResourceStatus.InSuche);
+            if (!string.IsNullOrWhiteSpace(team.DogId))
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.InSuche);
             _ = AddGlobalNoteAsync("Timer gestartet", GlobalNotesEntryType.TeamStart, team.TeamId);
             SucheGeaendert(team);
         }
 
         private void Team_TimerStopped(Team team)
         {
+            foreach (var personId in GetTeamPersonIds(team))
+                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, ResourceStatus.Verfuegbar, team.TeamId);
+            if (!string.IsNullOrWhiteSpace(team.DogId) && !team.IsPausing)
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.Verfuegbar, team.TeamId);
             _ = AddGlobalNoteAsync("Timer gestoppt", GlobalNotesEntryType.TeamStop, team.TeamId);
             SucheGeaendert(team);
         }
 
         private void Team_TimerReset(Team team)
         {
+            foreach (var personId in GetTeamPersonIds(team))
+                SetResourceStatusFromSearch(ResourceEntityType.Person, personId, ResourceStatus.Verfuegbar, team.TeamId);
+            if (!string.IsNullOrWhiteSpace(team.DogId))
+                SetResourceStatusFromSearch(ResourceEntityType.Dog, team.DogId, ResourceStatus.Verfuegbar, team.TeamId);
             _ = AddGlobalNoteAsync("Timer zurückgesetzt", GlobalNotesEntryType.TeamReset, team.TeamId);
             SucheGeaendert(team);
         }

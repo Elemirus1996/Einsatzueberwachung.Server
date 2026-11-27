@@ -130,7 +130,7 @@ public sealed class ElAppKarteTests : IDisposable
         await suche.StopAsync(team.TeamId); // gibt HB-7 frei, Track gespeichert
 
         var antwort = Json(Controller().GetHalsbaender());
-        Assert.Equal(["HB-7", "HB-8"], antwort.GetProperty("frei").EnumerateArray().Select(h => h.GetProperty("id").GetString()).ToArray());
+        Assert.Equal(new string?[] { "HB-7", "HB-8" }, antwort.GetProperty("frei").EnumerateArray().Select(h => h.GetProperty("id").GetString()).ToArray());
         var zuletzt = Assert.Single(antwort.GetProperty("zuletzt").EnumerateArray());
         Assert.Equal("HB-7", zuletzt.GetProperty("halsbandId").GetString());
 

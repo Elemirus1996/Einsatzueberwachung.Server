@@ -18,10 +18,13 @@ public partial class EinsatzMonitor
     {
         if (HasActiveEinsatz)
         {
+            var visibleMenuPanels = _currentLayout
+                .Where(panel => panel.PanelId != KnownPanels.Ressourcen || _appSettings.RessourcenverwaltungAktiv)
+                .ToArray();
             MissionTopbar.SetContent(this, builder =>
             {
                 builder.OpenComponent<MonitorPanelsMenu>(0);
-                builder.AddAttribute(1, nameof(MonitorPanelsMenu.Layout), _currentLayout);
+                builder.AddAttribute(1, nameof(MonitorPanelsMenu.Layout), visibleMenuPanels);
                 builder.AddAttribute(2, nameof(MonitorPanelsMenu.OnTogglePanel),
                     EventCallback.Factory.Create<string>(this, TogglePanelVisibleAsync));
                 builder.CloseComponent();
@@ -32,6 +35,14 @@ public partial class EinsatzMonitor
             MissionTopbar.ClearContent(this);
         }
     }
+
+    private void OnAppSettingsChanged() => _ = InvokeAsync(async () =>
+    {
+        if (_verlassen) return;
+        _appSettings = await SettingsService.GetAppSettingsAsync();
+        UpdateMissionTopbar();
+        StateHasChanged();
+    });
 
     private async Task TogglePanelVisibleAsync(string panelId)
     {
@@ -61,7 +72,10 @@ public partial class EinsatzMonitor
     private void SelectTabletPanel(string panelId)
     {
         if (_currentLayout.Any(panel =>
-                panel.IsVisible && !IsSummaryPanel(panel.PanelId) && panel.PanelId == panelId))
+                panel.IsVisible
+                && !IsSummaryPanel(panel.PanelId)
+                && (panel.PanelId != KnownPanels.Ressourcen || _appSettings.RessourcenverwaltungAktiv)
+                && panel.PanelId == panelId))
         {
             _tabletActivePanelId = panelId;
         }
@@ -302,11 +316,23 @@ public partial class EinsatzMonitor
         .OrderBy(name => name)
         .ToList();
 
+    private IEnumerable<PersonalEntry> TeamPersonnelOptions
+    {
+        get
+        {
+            var resources = EinsatzService.GetEinsatzResources();
+            return SelectionListOrdering.OrderPersonnelByFirstName(_personalList.Where(person =>
+                person.IsActive
+                && (IsPersonSelectedForCurrentTeam(person.Id)
+                    || IsInTeamPlanningRoster(resources, ResourceEntityType.Person, person.Id))));
+        }
+    }
+
     private IEnumerable<PersonalEntry> HundefuehrerOptions
     {
         get
         {
-            var allHandlers = ActivePersonnel
+            var allHandlers = TeamPersonnelOptions
                 .Where(person => person.Skills.HasFlag(PersonalSkills.Hundefuehrer));
 
             if (!string.IsNullOrWhiteSpace(_teamForm.DogId))
@@ -322,15 +348,41 @@ public partial class EinsatzMonitor
         }
     }
 
-    private IEnumerable<PersonalEntry> HelferOptions => ActivePersonnel
+    private IEnumerable<PersonalEntry> HelferOptions => TeamPersonnelOptions
         .Where(person => person.Skills.HasFlag(PersonalSkills.Helfer) || person.Skills.HasFlag(PersonalSkills.Hundefuehrer));
 
-    private IEnumerable<PersonalEntry> DrohnenpilotOptions => ActivePersonnel
+    private IEnumerable<PersonalEntry> DrohnenpilotOptions => TeamPersonnelOptions
         .Where(person => person.Skills.HasFlag(PersonalSkills.Drohnenpilot));
 
-    private IEnumerable<DogEntry> AvailableDogs => _dogList
-        .Where(dog => dog.IsActive && (string.IsNullOrWhiteSpace(_teamForm.HundefuehrerId) || dog.HundefuehrerIds.Contains(_teamForm.HundefuehrerId)))
-        .OrderBy(dog => dog.Name);
+    private IEnumerable<DogEntry> AvailableDogs
+    {
+        get
+        {
+            var resources = EinsatzService.GetEinsatzResources();
+            return _dogList
+                .Where(dog => dog.IsActive
+                    && (_teamForm.DogId == dog.Id
+                        || IsInTeamPlanningRoster(resources, ResourceEntityType.Dog, dog.Id))
+                    && (string.IsNullOrWhiteSpace(_teamForm.HundefuehrerId)
+                        || dog.HundefuehrerIds.Contains(_teamForm.HundefuehrerId)))
+                .OrderBy(dog => dog.Name);
+        }
+    }
+
+    private static bool IsInTeamPlanningRoster(
+        IReadOnlyList<EinsatzResource> resources,
+        ResourceEntityType entityType,
+        string entityId) =>
+        resources.Count == 0
+        || resources.Any(resource =>
+            resource.EntityType == entityType
+            && string.Equals(resource.EntityId, entityId, StringComparison.Ordinal));
+
+    private bool IsPersonSelectedForCurrentTeam(string personId) =>
+        _teamForm.HundefuehrerId == personId
+        || _teamForm.HelferId == personId
+        || _teamForm.HelferId2 == personId
+        || _teamForm.HelferId3 == personId;
 
     private IEnumerable<DroneEntry> AvailableDrones => _droneList
         .Where(drone => drone.IsActive)

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Einsatzueberwachung.Domain.Models;
+using Einsatzueberwachung.Domain.Models.Enums;
 
 namespace Einsatzueberwachung.Domain.Interfaces
 {
@@ -43,6 +44,18 @@ namespace Einsatzueberwachung.Domain.Interfaces
         event Action<string, string, TeamPhoneLocation>? TeamPhoneTrackPointAdded;
 
         event Action<Team>? DogPauseStarted;
+        event Action? ResourcesChanged;
+
+        IReadOnlyList<EinsatzResource> GetEinsatzResources();
+        Task CheckInResourceAsync(EinsatzResource resource);
+        bool IsResourceInActiveTeam(ResourceEntityType entityType, string entityId);
+        Task RemoveResourceAsync(ResourceEntityType entityType, string entityId);
+        Task SetResourceStatusAsync(ResourceEntityType entityType, string entityId, ResourceStatus status, string? note = null);
+        bool CanAssignResourceToSearch(ResourceEntityType entityType, string entityId);
+        /// <summary>Alle Check-ins des laufenden Einsatzes verwerfen (Ressourcenverwaltung ausgeschaltet).</summary>
+        void ClearEinsatzResources();
+        IReadOnlyList<TeamResourceAvailabilityIssue> GetTeamStartResourceIssues(string teamId);
+        void RefreshExpiredDogResourcePauses();
 
         Task StartEinsatzAsync(EinsatzData einsatzData);
         Task UpdateEinsatzAsync(EinsatzData einsatzData);
@@ -55,6 +68,7 @@ namespace Einsatzueberwachung.Domain.Interfaces
         Task<Team?> GetTeamByIdAsync(string teamId);
 
         Task StartTeamTimerAsync(string teamId);
+        Task StartTeamTimerIgnoringResourceAvailabilityAsync(string teamId);
         Task PauseTeamTimerAsync(string teamId);
         Task StopTeamTimerAsync(string teamId);
         Task ResetTeamTimerAsync(string teamId);

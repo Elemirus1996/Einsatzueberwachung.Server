@@ -23,6 +23,7 @@ else
                 <TeamCard Team="item.Team"
                           IsDogConflict="item.IsDogConflict"
                           ConflictingTeamName="@item.ConflictingTeamName"
+                          Resources="Resources"
                           DroneList="DroneList"
                           IsExpanded="item.IsExpanded"
                           LastCollarLocation="item.LastCollarLocation"
@@ -43,6 +44,7 @@ else
 @code {
     [Parameter] public bool HasTeams { get; set; }
     [Parameter] public IReadOnlyList<MonitorTeamCardItem> Items { get; set; } = Array.Empty<MonitorTeamCardItem>();
+    [Parameter] public IReadOnlyList<EinsatzResource> Resources { get; set; } = Array.Empty<EinsatzResource>();
     [Parameter] public IReadOnlyList<DroneEntry> DroneList { get; set; } = Array.Empty<DroneEntry>();
     [Parameter] public string StatusMessage { get; set; } = string.Empty;
     [Parameter] public bool StatusIsError { get; set; }

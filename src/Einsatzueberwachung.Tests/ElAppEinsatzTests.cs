@@ -127,7 +127,7 @@ public sealed class ElAppEinsatzTests : IDisposable
         Assert.Equal("Anna Berg", Assert.Single(vorlage.GetProperty("einsatzleiter").EnumerateArray()).GetString());
         Assert.Equal("Ben Kurz", Assert.Single(vorlage.GetProperty("fuehrungsassistenten").EnumerateArray()).GetString());
         Assert.Equal(7, Assert.Single(vorlage.GetProperty("divera").EnumerateArray()).GetProperty("id").GetInt32());
-        Assert.Equal(["Streets", "Topographic", "Luftbild"], vorlage.GetProperty("kartenarten").EnumerateArray().Select(k => k.GetProperty("wert").GetString()).ToArray());
+        Assert.Equal(new string?[] { "Streets", "Topographic", "Luftbild" }, vorlage.GetProperty("kartenarten").EnumerateArray().Select(k => k.GetProperty("wert").GetString()).ToArray());
 
         var ergebnisse = Json(Controller().GetErgebnisse()).EnumerateArray().ToList();
         Assert.Contains(ergebnisse, e => e.GetProperty("wert").GetString() == "Uebung abgeschlossen" && e.GetProperty("anzeige").GetString() == "Übung abgeschlossen");

@@ -104,6 +104,7 @@ public partial class EinsatzLeitung : IDisposable
                 IstEinsatz = current.IstEinsatz,
                 Szenario = current.Szenario,
                 EinsatzNummer = current.EinsatzNummer,
+                DiveraAlarmId = current.DiveraAlarmId,
                 EinsatzkontakteMigriert = true,
                 PolizeiKontaktName = _kontaktForm.PolizeiKontaktName,
                 PolizeiDienstnummer = _kontaktForm.PolizeiDienstnummer,

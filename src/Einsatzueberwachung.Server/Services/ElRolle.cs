@@ -13,7 +13,9 @@ public static class ElRolle
     public const string Fuehrungsassistent = "fuehrungsassistent";
     public const string Lesen = "lesen";
 
+    /// <param name="einsatz">Aktueller Einsatz für Status- und Rollenabgleich</param>
     /// <param name="personName">Name der gewaehlten Person; null = keine Person gewaehlt</param>
+    /// <param name="personGewaehlt">true, wenn am Gerät oder im Token eine Person hinterlegt ist</param>
     public static string Bestimmen(EinsatzData einsatz, string? personName, bool personGewaehlt)
     {
         if (!personGewaehlt) return Einsatzleiter;

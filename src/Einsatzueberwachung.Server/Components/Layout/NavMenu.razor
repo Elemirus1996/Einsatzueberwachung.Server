@@ -63,6 +63,15 @@
                 <span class="nav-text">Monitor</span>
             </NavLink>
         </div>
+        @if (_ressourcenAktiv)
+        {
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="/ressourcenverwaltung" title="Ressourcenverwaltung">
+                <span class="nav-icon"><i class="bi bi-person-lines-fill"></i></span>
+                <span class="nav-text">Ressourcenverwaltung</span>
+            </NavLink>
+        </div>
+        }
         <div class="nav-item px-2">
             <NavLink class="nav-link" href="/einsatz-karte" title="Karte">
                 <span class="nav-icon"><i class="bi bi-map-fill"></i></span>
@@ -157,11 +166,15 @@
     [Parameter]
     public EventCallback OnToggleMobile { get; set; }
 
+    private bool _ressourcenAktiv;
+
     private string ToggleSidebarLabel => IsCollapsed ? "Navigation ausklappen" : "Navigation einklappen";
 
     protected override async Task OnInitializedAsync()
     {
         EinsatzService.SzenarioChanged += OnSzenarioChanged;
+        SettingsService.AppSettingsChanged += OnAppSettingsChanged;
+        _ressourcenAktiv = (await SettingsService.GetAppSettingsAsync()).RessourcenverwaltungAktiv;
 
         var settings = await SettingsService.GetStaffelSettingsAsync();
         _staffelName = settings.StaffelName;
@@ -175,8 +188,15 @@
 
     private void OnSzenarioChanged() => InvokeAsync(StateHasChanged);
 
+    private void OnAppSettingsChanged() => _ = InvokeAsync(async () =>
+    {
+        _ressourcenAktiv = (await SettingsService.GetAppSettingsAsync()).RessourcenverwaltungAktiv;
+        StateHasChanged();
+    });
+
     public void Dispose()
     {
         EinsatzService.SzenarioChanged -= OnSzenarioChanged;
+        SettingsService.AppSettingsChanged -= OnAppSettingsChanged;
     }
 }
